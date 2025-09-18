@@ -50,7 +50,7 @@ public class BlenderExeService : BasePythonProcessService
             StartInfo = new ProcessStartInfo
             {
                 FileName = _blenderPath,
-                Arguments = "--background --log-level info --factory-startup --python-console",
+                Arguments = "--background --log-level info --python-console",
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
