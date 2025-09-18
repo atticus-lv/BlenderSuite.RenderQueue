@@ -28,13 +28,11 @@
             <!-- 渲染信息 -->
             <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1"
                     CornerRadius="2" Padding="4" Margin="0,0,0,8">
-                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*">
-                    <TextBlock Grid.Column="0" Text="渲染引擎:" Margin="0,0,4,0" />
-                    <TextBlock Grid.Column="1" Text="{Binding Engine}" Margin="0,0,16,0" />
-                    <TextBlock Grid.Column="2" Text="当前帧:" Margin="0,0,4,0" />
-                    <TextBlock Grid.Column="3" Text="{Binding CurrentFrame}" Margin="0,0,16,0" />
-                    <TextBlock Grid.Column="4" Text="当前帧采样:" Margin="0,0,4,0" />
-                    <TextBlock Grid.Column="5" Text="{Binding SampleText}" />
+                <Grid ColumnDefinitions="Auto,*,Auto,*">
+                    <TextBlock Grid.Column="0" Text="当前帧:" Margin="0,0,4,0" />
+                    <TextBlock Grid.Column="1" Text="{Binding CurrentFrame}" Margin="0,0,16,0" />
+                    <TextBlock Grid.Column="2" Text="当前帧采样:" Margin="0,0,4,0" />
+                    <TextBlock Grid.Column="3" Text="{Binding SampleText}" />
                 </Grid>
             </Border>
 

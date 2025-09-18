@@ -24,17 +24,21 @@
                     <TextBlock Text="Blender路径:" VerticalAlignment="Center" />
                     <TextBox Text="{Binding BlenderPath, Mode=TwoWay}" Width="300" />
                     <Button Content="..." Command="{Binding BrowseBlenderCommand}" />
-                    <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Foreground="Gray" />
                 </StackPanel>
 
                 <!-- Blender信息 -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center"
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Left" Margin="8 0 0 0"
                             VerticalAlignment="Center">
-                    <TextBlock Text="{Binding BlenderVersion, StringFormat='版本: {0}'}" />
-                    <TextBlock Text="{Binding BlenderPlatform, StringFormat='平台: {0}'}" />
-                    <TextBlock Text="{Binding BlenderBranch, StringFormat='分支: {0}'}" />
+                    <ToolTip.Tip>
+                        <TextBlock Text="{Binding BlenderHash}" />
+                    </ToolTip.Tip>
+                    <TextBlock Text="{Binding BlenderVersion}" />
+                    <TextBlock Text="{Binding BlenderPlatform}" />
+                    <TextBlock Text="{Binding BlenderBranch}" />
                     <ProgressBar IsIndeterminate="True" Width="20" Height="20"
                                  IsVisible="{Binding IsLoadingBlenderInfo}" />
+                    
+                    <TextBlock Margin="8 0 0 0" Text="{Binding StatusMessage}" VerticalAlignment="Center" Foreground="Gray" />
                 </StackPanel>
 
                 <!-- 队列控制按钮 -->
@@ -105,7 +109,8 @@
                                         Padding="4">
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold"
+                                                       TextTrimming="CharacterEllipsis" />
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{Binding StatusText}" FontSize="10" />
                                                 <TextBlock FontSize="12">
@@ -121,10 +126,12 @@
                                                          Height="4" Margin="0,2,0,0" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="0">
-                                            <Button Content="U" Padding="1" HorizontalContentAlignment="Center" VerticalAlignment="Center"
+                                            <Button Content="U" Padding="1" HorizontalContentAlignment="Center"
+                                                    VerticalAlignment="Center"
                                                     Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}"
                                                     Width="20" Height="20" FontSize="12" />
-                                            <Button Content="D" Padding="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                            <Button Content="D" Padding="1" HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
                                                     Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}"
                                                     Width="20" Height="20" FontSize="12" />
                                         </StackPanel>
