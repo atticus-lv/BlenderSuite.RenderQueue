@@ -11,6 +11,7 @@ using Avalonia.Platform.Storage;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using BlenderRenderQueue.ViewModels;
 
 namespace BlenderRenderQueue.ViewModels.Test;
 
@@ -54,6 +55,9 @@ public partial class TestRenderViewModel : ViewModelBase
 
 	private IRenderSession? _session;
 	private BlenderExeService? _exe;
+
+	[ObservableProperty]
+	private BlendFilePropertiesViewModel _filePropertiesViewModel = new();
 
 	// 日志批量刷新
 	private readonly ConcurrentQueue<string> _logQueue = new();
@@ -162,6 +166,11 @@ public partial class TestRenderViewModel : ViewModelBase
 					StartFrame = fs;
 					EndFrame = fe;
 					EnqueueLog($"[QUERY] 获取场景帧范围成功: {fs}..{fe}");
+					
+					// 加载文件属性
+					EnqueueLog("[QUERY] 开始加载文件属性...");
+					await FilePropertiesViewModel.LoadPropertiesAsync(_exe, BlendFilePath);
+					EnqueueLog("[QUERY] 文件属性加载完成");
 				}
 				finally
 				{
