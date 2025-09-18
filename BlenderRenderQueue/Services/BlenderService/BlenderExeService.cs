@@ -8,6 +8,8 @@ namespace BlenderRenderQueue.Services.BlenderService;
 public class BlenderExeService : BasePythonProcessService
 {
     private readonly string _blenderPath;
+    
+    public string BlenderPath => _blenderPath;
 
     public BlenderExeService(string blenderPath)
     {

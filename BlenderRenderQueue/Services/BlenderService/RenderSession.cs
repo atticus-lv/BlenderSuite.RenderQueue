@@ -58,6 +58,10 @@ public sealed class RenderSession : IRenderSession
 	public void Dispose()
 	{
 		if (_disposed) return;
+		
+		// 先取消渲染
+		Cancel();
+		
 		_process.OnOutputReceived -= HandleOutput;
 		_process.OnErrorReceived -= HandleError;
 		_disposed = true;

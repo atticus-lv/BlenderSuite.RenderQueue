@@ -268,7 +268,17 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         if (!IsQueueRunning) return;
 
-        // 单任务模式：只启动一个任务
+        // 单任务模式：先停止所有正在运行的任务，然后启动下一个
+        var runningTasks = RenderTasks.Where(t => t.Status == RenderTaskStatus.Running).ToList();
+        foreach (var task in runningTasks)
+        {
+            task.StopRender();
+        }
+
+        // 等待一下确保任务停止
+        await Task.Delay(100);
+
+        // 启动下一个待处理的任务
         var pendingTask = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending);
         if (pendingTask == null) return;
 
@@ -277,7 +287,9 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             try
             {
-                await taskCopy.StartRenderAsync(_blenderService!);
+                // 为每个任务创建独立的BlenderExeService实例
+                using var blenderService = new BlenderExeService(_blenderService!.BlenderPath);
+                await taskCopy.StartRenderAsync(blenderService);
             }
             catch (Exception ex)
             {

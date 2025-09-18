@@ -303,6 +303,17 @@ public partial class RenderTaskViewModel : ViewModelBase
                 {
                     Duration = _endTime.Value - _startTime.Value;
                 }
+                
+                // 渲染完成后，停止 Blender 进程
+                try
+                {
+                    _session?.Dispose();
+                    _session = null;
+                }
+                catch (Exception ex)
+                {
+                    EnqueueLog($"停止渲染进程时出错: {ex.Message}");
+                }
                 break;
             case RenderError err:
                 EnqueueLog($"错误: {err.Message}");
