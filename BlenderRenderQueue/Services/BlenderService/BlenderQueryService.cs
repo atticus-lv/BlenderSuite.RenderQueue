@@ -23,7 +23,9 @@ public sealed class BlenderQueryService : IBlenderQueryService
 				'frame_end': int(s.frame_end),
 				'camera': (s.camera.name if s.camera else None),
 				'render_output_path': bpy.context.scene.render.filepath,
-				'render_output_format': bpy.context.scene.render.image_settings.file_format
+				'render_output_format': bpy.context.scene.render.image_settings.file_format,
+				'render_engine': bpy.context.scene.render.engine,
+				'scene_name': bpy.context.scene.name
 			}",
 			root =>
 			{
@@ -35,7 +37,9 @@ public sealed class BlenderQueryService : IBlenderQueryService
 					FrameEnd = data.GetProperty("frame_end").GetInt32(),
 					CameraName = data.GetProperty("camera").ValueKind == JsonValueKind.Null ? null : data.GetProperty("camera").GetString(),
 					RenderOutputPath = data.GetProperty("render_output_path").GetString(),
-					RenderOutputFormat = data.GetProperty("render_output_format").GetString()
+					RenderOutputFormat = data.GetProperty("render_output_format").GetString(),
+					RenderEngine = data.GetProperty("render_engine").GetString(),
+					SceneName = data.GetProperty("scene_name").GetString()
 				};
 			},
 			cancellationToken);

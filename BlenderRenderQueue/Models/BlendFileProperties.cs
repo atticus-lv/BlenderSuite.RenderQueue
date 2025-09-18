@@ -14,6 +14,8 @@ public class BlendFileProperties
     public string? CameraName { get; set; }
     public string? RenderOutputPath { get; set; }
     public string? RenderOutputFormat { get; set; }
+    public string? RenderEngine { get; set; }
+    public string? SceneName { get; set; }
     public int TotalFrames => Math.Max(0, FrameEnd - FrameStart + 1);
     public bool IsLoaded => !string.IsNullOrEmpty(FilePath);
     public string FileName => IsLoaded ? Path.GetFileName(FilePath) : string.Empty;
@@ -29,5 +31,7 @@ public class BlendFileProperties
         CameraName = source.CameraName;
         RenderOutputPath = source.RenderOutputPath;
         RenderOutputFormat = source.RenderOutputFormat;
+        RenderEngine = source.RenderEngine;
+        SceneName = source.SceneName;
     }
 }

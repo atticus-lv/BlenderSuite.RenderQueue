@@ -52,6 +52,16 @@
                         <!-- 分隔线 -->
                         <Rectangle Height="1" Fill="Gray" Margin="0,8" />
 
+
+                        <!-- 场景名称 -->
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="场景:" FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="1" Text="{Binding Properties.SceneName}"
+                                       IsVisible="{Binding Properties.SceneName, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                                       IsVisible="{Binding Properties.SceneName, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                        </Grid>
+
                         <!-- 帧范围 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="帧范围:" FontWeight="SemiBold" MinWidth="80" />
@@ -63,6 +73,15 @@
                                 <TextBlock Text="{Binding Properties.TotalFrames}" FontFamily="Consolas" />
                                 <TextBlock Text="帧)" />
                             </StackPanel>
+                        </Grid>
+
+                        <!-- 渲染引擎 -->
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="渲染引擎:" FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="1" Text="{Binding Properties.RenderEngine}"
+                                       IsVisible="{Binding Properties.RenderEngine, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                                       IsVisible="{Binding Properties.RenderEngine, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                         <!-- 相机名称 -->
