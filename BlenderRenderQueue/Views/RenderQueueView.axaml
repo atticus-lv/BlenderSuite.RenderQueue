@@ -39,11 +39,12 @@
 
                 <!-- 队列控制按钮 -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <!-- 开始队列按钮：只在队列停止时显示 -->
                     <Button Content="开始队列" Command="{Binding RenderQueue.StartQueueCommand}"
                             IsEnabled="{Binding !RenderQueue.IsQueueRunning}" />
+                    
+                    <!-- 停止队列按钮：只在队列运行时显示 -->
                     <Button Content="停止队列" Command="{Binding RenderQueue.StopQueueCommand}"
-                            IsEnabled="{Binding RenderQueue.IsQueueRunning}" />
-                    <Button Content="暂停队列" Command="{Binding RenderQueue.PauseQueueCommand}"
                             IsEnabled="{Binding RenderQueue.IsQueueRunning}" />
                 </StackPanel>
 
@@ -74,10 +75,7 @@
 
                 <!-- 队列设置 -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <TextBlock Text="最大并发:" VerticalAlignment="Center" />
-                    <NumericUpDown Value="{Binding RenderQueue.MaxConcurrentTasks}"
-                                   Minimum="1" Maximum="2"  />
-                    <CheckBox Content="自动开始" IsChecked="{Binding RenderQueue.AutoStartNext}"
+                    <CheckBox Content="自动开始下一个任务" IsChecked="{Binding RenderQueue.AutoStartNext}"
                               VerticalAlignment="Center" />
                 </StackPanel>
 
@@ -124,10 +122,10 @@
                                                          Height="4" Margin="0,2,0,0" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="2">
-                                            <Button Content="↑"
+                                            <Button Content="U"
                                                     Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}"
                                                     Width="20" Height="20" FontSize="10" />
-                                            <Button Content="↓"
+                                            <Button Content="D"
                                                     Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}"
                                                     Width="20" Height="20" FontSize="10" />
                                         </StackPanel>

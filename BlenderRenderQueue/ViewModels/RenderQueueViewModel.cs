@@ -38,9 +38,6 @@ public partial class RenderQueueViewModel : ViewModelBase
     private string _queueStatusText = "队列空闲";
 
     [ObservableProperty]
-    private int _maxConcurrentTasks = 1; // 最大并发任务数
-
-    [ObservableProperty]
     private bool _autoStartNext = true; // 自动开始下一个任务
 
     // 内部状态
@@ -172,24 +169,29 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (!RenderTasks.Any()) return;
         if (_blenderService == null)
         {
-            // 这里应该通过事件通知主视图模型设置Blender服务
             QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("需要先设置Blender路径"));
             return;
         }
 
-        // 重置已取消的任务状态为等待中，但保留进度信息
-        foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Cancelled))
+        // 停止队列：重置所有任务状态，从头开始
+        foreach (var task in RenderTasks)
         {
+            if (task.Status == RenderTaskStatus.Running)
+            {
+                task.StopRender();
+            }
+            // 重置所有任务状态为等待中，从头开始
             task.Status = RenderTaskStatus.Pending;
             task.StatusText = "等待中";
-            // 注意：不重置进度，让任务从上次停止的地方继续
+            // 重置进度信息
+            task.ResetProgress();
         }
 
         IsQueueRunning = true;
         QueueStatusText = "队列运行中";
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已启动"));
 
-        // 启动待处理的任务
+        // 启动第一个任务
         await StartNextAvailableTasks();
     }
 
@@ -207,22 +209,6 @@ public partial class RenderQueueViewModel : ViewModelBase
         IsQueueRunning = false;
         QueueStatusText = "队列已停止";
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已停止"));
-    }
-
-    [RelayCommand]
-    private void PauseQueue()
-    {
-        if (!IsQueueRunning) return;
-
-        // 暂停所有运行中的任务
-        foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
-        {
-            task.StopRender();
-        }
-
-        IsQueueRunning = false;
-        QueueStatusText = "队列已暂停";
-        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已暂停"));
     }
 
     [RelayCommand]
@@ -282,45 +268,34 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         if (!IsQueueRunning) return;
 
-        var runningCount = RenderTasks.Count(t => t.Status == RenderTaskStatus.Running);
-        var availableSlots = MaxConcurrentTasks - runningCount;
+        // 单任务模式：只启动一个任务
+        var pendingTask = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending);
+        if (pendingTask == null) return;
 
-        if (availableSlots <= 0) return;
-
-        var pendingTasks = RenderTasks
-            .Where(t => t.Status == RenderTaskStatus.Pending)
-            .Take(availableSlots)
-            .ToList();
-
-        foreach (var task in pendingTasks)
+        var taskCopy = pendingTask; // 避免闭包问题
+        var runningTask = Task.Run(async () =>
         {
-            if (!IsQueueRunning) break;
-            
-            var taskCopy = task; // 避免闭包问题
-            var runningTask = Task.Run(async () =>
+            try
             {
-                try
-                {
-                    await taskCopy.StartRenderAsync(_blenderService!);
-                }
-                catch (Exception ex)
-                {
-                    // 错误处理已在RenderTaskViewModel中完成
-                }
-                finally
-                {
-                    // 任务完成后，尝试启动下一个任务
-                    if (AutoStartNext && IsQueueRunning)
-                    {
-                        await StartNextAvailableTasks();
-                    }
-                }
-            });
-
-            lock (_queueLock)
-            {
-                _runningTasks.Add(runningTask);
+                await taskCopy.StartRenderAsync(_blenderService!);
             }
+            catch (Exception ex)
+            {
+                // 错误处理已在RenderTaskViewModel中完成
+            }
+            finally
+            {
+                // 任务完成后，尝试启动下一个任务
+                if (AutoStartNext && IsQueueRunning)
+                {
+                    await StartNextAvailableTasks();
+                }
+            }
+        });
+
+        lock (_queueLock)
+        {
+            _runningTasks.Add(runningTask);
         }
     }
 
