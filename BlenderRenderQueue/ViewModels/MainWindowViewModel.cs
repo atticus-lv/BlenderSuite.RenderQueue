@@ -2,7 +2,10 @@
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-#pragma warning disable CA1822 // Mark members as static
-    public string Greeting => "Welcome to Avalonia!";
-#pragma warning restore CA1822 // Mark members as static
+	public ViewModelBase Content { get; }
+
+	public MainWindowViewModel()
+	{
+		Content = new BlenderRenderQueue.ViewModels.Test.TestRenderViewModel();
+	}
 }

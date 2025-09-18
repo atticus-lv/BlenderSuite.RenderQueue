@@ -22,4 +22,10 @@
         <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.6"/>
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1"/>
     </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Views\Test\TestRenderView.axaml.cs">
+        <DependentUpon>TestRenderView.axaml</DependentUpon>
+      </Compile>
+    </ItemGroup>
 </Project>
