@@ -56,13 +56,12 @@
             <Button Content="停止" Command="{Binding StopRenderCommand}" />
         </StackPanel>
 
-        <Border Grid.Row="6" Grid.ColumnSpan="3" BorderBrush="Gray" BorderThickness="1" Margin="8">
-            <ScrollViewer MinHeight="200" VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Auto" MaxWidth="1000">
-                <TextBlock Text="{Binding OutputLog}" TextWrapping="Wrap" />
-            </ScrollViewer>
-        </Border>
 
+        <ScrollViewer Grid.Row="6" Grid.ColumnSpan="3" MinHeight="200" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Auto" MaxWidth="1000">
+            <TextBox Text="{Binding OutputLog}" TextWrapping="Wrap" IsReadOnly="True" AcceptsReturn="True"
+                     BorderThickness="0" Background="Transparent" />
+        </ScrollViewer>
 
     </Grid>
 </UserControl>
