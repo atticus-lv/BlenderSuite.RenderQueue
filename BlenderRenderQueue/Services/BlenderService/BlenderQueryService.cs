@@ -77,11 +77,13 @@ public sealed class BlenderQueryService : IBlenderQueryService
 		Func<JsonElement, T> onOk,
 		CancellationToken cancellationToken)
 	{
-		var escapedPath = blendFilePath.Replace("\\", "/");
+		// 对路径进行简单的标准化处理
+		var normalizedPath = EscapePathForPython(blendFilePath);
 		var script = $@"
 import bpy, json
+filepath = '{normalizedPath}'
 try:
-    bpy.ops.wm.open_mainfile(filepath=r'{escapedPath}')
+    bpy.ops.wm.open_mainfile(filepath=filepath)
     s=bpy.context.scene
     print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':True,'data':{dataPythonDictLiteral}}}, separators=(',', ':')))
 except Exception as e:
@@ -112,5 +114,14 @@ except Exception as e:
 			}
 		}
 		throw new InvalidOperationException($"No [BRQ] result found for {cmd}");
+	}
+
+	/// <summary>
+	/// 对文件路径进行简单的标准化处理
+	/// </summary>
+	private static string EscapePathForPython(string path)
+	{
+		// 只做最基本的反斜杠转换，Blender支持中文路径
+		return path.Replace("\\", "/");
 	}
 } 

@@ -93,9 +93,7 @@ public abstract class BasePythonProcessService : IDisposable
             progress?.Report(0.4);
 
             var wrappedScript = $@"
-exec('''
 {script}
-''')
 print('__SCRIPT_COMPLETE__')
 ";
 
