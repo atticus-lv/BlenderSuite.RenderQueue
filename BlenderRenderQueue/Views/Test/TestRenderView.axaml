@@ -40,14 +40,14 @@
             <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                   ColumnDefinitions="Auto,*,Auto"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                <TextBlock Grid.Row="0" Grid.Column="0" Margin="8 2 8 2" Text="Blender 路径:" VerticalAlignment="Center" />
-                <TextBox Grid.Row="0" Grid.Column="1" Margin="8 2 8 2" Text="{Binding BlenderPath, Mode=TwoWay}" />
-                <Button Grid.Row="0" Grid.Column="2" Margin="8 2 8 2" Content="浏览"
+                <TextBlock Grid.Row="0" Grid.Column="0" Margin="8 2 4 2" Text="Blender路径:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="1" Margin="8 2 0 2" Text="{Binding BlenderPath, Mode=TwoWay}" />
+                <Button Grid.Row="0" Grid.Column="2" Margin="0 2 8 2" Content="..."
                         Command="{Binding BrowseBlenderCommand}" />
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Margin="8 2 8 2" Text="Blend 文件:" VerticalAlignment="Center" />
-                <TextBox Grid.Row="1" Grid.Column="1" Margin="8 2 8 2" Text="{Binding BlendFilePath, Mode=TwoWay}" />
-                <Button Grid.Row="1" Grid.Column="2" Margin="8 2 8 2" Content="浏览"
+                <TextBlock Grid.Row="1" Grid.Column="0" Margin="8 2 4 2" Text="Blend文件:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="1" Margin="8 2 0 2" Text="{Binding BlendFilePath, Mode=TwoWay}" />
+                <Button Grid.Row="1" Grid.Column="2" Margin="0 2 8 2" Content="..."
                         Command="{Binding BrowseBlendFileCommand}" />
 
                 <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="8"
