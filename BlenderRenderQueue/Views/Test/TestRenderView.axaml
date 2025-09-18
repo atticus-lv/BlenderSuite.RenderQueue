@@ -29,15 +29,23 @@
                 <Button Content="开始渲染" Command="{Binding StartRenderCommand}" />
                 <Button Content="停止" Command="{Binding StopRenderCommand}" />
                 <Button Content="清空日志" Command="{Binding ClearLogCommand}" />
+                
             </StackPanel>
         </Grid>
+        <StackPanel Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="8"
+                    HorizontalAlignment="Center">
+            <TextBlock Text="无活动超时(秒):" VerticalAlignment="Center" />
+            <NumericUpDown Width="150" Value="{Binding RenderTimeoutSeconds}" Minimum="60" Maximum="3600" />
+            <TextBlock Text="(默认300秒=5分钟，有输出时重置)" VerticalAlignment="Center" Foreground="Gray" />
+        </StackPanel>
+        
         <Grid ColumnDefinitions="3*,5,*">
 
             <views:BlendFilePropertiesView Grid.Column="2" DataContext="{Binding FilePropertiesViewModel}" Margin="4" />
 
             <Rectangle Grid.Column="1" Width="1" Fill="Gray" Margin="0,8" />
 
-            <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+            <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                   ColumnDefinitions="Auto,*,Auto"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="8 2 4 2" Text="Blender路径:" VerticalAlignment="Center" />

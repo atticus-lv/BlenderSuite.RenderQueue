@@ -18,7 +18,7 @@
     </Design.DataContext>
 
     <ScrollViewer VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-        <ContentControl Content="{Binding Content}" />
+        <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" />
     </ScrollViewer>
 
 

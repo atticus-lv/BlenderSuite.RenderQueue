@@ -59,6 +59,9 @@ public partial class TestRenderViewModel : ViewModelBase
 	[ObservableProperty]
 	private string _logPauseButtonText = "暂停日志";
 
+	[ObservableProperty]
+	private int _renderTimeoutSeconds = 300; // 默认5分钟无活动超时
+
 	private IRenderSession? _session;
 	private BlenderExeService? _exe;
 
@@ -231,8 +234,35 @@ public partial class TestRenderViewModel : ViewModelBase
 		_session.OnEvent += e => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(e));
 
 		var cmd = new BlenderCommandService();
-		await cmd.StartRenderAsync(_exe, BlendFilePath, StartFrame, EndFrame, Animation);
-		EnqueueLog($"已发送渲染指令: {StartFrame}..{EndFrame}, animation={Animation}");
+		
+		try
+		{
+			// 为渲染任务设置可配置的超时时间
+			_exe.Timeout = RenderTimeoutSeconds;
+			
+			EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {RenderTimeoutSeconds}秒)");
+			await cmd.StartRenderAsync(_exe, BlendFilePath, StartFrame, EndFrame, Animation);
+			EnqueueLog($"渲染指令已发送完成");
+		}
+		catch (TaskCanceledException ex)
+		{
+			if (ex.CancellationToken.IsCancellationRequested)
+			{
+				EnqueueLog("渲染任务被用户取消");
+			}
+			else
+			{
+				EnqueueLog($"渲染任务超时: {ex.Message}");
+			}
+		}
+		catch (OperationCanceledException ex)
+		{
+			EnqueueLog($"渲染操作被取消: {ex.Message}");
+		}
+		catch (Exception ex)
+		{
+			EnqueueLog($"渲染启动失败: {ex.Message}");
+		}
 	}
 
 	[RelayCommand]

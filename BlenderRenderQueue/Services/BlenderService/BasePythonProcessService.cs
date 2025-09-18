@@ -102,9 +102,14 @@ public abstract class BasePythonProcessService : IDisposable
                                  """;
 
             var completionSource = new TaskCompletionSource<bool>();
+            var lastActivityTime = DateTime.UtcNow;
+            var activityTimeout = TimeSpan.FromSeconds(Timeout);
 
             void TempOutputHandler(string output)
             {
+                // 只要有输出就更新活动时间
+                lastActivityTime = DateTime.UtcNow;
+                
                 if (output.Contains("__SCRIPT_COMPLETE__"))
                     completionSource.TrySetResult(true);
                 else
@@ -118,17 +123,41 @@ public abstract class BasePythonProcessService : IDisposable
                 await _process!.StandardInput.WriteLineAsync(wrappedScript);
                 await _process.StandardInput.FlushAsync();
 
+                // 使用基于活动状态的超时检查
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                cts.CancelAfter(TimeSpan.FromSeconds(Timeout));
+                
+                // 启动活动超时检查任务
+                var activityCheckTask = Task.Run(async () =>
+                {
+                    while (!completionSource.Task.IsCompleted && !cts.Token.IsCancellationRequested)
+                    {
+                        await Task.Delay(1000, cts.Token); // 每秒检查一次
+                        
+                        if (DateTime.UtcNow - lastActivityTime > activityTimeout)
+                        {
+                            OnErrorReceived?.Invoke($"操作超时 - 无活动超过 {Timeout} 秒: {operationName}");
+                            cts.Cancel();
+                            break;
+                        }
+                    }
+                }, cts.Token);
 
                 await completionSource.Task.WaitAsync(cts.Token);
 
                 result.Output = outputBuilder.ToString().TrimEnd();
                 return result;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException ex)
             {
-                OnErrorReceived?.Invoke($"操作已取消或超时: {operationName}");
+                // 区分用户取消和超时
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    OnErrorReceived?.Invoke($"操作被用户取消: {operationName}");
+                }
+                else
+                {
+                    OnErrorReceived?.Invoke($"操作超时 - 无活动超过 {Timeout} 秒: {operationName}");
+                }
                 throw;
             }
             finally
