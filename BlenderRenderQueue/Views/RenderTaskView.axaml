@@ -18,10 +18,10 @@
                            FontWeight="Bold" VerticalAlignment="Center" />
                 <Border Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}" 
                         CornerRadius="2" Padding="4,2">
-                    <TextBlock Text="{Binding StatusText}" Foreground="White" FontSize="10" />
+                    <TextBlock Text="{Binding StatusText}"  FontSize="10" />
                 </Border>
                 <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}" 
-                           VerticalAlignment="Center" Foreground="Gray" />
+                           VerticalAlignment="Center" />
             </StackPanel>
 
             <!-- 进度条 -->
@@ -43,7 +43,7 @@
             </StackPanel>
 
             <!-- 渲染信息 -->
-            <Border Grid.Row="2" Grid.ColumnSpan="2" BorderBrush="LightGray" BorderThickness="1" 
+            <Border Grid.Row="2" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" 
                     CornerRadius="2" Padding="4" Margin="0,0,0,8">
                 <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*">
                     <TextBlock Grid.Column="0" Text="引擎:" Margin="0,0,4,0" />
@@ -77,7 +77,7 @@
             </StackPanel>
 
             <!-- 日志区域 -->
-            <Border Grid.Row="4" Grid.Column="0" BorderBrush="LightGray" BorderThickness="1" 
+            <Border Grid.Row="4" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" 
                     CornerRadius="2" MaxHeight="150">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                     <TextBox Text="{Binding OutputLog}" TextWrapping="Wrap" IsReadOnly="True" 

@@ -7,7 +7,7 @@
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.MainRenderView"
              x:DataType="vm:MainRenderViewModel">
-    
-    <views:RenderQueueView DataContext="{Binding}" />
-    
+
+    <views:RenderQueueView DataContext="{Binding}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+
 </UserControl>

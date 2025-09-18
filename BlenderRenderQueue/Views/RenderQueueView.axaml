@@ -4,18 +4,21 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
+             xmlns:services="clr-namespace:BlenderRenderQueue.Services"
              xmlns:conv="using:Avalonia.Data.Converters"
              mc:Ignorable="d"
              Width="1200" Height="800"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
-             x:DataType="vm:MainRenderViewModel">
-    
+             x:DataType="vm:MainRenderViewModel"
+             services:ToplevelService.Register="{Binding}">
+
     <Grid RowDefinitions="Auto,Auto,*,Auto" ColumnDefinitions="*,Auto">
-        
+
         <!-- 顶部工具栏 -->
-        <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#F0F0F0" BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="8">
+        <Border Grid.Row="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="0,0,0,1"
+                Padding="8">
             <Grid ColumnDefinitions="Auto,*,Auto">
-                
+
                 <!-- Blender路径设置 -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="Blender路径:" VerticalAlignment="Center" />
@@ -25,31 +28,32 @@
                 </StackPanel>
 
                 <!-- Blender信息 -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
                     <TextBlock Text="{Binding BlenderVersion, StringFormat='版本: {0}'}" />
                     <TextBlock Text="{Binding BlenderPlatform, StringFormat='平台: {0}'}" />
                     <TextBlock Text="{Binding BlenderBranch, StringFormat='分支: {0}'}" />
-                    <ProgressBar IsIndeterminate="True" Width="20" Height="20" 
+                    <ProgressBar IsIndeterminate="True" Width="20" Height="20"
                                  IsVisible="{Binding IsLoadingBlenderInfo}" />
                 </StackPanel>
 
                 <!-- 队列控制按钮 -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <Button Content="开始队列" Command="{Binding RenderQueue.StartQueueCommand}" 
+                    <Button Content="开始队列" Command="{Binding RenderQueue.StartQueueCommand}"
                             IsEnabled="{Binding !RenderQueue.IsQueueRunning}" />
-                    <Button Content="停止队列" Command="{Binding RenderQueue.StopQueueCommand}" 
+                    <Button Content="停止队列" Command="{Binding RenderQueue.StopQueueCommand}"
                             IsEnabled="{Binding RenderQueue.IsQueueRunning}" />
-                    <Button Content="暂停队列" Command="{Binding RenderQueue.PauseQueueCommand}" 
+                    <Button Content="暂停队列" Command="{Binding RenderQueue.PauseQueueCommand}"
                             IsEnabled="{Binding RenderQueue.IsQueueRunning}" />
                 </StackPanel>
-                
+
             </Grid>
         </Border>
 
         <!-- 队列统计信息 -->
-        <Border Grid.Row="1" Grid.ColumnSpan="2" Background="#F8F8F8" BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="8">
+        <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="8">
             <Grid ColumnDefinitions="Auto,*,Auto">
-                
+
                 <!-- 进度信息 -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                     <TextBlock Text="{Binding RenderQueue.QueueStatusText}" FontWeight="Bold" />
@@ -59,48 +63,51 @@
                 </StackPanel>
 
                 <!-- 整体进度条 -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
                     <TextBlock Text="队列进度:" VerticalAlignment="Center" />
-                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.OverallQueueProgress}" 
+                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.OverallQueueProgress}"
                                  Width="200" Height="20" />
-                    <TextBlock Text="{Binding RenderQueue.OverallQueueProgress, StringFormat='{}{0:P1}'}" 
+                    <TextBlock Text="{Binding RenderQueue.OverallQueueProgress, StringFormat='{}{0:P1}'}"
                                VerticalAlignment="Center" />
                 </StackPanel>
 
                 <!-- 队列设置 -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="最大并发:" VerticalAlignment="Center" />
-                    <NumericUpDown Value="{Binding RenderQueue.MaxConcurrentTasks}" 
-                                   Minimum="1" Maximum="10" Width="60" />
-                    <CheckBox Content="自动开始" IsChecked="{Binding RenderQueue.AutoStartNext}" 
+                    <NumericUpDown Value="{Binding RenderQueue.MaxConcurrentTasks}"
+                                   Minimum="1" Maximum="2"  />
+                    <CheckBox Content="自动开始" IsChecked="{Binding RenderQueue.AutoStartNext}"
                               VerticalAlignment="Center" />
                 </StackPanel>
-                
+
             </Grid>
         </Border>
 
         <!-- 主要内容区域 -->
         <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="300,*">
-            
+
             <!-- 左侧任务列表 -->
             <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="0,0,1,0">
                 <Grid RowDefinitions="Auto,*,Auto">
-                    
+
                     <!-- 任务操作按钮 -->
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="4" Margin="8" HorizontalAlignment="Center">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="4" Margin="8"
+                                HorizontalAlignment="Center">
                         <Button Content="添加任务" Command="{Binding AddSingleTaskCommand}" Padding="8,4" />
                         <Button Content="批量添加" Command="{Binding AddMultipleTasksCommand}" Padding="8,4" />
                     </StackPanel>
 
                     <!-- 任务列表 -->
-                    <ListBox Grid.Row="1" ItemsSource="{Binding RenderQueue.RenderTasks}" 
+                    <ListBox Grid.Row="1" ItemsSource="{Binding RenderQueue.RenderTasks}"
                              SelectedItem="{Binding RenderQueue.SelectedTask}" Margin="4">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="LightGray" BorderThickness="1" Margin="2" CornerRadius="2" Padding="4">
+                                <Border BorderBrush="LightGray" BorderThickness="1" Margin="2" CornerRadius="2"
+                                        Padding="4">
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{Binding BlendFilePath}" 
+                                            <TextBlock Text="{Binding BlendFilePath}"
                                                        FontWeight="Bold" TextTrimming="CharacterEllipsis" />
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{Binding StatusText}" FontSize="10" />
@@ -113,13 +120,15 @@
                                                     </TextBlock.Text>
                                                 </TextBlock>
                                             </StackPanel>
-                                            <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallProgress01}" 
+                                            <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallProgress01}"
                                                          Height="4" Margin="0,2,0,0" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="2">
-                                            <Button Content="↑" Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}" 
+                                            <Button Content="↑"
+                                                    Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}"
                                                     Width="20" Height="20" FontSize="10" />
-                                            <Button Content="↓" Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}" 
+                                            <Button Content="↓"
+                                                    Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}"
                                                     Width="20" Height="20" FontSize="10" />
                                         </StackPanel>
                                     </Grid>
@@ -129,16 +138,17 @@
                     </ListBox>
 
                     <!-- 任务操作按钮 -->
-                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="8" HorizontalAlignment="Center">
-                        <Button Content="移除选中" Command="{Binding RenderQueue.RemoveSelectedTaskCommand}" 
-                                IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}" 
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="8"
+                                HorizontalAlignment="Center">
+                        <Button Content="移除选中" Command="{Binding RenderQueue.RemoveSelectedTaskCommand}"
+                                IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                 Padding="8,4" />
-                        <Button Content="移除完成" Command="{Binding RenderQueue.RemoveCompletedTasksCommand}" 
+                        <Button Content="移除完成" Command="{Binding RenderQueue.RemoveCompletedTasksCommand}"
                                 Padding="8,4" />
-                        <Button Content="清空队列" Command="{Binding RenderQueue.RemoveAllTasksCommand}" 
+                        <Button Content="清空队列" Command="{Binding RenderQueue.RemoveAllTasksCommand}"
                                 Padding="8,4" />
                     </StackPanel>
-                    
+
                 </Grid>
             </Border>
 
@@ -151,20 +161,21 @@
                         </DataTemplate>
                     </ContentControl.ContentTemplate>
                 </ContentControl>
-                
+
                 <!-- 空状态提示 -->
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" 
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
                             IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}">
                     <TextBlock Text="选择一个任务查看详情" FontSize="16" Foreground="Gray" />
                 </StackPanel>
             </Grid>
-            
+
         </Grid>
 
         <!-- 底部状态栏 -->
-        <Border Grid.Row="3" Grid.ColumnSpan="2" Background="#F0F0F0" BorderBrush="Gray" BorderThickness="0,1,0,0" Padding="8">
+        <Border Grid.Row="3" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="0,1,0,0"
+                Padding="8">
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" />
         </Border>
-        
+
     </Grid>
 </UserControl>
