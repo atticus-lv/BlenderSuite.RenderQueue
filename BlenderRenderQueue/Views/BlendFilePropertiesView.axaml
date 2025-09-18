@@ -51,9 +51,6 @@
                         <!-- 分隔线 -->
                         <Rectangle Height="1" Fill="Gray" Margin="0,8" />
 
-                        <!-- 场景信息 -->
-                        <TextBlock Text="场景信息" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,5" />
-
                         <!-- 帧范围 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="帧范围:" FontWeight="SemiBold" MinWidth="80" />
@@ -78,9 +75,6 @@
 
                         <!-- 分隔线 -->
                         <Rectangle Height="1" Fill="Gray" Margin="0,8" />
-
-                        <!-- 渲染设置 -->
-                        <TextBlock Text="渲染设置" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,5" />
 
                         <!-- 输出路径 -->
                         <Grid ColumnDefinitions="Auto,*">
@@ -108,7 +102,7 @@
                 <Border CornerRadius="4" Padding="20" IsVisible="{Binding !Properties.IsLoaded}">
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                         <TextBlock Text="📄" FontSize="24" HorizontalAlignment="Center" />
-                        <TextBlock Text="请选择一个 .blend 文件" HorizontalAlignment="Center"
+                        <TextBlock Text="文件未加载" HorizontalAlignment="Center"
                                    Foreground="#666" FontStyle="Italic" />
                     </StackPanel>
                 </Border>
