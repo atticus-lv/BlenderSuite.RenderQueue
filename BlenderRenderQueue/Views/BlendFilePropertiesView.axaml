@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BlenderRenderQueue.ViewModels"
+             xmlns:conv="using:Avalonia.Data.Converters"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Views.BlendFilePropertiesView"
              x:DataType="vm:BlendFilePropertiesViewModel">
@@ -68,9 +69,9 @@
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="相机:" FontWeight="SemiBold" MinWidth="80" />
                             <TextBlock Grid.Column="1" Text="{Binding Properties.CameraName}"
-                                       IsVisible="{Binding Properties.HasCameraName}" />
+                                       IsVisible="{Binding Properties.CameraName, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding Properties.HasNoCameraName}" />
+                                       IsVisible="{Binding Properties.CameraName, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                         <!-- 分隔线 -->
@@ -81,18 +82,18 @@
                             <TextBlock Grid.Column="0" Text="输出路径:" FontWeight="SemiBold" MinWidth="80" />
                             <TextBlock Grid.Column="1" Text="{Binding Properties.RenderOutputPath}"
                                        TextWrapping="Wrap" FontFamily="Consolas" FontSize="12"
-                                       IsVisible="{Binding Properties.HasRenderOutputPath}" />
+                                       IsVisible="{Binding Properties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding Properties.HasNoRenderOutputPath}" />
+                                       IsVisible="{Binding Properties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                         <!-- 输出格式 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="输出格式:" FontWeight="SemiBold" MinWidth="80" />
                             <TextBlock Grid.Column="1" Text="{Binding Properties.RenderOutputFormat}"
-                                       IsVisible="{Binding Properties.HasRenderOutputFormat}" />
+                                       IsVisible="{Binding Properties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding Properties.HasNoRenderOutputFormat}" />
+                                       IsVisible="{Binding Properties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                     </StackPanel>
