@@ -8,7 +8,7 @@
              x:Class="BlenderRenderQueue.Views.Test.TestRenderView"
              x:DataType="vm:TestRenderViewModel"
              services:ToplevelService.Register="{Binding}">
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
         <TextBlock Grid.Row="0" Grid.Column="0" Margin="8 2 8 2" Text="Blender 路径:" VerticalAlignment="Center" />
         <TextBox Grid.Row="0" Grid.Column="1" Margin="8 2 8 2" Text="{Binding BlenderPath, Mode=TwoWay}" />
         <Button Grid.Row="0" Grid.Column="2" Margin="8 2 8 2" Content="浏览" Command="{Binding BrowseBlenderCommand}" />
