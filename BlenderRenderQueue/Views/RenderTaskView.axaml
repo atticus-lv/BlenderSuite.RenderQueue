@@ -8,25 +8,26 @@
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.RenderTaskView"
              x:DataType="vm:RenderTaskViewModel">
-    
+
     <Border BorderBrush="Gray" BorderThickness="1" Margin="4" CornerRadius="4">
         <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" Margin="8">
-            
+
             <!-- 任务标题和状态 -->
             <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
-                <TextBlock Text="{Binding BlendFilePath}" 
+                <TextBlock Text="{Binding BlendFilePath}"
                            FontWeight="Bold" VerticalAlignment="Center" />
-                <Border Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}" 
-                        CornerRadius="2" Padding="4,2">
-                    <TextBlock Text="{Binding StatusText}"  FontSize="10" />
+                <Border
+                    Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
+                    CornerRadius="2" Padding="4,2">
+                    <TextBlock Text="{Binding StatusText}" FontSize="10" />
                 </Border>
-                <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}" 
+                <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}"
                            VerticalAlignment="Center" />
             </StackPanel>
 
 
             <!-- 渲染信息 -->
-            <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1" 
+            <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1"
                     CornerRadius="2" Padding="4" Margin="0,0,0,8">
                 <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*">
                     <TextBlock Grid.Column="0" Text="引擎:" Margin="0,0,4,0" />
@@ -39,34 +40,40 @@
             </Border>
 
             <!-- 帧范围设置 -->
-            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" 
+            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
                         Spacing="8" Margin="0,0,0,8" HorizontalAlignment="Center">
                 <TextBlock Text="起始帧:" VerticalAlignment="Center" />
-                <NumericUpDown Width="100" Value="{Binding StartFrame}" Minimum="1" Maximum="100000" ShowButtonSpinner="False" />
+                <NumericUpDown Width="100" Value="{Binding StartFrame}" Minimum="1" Maximum="100000"
+                               ShowButtonSpinner="False" />
                 <TextBlock Text="结束帧:" VerticalAlignment="Center" />
-                <NumericUpDown Width="100" Value="{Binding EndFrame}" Minimum="1" Maximum="100000" ShowButtonSpinner="False" />
+                <NumericUpDown Width="100" Value="{Binding EndFrame}" Minimum="1" Maximum="100000"
+                               ShowButtonSpinner="False" />
                 <CheckBox Content="动画" IsChecked="{Binding Animation}" VerticalAlignment="Center" />
                 <TextBlock Text="超时(秒):" VerticalAlignment="Center" />
-                <NumericUpDown Width="80" Value="{Binding RenderTimeoutSeconds}" 
+                <NumericUpDown Width="80" Value="{Binding RenderTimeoutSeconds}"
                                Minimum="60" Maximum="3600" />
             </StackPanel>
 
             <!-- 操作按钮 -->
-            <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                <Button Content="清空日志" Command="{Binding ClearLogCommand}" 
-                        Padding="8,2" FontSize="10" />
-                <Button Content="{Binding LogPauseButtonText}" Command="{Binding ToggleLogPauseCommand}" 
-                        Padding="8,2" FontSize="10" />
-            </StackPanel>
+
 
             <!-- 日志区域 -->
-            <Border Grid.Row="3" Grid.Column="0" BorderBrush="Gray" BorderThickness="1" 
-                    CornerRadius="2" MaxHeight="150">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                    <TextBox Text="{Binding OutputLog}" TextWrapping="Wrap" IsReadOnly="True" 
-                             AcceptsReturn="True" BorderThickness="0" Background="Transparent" 
-                             FontFamily="Consolas" FontSize="10" />
-                </ScrollViewer>
+            <Border Grid.Row="3" Grid.Column="0" BorderBrush="Gray" BorderThickness="1"
+                    CornerRadius="2" MaxHeight="400" MinHeight="100">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <Button Content="清空日志" Command="{Binding ClearLogCommand}"
+                                Padding="8,2" FontSize="10" />
+                        <Button Content="{Binding LogPauseButtonText}" Command="{Binding ToggleLogPauseCommand}"
+                                Padding="8,2" FontSize="10" />
+                    </StackPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                        <TextBox Text="{Binding OutputLog}" TextWrapping="Wrap" IsReadOnly="True"
+                                 AcceptsReturn="True" BorderThickness="0" Background="Transparent"
+                                 FontFamily="Consolas" FontSize="14" />
+                    </ScrollViewer>
+                </StackPanel>
+
             </Border>
 
         </Grid>

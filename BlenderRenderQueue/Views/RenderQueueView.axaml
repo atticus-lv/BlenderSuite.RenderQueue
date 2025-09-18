@@ -42,7 +42,7 @@
                     <!-- 开始队列按钮：只在队列停止时显示 -->
                     <Button Content="开始队列" Command="{Binding RenderQueue.StartQueueCommand}"
                             IsEnabled="{Binding !RenderQueue.IsQueueRunning}" />
-                    
+
                     <!-- 停止队列按钮：只在队列运行时显示 -->
                     <Button Content="停止队列" Command="{Binding RenderQueue.StopQueueCommand}"
                             IsEnabled="{Binding RenderQueue.IsQueueRunning}" />
@@ -122,10 +122,10 @@
                                                          Height="4" Margin="0,2,0,0" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="2">
-                                            <Button Content="U"
+                                            <Button Content="↑" Padding="1" HorizontalContentAlignment="Center"
                                                     Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}"
                                                     Width="20" Height="20" FontSize="10" />
-                                            <Button Content="D"
+                                            <Button Content="↓" Padding="1" HorizontalAlignment="Center"
                                                     Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}"
                                                     Width="20" Height="20" FontSize="10" />
                                         </StackPanel>
@@ -152,24 +152,26 @@
 
             <!-- 右侧任务详情 -->
             <Grid Grid.Column="1" RowDefinitions="Auto,*">
-                
+
                 <!-- 选中任务的进度条 -->
-                <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="8" 
+                <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="8"
                         IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
                     <StackPanel Spacing="8">
                         <TextBlock Text="任务进度" FontWeight="Bold" />
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="整体进度:" VerticalAlignment="Center" Width="80" />
-                            <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.SelectedTask.OverallProgress01}" 
+                            <ProgressBar Minimum="0" Maximum="1"
+                                         Value="{Binding RenderQueue.SelectedTask.OverallProgress01}"
                                          Height="20" Width="300" />
-                            <TextBlock Text="{Binding RenderQueue.SelectedTask.OverallProgress01, StringFormat='{}{0:P1}'}" 
-                                       VerticalAlignment="Center" Width="50" />
+                            <TextBlock
+                                Text="{Binding RenderQueue.SelectedTask.OverallProgress01, StringFormat='{}{0:P1}'}"
+                                VerticalAlignment="Center" Width="50" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="当前帧进度:" VerticalAlignment="Center" Width="80" />
-                            <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.SelectedTask.Progress01}" 
+                            <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.SelectedTask.Progress01}"
                                          Height="20" Width="300" />
-                            <TextBlock Text="{Binding RenderQueue.SelectedTask.Progress01, StringFormat='{}{0:P1}'}" 
+                            <TextBlock Text="{Binding RenderQueue.SelectedTask.Progress01, StringFormat='{}{0:P1}'}"
                                        VerticalAlignment="Center" Width="50" />
                         </StackPanel>
                     </StackPanel>
