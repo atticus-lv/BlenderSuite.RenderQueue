@@ -137,11 +137,11 @@
                                                          Height="4" Margin="0,2,0,0" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="0">
-                                            <Button Content="U" Padding="1" HorizontalContentAlignment="Center"
+                                            <Button Content="↑" Padding="1" HorizontalContentAlignment="Center"
                                                     VerticalAlignment="Center"
                                                     Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}"
                                                     Width="20" Height="20" FontSize="12" />
-                                            <Button Content="D" Padding="1" HorizontalAlignment="Center"
+                                            <Button Content="↓" Padding="1" HorizontalContentAlignment="Center"
                                                     VerticalAlignment="Center"
                                                     Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}"
                                                     Width="20" Height="20" FontSize="12" />

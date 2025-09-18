@@ -15,6 +15,15 @@ public class BlendFileProperties
     public string? RenderOutputPath { get; set; }
     public string? RenderOutputFormat { get; set; }
     public string? RenderEngine { get; set; }
+
+    public string? RenderEngineDisplayName => RenderEngine switch
+    {
+        "CYCLES" => "Cycles",
+        "BLENDER_EEVEE" => "Eevee",
+        "BLENDER_WORKBENCH" => "Workbench",
+        _ => RenderEngine
+    };
+
     public string? SceneName { get; set; }
     public double? Fps { get; set; }
     public string? FramePath { get; set; }
