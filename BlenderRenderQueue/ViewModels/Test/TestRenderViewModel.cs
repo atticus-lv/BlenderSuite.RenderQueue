@@ -33,6 +33,9 @@ public partial class TestRenderViewModel : ViewModelBase
 	private double _progress01;
 
 	[ObservableProperty]
+	private double _overallProgress01;
+
+	[ObservableProperty]
 	private string _engine = string.Empty;
 
 	[ObservableProperty]
@@ -167,6 +170,19 @@ public partial class TestRenderViewModel : ViewModelBase
 		{
 			Progress01 = 0;
 		}
+
+		// 计算整体进度（基于帧范围 + 单帧进度）
+		var totalFrames = Math.Max(0, EndFrame - StartFrame + 1);
+		if (totalFrames > 0)
+		{
+			var completedFrames = Math.Max(0, p.CurrentFrame - StartFrame);
+			double perFrame = Progress01; // 当前帧内进度
+			OverallProgress01 = Math.Clamp((completedFrames + perFrame) / totalFrames, 0, 1);
+		}
+		else
+		{
+			OverallProgress01 = 0;
+		}
 	}
 
 	private void OnEvent(RenderEvent e)
@@ -187,6 +203,7 @@ public partial class TestRenderViewModel : ViewModelBase
 				break;
 			case RenderCompletedAll:
 				EnqueueLog("全部帧完成");
+				OverallProgress01 = 1;
 				break;
 			case RenderError err:
 				EnqueueLog($"错误: {err.Message}");

@@ -8,7 +8,7 @@
 			 x:Class="BlenderRenderQueue.Views.Test.TestRenderView"
 			 x:DataType="vm:TestRenderViewModel"
 			 services:ToplevelService.Register="{Binding}">
-	<Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnDefinitions="Auto,*,Auto">
+	<Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnDefinitions="Auto,*,Auto">
 		<TextBlock Grid.Row="0" Grid.Column="0" Margin="8" Text="Blender 路径:" VerticalAlignment="Center"/>
 		<TextBox Grid.Row="0" Grid.Column="1" Margin="8" Text="{Binding BlenderPath, Mode=TwoWay}"/>
 		<Button Grid.Row="0" Grid.Column="2" Margin="8" Content="浏览" Command="{Binding BrowseBlenderCommand}"/>
@@ -17,7 +17,7 @@
 		<TextBox Grid.Row="1" Grid.Column="1" Margin="8" Text="{Binding BlendFilePath, Mode=TwoWay}"/>
 		<Button Grid.Row="1" Grid.Column="2" Margin="8" Content="浏览" Command="{Binding BrowseBlendFileCommand}"/>
 
-		<StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="8">
+		<StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="8" HorizontalAlignment="Center">
 			<TextBlock Text="起始帧:"/>
 			<NumericUpDown Width="100" Value="{Binding StartFrame}" Minimum="1" Maximum="100000"/>
 			<TextBlock Text="结束帧:" Margin="16,0,0,0"/>
@@ -25,9 +25,17 @@
 			<CheckBox Content="动画" IsChecked="{Binding Animation}" Margin="16,0,0,0"/>
 		</StackPanel>
 
-		<ProgressBar Grid.Row="3" Grid.ColumnSpan="3" Margin="8" Minimum="0" Maximum="1" Value="{Binding Progress01}" Height="18"/>
+		<StackPanel Grid.Row="3" Grid.ColumnSpan="3" Orientation="Vertical" Margin="8" Spacing="6">
+			<TextBlock Text="当前帧进度"/>
+			<ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress01}" Height="18"/>
+		</StackPanel>
 
-		<StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="16">
+		<StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Vertical" Margin="8" Spacing="6">
+			<TextBlock Text="整体进度"/>
+			<ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallProgress01}" Height="18"/>
+		</StackPanel>
+
+		<StackPanel Grid.Row="5" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="16">
 			<TextBlock Text="引擎:"/>
 			<TextBlock Text="{Binding Engine}"/>
 			<TextBlock Text="当前帧:"/>
@@ -38,11 +46,11 @@
 			<TextBlock Text="{Binding SavedPath}"/>
 		</StackPanel>
 
-		<ScrollViewer Grid.Row="5" Grid.ColumnSpan="3" Margin="8" Height="200" VerticalScrollBarVisibility="Auto">
+		<ScrollViewer Grid.Row="6" Grid.ColumnSpan="3" Margin="8" Height="200" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxWidth="1000">
 			<TextBlock Text="{Binding OutputLog}" TextWrapping="Wrap"/>
 		</ScrollViewer>
 
-		<StackPanel Grid.Row="5" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="8" Spacing="8">
+		<StackPanel Grid.Row="7" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="8" Spacing="8">
 			<Button Content="开始渲染" Command="{Binding StartRenderCommand}"/>
 			<Button Content="停止" Command="{Binding StopRenderCommand}"/>
 		</StackPanel>
