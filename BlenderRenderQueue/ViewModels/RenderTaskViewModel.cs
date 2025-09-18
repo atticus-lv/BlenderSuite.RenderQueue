@@ -50,6 +50,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     private string _outputLog = string.Empty;
 
     [ObservableProperty]
+    private BlendFilePropertiesViewModel _fileProperties = new();
+    
+    public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
+
+    [ObservableProperty]
     private bool _isLogPaused = false;
 
     [ObservableProperty]
@@ -125,11 +130,11 @@ public partial class RenderTaskViewModel : ViewModelBase
         try
         {
             EnqueueLog("[QUERY] 开始加载文件属性...");
-            await FilePropertiesViewModel.LoadPropertiesAsync(exeService, BlendFilePath);
+            await FileProperties.LoadPropertiesAsync(exeService, BlendFilePath);
             
-            // 从FilePropertiesViewModel获取帧范围信息
-            StartFrame = FilePropertiesViewModel.Properties.FrameStart;
-            EndFrame = FilePropertiesViewModel.Properties.FrameEnd;
+            // 从FileProperties获取帧范围信息
+            StartFrame = FileProperties.Properties.FrameStart;
+            EndFrame = FileProperties.Properties.FrameEnd;
             EnqueueLog($"[QUERY] 文件属性加载完成: 帧范围 {StartFrame}..{EndFrame}");
         }
         catch (Exception ex)
