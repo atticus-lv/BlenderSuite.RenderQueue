@@ -3,9 +3,11 @@
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels.Test"
+			 xmlns:services="clr-namespace:BlenderRenderQueue.Services"
 			 mc:Ignorable="d"
 			 x:Class="BlenderRenderQueue.Views.Test.TestRenderView"
-			 x:DataType="vm:TestRenderViewModel">
+			 x:DataType="vm:TestRenderViewModel"
+			 services:ToplevelService.Register="{Binding}">
 	<Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnDefinitions="Auto,*,Auto">
 		<TextBlock Grid.Row="0" Grid.Column="0" Margin="8" Text="Blender 路径:" VerticalAlignment="Center"/>
 		<TextBox Grid.Row="0" Grid.Column="1" Margin="8" Text="{Binding BlenderPath, Mode=TwoWay}"/>
