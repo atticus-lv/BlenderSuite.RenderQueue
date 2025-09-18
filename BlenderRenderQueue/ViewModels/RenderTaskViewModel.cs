@@ -11,6 +11,7 @@ using System.Threading;
 using BlenderRenderQueue.ViewModels;
 using Avalonia.Data.Converters;
 using System.Globalization;
+using BlenderRenderQueue.Models;
 
 namespace BlenderRenderQueue.ViewModels;
 

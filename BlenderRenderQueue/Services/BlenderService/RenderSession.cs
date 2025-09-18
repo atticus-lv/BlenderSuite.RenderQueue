@@ -1,4 +1,5 @@
 using System;
+using BlenderRenderQueue.Models;
 
 namespace BlenderRenderQueue.Services.BlenderService;
 

@@ -1,6 +1,6 @@
 using System;
 
-namespace BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
+namespace BlenderRenderQueue.Models;
 
 public enum RenderEngine
 {

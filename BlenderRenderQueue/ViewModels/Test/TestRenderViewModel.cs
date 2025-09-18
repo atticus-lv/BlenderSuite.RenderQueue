@@ -11,6 +11,7 @@ using Avalonia.Platform.Storage;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using BlenderRenderQueue.Models;
 using BlenderRenderQueue.ViewModels;
 
 namespace BlenderRenderQueue.ViewModels.Test;

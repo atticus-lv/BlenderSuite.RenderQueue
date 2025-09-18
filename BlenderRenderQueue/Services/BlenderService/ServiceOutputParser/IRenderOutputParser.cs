@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BlenderRenderQueue.Models;
 
 namespace BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
 
