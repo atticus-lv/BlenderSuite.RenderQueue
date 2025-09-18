@@ -343,6 +343,11 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     private void OnTaskProgressChanged(object? sender, RenderTaskProgressEventArgs e)
     {
+        var task = sender as RenderTaskViewModel;
+        if (task != null)
+        {
+            System.Diagnostics.Debug.WriteLine($"任务进度变化: {task.BlendFileName} - 整体进度: {e.OverallProgress:P2}, 当前帧进度: {e.CurrentFrameProgress:P2}");
+        }
         UpdateQueueStatistics();
     }
 
@@ -356,7 +361,15 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (RenderTasks.Any())
         {
             var totalProgress = RenderTasks.Sum(t => t.OverallProgress01);
-            OverallQueueProgress = totalProgress / RenderTasks.Count;
+            var newProgress = totalProgress / RenderTasks.Count;
+            
+            // 调试信息：输出进度变化
+            if (Math.Abs(newProgress - OverallQueueProgress) > 0.001) // 只有显著变化时才输出
+            {
+                System.Diagnostics.Debug.WriteLine($"队列进度更新: {OverallQueueProgress:P2} -> {newProgress:P2} (任务数: {RenderTasks.Count})");
+            }
+            
+            OverallQueueProgress = newProgress;
         }
         else
         {

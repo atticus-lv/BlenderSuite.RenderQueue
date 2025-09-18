@@ -35,7 +35,6 @@
             <!-- 帧范围设置 -->
             <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
                         Spacing="8" Margin="0,0,0,8" HorizontalAlignment="Left">
-                <TextBlock Text="渲染覆写" VerticalAlignment="Center" FontWeight="Bold" />
 
                 <CheckBox Content="渲染动画" IsChecked="{Binding Animation}" VerticalAlignment="Center" />
                 <StackPanel Orientation="Horizontal" IsVisible="{Binding Animation}" VerticalAlignment="Center">
