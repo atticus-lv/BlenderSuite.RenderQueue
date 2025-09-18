@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
+using System.Collections.Concurrent;
 
 namespace BlenderRenderQueue.ViewModels.Test;
 
@@ -47,6 +48,20 @@ public partial class TestRenderViewModel : ViewModelBase
 	private IRenderSession? _session;
 	private BlenderExeService? _exe;
 
+	// 日志批量刷新
+	private readonly ConcurrentQueue<string> _logQueue = new();
+	private readonly System.Timers.Timer _logTimer;
+	private const int MaxLogLines = 1000;
+	private int _logLineCount = 0;
+
+	public TestRenderViewModel()
+	{
+		_logTimer = new System.Timers.Timer(100);
+		_logTimer.Elapsed += (_, __) => FlushLogQueue();
+		_logTimer.AutoReset = true;
+		_logTimer.Start();
+	}
+
 	[RelayCommand]
 	private async Task BrowseBlender()
 	{
@@ -66,7 +81,7 @@ public partial class TestRenderViewModel : ViewModelBase
 	{
 		if (string.IsNullOrWhiteSpace(BlenderPath) || string.IsNullOrWhiteSpace(BlendFilePath))
 		{
-			AppendLog("请先选择 Blender 路径和 .blend 文件");
+			EnqueueLog("请先选择 Blender 路径和 .blend 文件");
 			return;
 		}
 
@@ -81,24 +96,24 @@ public partial class TestRenderViewModel : ViewModelBase
 
 		var cmd = new BlenderCommandService();
 		await cmd.StartRenderAsync(_exe, BlendFilePath, StartFrame, EndFrame, Animation);
-		AppendLog($"已发送渲染指令: {StartFrame}..{EndFrame}, animation={Animation}");
+		EnqueueLog($"已发送渲染指令: {StartFrame}..{EndFrame}, animation={Animation}");
 	}
 
 	[RelayCommand]
 	private void StopRender()
 	{
 		DisposeSession();
-		AppendLog("已停止。");
+		EnqueueLog("已停止。");
 	}
 
 	private void HandleRawOutput(string line)
 	{
-		Avalonia.Threading.Dispatcher.UIThread.Post(() => AppendLog($"[OUT] {line}"));
+		EnqueueLog($"[OUT] {line}");
 	}
 
 	private void HandleRawError(string line)
 	{
-		Avalonia.Threading.Dispatcher.UIThread.Post(() => AppendLog($"[ERR] {line}"));
+		EnqueueLog($"[ERR] {line}");
 	}
 
 	private void OnProgress(RenderProgress p)
@@ -123,29 +138,82 @@ public partial class TestRenderViewModel : ViewModelBase
 		switch (e)
 		{
 			case RenderSessionStarted s:
-				AppendLog(s.IsAnimation ? $"开始动画渲染: {s.StartFrame}..{s.EndFrame}" : $"开始单帧渲染");
+				EnqueueLog(s.IsAnimation ? $"开始动画渲染: {s.StartFrame}..{s.EndFrame}" : $"开始单帧渲染");
 				break;
 			case RenderStarted rs:
-				AppendLog($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
+				EnqueueLog($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
 				break;
 			case RenderSaved saved:
-				AppendLog($"已保存: {saved.Path} (帧 {saved.Frame})");
+				EnqueueLog($"已保存: {saved.Path} (帧 {saved.Frame})");
 				break;
 			case RenderCompletedFrame done:
-				AppendLog($"帧 {done.Frame} 完成，用时 {done.Time}");
+				EnqueueLog($"帧 {done.Frame} 完成，用时 {done.Time}");
 				break;
 			case RenderCompletedAll:
-				AppendLog("全部帧完成");
+				EnqueueLog("全部帧完成");
 				break;
 			case RenderError err:
-				AppendLog($"错误: {err.Message}");
+				EnqueueLog($"错误: {err.Message}");
 				break;
 		}
 	}
 
+	private void EnqueueLog(string line)
+	{
+		_logQueue.Enqueue(line);
+	}
+
+	private void FlushLogQueue()
+	{
+		if (_logQueue.IsEmpty) return;
+		var sb = new StringBuilder();
+		int dequeued = 0;
+		while (_logQueue.TryDequeue(out var line))
+		{
+			if (dequeued++ > 0) sb.AppendLine();
+			sb.Append(line);
+		}
+
+		var text = sb.ToString();
+		if (string.IsNullOrEmpty(text)) return;
+
+		Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+		{
+			// 将新文本追加到现有日志，并按行数限制截断最旧部分
+			if (string.IsNullOrEmpty(OutputLog))
+			{
+				OutputLog = text;
+				_logLineCount = CountLines(OutputLog);
+			}
+			else
+			{
+				OutputLog += Environment.NewLine + text;
+				_logLineCount += CountLines(text);
+			}
+
+			if (_logLineCount > MaxLogLines)
+			{
+				// 只保留最后 MaxLogLines 行
+				var lines = OutputLog.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+				var start = Math.Max(0, lines.Length - MaxLogLines);
+				OutputLog = string.Join(Environment.NewLine, lines, start, lines.Length - start);
+				_logLineCount = CountLines(OutputLog);
+			}
+		});
+	}
+
+	private static int CountLines(string s)
+	{
+		if (string.IsNullOrEmpty(s)) return 0;
+		int count = 1;
+		for (int i = 0; i < s.Length; i++) if (s[i] == '\n') count++;
+		return count;
+	}
+
 	private void AppendLog(string line)
 	{
-		OutputLog = string.IsNullOrEmpty(OutputLog) ? line : OutputLog + Environment.NewLine + line;
+		// 兼容旧调用：改为入队，走批量刷新
+		EnqueueLog(line);
 	}
 
 	private void DisposeSession()
