@@ -65,6 +65,36 @@ public partial class TestRenderViewModel : ViewModelBase
 		_logTimer.Elapsed += (_, __) => FlushLogQueue();
 		_logTimer.AutoReset = true;
 		_logTimer.Start();
+
+		// Windows 上尝试自动定位 Blender（先快速查注册表，同步<~10ms）
+		try
+		{
+			if (OperatingSystem.IsWindows())
+			{
+				if (BlenderRenderQueue.Helpers.BlenderLocator.TryFindBlenderExe(out var exe))
+				{
+					BlenderPath = exe;
+					EnqueueLog($"自动检测到 Blender: {exe}");
+				}
+				else
+				{
+					// 未命中则后台异步扫描常见目录，避免阻塞 UI
+					_ = Task.Run(async () =>
+					{
+						var asyncExe = await BlenderRenderQueue.Helpers.BlenderLocator.FindBlenderExeAsync();
+						if (!string.IsNullOrWhiteSpace(asyncExe))
+						{
+							Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+							{
+								BlenderPath = asyncExe;
+								EnqueueLog($"异步检测到 Blender: {asyncExe}");
+							});
+						}
+					});
+				}
+			}
+		}
+		catch { }
 	}
 
 	[RelayCommand]
