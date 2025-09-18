@@ -6,74 +6,82 @@
              xmlns:services="clr-namespace:BlenderRenderQueue.Services"
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              mc:Ignorable="d"
+             Width="800" Height="600"
              x:Class="BlenderRenderQueue.Views.Test.TestRenderView"
              x:DataType="vm:TestRenderViewModel"
              services:ToplevelService.Register="{Binding}">
-    <TabControl>
-        <!-- 渲染控制标签页 -->
-        <TabItem Header="渲染控制">
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
-        <TextBlock Grid.Row="0" Grid.Column="0" Margin="8 2 8 2" Text="Blender 路径:" VerticalAlignment="Center" />
-        <TextBox Grid.Row="0" Grid.Column="1" Margin="8 2 8 2" Text="{Binding BlenderPath, Mode=TwoWay}" />
-        <Button Grid.Row="0" Grid.Column="2" Margin="8 2 8 2" Content="浏览" Command="{Binding BrowseBlenderCommand}" />
-
-        <TextBlock Grid.Row="1" Grid.Column="0" Margin="8 2 8 2" Text="Blend 文件:" VerticalAlignment="Center" />
-        <TextBox Grid.Row="1" Grid.Column="1" Margin="8 2 8 2" Text="{Binding BlendFilePath, Mode=TwoWay}" />
-        <Button Grid.Row="1" Grid.Column="2" Margin="8 2 8 2" Content="浏览" Command="{Binding BrowseBlendFileCommand}" />
-
-        <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="8"
-                    HorizontalAlignment="Center">
-            <TextBlock Text="起始帧:" VerticalAlignment="Center" />
-            <NumericUpDown Width="150" Value="{Binding StartFrame}" Minimum="1" Maximum="100000" />
-            <TextBlock Text="结束帧:" Margin="16,0,0,0" VerticalAlignment="Center" />
-            <NumericUpDown Width="150" Value="{Binding EndFrame}" Minimum="1" Maximum="100000" />
-            <CheckBox Content="动画" IsChecked="{Binding Animation}" Margin="16,0,0,0" />
-        </StackPanel>
-
-        <StackPanel Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal">
-            <StackPanel Orientation="Horizontal" Margin="8" Spacing="6">
-                <TextBlock Text="整体进度" />
-                <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallProgress01}" Height="18" />
+    <StackPanel>
+        <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Margin="8" Spacing="6">
+                    <TextBlock Text="全部" VerticalAlignment="Center"  />
+                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallProgress01}" Height="18" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="8" Spacing="6">
+                    <TextBlock Text="当前帧" VerticalAlignment="Center" />
+                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress01}" Height="18" />
+                </StackPanel>
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Margin="8" Spacing="6">
-                <TextBlock Text="当前帧进度" />
-                <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress01}" Height="18" />
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right"
+                        Margin="8"
+                        Spacing="8">
+                <Button Content="开始渲染" Command="{Binding StartRenderCommand}" />
+                <Button Content="停止" Command="{Binding StopRenderCommand}" />
             </StackPanel>
-        </StackPanel>
+        </Grid>
+        <Grid ColumnDefinitions="3*,5,*">
 
-        <Border Grid.Row="5" Grid.ColumnSpan="3" BorderBrush="Gray" BorderThickness="1" Margin="8">
-            <StackPanel Orientation="Horizontal" Spacing="16" Margin="4">
-                <TextBlock Text="引擎:" />
-                <TextBlock Text="{Binding Engine}" />
-                <TextBlock Text="当前帧:" />
-                <TextBlock Text="{Binding CurrentFrame}" />
-                <TextBlock Text="采样:" />
-                <TextBlock Text="{Binding SampleText}" />
-                <TextBlock Text="保存:" />
-                <TextBlock Text="{Binding SavedPath}" />
-            </StackPanel>
-        </Border>
+            <views:BlendFilePropertiesView Grid.Column="2" DataContext="{Binding FilePropertiesViewModel}" Margin="4" />
 
-        <StackPanel Grid.Row="7" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="8"
-                    Spacing="8">
-            <Button Content="开始渲染" Command="{Binding StartRenderCommand}" />
-            <Button Content="停止" Command="{Binding StopRenderCommand}" />
-        </StackPanel>
+            <Rectangle Grid.Column="1" Width="1" Fill="Gray" Margin="0,8" />
+
+            <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                  ColumnDefinitions="Auto,*,Auto"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <TextBlock Grid.Row="0" Grid.Column="0" Margin="8 2 8 2" Text="Blender 路径:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="1" Margin="8 2 8 2" Text="{Binding BlenderPath, Mode=TwoWay}" />
+                <Button Grid.Row="0" Grid.Column="2" Margin="8 2 8 2" Content="浏览"
+                        Command="{Binding BrowseBlenderCommand}" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Margin="8 2 8 2" Text="Blend 文件:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="1" Margin="8 2 8 2" Text="{Binding BlendFilePath, Mode=TwoWay}" />
+                <Button Grid.Row="1" Grid.Column="2" Margin="8 2 8 2" Content="浏览"
+                        Command="{Binding BrowseBlendFileCommand}" />
+
+                <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="8"
+                            HorizontalAlignment="Center">
+                    <TextBlock Text="起始帧:" VerticalAlignment="Center" />
+                    <NumericUpDown Width="150" Value="{Binding StartFrame}" Minimum="1" Maximum="100000" />
+                    <TextBlock Text="结束帧:" Margin="16,0,0,0" VerticalAlignment="Center" />
+                    <NumericUpDown Width="150" Value="{Binding EndFrame}" Minimum="1" Maximum="100000" />
+                    <CheckBox Content="动画" IsChecked="{Binding Animation}" Margin="16,0,0,0" />
+                </StackPanel>
 
 
-        <ScrollViewer Grid.Row="6" Grid.ColumnSpan="3" MinHeight="200" VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Auto" MaxWidth="1000">
-            <TextBox Text="{Binding OutputLog}" TextWrapping="Wrap" IsReadOnly="True" AcceptsReturn="True"
-                     BorderThickness="0" Background="Transparent" />
-        </ScrollViewer>
+                <Border Grid.Row="5" Grid.ColumnSpan="3" BorderBrush="Gray" BorderThickness="1" Margin="8">
+                    <StackPanel Orientation="Horizontal" Spacing="16" Margin="4">
+                        <TextBlock Text="引擎:" />
+                        <TextBlock Text="{Binding Engine}" />
+                        <TextBlock Text="当前帧:" />
+                        <TextBlock Text="{Binding CurrentFrame}" />
+                        <TextBlock Text="采样:" />
+                        <TextBlock Text="{Binding SampleText}" />
+                        <TextBlock Text="保存:" />
+                        <TextBlock Text="{Binding SavedPath}" />
+                    </StackPanel>
+                </Border>
+
+
+                <ScrollViewer Grid.Row="6" Grid.ColumnSpan="3" MinHeight="200" VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Auto" MaxWidth="1000">
+                    <TextBox Text="{Binding OutputLog}" TextWrapping="Wrap" IsReadOnly="True" AcceptsReturn="True"
+                             BorderThickness="0" Background="Transparent" />
+                </ScrollViewer>
 
             </Grid>
-        </TabItem>
-        
-        <!-- 文件属性标签页 -->
-        <TabItem Header="文件属性">
-            <views:BlendFilePropertiesView DataContext="{Binding FilePropertiesViewModel}"/>
-        </TabItem>
-        
-    </TabControl>
+
+        </Grid>
+    </StackPanel>
+
 </UserControl>

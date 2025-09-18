@@ -38,14 +38,14 @@
 
                         <!-- 文件路径 -->
                         <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="文件路径:" FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="0" Text="文件路径:" FontWeight="SemiBold" MinWidth="100" />
                             <TextBlock Grid.Column="1" Text="{Binding Properties.FilePath}" TextWrapping="Wrap"
                                        FontFamily="Consolas" FontSize="12" Foreground="#1976D2" />
                         </Grid>
 
                         <!-- 文件名称 -->
                         <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="文件名称:" FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="0" Text="文件名称:" FontWeight="SemiBold" MinWidth="100" />
                             <TextBlock Grid.Column="1" Text="{Binding Properties.FileName}" FontWeight="SemiBold" />
                         </Grid>
 

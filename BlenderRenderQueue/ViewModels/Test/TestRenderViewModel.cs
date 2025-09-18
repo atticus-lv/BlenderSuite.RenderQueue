@@ -156,8 +156,8 @@ public partial class TestRenderViewModel : ViewModelBase
 				EnqueueLog("[QUERY] 开始加载文件属性...");
 				void TmpOut(string line) => EnqueueLog($"[QOUT] {line}");
 				void TmpErr(string line) => EnqueueLog($"[QERR] {line}");
-				_exe.OnOutputReceived += TmpOut;
-				_exe.OnErrorReceived += TmpErr;
+				// _exe.OnOutputReceived += TmpOut;
+				// _exe.OnErrorReceived += TmpErr;
 
 				try
 				{
