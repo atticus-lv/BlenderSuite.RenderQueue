@@ -1,0 +1,483 @@
+using System;
+using System.Text;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using BlenderRenderQueue.Services;
+using BlenderRenderQueue.Services.BlenderService;
+using BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
+using System.Collections.Concurrent;
+using System.Threading;
+using BlenderRenderQueue.ViewModels;
+using Avalonia.Data.Converters;
+using System.Globalization;
+
+namespace BlenderRenderQueue.ViewModels;
+
+public partial class RenderTaskViewModel : ViewModelBase
+{
+    [ObservableProperty]
+    private string _blendFilePath = string.Empty;
+
+    [ObservableProperty]
+    private int _startFrame = 1;
+
+    [ObservableProperty]
+    private int _endFrame = 1;
+
+    [ObservableProperty]
+    private bool _animation = true;
+
+    [ObservableProperty]
+    private double _progress01; // 当前帧进度
+
+    [ObservableProperty]
+    private double _overallProgress01; // 整体进度
+
+    [ObservableProperty]
+    private string _engine = string.Empty;
+
+    [ObservableProperty]
+    private int _currentFrame;
+
+    [ObservableProperty]
+    private string _sampleText = string.Empty;
+
+    [ObservableProperty]
+    private string _savedPath = string.Empty;
+
+    [ObservableProperty]
+    private string _outputLog = string.Empty;
+
+    [ObservableProperty]
+    private bool _isLogPaused = false;
+
+    [ObservableProperty]
+    private string _logPauseButtonText = "暂停日志";
+
+    [ObservableProperty]
+    private int _renderTimeoutSeconds = 300; // 默认5分钟无活动超时
+
+    [ObservableProperty]
+    private RenderTaskStatus _status = RenderTaskStatus.Pending;
+
+    [ObservableProperty]
+    private string _statusText = "等待中";
+
+    [ObservableProperty]
+    private DateTime? _startTime;
+
+    [ObservableProperty]
+    private DateTime? _endTime;
+
+    [ObservableProperty]
+    private TimeSpan? _duration;
+
+    [ObservableProperty]
+    private BlendFilePropertiesViewModel _filePropertiesViewModel = new();
+
+    // 内部状态
+    private IRenderSession? _session;
+    private BlenderExeService? _exe;
+    private readonly ConcurrentQueue<string> _logQueue = new();
+    private readonly System.Timers.Timer _logTimer;
+    private const int MaxLogLines = 1000;
+    private int _logLineCount = 0;
+    private volatile bool _isFlushing = false;
+    private readonly object _logLock = new object();
+    private DateTime _lastFlushTime = DateTime.MinValue;
+    private const int MinFlushIntervalMs = 50;
+    private const int MaxBatchSize = 100;
+
+    // 事件
+    public event EventHandler<RenderTaskStatusChangedEventArgs>? StatusChanged;
+    public event EventHandler<RenderTaskProgressEventArgs>? ProgressChanged;
+
+    public RenderTaskViewModel()
+    {
+        // 日志批量刷新
+        _logTimer = new System.Timers.Timer(200);
+        _logTimer.Elapsed += (_, __) => FlushLogQueue();
+        _logTimer.AutoReset = true;
+        _logTimer.Start();
+    }
+
+    public RenderTaskViewModel(string blendFilePath, int startFrame, int endFrame, bool animation = true) : this()
+    {
+        BlendFilePath = blendFilePath;
+        StartFrame = startFrame;
+        EndFrame = endFrame;
+        Animation = animation;
+    }
+
+    public async Task LoadFilePropertiesAsync(BlenderExeService exeService)
+    {
+        if (string.IsNullOrWhiteSpace(BlendFilePath) || !System.IO.File.Exists(BlendFilePath))
+        {
+            EnqueueLog("文件路径无效或文件不存在");
+            return;
+        }
+
+        try
+        {
+            EnqueueLog("[QUERY] 开始加载文件属性...");
+            await FilePropertiesViewModel.LoadPropertiesAsync(exeService, BlendFilePath);
+            
+            // 从FilePropertiesViewModel获取帧范围信息
+            StartFrame = FilePropertiesViewModel.Properties.FrameStart;
+            EndFrame = FilePropertiesViewModel.Properties.FrameEnd;
+            EnqueueLog($"[QUERY] 文件属性加载完成: 帧范围 {StartFrame}..{EndFrame}");
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"[QUERY] 加载文件属性失败: {ex.Message}");
+        }
+    }
+
+    public async Task StartRenderAsync(BlenderExeService exeService)
+    {
+        if (string.IsNullOrWhiteSpace(BlendFilePath))
+        {
+            EnqueueLog("请先选择 .blend 文件");
+            return;
+        }
+
+        try
+        {
+            SetStatus(RenderTaskStatus.Running, "正在启动渲染...");
+            _startTime = DateTime.Now;
+            
+            _exe = exeService;
+            _exe.OnOutputReceived += HandleRawOutput;
+            _exe.OnErrorReceived += HandleRawError;
+
+            _session = new RenderSession(_exe, new RenderOutputParser());
+            _session.OnProgress += s => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnProgress(s));
+            _session.OnEvent += e => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(e));
+
+            var cmd = new BlenderCommandService();
+            
+            // 为渲染任务设置可配置的超时时间
+            _exe.Timeout = RenderTimeoutSeconds;
+            
+            EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {RenderTimeoutSeconds}秒)");
+            await cmd.StartRenderAsync(_exe, BlendFilePath, StartFrame, EndFrame, Animation);
+            EnqueueLog($"渲染指令已发送完成");
+        }
+        catch (TaskCanceledException ex)
+        {
+            if (ex.CancellationToken.IsCancellationRequested)
+            {
+                EnqueueLog("渲染任务被用户取消");
+                SetStatus(RenderTaskStatus.Cancelled, "已取消");
+            }
+            else
+            {
+                EnqueueLog($"渲染任务超时: {ex.Message}");
+                SetStatus(RenderTaskStatus.Failed, "超时");
+            }
+        }
+        catch (OperationCanceledException ex)
+        {
+            EnqueueLog($"渲染操作被取消: {ex.Message}");
+            SetStatus(RenderTaskStatus.Cancelled, "已取消");
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"渲染启动失败: {ex.Message}");
+            SetStatus(RenderTaskStatus.Failed, "启动失败");
+        }
+    }
+
+    public void StopRender()
+    {
+        DisposeSession();
+        SetStatus(RenderTaskStatus.Cancelled, "已停止");
+        _endTime = DateTime.Now;
+        if (_startTime.HasValue)
+        {
+            Duration = _endTime.Value - _startTime.Value;
+        }
+        EnqueueLog("渲染已停止");
+    }
+
+    [RelayCommand]
+    private void ClearLog()
+    {
+        OutputLog = string.Empty;
+        _logLineCount = 0;
+        // 清空队列中的待处理日志
+        while (_logQueue.TryDequeue(out _)) { }
+        EnqueueLog("日志已清空");
+    }
+
+    [RelayCommand]
+    private void ToggleLogPause()
+    {
+        IsLogPaused = !IsLogPaused;
+        LogPauseButtonText = IsLogPaused ? "继续日志" : "暂停日志";
+    }
+
+    private void HandleRawOutput(string line)
+    {
+        EnqueueLog($"[OUT] {line}");
+    }
+
+    private void HandleRawError(string line)
+    {
+        EnqueueLog($"[ERR] {line}");
+    }
+
+    private void OnProgress(RenderProgress p)
+    {
+        Engine = p.Engine.ToString();
+        CurrentFrame = p.CurrentFrame;
+        SampleText = p.SampleCurrent.HasValue && p.SampleTotal.HasValue ? $"{p.SampleCurrent}/{p.SampleTotal}" : string.Empty;
+        SavedPath = p.SavedPath ?? string.Empty;
+
+        if (p.SampleCurrent.HasValue && p.SampleTotal.HasValue && p.SampleTotal.Value > 0)
+        {
+            Progress01 = Math.Clamp((double)p.SampleCurrent.Value / p.SampleTotal.Value, 0, 1);
+        }
+        else
+        {
+            Progress01 = 0;
+        }
+
+        // 计算整体进度（基于帧范围 + 单帧进度）
+        var totalFrames = Math.Max(0, EndFrame - StartFrame + 1);
+        if (totalFrames > 0)
+        {
+            var completedFrames = Math.Max(0, p.CurrentFrame - StartFrame);
+            double perFrame = Progress01; // 当前帧内进度
+            OverallProgress01 = Math.Clamp((completedFrames + perFrame) / totalFrames, 0, 1);
+        }
+        else
+        {
+            OverallProgress01 = 0;
+        }
+
+        // 触发进度变化事件
+        ProgressChanged?.Invoke(this, new RenderTaskProgressEventArgs(OverallProgress01, Progress01, p.CurrentFrame));
+    }
+
+    private void OnEvent(RenderEvent e)
+    {
+        switch (e)
+        {
+            case RenderSessionStarted s:
+                EnqueueLog(s.IsAnimation ? $"开始动画渲染: {s.StartFrame}..{s.EndFrame}" : $"开始单帧渲染");
+                SetStatus(RenderTaskStatus.Running, "渲染中");
+                break;
+            case RenderStarted rs:
+                EnqueueLog($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
+                break;
+            case RenderSaved saved:
+                EnqueueLog($"已保存: {saved.Path} (帧 {saved.Frame})");
+                break;
+            case RenderCompletedFrame done:
+                EnqueueLog($"帧 {done.Frame} 完成，用时 {done.Time}");
+                break;
+            case RenderCompletedAll:
+                EnqueueLog("全部帧完成");
+                OverallProgress01 = 1;
+                SetStatus(RenderTaskStatus.Completed, "已完成");
+                _endTime = DateTime.Now;
+                if (_startTime.HasValue)
+                {
+                    Duration = _endTime.Value - _startTime.Value;
+                }
+                break;
+            case RenderError err:
+                EnqueueLog($"错误: {err.Message}");
+                SetStatus(RenderTaskStatus.Failed, "渲染失败");
+                _endTime = DateTime.Now;
+                if (_startTime.HasValue)
+                {
+                    Duration = _endTime.Value - _startTime.Value;
+                }
+                break;
+        }
+    }
+
+    private void SetStatus(RenderTaskStatus status, string statusText)
+    {
+        Status = status;
+        StatusText = statusText;
+        StatusChanged?.Invoke(this, new RenderTaskStatusChangedEventArgs(status, statusText));
+    }
+
+    private void EnqueueLog(string line)
+    {
+        if (IsLogPaused) return;
+        
+        // 简单的重复日志过滤
+        if (!string.IsNullOrWhiteSpace(line) && _logQueue.Count < 500) // 防止队列过大
+        {
+            _logQueue.Enqueue($"[{DateTime.Now:HH:mm:ss.fff}] {line}");
+        }
+    }
+
+    private void FlushLogQueue()
+    {
+        if (_logQueue.IsEmpty || IsLogPaused || _isFlushing) return;
+        
+        // 防止频繁刷新
+        var now = DateTime.Now;
+        if ((now - _lastFlushTime).TotalMilliseconds < MinFlushIntervalMs) return;
+        
+        lock (_logLock)
+        {
+            if (_isFlushing) return;
+            _isFlushing = true;
+        }
+        
+        try
+        {
+            var sb = new StringBuilder();
+            int dequeued = 0;
+            
+            // 限制单次处理的日志数量，避免UI阻塞
+            while (_logQueue.TryDequeue(out var line) && dequeued < MaxBatchSize)
+            {
+                if (dequeued++ > 0) sb.AppendLine();
+                sb.Append(line);
+            }
+
+            var text = sb.ToString();
+            if (string.IsNullOrEmpty(text)) return;
+
+            _lastFlushTime = now;
+            
+            // 使用低优先级调度，减少对UI的影响
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                UpdateOutputLog(text);
+            }, Avalonia.Threading.DispatcherPriority.Background);
+        }
+        finally
+        {
+            _isFlushing = false;
+        }
+    }
+    
+    private void UpdateOutputLog(string newText)
+    {
+        // 将新文本追加到现有日志，并按行数限制截断最旧部分
+        if (string.IsNullOrEmpty(OutputLog))
+        {
+            OutputLog = newText;
+            _logLineCount = CountLines(OutputLog);
+        }
+        else
+        {
+            OutputLog += Environment.NewLine + newText;
+            _logLineCount += CountLines(newText);
+        }
+
+        if (_logLineCount > MaxLogLines)
+        {
+            // 只保留最后 MaxLogLines 行，使用更高效的字符串操作
+            var lines = OutputLog.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+            var start = Math.Max(0, lines.Length - MaxLogLines);
+            OutputLog = string.Join(Environment.NewLine, lines, start, lines.Length - start);
+            _logLineCount = MaxLogLines;
+        }
+    }
+
+    private static int CountLines(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return 0;
+        int count = 1;
+        for (int i = 0; i < s.Length; i++) if (s[i] == '\n') count++;
+        return count;
+    }
+
+    private void DisposeSession()
+    {
+        try { _session?.Dispose(); } catch { }
+        if (_exe is not null)
+        {
+            _exe.OnOutputReceived -= HandleRawOutput;
+            _exe.OnErrorReceived -= HandleRawError;
+            try { _exe.Dispose(); } catch { }
+        }
+        _session = null;
+        _exe = null;
+    }
+
+    public void Dispose()
+    {
+        _logTimer?.Stop();
+        _logTimer?.Dispose();
+        DisposeSession();
+    }
+
+    // 转换器
+    public static readonly IValueConverter StatusToColorConverter = new StatusToColorConverter();
+}
+
+// 状态到颜色的转换器
+public class StatusToColorConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is RenderTaskStatus status)
+        {
+            return status switch
+            {
+                RenderTaskStatus.Pending => "#FFA500",    // 橙色
+                RenderTaskStatus.Running => "#00FF00",    // 绿色
+                RenderTaskStatus.Completed => "#008000",  // 深绿色
+                RenderTaskStatus.Failed => "#FF0000",     // 红色
+                RenderTaskStatus.Cancelled => "#808080",  // 灰色
+                _ => "#CCCCCC"                            // 默认灰色
+            };
+        }
+        return "#CCCCCC";
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+
+// 渲染任务状态枚举
+public enum RenderTaskStatus
+{
+    Pending,    // 等待中
+    Running,    // 运行中
+    Completed,  // 已完成
+    Failed,     // 失败
+    Cancelled   // 已取消
+}
+
+// 状态变化事件参数
+public class RenderTaskStatusChangedEventArgs : EventArgs
+{
+    public RenderTaskStatus Status { get; }
+    public string StatusText { get; }
+
+    public RenderTaskStatusChangedEventArgs(RenderTaskStatus status, string statusText)
+    {
+        Status = status;
+        StatusText = statusText;
+    }
+}
+
+// 进度变化事件参数
+public class RenderTaskProgressEventArgs : EventArgs
+{
+    public double OverallProgress { get; }
+    public double CurrentFrameProgress { get; }
+    public int CurrentFrame { get; }
+
+    public RenderTaskProgressEventArgs(double overallProgress, double currentFrameProgress, int currentFrame)
+    {
+        OverallProgress = overallProgress;
+        CurrentFrameProgress = currentFrameProgress;
+        CurrentFrame = currentFrame;
+    }
+}

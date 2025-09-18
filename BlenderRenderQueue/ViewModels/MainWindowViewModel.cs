@@ -6,6 +6,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
 	public MainWindowViewModel()
 	{
-		Content = new BlenderRenderQueue.ViewModels.Test.TestRenderViewModel();
+		// 使用新的渲染队列视图模型替代测试视图模型
+		Content = new MainRenderViewModel();
 	}
 }

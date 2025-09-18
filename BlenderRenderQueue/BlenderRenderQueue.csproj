@@ -30,5 +30,11 @@
       <Compile Update="Views\BlendFilePropertiesView.axaml.cs">
         <DependentUpon>BlendFilePropertiesView.axaml</DependentUpon>
       </Compile>
+      <Compile Update="Views\RenderQueueView.axaml.cs">
+        <DependentUpon>RenderQueueView.axaml</DependentUpon>
+      </Compile>
+      <Compile Update="Views\MainRenderView.axaml.cs">
+        <DependentUpon>MainRenderView.axaml</DependentUpon>
+      </Compile>
     </ItemGroup>
 </Project>

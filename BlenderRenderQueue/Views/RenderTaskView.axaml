@@ -1,0 +1,91 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
+             xmlns:views="clr-namespace:BlenderRenderQueue.Views"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             mc:Ignorable="d"
+             x:Class="BlenderRenderQueue.Views.RenderTaskView"
+             x:DataType="vm:RenderTaskViewModel">
+    
+    <Border BorderBrush="Gray" BorderThickness="1" Margin="4" CornerRadius="4">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" Margin="8">
+            
+            <!-- 任务标题和状态 -->
+            <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+                <TextBlock Text="{Binding BlendFilePath}" 
+                           FontWeight="Bold" VerticalAlignment="Center" />
+                <Border Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}" 
+                        CornerRadius="2" Padding="4,2">
+                    <TextBlock Text="{Binding StatusText}" Foreground="White" FontSize="10" />
+                </Border>
+                <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}" 
+                           VerticalAlignment="Center" Foreground="Gray" />
+            </StackPanel>
+
+            <!-- 进度条 -->
+            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Spacing="4" Margin="0,0,0,8">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="整体进度:" VerticalAlignment="Center" Width="60" />
+                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallProgress01}" 
+                                 Height="16" Width="200" />
+                    <TextBlock Text="{Binding OverallProgress01, StringFormat='{}{0:P1}'}" 
+                               VerticalAlignment="Center" Width="40" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="当前帧:" VerticalAlignment="Center" Width="60" />
+                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress01}" 
+                                 Height="16" Width="200" />
+                    <TextBlock Text="{Binding Progress01, StringFormat='{}{0:P1}'}" 
+                               VerticalAlignment="Center" Width="40" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- 渲染信息 -->
+            <Border Grid.Row="2" Grid.ColumnSpan="2" BorderBrush="LightGray" BorderThickness="1" 
+                    CornerRadius="2" Padding="4" Margin="0,0,0,8">
+                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*">
+                    <TextBlock Grid.Column="0" Text="引擎:" Margin="0,0,4,0" />
+                    <TextBlock Grid.Column="1" Text="{Binding Engine}" Margin="0,0,16,0" />
+                    <TextBlock Grid.Column="2" Text="当前帧:" Margin="0,0,4,0" />
+                    <TextBlock Grid.Column="3" Text="{Binding CurrentFrame}" Margin="0,0,16,0" />
+                    <TextBlock Grid.Column="4" Text="采样:" Margin="0,0,4,0" />
+                    <TextBlock Grid.Column="5" Text="{Binding SampleText}" />
+                </Grid>
+            </Border>
+
+            <!-- 帧范围设置 -->
+            <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Orientation="Horizontal" 
+                        Spacing="8" Margin="0,0,0,8" HorizontalAlignment="Center">
+                <TextBlock Text="起始帧:" VerticalAlignment="Center" />
+                <NumericUpDown Width="80" Value="{Binding StartFrame}" Minimum="1" Maximum="100000" />
+                <TextBlock Text="结束帧:" VerticalAlignment="Center" />
+                <NumericUpDown Width="80" Value="{Binding EndFrame}" Minimum="1" Maximum="100000" />
+                <CheckBox Content="动画" IsChecked="{Binding Animation}" VerticalAlignment="Center" />
+                <TextBlock Text="超时(秒):" VerticalAlignment="Center" />
+                <NumericUpDown Width="80" Value="{Binding RenderTimeoutSeconds}" 
+                               Minimum="60" Maximum="3600" />
+            </StackPanel>
+
+            <!-- 操作按钮 -->
+            <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <Button Content="清空日志" Command="{Binding ClearLogCommand}" 
+                        Padding="8,2" FontSize="10" />
+                <Button Content="{Binding LogPauseButtonText}" Command="{Binding ToggleLogPauseCommand}" 
+                        Padding="8,2" FontSize="10" />
+            </StackPanel>
+
+            <!-- 日志区域 -->
+            <Border Grid.Row="4" Grid.Column="0" BorderBrush="LightGray" BorderThickness="1" 
+                    CornerRadius="2" MaxHeight="150">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <TextBox Text="{Binding OutputLog}" TextWrapping="Wrap" IsReadOnly="True" 
+                             AcceptsReturn="True" BorderThickness="0" Background="Transparent" 
+                             FontFamily="Consolas" FontSize="10" />
+                </ScrollViewer>
+            </Border>
+
+        </Grid>
+    </Border>
+</UserControl>
