@@ -1,9 +1,12 @@
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.BlenderService;
+using CommunityToolkit.Mvvm.Input;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -79,4 +82,59 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 		LoadingMessage = string.Empty;
 		OnPropertyChanged(nameof(HasErrorMessage));
 	}
+
+	/// <summary>
+	/// 打开帧路径所在的文件夹
+	/// </summary>
+	[RelayCommand]
+	public void OpenFramePathDirectory()
+	{
+		try
+		{
+			if (string.IsNullOrEmpty(Properties.FramePath))
+			{
+				ErrorMessage = "帧路径为空，无法打开文件夹";
+				OnPropertyChanged(nameof(HasErrorMessage));
+				return;
+			}
+
+			// 获取帧路径所在的目录
+			var framePathDirectory = Path.GetDirectoryName(Properties.FramePath);
+			
+			if (string.IsNullOrEmpty(framePathDirectory))
+			{
+				ErrorMessage = "无法获取帧路径的目录";
+				OnPropertyChanged(nameof(HasErrorMessage));
+				return;
+			}
+
+			if (!Directory.Exists(framePathDirectory))
+			{
+				ErrorMessage = $"帧路径目录不存在: {framePathDirectory}";
+				OnPropertyChanged(nameof(HasErrorMessage));
+				return;
+			}
+
+			var startInfo = new ProcessStartInfo
+			{
+				FileName = "explorer.exe",
+				Arguments = $"\"{framePathDirectory.Replace('/', '\\')}\"",
+				UseShellExecute = true,
+				WindowStyle = ProcessWindowStyle.Normal
+			};
+
+			Process.Start(startInfo);
+		}
+		catch (Exception ex)
+		{
+			ErrorMessage = $"打开帧路径文件夹失败: {ex.Message}";
+			OnPropertyChanged(nameof(HasErrorMessage));
+		}
+	}
+
+	/// <summary>
+	/// 是否可以打开帧路径文件夹
+	/// </summary>
+	public bool CanOpenFramePathDirectory => !string.IsNullOrEmpty(Properties.FramePath) && 
+	                                         !string.IsNullOrEmpty(Path.GetDirectoryName(Properties.FramePath));
 }

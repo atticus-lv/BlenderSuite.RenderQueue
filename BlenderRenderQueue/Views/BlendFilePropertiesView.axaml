@@ -114,15 +114,19 @@
                                        IsVisible="{Binding Properties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
                         
-                        <!-- Frame Path -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="真实帧路径:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding Properties.FramePath}"
-                                       TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
-                                       IsVisible="{Binding Properties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
-                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding Properties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
-                        </Grid>
+                         <!-- Frame Path -->
+                         <Grid ColumnDefinitions="Auto,*,Auto">
+                             <TextBlock Grid.Column="0" Text="真实帧路径:" FontWeight="SemiBold" MinWidth="80" />
+                             <TextBlock Grid.Column="1" Text="{Binding Properties.FramePath}"
+                                        TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
+                                        IsVisible="{Binding Properties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                                        IsVisible="{Binding Properties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                             <Button Grid.Column="2" Content="📁" ToolTip.Tip="打开文件夹" 
+                                     Command="{Binding OpenFramePathDirectoryCommand}"
+                                     IsEnabled="{Binding CanOpenFramePathDirectory}"
+                                     Padding="4" Margin="4,0,0,0" />
+                         </Grid>
                         
                         <!-- 输出格式 -->
                         <Grid ColumnDefinitions="Auto,*">
