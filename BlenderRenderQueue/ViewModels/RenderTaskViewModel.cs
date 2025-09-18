@@ -76,6 +76,10 @@ public partial class RenderTaskViewModel : ViewModelBase
     [ObservableProperty]
     private BlendFilePropertiesViewModel _filePropertiesViewModel = new();
 
+    // 保存停止时的进度状态
+    private int _lastCompletedFrame = 0;
+    private bool _wasStopped = false;
+
     // 内部状态
     private IRenderSession? _session;
     private BlenderExeService? _exe;
@@ -144,6 +148,17 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         try
         {
+            // 确定实际开始的帧
+            var actualStartFrame = _wasStopped && _lastCompletedFrame > 0 ? _lastCompletedFrame + 1 : StartFrame;
+            
+            // 如果已经完成所有帧，直接标记为完成
+            if (actualStartFrame > EndFrame)
+            {
+                SetStatus(RenderTaskStatus.Completed, "已完成");
+                EnqueueLog("所有帧已完成");
+                return;
+            }
+
             SetStatus(RenderTaskStatus.Running, "正在启动渲染...");
             _startTime = DateTime.Now;
             
@@ -160,8 +175,16 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 为渲染任务设置可配置的超时时间
             _exe.Timeout = RenderTimeoutSeconds;
             
-            EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {RenderTimeoutSeconds}秒)");
-            await cmd.StartRenderAsync(_exe, BlendFilePath, StartFrame, EndFrame, Animation);
+            if (_wasStopped)
+            {
+                EnqueueLog($"继续渲染: {actualStartFrame}..{EndFrame} (从第 {actualStartFrame} 帧继续), animation={Animation} (无活动超时: {RenderTimeoutSeconds}秒)");
+            }
+            else
+            {
+                EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {RenderTimeoutSeconds}秒)");
+            }
+            
+            await cmd.StartRenderAsync(_exe, BlendFilePath, actualStartFrame, EndFrame, Animation);
             EnqueueLog($"渲染指令已发送完成");
         }
         catch (TaskCanceledException ex)
@@ -191,14 +214,29 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public void StopRender()
     {
-        DisposeSession();
+        // 保存当前进度
+        _lastCompletedFrame = CurrentFrame;
+        _wasStopped = true;
+        
+        // 只停止渲染会话，不释放BlenderExeService
+        try { _session?.Dispose(); } catch { }
+        _session = null;
+        
+        // 取消事件订阅，但不释放_exe服务
+        if (_exe is not null)
+        {
+            _exe.OnOutputReceived -= HandleRawOutput;
+            _exe.OnErrorReceived -= HandleRawError;
+            // 注意：不释放_exe，因为它可能被其他任务使用
+        }
+        
         SetStatus(RenderTaskStatus.Cancelled, "已停止");
         _endTime = DateTime.Now;
         if (_startTime.HasValue)
         {
             Duration = _endTime.Value - _startTime.Value;
         }
-        EnqueueLog("渲染已停止");
+        EnqueueLog($"渲染已停止，已完成到第 {_lastCompletedFrame} 帧");
     }
 
     [RelayCommand]
@@ -244,11 +282,13 @@ public partial class RenderTaskViewModel : ViewModelBase
             Progress01 = 0;
         }
 
-        // 计算整体进度（基于帧范围 + 单帧进度）
-        var totalFrames = Math.Max(0, EndFrame - StartFrame + 1);
+        // 计算整体进度（基于实际渲染的帧范围）
+        var actualStartFrame = _wasStopped && _lastCompletedFrame > 0 ? _lastCompletedFrame + 1 : StartFrame;
+        var totalFrames = Math.Max(0, EndFrame - actualStartFrame + 1);
+        
         if (totalFrames > 0)
         {
-            var completedFrames = Math.Max(0, p.CurrentFrame - StartFrame);
+            var completedFrames = Math.Max(0, p.CurrentFrame - actualStartFrame);
             double perFrame = Progress01; // 当前帧内进度
             OverallProgress01 = Math.Clamp((completedFrames + perFrame) / totalFrames, 0, 1);
         }
@@ -400,7 +440,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             _exe.OnOutputReceived -= HandleRawOutput;
             _exe.OnErrorReceived -= HandleRawError;
-            try { _exe.Dispose(); } catch { }
+            // 注意：不释放_exe，因为它可能被其他任务使用
         }
         _session = null;
         _exe = null;

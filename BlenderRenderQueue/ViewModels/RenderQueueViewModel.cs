@@ -177,6 +177,14 @@ public partial class RenderQueueViewModel : ViewModelBase
             return;
         }
 
+        // 重置已取消的任务状态为等待中，但保留进度信息
+        foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Cancelled))
+        {
+            task.Status = RenderTaskStatus.Pending;
+            task.StatusText = "等待中";
+            // 注意：不重置进度，让任务从上次停止的地方继续
+        }
+
         IsQueueRunning = true;
         QueueStatusText = "队列运行中";
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已启动"));
