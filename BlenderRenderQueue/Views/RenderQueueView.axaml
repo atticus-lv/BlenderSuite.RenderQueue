@@ -92,7 +92,7 @@
         <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="300,*">
 
             <!-- 左侧任务列表 -->
-            <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="0,0,1,0">
+            <Border Grid.Column="0" BorderBrush="Black" BorderThickness="0,0,1,0">
                 <Grid RowDefinitions="Auto,*,Auto">
 
                     <!-- 任务操作按钮 -->
@@ -105,10 +105,19 @@
                     <!-- 任务列表 -->
                     <ListBox Grid.Row="1" ItemsSource="{Binding RenderQueue.RenderTasks}"
                              SelectedItem="{Binding RenderQueue.SelectedTask}" Margin="4">
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Background" Value="Transparent" />
+                            </Style>
+                            <Style Selector="ListBoxItem:selected">
+                                <Setter Property="Background" Value="Transparent" />
+                            </Style>
+                        </ListBox.Styles>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="LightGray" BorderThickness="1" Margin="2" CornerRadius="2"
-                                        Padding="4">
+                                <Border  Margin="2" CornerRadius="4"
+                                        Padding="4" Background="Black">
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0">
                                             <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold"
