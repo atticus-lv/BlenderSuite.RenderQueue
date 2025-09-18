@@ -28,6 +28,7 @@
                         Spacing="8">
                 <Button Content="开始渲染" Command="{Binding StartRenderCommand}" />
                 <Button Content="停止" Command="{Binding StopRenderCommand}" />
+                <Button Content="清空日志" Command="{Binding ClearLogCommand}" />
             </StackPanel>
         </Grid>
         <Grid ColumnDefinitions="3*,5,*">
@@ -36,7 +37,7 @@
 
             <Rectangle Grid.Column="1" Width="1" Fill="Gray" Margin="0,8" />
 
-            <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+            <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                   ColumnDefinitions="Auto,*,Auto"
                   HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <TextBlock Grid.Row="0" Grid.Column="0" Margin="8 2 8 2" Text="Blender 路径:" VerticalAlignment="Center" />
@@ -60,24 +61,30 @@
 
 
                 <Border Grid.Row="5" Grid.ColumnSpan="3" BorderBrush="Gray" BorderThickness="1" Margin="8">
-                    <StackPanel Orientation="Horizontal" Spacing="16" Margin="4">
-                        <TextBlock Text="引擎:" />
-                        <TextBlock Text="{Binding Engine}" />
-                        <TextBlock Text="当前帧:" />
-                        <TextBlock Text="{Binding CurrentFrame}" />
-                        <TextBlock Text="采样:" />
-                        <TextBlock Text="{Binding SampleText}" />
-                        <TextBlock Text="保存:" />
-                        <TextBlock Text="{Binding SavedPath}" />
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="16" Margin="4">
+                            <TextBlock Text="引擎:" />
+                            <TextBlock Text="{Binding Engine}" />
+                            <TextBlock Text="当前帧:" />
+                            <TextBlock Text="{Binding CurrentFrame}" />
+                            <TextBlock Text="采样:" />
+                            <TextBlock Text="{Binding SampleText}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="4">
+                            <TextBlock Text="保存:" />
+                            <TextBlock Text="{Binding SavedPath}" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
 
-                <ScrollViewer Grid.Row="6" Grid.ColumnSpan="3" MinHeight="200" VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Auto" MaxWidth="1000">
-                    <TextBox Text="{Binding OutputLog}" TextWrapping="Wrap" IsReadOnly="True" AcceptsReturn="True"
-                             BorderThickness="0" Background="Transparent" />
-                </ScrollViewer>
+                <Border Grid.Row="6" Grid.ColumnSpan="3" BorderBrush="Gray" BorderThickness="1" Margin="8">
+                    <ScrollViewer  VerticalScrollBarVisibility="Auto" Name="LogScrollViewer"
+                                  HorizontalScrollBarVisibility="Auto" MaxHeight="400">
+                        <TextBox Text="{Binding OutputLog}" TextWrapping="Wrap" IsReadOnly="True" AcceptsReturn="True"
+                                 BorderThickness="0" Background="Transparent" TextChanged="TextBox_OnTextChanged" />
+                    </ScrollViewer>
+                </Border>
 
             </Grid>
 

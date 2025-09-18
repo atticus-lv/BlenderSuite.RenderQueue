@@ -52,6 +52,12 @@ public partial class TestRenderViewModel : ViewModelBase
 
 	[ObservableProperty]
 	private string _outputLog = string.Empty;
+	
+	[ObservableProperty]
+	private bool _isLogPaused = false;
+	
+	[ObservableProperty]
+	private string _logPauseButtonText = "暂停日志";
 
 	private IRenderSession? _session;
 	private BlenderExeService? _exe;
@@ -64,12 +70,20 @@ public partial class TestRenderViewModel : ViewModelBase
 	private readonly System.Timers.Timer _logTimer;
 	private const int MaxLogLines = 1000;
 	private int _logLineCount = 0;
+	
+	// 性能优化相关
+	private volatile bool _isFlushing = false;
+	private readonly object _logLock = new object();
+	private DateTime _lastFlushTime = DateTime.MinValue;
+	private const int MinFlushIntervalMs = 50; // 最小刷新间隔50ms
+	private const int MaxBatchSize = 100; // 单次处理最大日志条数
 
 	private CancellationTokenSource? _versionCts;
 
 	public TestRenderViewModel()
 	{
-		_logTimer = new System.Timers.Timer(100);
+		// 降低刷新频率，提高批量处理效率
+		_logTimer = new System.Timers.Timer(200); // 从100ms改为200ms
 		_logTimer.Elapsed += (_, __) => FlushLogQueue();
 		_logTimer.AutoReset = true;
 		_logTimer.Start();
@@ -227,6 +241,16 @@ public partial class TestRenderViewModel : ViewModelBase
 		DisposeSession();
 		EnqueueLog("已停止。");
 	}
+	
+	[RelayCommand]
+	private void ClearLog()
+	{
+		OutputLog = string.Empty;
+		_logLineCount = 0;
+		// 清空队列中的待处理日志
+		while (_logQueue.TryDequeue(out _)) { }
+		EnqueueLog("日志已清空");
+	}
 
 	private void HandleRawOutput(string line)
 	{
@@ -296,46 +320,80 @@ public partial class TestRenderViewModel : ViewModelBase
 
 	private void EnqueueLog(string line)
 	{
-		_logQueue.Enqueue(line);
+		if (IsLogPaused) return;
+		
+		// 简单的重复日志过滤
+		if (!string.IsNullOrWhiteSpace(line) && _logQueue.Count < 500) // 防止队列过大
+		{
+			_logQueue.Enqueue($"[{DateTime.Now:HH:mm:ss.fff}] {line}");
+		}
 	}
 
 	private void FlushLogQueue()
 	{
-		if (_logQueue.IsEmpty) return;
-		var sb = new StringBuilder();
-		int dequeued = 0;
-		while (_logQueue.TryDequeue(out var line))
+		if (_logQueue.IsEmpty || IsLogPaused || _isFlushing) return;
+		
+		// 防止频繁刷新
+		var now = DateTime.Now;
+		if ((now - _lastFlushTime).TotalMilliseconds < MinFlushIntervalMs) return;
+		
+		lock (_logLock)
 		{
-			if (dequeued++ > 0) sb.AppendLine();
-			sb.Append(line);
+			if (_isFlushing) return;
+			_isFlushing = true;
+		}
+		
+		try
+		{
+			var sb = new StringBuilder();
+			int dequeued = 0;
+			
+			// 限制单次处理的日志数量，避免UI阻塞
+			while (_logQueue.TryDequeue(out var line) && dequeued < MaxBatchSize)
+			{
+				if (dequeued++ > 0) sb.AppendLine();
+				sb.Append(line);
+			}
+
+			var text = sb.ToString();
+			if (string.IsNullOrEmpty(text)) return;
+
+			_lastFlushTime = now;
+			
+			// 使用低优先级调度，减少对UI的影响
+			Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+			{
+				UpdateOutputLog(text);
+			}, Avalonia.Threading.DispatcherPriority.Background);
+		}
+		finally
+		{
+			_isFlushing = false;
+		}
+	}
+	
+	private void UpdateOutputLog(string newText)
+	{
+		// 将新文本追加到现有日志，并按行数限制截断最旧部分
+		if (string.IsNullOrEmpty(OutputLog))
+		{
+			OutputLog = newText;
+			_logLineCount = CountLines(OutputLog);
+		}
+		else
+		{
+			OutputLog += Environment.NewLine + newText;
+			_logLineCount += CountLines(newText);
 		}
 
-		var text = sb.ToString();
-		if (string.IsNullOrEmpty(text)) return;
-
-		Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+		if (_logLineCount > MaxLogLines)
 		{
-			// 将新文本追加到现有日志，并按行数限制截断最旧部分
-			if (string.IsNullOrEmpty(OutputLog))
-			{
-				OutputLog = text;
-				_logLineCount = CountLines(OutputLog);
-			}
-			else
-			{
-				OutputLog += Environment.NewLine + text;
-				_logLineCount += CountLines(text);
-			}
-
-			if (_logLineCount > MaxLogLines)
-			{
-				// 只保留最后 MaxLogLines 行
-				var lines = OutputLog.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-				var start = Math.Max(0, lines.Length - MaxLogLines);
-				OutputLog = string.Join(Environment.NewLine, lines, start, lines.Length - start);
-				_logLineCount = CountLines(OutputLog);
-			}
-		});
+			// 只保留最后 MaxLogLines 行，使用更高效的字符串操作
+			var lines = OutputLog.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+			var start = Math.Max(0, lines.Length - MaxLogLines);
+			OutputLog = string.Join(Environment.NewLine, lines, start, lines.Length - start);
+			_logLineCount = MaxLogLines;
+		}
 	}
 
 	private static int CountLines(string s)

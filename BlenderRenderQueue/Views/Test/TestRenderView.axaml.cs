@@ -8,4 +8,14 @@ public partial class TestRenderView : UserControl
 	{
 		InitializeComponent();
 	}
+	
+	
+	private void TextBox_OnTextChanged(object? sender, TextChangedEventArgs e)
+	{
+		// scroll to the end
+		if (sender is TextBox)
+		{
+			LogScrollViewer.ScrollToEnd();
+		}
+	}
 } 
