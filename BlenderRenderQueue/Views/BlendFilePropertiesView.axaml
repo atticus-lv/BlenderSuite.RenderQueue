@@ -37,7 +37,7 @@
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="文件路径:" FontWeight="SemiBold" MinWidth="100" />
                             <TextBlock Grid.Column="1" Text="{Binding Properties.FilePath}" TextWrapping="Wrap"
-                                       FontFamily="Consolas" FontSize="12" Foreground="#1976D2" />
+                                        FontSize="12" Foreground="#1976D2" VerticalAlignment="Center" />
                         </Grid>
 
                         <!-- 文件名称 -->
@@ -81,6 +81,17 @@
                                        IsVisible="{Binding Properties.RenderEngine, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
+                        <!-- FPS -->
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="帧率:" FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="1" Text="{Binding Properties.Fps, StringFormat='{}{0:F2} FPS'}"
+                                       IsVisible="{Binding Properties.Fps, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                                       IsVisible="{Binding Properties.Fps, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                        </Grid>
+
+                      
+
                         <!-- 相机名称 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="相机:" FontWeight="SemiBold" MinWidth="80" />
@@ -97,12 +108,22 @@
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="输出路径:" FontWeight="SemiBold" MinWidth="80" />
                             <TextBlock Grid.Column="1" Text="{Binding Properties.RenderOutputPath}"
-                                       TextWrapping="Wrap" FontFamily="Consolas" FontSize="12"
+                                       TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
                                        IsVisible="{Binding Properties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
                                        IsVisible="{Binding Properties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
-
+                        
+                        <!-- Frame Path -->
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="真实帧路径:" FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="1" Text="{Binding Properties.FramePath}"
+                                       TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
+                                       IsVisible="{Binding Properties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                                       IsVisible="{Binding Properties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                        </Grid>
+                        
                         <!-- 输出格式 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="输出格式:" FontWeight="SemiBold" MinWidth="80" />
