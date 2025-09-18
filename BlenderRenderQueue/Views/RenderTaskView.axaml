@@ -9,8 +9,8 @@
              x:Class="BlenderRenderQueue.Views.RenderTaskView"
              x:DataType="vm:RenderTaskViewModel">
 
-    <Border BorderBrush="Gray" BorderThickness="1" Margin="4" CornerRadius="4">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" Margin="8">
+    <Border BorderBrush="Gray" Margin="4" CornerRadius="4">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="*,Auto" Margin="8">
 
             <!-- 任务标题和状态 -->
             <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
@@ -25,25 +25,15 @@
             </StackPanel>
 
 
-            <!-- 渲染信息 -->
-            <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1"
-                    CornerRadius="2" Padding="4" Margin="0,0,0,8">
-                <Grid ColumnDefinitions="Auto,*,Auto,*">
-                    <TextBlock Grid.Column="0" Text="当前帧:" Margin="0,0,4,0" />
-                    <TextBlock Grid.Column="1" Text="{Binding CurrentFrame}" Margin="0,0,16,0" />
-                    <TextBlock Grid.Column="2" Text="当前帧采样:" Margin="0,0,4,0" />
-                    <TextBlock Grid.Column="3" Text="{Binding SampleText}" />
-                </Grid>
-            </Border>
 
             <!-- 文件属性 -->
-            <Border Grid.Row="2" Grid.ColumnSpan="2" BorderBrush="LightGray" BorderThickness="1"
+            <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1"
                     CornerRadius="2" Padding="8" Margin="0,0,0,8">
                 <views:BlendFilePropertiesView DataContext="{Binding FileProperties}" />
             </Border>
 
             <!-- 帧范围设置 -->
-            <StackPanel Grid.Row="3" Grid.ColumnSpan="2" Orientation="Horizontal"
+            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
                         Spacing="8" Margin="0,0,0,8" HorizontalAlignment="Left">
                 <TextBlock Text="渲染覆写" VerticalAlignment="Center" FontWeight="Bold" />
 
@@ -67,7 +57,7 @@
 
 
             <!-- 日志区域 -->
-            <Border Grid.Row="4" Grid.Column="0" BorderBrush="Gray" BorderThickness="1"
+            <Border Grid.Row="3" Grid.Column="0" BorderBrush="Gray" BorderThickness="1"
                     CornerRadius="2" MaxHeight="400" MinHeight="100">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="4">

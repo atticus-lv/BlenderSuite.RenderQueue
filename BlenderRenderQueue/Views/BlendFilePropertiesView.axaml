@@ -9,9 +9,6 @@
              x:DataType="vm:BlendFilePropertiesViewModel">
 
     <Grid RowDefinitions="Auto,*">
-        <!-- 标题 -->
-        <TextBlock Grid.Row="0" Text="文件属性" FontSize="16" FontWeight="Bold" Margin="0,0,0,10" />
-
         <!-- 内容区域 -->
         <ScrollViewer Grid.Row="1">
             <StackPanel Spacing="10">
@@ -44,10 +41,10 @@
                         </Grid>
 
                         <!-- 文件名称 -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="文件名称:" FontWeight="SemiBold" MinWidth="100" />
-                            <TextBlock Grid.Column="1" Text="{Binding Properties.FileName}" FontWeight="SemiBold" />
-                        </Grid>
+                        <!-- <Grid ColumnDefinitions="Auto,*"> -->
+                        <!--     <TextBlock Grid.Column="0" Text="文件名称:" FontWeight="SemiBold" MinWidth="100" /> -->
+                        <!--     <TextBlock Grid.Column="1" Text="{Binding Properties.FileName}" FontWeight="SemiBold" /> -->
+                        <!-- </Grid> -->
 
                         <!-- 分隔线 -->
                         <Rectangle Height="1" Fill="Gray" Margin="0,8" />
