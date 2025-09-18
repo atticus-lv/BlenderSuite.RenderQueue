@@ -149,15 +149,29 @@ public partial class TestRenderViewModel : ViewModelBase
 			try
 			{
 				if (_exe is null) _exe = new BlenderExeService(BlenderPath);
-				var query = new BlenderQueryService();
-				var (fs, fe) = await query.GetSceneFramesAsync(_exe, BlendFilePath);
-				StartFrame = fs;
-				EndFrame = fe;
-				EnqueueLog($"获取场景帧范围: {fs}..{fe}");
+				EnqueueLog("[QUERY] 开始获取场景帧范围...");
+				void TmpOut(string line) => EnqueueLog($"[QOUT] {line}");
+				void TmpErr(string line) => EnqueueLog($"[QERR] {line}");
+				_exe.OnOutputReceived += TmpOut;
+				_exe.OnErrorReceived += TmpErr;
+
+				try
+				{
+					var query = new BlenderQueryService();
+					var (fs, fe) = await query.GetSceneFramesAsync(_exe, BlendFilePath);
+					StartFrame = fs;
+					EndFrame = fe;
+					EnqueueLog($"[QUERY] 获取场景帧范围成功: {fs}..{fe}");
+				}
+				finally
+				{
+					_exe.OnOutputReceived -= TmpOut;
+					_exe.OnErrorReceived -= TmpErr;
+				}
 			}
 			catch (Exception ex)
 			{
-				EnqueueLog($"获取场景帧失败: {ex.Message}");
+				EnqueueLog($"[QUERY] 获取场景帧失败: {ex.Message}");
 			}
 		}
 	}
