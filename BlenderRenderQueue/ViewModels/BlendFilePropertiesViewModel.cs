@@ -47,28 +47,10 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 		try
 		{
 			var queryService = new BlenderQueryService();
-			var properties = new BlendFileProperties
-			{
-				FilePath = blendFilePath
-			};
-
-			// 查询场景帧范围
-			LoadingMessage = "正在获取场景帧范围...";
-			var (frameStart, frameEnd) = await queryService.GetSceneFramesAsync(process, blendFilePath, cancellationToken);
-			properties.FrameStart = frameStart;
-			properties.FrameEnd = frameEnd;
-
-			// 查询相机名称
-			LoadingMessage = "正在获取相机信息...";
-			properties.CameraName = await queryService.GetSceneCameraAsync(process, blendFilePath, cancellationToken);
-
-			// 查询渲染输出路径
-			LoadingMessage = "正在获取渲染输出路径...";
-			properties.RenderOutputPath = await queryService.GetRenderOutputPathAsync(process, blendFilePath, cancellationToken);
-
-			// 查询渲染输出格式
-			LoadingMessage = "正在获取渲染输出格式...";
-			properties.RenderOutputFormat = await queryService.GetRenderOutputFormatAsync(process, blendFilePath, cancellationToken);
+			
+			// 一次性查询所有文件属性
+			LoadingMessage = "正在获取文件属性...";
+			var properties = await queryService.GetAllFilePropertiesAsync(process, blendFilePath, cancellationToken);
 
 			Properties = properties;
 			LoadingMessage = "加载完成";

@@ -92,12 +92,14 @@ public abstract class BasePythonProcessService : IDisposable
 #endif
             progress?.Report(0.4);
 
-            var wrappedScript = $@"
-exec('''
-{script}
-''')
-print('__SCRIPT_COMPLETE__')
-";
+            var wrappedScript = $"""
+
+                                 exec('''
+                                 {script}
+                                 '''.strip())
+                                 print('__SCRIPT_COMPLETE__')
+
+                                 """;
 
             var completionSource = new TaskCompletionSource<bool>();
 

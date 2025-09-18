@@ -17,4 +17,17 @@ public class BlendFileProperties
     public int TotalFrames => Math.Max(0, FrameEnd - FrameStart + 1);
     public bool IsLoaded => !string.IsNullOrEmpty(FilePath);
     public string FileName => IsLoaded ? Path.GetFileName(FilePath) : string.Empty;
+
+    /// <summary>
+    /// 从另一个BlendFileProperties对象加载属性
+    /// </summary>
+    public void LoadFrom(BlendFileProperties source)
+    {
+        FilePath = source.FilePath;
+        FrameStart = source.FrameStart;
+        FrameEnd = source.FrameEnd;
+        CameraName = source.CameraName;
+        RenderOutputPath = source.RenderOutputPath;
+        RenderOutputFormat = source.RenderOutputFormat;
+    }
 }

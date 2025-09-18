@@ -2,70 +2,42 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Models;
 
 namespace BlenderRenderQueue.Services.BlenderService;
 
 public sealed class BlenderQueryService : IBlenderQueryService
 {
 	private const string Prefix = "[BRQ] ";
-
-	public async Task<(int frameStart, int frameEnd)> GetSceneFramesAsync(BasePythonProcessService process,
+	
+	public async Task<BlendFileProperties> GetAllFilePropertiesAsync(BasePythonProcessService process,
 		string blendFilePath,
 		CancellationToken cancellationToken = default)
 	{
-		return await QueryAsync<(int, int)>(
+		return await QueryAsync<BlendFileProperties>(
 			process,
 			blendFilePath,
-			"get_scene_frames",
-			"{'frame_start': int(s.frame_start), 'frame_end': int(s.frame_end)}",
+			"get_all_file_properties",
+			@"{
+				'frame_start': int(s.frame_start), 
+				'frame_end': int(s.frame_end),
+				'camera': (s.camera.name if s.camera else None),
+				'render_output_path': bpy.context.scene.render.filepath,
+				'render_output_format': bpy.context.scene.render.image_settings.file_format
+			}",
 			root =>
 			{
 				var data = root.GetProperty("data");
-				return (data.GetProperty("frame_start").GetInt32(), data.GetProperty("frame_end").GetInt32());
+				return new BlendFileProperties
+				{
+					FilePath = blendFilePath,
+					FrameStart = data.GetProperty("frame_start").GetInt32(),
+					FrameEnd = data.GetProperty("frame_end").GetInt32(),
+					CameraName = data.GetProperty("camera").ValueKind == JsonValueKind.Null ? null : data.GetProperty("camera").GetString(),
+					RenderOutputPath = data.GetProperty("render_output_path").GetString(),
+					RenderOutputFormat = data.GetProperty("render_output_format").GetString()
+				};
 			},
-			cancellationToken);
-	}
-
-	public async Task<string?> GetSceneCameraAsync(BasePythonProcessService process,
-		string blendFilePath,
-		CancellationToken cancellationToken = default)
-	{
-		return await QueryAsync<string?>(
-			process,
-			blendFilePath,
-			"get_scene_camera",
-			"{'camera': (s.camera.name if s.camera else None)}",
-			root =>
-			{
-				var data = root.GetProperty("data");
-				return data.GetProperty("camera").ValueKind == JsonValueKind.Null ? null : data.GetProperty("camera").GetString();
-			},
-			cancellationToken);
-	}
-
-	public async Task<string?> GetRenderOutputPathAsync(BasePythonProcessService process,
-		string blendFilePath,
-		CancellationToken cancellationToken = default)
-	{
-		return await QueryAsync<string?>(
-			process,
-			blendFilePath,
-			"get_render_output_path",
-			"{'path': bpy.context.scene.render.filepath}",
-			root => root.GetProperty("data").GetProperty("path").GetString(),
-			cancellationToken);
-	}
-
-	public async Task<string?> GetRenderOutputFormatAsync(BasePythonProcessService process,
-		string blendFilePath,
-		CancellationToken cancellationToken = default)
-	{
-		return await QueryAsync<string?>(
-			process,
-			blendFilePath,
-			"get_render_output_format",
-			"{'format': bpy.context.scene.render.image_settings.file_format}",
-			root => root.GetProperty("data").GetProperty("format").GetString(),
 			cancellationToken);
 	}
 
@@ -83,8 +55,7 @@ public sealed class BlenderQueryService : IBlenderQueryService
 import bpy, json
 filepath = '{normalizedPath}'
 try:
-    if bpy.data.filepath != '' and Path(bpy.data.filepath) != Path(filepath):
-        bpy.ops.wm.open_mainfile(filepath=filepath)
+    bpy.ops.wm.open_mainfile(filepath=filepath)
     s=bpy.context.scene
     print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':True,'data':{dataPythonDictLiteral}}}, separators=(',', ':')))
 except Exception as e:

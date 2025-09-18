@@ -149,11 +149,11 @@ public partial class TestRenderViewModel : ViewModelBase
 		if (!string.IsNullOrWhiteSpace(path))
 		{
 			BlendFilePath = path;
-			// 选择完文件后，立即查询场景帧范围
+			// 选择完文件后，通过FilePropertiesViewModel加载所有属性
 			try
 			{
-				if (_exe is null) _exe = new BlenderExeService(BlenderPath);
-				EnqueueLog("[QUERY] 开始获取场景帧范围...");
+				_exe ??= new BlenderExeService(BlenderPath);
+				EnqueueLog("[QUERY] 开始加载文件属性...");
 				void TmpOut(string line) => EnqueueLog($"[QOUT] {line}");
 				void TmpErr(string line) => EnqueueLog($"[QERR] {line}");
 				_exe.OnOutputReceived += TmpOut;
@@ -161,16 +161,12 @@ public partial class TestRenderViewModel : ViewModelBase
 
 				try
 				{
-					var query = new BlenderQueryService();
-					var (fs, fe) = await query.GetSceneFramesAsync(_exe, BlendFilePath);
-					StartFrame = fs;
-					EndFrame = fe;
-					EnqueueLog($"[QUERY] 获取场景帧范围成功: {fs}..{fe}");
-					
-					// 加载文件属性
-					EnqueueLog("[QUERY] 开始加载文件属性...");
 					await FilePropertiesViewModel.LoadPropertiesAsync(_exe, BlendFilePath);
-					EnqueueLog("[QUERY] 文件属性加载完成");
+					
+					// 从FilePropertiesViewModel获取帧范围信息
+					StartFrame = FilePropertiesViewModel.Properties.FrameStart;
+					EndFrame = FilePropertiesViewModel.Properties.FrameEnd;
+					EnqueueLog($"[QUERY] 文件属性加载完成: 帧范围 {StartFrame}..{EndFrame}");
 				}
 				finally
 				{
@@ -180,7 +176,7 @@ public partial class TestRenderViewModel : ViewModelBase
 			}
 			catch (Exception ex)
 			{
-				EnqueueLog($"[QUERY] 获取场景帧失败: {ex.Message}");
+				EnqueueLog($"[QUERY] 加载文件属性失败: {ex.Message}");
 			}
 		}
 	}
