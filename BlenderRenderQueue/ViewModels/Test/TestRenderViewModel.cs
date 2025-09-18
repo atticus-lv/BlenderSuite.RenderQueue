@@ -7,6 +7,8 @@ using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
 using System.Collections.Concurrent;
+using Avalonia.Platform.Storage;
+using System.Collections.Generic;
 
 namespace BlenderRenderQueue.ViewModels.Test;
 
@@ -65,15 +67,49 @@ public partial class TestRenderViewModel : ViewModelBase
 	[RelayCommand]
 	private async Task BrowseBlender()
 	{
-		var path = await this.SelectFile("选择 Blender 可执行文件");
+		var path = await this.SelectFile("选择 Blender 可执行文件", GetBlenderExecutableFileTypes());
 		if (!string.IsNullOrWhiteSpace(path)) BlenderPath = path;
 	}
 
 	[RelayCommand]
 	private async Task BrowseBlendFile()
 	{
-		var path = await this.SelectFile("选择 .blend 文件");
-		if (!string.IsNullOrWhiteSpace(path)) BlendFilePath = path;
+		var path = await this.SelectFile("选择 blend 文件", GetBlendFileTypes());
+		if (!string.IsNullOrWhiteSpace(path))
+		{
+			BlendFilePath = path;
+			// 选择完文件后，立即查询场景帧范围
+			try
+			{
+				if (_exe is null) _exe = new BlenderExeService(BlenderPath);
+				var query = new BlenderQueryService();
+				var (fs, fe) = await query.GetSceneFramesAsync(_exe, BlendFilePath);
+				StartFrame = fs;
+				EndFrame = fe;
+				EnqueueLog($"获取场景帧范围: {fs}..{fe}");
+			}
+			catch (Exception ex)
+			{
+				EnqueueLog($"获取场景帧失败: {ex.Message}");
+			}
+		}
+	}
+
+	private static IEnumerable<FilePickerFileType> GetBlendFileTypes()
+	{
+		return new[]
+		{
+			new FilePickerFileType("Blend Files") { Patterns = new[] { "*.blend" } }
+		};
+	}
+
+	private static IEnumerable<FilePickerFileType> GetBlenderExecutableFileTypes()
+	{
+		#if WINDOWS
+		return new[] { new FilePickerFileType("Executable") { Patterns = new[] { "*.exe" } } };
+		#else
+		return new[] { new FilePickerFileType("Blender") { Patterns = new[] { "blender", "*blender*" } } };
+		#endif
 	}
 
 	[RelayCommand]
