@@ -83,7 +83,8 @@ public sealed class BlenderQueryService : IBlenderQueryService
 import bpy, json
 filepath = '{normalizedPath}'
 try:
-    bpy.ops.wm.open_mainfile(filepath=filepath)
+    if bpy.data.filepath != '' and Path(bpy.data.filepath) != Path(filepath):
+        bpy.ops.wm.open_mainfile(filepath=filepath)
     s=bpy.context.scene
     print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':True,'data':{dataPythonDictLiteral}}}, separators=(',', ':')))
 except Exception as e:
