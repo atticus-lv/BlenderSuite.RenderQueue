@@ -6,7 +6,7 @@
 			 mc:Ignorable="d"
 			 x:Class="BlenderRenderQueue.Views.Test.TestRenderView"
 			 x:DataType="vm:TestRenderViewModel">
-	<Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" ColumnDefinitions="Auto,*,Auto">
+	<Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnDefinitions="Auto,*,Auto">
 		<TextBlock Grid.Row="0" Grid.Column="0" Margin="8" Text="Blender 路径:" VerticalAlignment="Center"/>
 		<TextBox Grid.Row="0" Grid.Column="1" Margin="8" Text="{Binding BlenderPath, Mode=TwoWay}"/>
 		<Button Grid.Row="0" Grid.Column="2" Margin="8" Content="浏览" Command="{Binding BrowseBlenderCommand}"/>
@@ -15,9 +15,17 @@
 		<TextBox Grid.Row="1" Grid.Column="1" Margin="8" Text="{Binding BlendFilePath, Mode=TwoWay}"/>
 		<Button Grid.Row="1" Grid.Column="2" Margin="8" Content="浏览" Command="{Binding BrowseBlendFileCommand}"/>
 
-		<ProgressBar Grid.Row="2" Grid.ColumnSpan="3" Margin="8" Minimum="0" Maximum="1" Value="{Binding Progress01}" Height="18"/>
+		<StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="8">
+			<TextBlock Text="起始帧:"/>
+			<NumericUpDown Width="100" Value="{Binding StartFrame}" Minimum="1" Maximum="100000"/>
+			<TextBlock Text="结束帧:" Margin="16,0,0,0"/>
+			<NumericUpDown Width="100" Value="{Binding EndFrame}" Minimum="1" Maximum="100000"/>
+			<CheckBox Content="动画" IsChecked="{Binding Animation}" Margin="16,0,0,0"/>
+		</StackPanel>
 
-		<StackPanel Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="16">
+		<ProgressBar Grid.Row="3" Grid.ColumnSpan="3" Margin="8" Minimum="0" Maximum="1" Value="{Binding Progress01}" Height="18"/>
+
+		<StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="16">
 			<TextBlock Text="引擎:"/>
 			<TextBlock Text="{Binding Engine}"/>
 			<TextBlock Text="当前帧:"/>
@@ -28,7 +36,7 @@
 			<TextBlock Text="{Binding SavedPath}"/>
 		</StackPanel>
 
-		<ScrollViewer Grid.Row="4" Grid.ColumnSpan="3" Margin="8">
+		<ScrollViewer Grid.Row="5" Grid.ColumnSpan="3" Margin="8" Height="200" VerticalScrollBarVisibility="Auto">
 			<TextBlock Text="{Binding OutputLog}" TextWrapping="Wrap"/>
 		</ScrollViewer>
 

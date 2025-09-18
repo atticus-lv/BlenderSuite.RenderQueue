@@ -18,6 +18,15 @@ public partial class TestRenderViewModel : ViewModelBase
 	private string _blendFilePath = string.Empty;
 
 	[ObservableProperty]
+	private int _startFrame = 1;
+
+	[ObservableProperty]
+	private int _endFrame = 1;
+
+	[ObservableProperty]
+	private bool _animation = true;
+
+	[ObservableProperty]
 	private double _progress01;
 
 	[ObservableProperty]
@@ -63,13 +72,16 @@ public partial class TestRenderViewModel : ViewModelBase
 
 		DisposeSession();
 		_exe = new BlenderExeService(BlenderPath);
-		_session = new RenderSession(_exe, new RenderOutputParser());
+		_exe.OnOutputReceived += HandleRawOutput;
+		_exe.OnErrorReceived += HandleRawError;
 
+		_session = new RenderSession(_exe, new RenderOutputParser());
 		_session.OnProgress += s => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnProgress(s));
 		_session.OnEvent += e => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(e));
 
-		AppendLog("已启动 Blender 进程，准备执行渲染脚本（示例环境，仅展示解析，不实际提交渲染）。");
-		AppendLog("请将你的渲染调用脚本接入 BlenderExeService.ExecuteScript 或 CLI 参数。");
+		var cmd = new BlenderCommandService();
+		await cmd.StartRenderAsync(_exe, BlendFilePath, StartFrame, EndFrame, Animation);
+		AppendLog($"已发送渲染指令: {StartFrame}..{EndFrame}, animation={Animation}");
 	}
 
 	[RelayCommand]
@@ -77,6 +89,16 @@ public partial class TestRenderViewModel : ViewModelBase
 	{
 		DisposeSession();
 		AppendLog("已停止。");
+	}
+
+	private void HandleRawOutput(string line)
+	{
+		Avalonia.Threading.Dispatcher.UIThread.Post(() => AppendLog($"[OUT] {line}"));
+	}
+
+	private void HandleRawError(string line)
+	{
+		Avalonia.Threading.Dispatcher.UIThread.Post(() => AppendLog($"[ERR] {line}"));
 	}
 
 	private void OnProgress(RenderProgress p)
@@ -129,7 +151,12 @@ public partial class TestRenderViewModel : ViewModelBase
 	private void DisposeSession()
 	{
 		try { _session?.Dispose(); } catch { }
-		try { _exe?.Dispose(); } catch { }
+		if (_exe is not null)
+		{
+			_exe.OnOutputReceived -= HandleRawOutput;
+			_exe.OnErrorReceived -= HandleRawError;
+			try { _exe.Dispose(); } catch { }
+		}
 		_session = null;
 		_exe = null;
 	}
