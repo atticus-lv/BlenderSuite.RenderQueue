@@ -9,6 +9,8 @@ using BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
 using System.Collections.Concurrent;
 using Avalonia.Platform.Storage;
 using System.Collections.Generic;
+using System.IO;
+using System.Threading;
 
 namespace BlenderRenderQueue.ViewModels.Test;
 
@@ -59,6 +61,8 @@ public partial class TestRenderViewModel : ViewModelBase
 	private const int MaxLogLines = 1000;
 	private int _logLineCount = 0;
 
+	private CancellationTokenSource? _versionCts;
+
 	public TestRenderViewModel()
 	{
 		_logTimer = new System.Timers.Timer(100);
@@ -95,6 +99,36 @@ public partial class TestRenderViewModel : ViewModelBase
 			}
 		}
 		catch { }
+	}
+
+	partial void OnBlenderPathChanged(string value)
+	{
+		_versionCts?.Cancel();
+		_versionCts = new CancellationTokenSource();
+		var ct = _versionCts.Token;
+
+		if (string.IsNullOrWhiteSpace(value) || !File.Exists(value)) return;
+
+		_ = Task.Run(async () =>
+		{
+			try
+			{
+				var svc = new BlenderCliInfoService();
+				var info = await svc.GetVersionInfoAsync(value, ct);
+				if (ct.IsCancellationRequested) return;
+				Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+				{
+					EnqueueLog($"Blender 版本: {info.Version} | 平台: {info.Platform} | 分支: {info.Branch} | Hash: {info.Hash}");
+				});
+			}
+			catch (Exception ex)
+			{
+				if (!ct.IsCancellationRequested)
+				{
+					Avalonia.Threading.Dispatcher.UIThread.Post(() => EnqueueLog($"查询版本失败: {ex.Message}"));
+				}
+			}
+		});
 	}
 
 	[RelayCommand]
