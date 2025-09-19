@@ -187,31 +187,14 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 Console.WriteLine($"[RenderTaskViewModel] Original image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
                 
-                // 在UI线程更新属性
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                {
-                    try
-                    {
-                        RenderedImage?.Dispose();
-                        RenderedImage = bitmap;
-                        RenderedImagePath = imagePath;
-                        HasRenderedImage = true;
-                        Console.WriteLine($"[RenderTaskViewModel] ✅ Rendered image loaded successfully: {imagePath}");
-                        Console.WriteLine($"[RenderTaskViewModel] Image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[RenderTaskViewModel] Error setting rendered image: {ex.Message}");
-                        HasRenderedImage = false;
-                    }
-                });
+                // 释放原始bitmap，因为我们只需要优化版本
+                bitmap.Dispose();
                 
-                // 在后台优化图片尺寸
+                // 直接加载并显示优化版本
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        // 重新从文件加载图片进行优化，避免使用可能被UI使用的bitmap
                         var optimizedBitmap = await LoadAndOptimizeImageAsync(imagePath, 120, 90);
                         
                         // 在UI线程更新为优化后的图片
@@ -223,22 +206,26 @@ public partial class RenderTaskViewModel : ViewModelBase
                                 {
                                     RenderedImage?.Dispose();
                                     RenderedImage = optimizedBitmap;
-                                    Console.WriteLine($"[RenderTaskViewModel] ✅ Optimized image applied: {optimizedBitmap.PixelSize.Width}x{optimizedBitmap.PixelSize.Height}");
+                                    RenderedImagePath = imagePath;
+                                    HasRenderedImage = true;
+                                    Console.WriteLine($"[RenderTaskViewModel] ✅ Optimized image loaded and displayed: {optimizedBitmap.PixelSize.Width}x{optimizedBitmap.PixelSize.Height}");
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"[RenderTaskViewModel] ⚠️ Optimized bitmap is null, keeping original");
+                                    Console.WriteLine($"[RenderTaskViewModel] ⚠️ Failed to load optimized image, showing placeholder");
+                                    HasRenderedImage = false;
                                 }
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine($"[RenderTaskViewModel] Error applying optimized image: {ex.Message}");
+                                Console.WriteLine($"[RenderTaskViewModel] Error setting optimized image: {ex.Message}");
+                                HasRenderedImage = false;
                             }
                         });
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[RenderTaskViewModel] Error optimizing image: {ex.Message}");
+                        Console.WriteLine($"[RenderTaskViewModel] Error loading optimized image: {ex.Message}");
                     }
                 });
             }
