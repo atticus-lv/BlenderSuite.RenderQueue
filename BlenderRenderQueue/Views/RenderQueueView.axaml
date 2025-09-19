@@ -10,7 +10,6 @@
              xmlns:viewModels="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
              xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
-             xmlns:media="using:Avalonia.Media"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
              x:DataType="viewModels:RenderQueueViewModel"
@@ -22,65 +21,15 @@
 
     <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
 
-        <!-- 顶部工具栏 -->
-        <suki:GlassCard Grid.Row="0" Grid.ColumnSpan="2" Margin="4">
-            <Grid ColumnDefinitions="*,Auto">
-
-                <!-- 队列控制按钮 -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
-                            VerticalAlignment="Center">
-                    <!-- 开始队列按钮：只在队列停止时显示 -->
-                    <Button Content="开始队列" Classes="Flat" Command="{Binding StartQueueCommand}"
-                            IsEnabled="{Binding CanStartQueue}" />
-
-                    <!-- 停止队列按钮：只在队列运行时显示 -->
-                    <Button Content="停止队列" Classes="Flat Accent" Command="{Binding StopQueueCommand}"
-                            IsEnabled="{Binding CanStopQueue}" />
-
-                    <!-- 生成视频按钮：按下后隐藏，显示进度条 -->
-                    <Button Classes="Flat" Command="{Binding GenerateVideoFromSelectedTaskCommand}"
-                            IsEnabled="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-                            IsVisible="{Binding IsGeneratingVideo, Converter={x:Static conv:BoolConverters.Not}}"
-                            ToolTip.Tip="为选中的任务生成 H.265 视频（需要设置有效的 FFmpeg 路径和帧路径目录中有图片文件）">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="🎬" VerticalAlignment="Center" />
-                                <TextBlock Text="生成视频" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Button.Content>
-                    </Button>
-
-                    <!-- 视频生成进度条：生成时显示 -->
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
-                                IsVisible="{Binding IsGeneratingVideo}">
-                        <TextBlock Text="🎬" FontSize="16" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding VideoGenerationStatus}" VerticalAlignment="Center" />
-                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding VideoGenerationProgress}"
-                                     Width="200" Height="16" VerticalAlignment="Center" ShowProgressText="False" />
-                    </StackPanel>
-                </StackPanel>
-
-            </Grid>
-        </suki:GlassCard>
 
         <!-- 队列统计信息 -->
         <suki:GlassCard Grid.Row="1" Grid.ColumnSpan="2" Margin="4">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-
-                <!-- 进度信息 -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding QueueStatusText}" FontWeight="Bold" />
-                    <TextBlock Text="{Binding ActiveTaskCount, StringFormat='运行中: {0}'}" />
-                    <TextBlock Text="{Binding CompletedTaskCount, StringFormat='已完成: {0}'}" />
-                    <TextBlock Text="{Binding FailedTaskCount, StringFormat='失败: {0}'}" />
-                    <TextBlock Text="{Binding CompletedFrames, StringFormat='已渲染帧: {0}'}" />
-                    <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" />
-                </StackPanel>
+            <Grid ColumnDefinitions="Auto,Auto,*">
 
                 <!-- 整体进度条 -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
                             VerticalAlignment="Center">
-                    <TextBlock Text="队列进度:" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding QueueStatusText}" FontWeight="Bold" />
                     <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallQueueProgress}"
                                  Width="200" Height="20" />
                     <TextBlock VerticalAlignment="Center">
@@ -94,14 +43,59 @@
                     </TextBlock>
                 </StackPanel>
 
-                <!-- 队列设置 -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <CheckBox Content="自动开始下一个任务" IsChecked="{Binding AutoStartNext}"
-                              VerticalAlignment="Center" />
+                <!-- 进度信息 -->
+                <StackPanel Margin="8 0 " Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding CompletedTaskCount, StringFormat='已完成: {0}'}" />
+                    <TextBlock Text="{Binding FailedTaskCount, StringFormat='失败: {0}'}" />
+                    <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
                 </StackPanel>
+
+
+                <!-- 队列设置 -->
+                <!-- <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"> -->
+                <!--     <CheckBox Content="自动开始下一个任务" IsChecked="{Binding AutoStartNext}" -->
+                <!--               VerticalAlignment="Center" /> -->
+                <!-- </StackPanel> -->
+
+                <Grid Grid.Column="2" ColumnDefinitions="*,Auto">
+
+                    <!-- 队列控制按钮 -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                VerticalAlignment="Center">
+                        <!-- 开始队列按钮：只在队列停止时显示 -->
+                        <Button Content="开始队列" Classes="Flat" Command="{Binding StartQueueCommand}"
+                                IsEnabled="{Binding CanStartQueue}" />
+
+                        <!-- 停止队列按钮：只在队列运行时显示 -->
+                        <Button Content="停止队列" Classes="Flat Accent" Command="{Binding StopQueueCommand}"
+                                IsEnabled="{Binding CanStopQueue}" />
+
+                        <!-- 生成视频按钮：按下后隐藏，显示进度条 -->
+                        <Button Classes="Flat" Command="{Binding GenerateVideoFromSelectedTaskCommand}"
+                                IsEnabled="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                IsVisible="{Binding IsGeneratingVideo, Converter={x:Static conv:BoolConverters.Not}}"
+                                ToolTip.Tip="为选中的任务生成 H.265 视频（需要设置有效的 FFmpeg 路径和帧路径目录中有图片文件）">
+                            <Button.Content>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="🎬" VerticalAlignment="Center" />
+                                    <TextBlock Text="生成视频" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button.Content>
+                        </Button>
+
+                        <!-- 视频生成进度条：生成时显示 -->
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                                    IsVisible="{Binding IsGeneratingVideo}">
+                            <TextBlock Text="🎬" FontSize="16" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding VideoGenerationStatus}" VerticalAlignment="Center" />
+                            <ProgressBar Minimum="0" Maximum="1" Value="{Binding VideoGenerationProgress}"
+                                         Width="200" Height="16" VerticalAlignment="Center" ShowProgressText="False" />
+                        </StackPanel>
+                    </StackPanel>
+
+                </Grid>
             </Grid>
         </suki:GlassCard>
-
 
 
         <!-- 主要内容区域 -->
@@ -198,7 +192,6 @@
 
 
                     </suki:GlassCard>
-
 
 
                 </Grid>
