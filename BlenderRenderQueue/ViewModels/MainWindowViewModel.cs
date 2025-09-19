@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using SukiUI.Controls;
 using SukiUI.Dialogs;
+using System.Threading.Tasks;
+using System;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -17,6 +19,9 @@ public partial class MainWindowViewModel : ViewModelBase
 		
 		// 初始化设置并检测路径
 		InitializeSettings();
+		
+		// 异步加载保存的数据
+		_ = Task.Run(async () => await LoadSavedDataAsync());
 	}
 
 	private void InitializeSettings()
@@ -61,7 +66,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
 		DialogManager.CreateDialog()
 			.WithTitle("设置")
-			.WithContent(_settingsViewModel)
+			.WithContent(_settingsViewModel!)
 			.WithActionButton("保存", _ => 
 			{
 				_settingsViewModel!.SaveSettingsCommand.Execute(null);
@@ -83,6 +88,38 @@ public partial class MainWindowViewModel : ViewModelBase
 		{
 			mainRender.BlenderPath = blenderPath;
 			mainRender.FfmpegPath = ffmpegPath;
+		}
+	}
+
+	/// <summary>
+	/// 加载保存的数据
+	/// </summary>
+	private async Task LoadSavedDataAsync()
+	{
+		try
+		{
+			Console.WriteLine("[MainWindowViewModel] Starting to load saved data...");
+			
+			// 等待设置初始化完成
+			await Task.Delay(1000);
+			
+			// 加载设置
+			if (_settingsViewModel != null)
+			{
+				await _settingsViewModel.LoadSettingsFromFileAsync();
+			}
+			
+			// 加载渲染队列数据
+			if (Content is MainRenderViewModel mainRender && mainRender.RenderQueue != null)
+			{
+				await mainRender.RenderQueue.LoadQueueDataAsync();
+			}
+			
+			Console.WriteLine("[MainWindowViewModel] ✅ Saved data loaded successfully");
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"[MainWindowViewModel] ❌ Error loading saved data: {ex.Message}");
 		}
 	}
 }

@@ -18,6 +18,8 @@ public class FFmpegService : IFFmpegService
     private static readonly string[] SupportedImageExtensions = { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff", "*.tga" };
     private string? _ffmpegPath;
 
+    public string? FFmpegPath => _ffmpegPath;
+
     public void SetFFmpegPath(string? ffmpegPath)
     {
         _ffmpegPath = ffmpegPath;

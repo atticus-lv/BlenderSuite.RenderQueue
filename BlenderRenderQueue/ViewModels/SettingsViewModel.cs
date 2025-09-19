@@ -9,6 +9,7 @@ using BlenderRenderQueue.Services.BlenderService;
 using Avalonia.Platform.Storage;
 using System.Threading;
 using BlenderRenderQueue.Services;
+using BlenderRenderQueue.Models;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -49,6 +50,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     // 内部状态
     private CancellationTokenSource? _versionCts;
+    private readonly IDataPersistenceService _dataPersistenceService = new DataPersistenceService();
 
     // 事件：当设置发生变化时通知
     public event EventHandler<SettingsChangedEventArgs>? SettingsChanged;
@@ -331,10 +333,72 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void SaveSettings()
+    private async Task SaveSettings()
     {
         // 触发设置变化事件
         SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, FfmpegPath));
+        
+        // 保存设置到文件
+        await SaveSettingsToFileAsync();
+    }
+
+    /// <summary>
+    /// 保存设置到文件
+    /// </summary>
+    public async Task SaveSettingsToFileAsync()
+    {
+        try
+        {
+            var appData = new AppData
+            {
+                Settings = new SettingsData
+                {
+                    BlenderPath = BlenderPath,
+                    FfmpegPath = FfmpegPath
+                }
+            };
+
+            var success = await _dataPersistenceService.SaveDataAsync(appData);
+            if (success)
+            {
+                Console.WriteLine($"[SettingsViewModel] ✅ Settings saved successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}");
+            }
+            else
+            {
+                Console.WriteLine($"[SettingsViewModel] ❌ Failed to save settings");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SettingsViewModel] ❌ Error saving settings: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 从文件加载设置
+    /// </summary>
+    public async Task LoadSettingsFromFileAsync()
+    {
+        try
+        {
+            var appData = await _dataPersistenceService.LoadDataAsync();
+            
+            if (!string.IsNullOrEmpty(appData.Settings.BlenderPath))
+            {
+                BlenderPath = appData.Settings.BlenderPath;
+            }
+            
+            if (!string.IsNullOrEmpty(appData.Settings.FfmpegPath))
+            {
+                FfmpegPath = appData.Settings.FfmpegPath;
+            }
+
+            Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SettingsViewModel] ❌ Error loading settings: {ex.Message}");
+        }
     }
 
     private static IEnumerable<FilePickerFileType> GetBlenderExecutableFileTypes()

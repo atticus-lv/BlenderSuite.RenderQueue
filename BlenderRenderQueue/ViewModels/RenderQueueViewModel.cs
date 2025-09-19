@@ -84,6 +84,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private readonly List<Task> _runningTasks = new();
     private BlenderExeService? _blenderService;
     private readonly IFFmpegService _ffmpegService = new FFmpegService();
+    private readonly IDataPersistenceService _dataPersistenceService = new DataPersistenceService();
     private readonly object _queueLock = new object();
 
     // 事件
@@ -94,7 +95,12 @@ public partial class RenderQueueViewModel : ViewModelBase
     public RenderQueueViewModel()
     {
         // 监听任务状态变化
-        RenderTasks.CollectionChanged += (s, e) => UpdateQueueStatistics();
+        RenderTasks.CollectionChanged += (s, e) => 
+        {
+            UpdateQueueStatistics();
+            // 任务集合变化时自动保存
+            AutoSaveQueueData();
+        };
 
         // 监听队列状态变化，通知计算属性更新
         PropertyChanged += (s, e) =>
@@ -112,10 +118,10 @@ public partial class RenderQueueViewModel : ViewModelBase
             }
         };
 
-        // Debug 模式下添加测试任务
-#if DEBUG
-        AddTestTaskIfExists();
-#endif
+//         // Debug 模式下添加测试任务
+// #if DEBUG
+//         AddTestTaskIfExists();
+// #endif
     }
 
     [RelayCommand]
@@ -693,6 +699,124 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 #endif
+
+    /// <summary>
+    /// 保存当前队列数据
+    /// </summary>
+    public async Task SaveQueueDataAsync()
+    {
+        try
+        {
+            var appData = new AppData
+            {
+                Settings = new SettingsData
+                {
+                    BlenderPath = _blenderService?.BlenderPath ?? string.Empty,
+                    FfmpegPath = _ffmpegService.FFmpegPath ?? string.Empty
+                },
+                RenderQueue = RenderTasks.Select(task => new RenderTaskData
+                {
+                    RenderTask = new RenderTaskInfo
+                    {
+                        Filename = Path.GetFileName(task.BlendFilePath),
+                        Filepath = task.BlendFilePath,
+                        StartFrame = task.StartFrame,
+                        EndFrame = task.EndFrame,
+                        LastRenderedFrame = task.CurrentFrame
+                    }
+                }).ToList()
+            };
+
+            var success = await _dataPersistenceService.SaveDataAsync(appData);
+            if (success)
+            {
+                Console.WriteLine($"[RenderQueueViewModel] ✅ Queue data saved successfully - {RenderTasks.Count} tasks");
+            }
+            else
+            {
+                Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to save queue data");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Error saving queue data: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 加载队列数据
+    /// </summary>
+    public async Task LoadQueueDataAsync()
+    {
+        try
+        {
+            var appData = await _dataPersistenceService.LoadDataAsync();
+            
+            // 加载设置
+            if (!string.IsNullOrEmpty(appData.Settings.BlenderPath))
+            {
+                // 设置 Blender 路径（如果服务已初始化）
+                if (_blenderService != null)
+                {
+                    _blenderService = new BlenderExeService(appData.Settings.BlenderPath);
+                }
+            }
+            
+            if (!string.IsNullOrEmpty(appData.Settings.FfmpegPath))
+            {
+                _ffmpegService.SetFFmpegPath(appData.Settings.FfmpegPath);
+            }
+
+            // 加载渲染任务
+            foreach (var taskData in appData.RenderQueue)
+            {
+                var taskInfo = taskData.RenderTask;
+                
+                // 检查文件是否存在
+                if (!File.Exists(taskInfo.Filepath))
+                {
+                    Console.WriteLine($"[RenderQueueViewModel] ⚠️ File not found, skipping: {taskInfo.Filepath}");
+                    continue;
+                }
+
+                var task = new RenderTaskViewModel(
+                    taskInfo.Filepath, 
+                    taskInfo.StartFrame, 
+                    taskInfo.EndFrame, 
+                    true); // AutoStart 默认为 true
+
+                // 自动加载文件属性
+                if (_blenderService != null)
+                {
+                    await task.LoadFilePropertiesAsync(_blenderService);
+                }
+
+                RenderTasks.Add(task);
+                SubscribeToTaskEvents(task);
+            }
+
+            Console.WriteLine($"[RenderQueueViewModel] ✅ Queue data loaded successfully - {RenderTasks.Count} tasks");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Error loading queue data: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 自动保存队列数据（在任务变化时调用）
+    /// </summary>
+    private async void AutoSaveQueueData()
+    {
+        try
+        {
+            await SaveQueueDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Error in auto-save: {ex.Message}");
+        }
+    }
 
     public void Dispose()
     {

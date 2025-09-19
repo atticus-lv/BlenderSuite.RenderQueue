@@ -10,6 +10,11 @@ namespace BlenderRenderQueue.Services.FFmpegService;
 public interface IFFmpegService
 {
     /// <summary>
+    /// 获取 FFmpeg 可执行文件路径
+    /// </summary>
+    string? FFmpegPath { get; }
+
+    /// <summary>
     /// 设置 FFmpeg 可执行文件路径
     /// </summary>
     /// <param name="ffmpegPath">FFmpeg 路径</param>

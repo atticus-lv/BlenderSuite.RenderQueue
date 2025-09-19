@@ -33,6 +33,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     private bool _animation = true;
 
     [ObservableProperty]
+    private bool _autoStart = true;
+
+    [ObservableProperty]
     private double _progress01; // 当前帧进度
 
     [ObservableProperty]
