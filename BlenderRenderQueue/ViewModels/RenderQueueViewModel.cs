@@ -401,7 +401,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 {
                     // 更新进度
                     VideoGenerationProgress = progress;
-                    VideoGenerationStatus = $"生成进度: {progress:P1}";
+                    VideoGenerationStatus = $"生成中: {progress:P1}";
                 });
 
             if (success)
