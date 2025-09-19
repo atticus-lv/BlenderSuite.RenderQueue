@@ -52,12 +52,44 @@ public partial class SettingsViewModel : ViewModelBase
 
     // 事件：当设置发生变化时通知
     public event EventHandler<SettingsChangedEventArgs>? SettingsChanged;
+    
+    // 事件：当初始化完成时通知
+    public event EventHandler<InitializationCompletedEventArgs>? InitializationCompleted;
 
     public SettingsViewModel()
     {
-        // Windows 上尝试自动定位 Blender 和 FFmpeg
-        TryAutoDetectBlender();
-        TryAutoDetectFFmpeg();
+        // 构造函数中不进行自动检测，等待StartInitialization调用
+    }
+
+    public void StartInitialization()
+    {
+        // 开始初始化检测
+        _ = Task.Run(async () => await InitializeAsync());
+    }
+
+    private async Task InitializeAsync()
+    {
+        var blenderDetected = false;
+        var ffmpegDetected = false;
+
+        try
+        {
+            // 尝试自动检测 Blender
+            blenderDetected = await TryAutoDetectBlenderAsync();
+
+            // 尝试自动检测 FFmpeg
+            ffmpegDetected = await TryAutoDetectFFmpegAsync();
+        }
+        catch (Exception)
+        {
+            // 忽略检测过程中的错误
+        }
+
+        // 通知初始化完成
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            InitializationCompleted?.Invoke(this, new InitializationCompletedEventArgs(blenderDetected, ffmpegDetected));
+        });
     }
 
     partial void OnBlenderPathChanged(string value)
@@ -106,10 +138,10 @@ public partial class SettingsViewModel : ViewModelBase
             // 更新UI线程上的属性
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                BlenderVersion = info.Version;
-                BlenderPlatform = info.Platform;
-                BlenderBranch = info.Branch;
-                BlenderHash = info.Hash;
+                BlenderVersion = info.Version ?? string.Empty;
+                BlenderPlatform = info.Platform ?? string.Empty;
+                BlenderBranch = info.Branch ?? string.Empty;
+                BlenderHash = info.Hash ?? string.Empty;
                 IsLoadingBlenderInfo = false;
             });
         }
@@ -183,36 +215,37 @@ public partial class SettingsViewModel : ViewModelBase
         BlenderHash = string.Empty;
     }
 
-    private void TryAutoDetectBlender()
+    private async Task<bool> TryAutoDetectBlenderAsync()
     {
         try
         {
             if (OperatingSystem.IsWindows())
             {
+                // 先尝试快速检测
                 if (BlenderRenderQueue.Helpers.BlenderLocator.TryFindBlenderExe(out var exe))
                 {
-                    BlenderPath = exe;
-                    return;
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { BlenderPath = exe; });
+                    return true;
                 }
 
-                // 未命中则后台异步扫描常见目录
-                _ = Task.Run(async () =>
+                // 如果快速检测失败，进行异步扫描
+                var asyncExe = await BlenderRenderQueue.Helpers.BlenderLocator.FindBlenderExeAsync();
+                if (!string.IsNullOrWhiteSpace(asyncExe))
                 {
-                    var asyncExe = await BlenderRenderQueue.Helpers.BlenderLocator.FindBlenderExeAsync();
-                    if (!string.IsNullOrWhiteSpace(asyncExe))
-                    {
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() => { BlenderPath = asyncExe; });
-                    }
-                });
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { BlenderPath = asyncExe; });
+                    return true;
+                }
             }
         }
         catch
         {
             // 忽略错误
         }
+        
+        return false;
     }
 
-    private void TryAutoDetectFFmpeg()
+    private Task<bool> TryAutoDetectFFmpegAsync()
     {
         try
         {
@@ -222,8 +255,8 @@ public partial class SettingsViewModel : ViewModelBase
                 var ffmpegExe = FindFFmpegInPath();
                 if (!string.IsNullOrEmpty(ffmpegExe))
                 {
-                    FfmpegPath = ffmpegExe;
-                    return;
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { FfmpegPath = ffmpegExe; });
+                    return Task.FromResult(true);
                 }
 
                 // 尝试在常见位置查找
@@ -239,8 +272,8 @@ public partial class SettingsViewModel : ViewModelBase
                 foreach (var path in commonPaths)
                 {
                     if (!File.Exists(path)) continue;
-                    FfmpegPath = path;
-                    return;
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { FfmpegPath = path; });
+                    return Task.FromResult(true);
                 }
             }
         }
@@ -248,6 +281,8 @@ public partial class SettingsViewModel : ViewModelBase
         {
             // 忽略错误
         }
+        
+        return Task.FromResult(false);
     }
 
     private string? FindFFmpegInPath()
@@ -337,5 +372,18 @@ public class SettingsChangedEventArgs : EventArgs
     {
         BlenderPath = blenderPath;
         FfmpegPath = ffmpegPath;
+    }
+}
+
+// 初始化完成事件参数
+public class InitializationCompletedEventArgs : EventArgs
+{
+    public bool IsBlenderDetected { get; }
+    public bool IsFFmpegDetected { get; }
+
+    public InitializationCompletedEventArgs(bool isBlenderDetected, bool isFFmpegDetected)
+    {
+        IsBlenderDetected = isBlenderDetected;
+        IsFFmpegDetected = isFFmpegDetected;
     }
 }

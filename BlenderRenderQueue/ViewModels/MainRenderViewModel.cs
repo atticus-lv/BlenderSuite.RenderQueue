@@ -63,10 +63,6 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.QueueStatusChanged += OnQueueStatusChanged;
         RenderQueue.TaskCompleted += OnTaskCompleted;
         RenderQueue.StatusMessageChanged += OnRenderQueueStatusMessageChanged;
-
-        // Windows 上尝试自动定位 Blender 和 FFmpeg
-        TryAutoDetectBlender();
-        TryAutoDetectFFmpeg();
     }
 
     partial void OnBlenderPathChanged(string value)
@@ -209,125 +205,7 @@ public partial class MainRenderViewModel : ViewModelBase
         BlenderHash = string.Empty;
     }
 
-    private void TryAutoDetectBlender()
-    {
-        try
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                if (BlenderRenderQueue.Helpers.BlenderLocator.TryFindBlenderExe(out var exe))
-                {
-                    BlenderPath = exe;
-                    StatusMessage = $"自动检测到 Blender: {exe}";
-                }
-                else
-                {
-                    // 未命中则后台异步扫描常见目录
-                    _ = Task.Run(async () =>
-                    {
-                        var asyncExe = await BlenderRenderQueue.Helpers.BlenderLocator.FindBlenderExeAsync();
-                        if (!string.IsNullOrWhiteSpace(asyncExe))
-                        {
-                            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                            {
-                                BlenderPath = asyncExe;
-                                StatusMessage = $"异步检测到 Blender: {asyncExe}";
-                            });
-                        }
-                    });
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"自动检测Blender失败: {ex.Message}";
-        }
-    }
 
-    private void TryAutoDetectFFmpeg()
-    {
-        try
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                // 尝试在 PATH 中查找 ffmpeg.exe
-                var ffmpegExe = FindFFmpegInPath();
-                if (!string.IsNullOrEmpty(ffmpegExe))
-                {
-                    FfmpegPath = ffmpegExe;
-                    StatusMessage = $"自动检测到 FFmpeg: {ffmpegExe}";
-                    return;
-                }
-
-                // 尝试在常见位置查找
-                var commonPaths = new[]
-                {
-                    @"C:\ffmpeg\bin\ffmpeg.exe",
-                    @"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
-                    @"C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe",
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "ffmpeg", "bin", "ffmpeg.exe")
-                };
-
-                foreach (var path in commonPaths)
-                {
-                    if (!File.Exists(path)) continue;
-                    FfmpegPath = path;
-                    StatusMessage = $"自动检测到 FFmpeg: {path}";
-                    return;
-                }
-
-                StatusMessage = "未找到 FFmpeg，视频生成功能将不可用";
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"自动检测FFmpeg失败: {ex.Message}";
-        }
-    }
-
-    private string? FindFFmpegInPath()
-    {
-        try
-        {
-            var pathEnv = Environment.GetEnvironmentVariable("PATH");
-            if (string.IsNullOrEmpty(pathEnv)) return null;
-
-            var paths = pathEnv.Split(Path.PathSeparator);
-            foreach (var path in paths)
-            {
-                var ffmpegPath = Path.Combine(path, "ffmpeg.exe");
-                if (File.Exists(ffmpegPath))
-                {
-                    return ffmpegPath;
-                }
-            }
-        }
-        catch
-        {
-            // 忽略错误
-        }
-        return null;
-    }
-
-    [RelayCommand]
-    private async Task BrowseBlender()
-    {
-        var path = await this.SelectFile("选择 Blender 可执行文件", GetBlenderExecutableFileTypes());
-        if (!string.IsNullOrWhiteSpace(path))
-        {
-            BlenderPath = path;
-        }
-    }
-
-    [RelayCommand]
-    private async Task BrowseFFmpeg()
-    {
-        var path = await this.SelectFile("选择 FFmpeg 可执行文件", GetFFmpegExecutableFileTypes());
-        if (!string.IsNullOrWhiteSpace(path))
-        {
-            FfmpegPath = path;
-        }
-    }
 
 
     private void OnQueueStatusChanged(object? sender, QueueStatusChangedEventArgs e)
@@ -367,31 +245,6 @@ public partial class MainRenderViewModel : ViewModelBase
         // 可以在这里添加额外的进度处理逻辑
     }
 
-    private static IEnumerable<FilePickerFileType> GetBlendFileTypes()
-    {
-        return new[]
-        {
-            new FilePickerFileType("Blend Files") { Patterns = new[] { "*.blend" } }
-        };
-    }
-
-    private static IEnumerable<FilePickerFileType> GetBlenderExecutableFileTypes()
-    {
-#if WINDOWS
-        return new[] { new FilePickerFileType("Executable") { Patterns = new[] { "*.exe" } } };
-#else
-        return new[] { new FilePickerFileType("Blender") { Patterns = new[] { "blender", "*blender*" } } };
-#endif
-    }
-
-    private static IEnumerable<FilePickerFileType> GetFFmpegExecutableFileTypes()
-    {
-#if WINDOWS
-        return new[] { new FilePickerFileType("FFmpeg Executable") { Patterns = new[] { "ffmpeg.exe" } } };
-#else
-        return new[] { new FilePickerFileType("FFmpeg") { Patterns = new[] { "ffmpeg", "*ffmpeg*" } } };
-#endif
-    }
 
     public void Dispose()
     {
