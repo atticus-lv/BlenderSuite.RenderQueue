@@ -4,38 +4,88 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
-             xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.RenderTaskView"
              x:DataType="vm:RenderTaskViewModel">
 
 
     <Grid>
-        
+
         <suki:GroupBox>
             <!-- 任务标题和状态 -->
             <suki:GroupBox.Header>
-                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold" FontSize="16"
-                               VerticalAlignment="Center" />
-                    <Border
-                        Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
-                        CornerRadius="4" Padding="8,4">
-                        <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="White" />
-                    </Border>
-                    <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}"
-                               VerticalAlignment="Center" FontSize="14" Foreground="#666" />
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold" FontSize="20"
+                                   VerticalAlignment="Center" />
+                        <Border
+                            Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
+                            CornerRadius="4" Padding="8,4">
+                            <TextBlock Text="{Binding StatusText}" FontSize="12" FontWeight="Bold" />
+                        </Border>
+                        <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}"
+                                   VerticalAlignment="Center" FontSize="14" />
+
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,Auto" Margin="4">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="Auto,5,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="文件大小:" FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Row="0" Grid.Column="2"
+                                           Text="{Binding FileInfo.FileSizeFormatted}"
+                                           VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="创建时间:" FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Row="1" Grid.Column="2"
+                                           Text="{Binding FileInfo.CreatedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                           VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="修改时间:" FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Row="2" Grid.Column="2"
+                                           Text="{Binding FileInfo.LastModifiedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                           VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="文件路径:" FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding FileInfo.FilePath}"
+                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            </Grid>
+
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <Button Margin="8"
+                                    Command="{Binding RefreshFileInfoCommand}"
+                                    IsEnabled="{Binding $parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanStartQueue}"
+                                    ToolTip.Tip="重载文件"
+                                    Classes="Flat Accent Round"
+                                    Width="120"
+                                    FontSize="12">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <avalonia:MaterialIcon Kind="Refresh" />
+                                    <TextBlock Text="重载文件" Margin="4,0,0,0" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
+
             </suki:GroupBox.Header>
-            <TabControl Grid.Row="1">
+            <TabControl>
                 <TabItem Header="场景信息">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="16" Margin="8">
+                            <!-- 文件系统信息 -->
+
+
                             <!-- 场景信息 -->
                             <suki:GlassCard>
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="文件信息" FontWeight="Bold" FontSize="14" Margin="0,0,0,8" />
+                                    <TextBlock Text="场景信息" FontWeight="Bold" FontSize="14" Margin="0,0,0,8" />
                                     <views:BlendFilePropertiesView DataContext="{Binding FileProperties}" />
                                 </StackPanel>
                             </suki:GlassCard>

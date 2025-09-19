@@ -110,6 +110,21 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
+    private void RefreshFileInfo()
+    {
+        try
+        {
+            EnqueueLog("[INFO] Refreshing file information...");
+            FileInfo.Refresh();
+            EnqueueLog("[INFO] File information refreshed successfully");
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"[ERROR] Failed to refresh file information: {ex.Message}");
+        }
+    }
+
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 
     [ObservableProperty]
