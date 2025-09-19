@@ -1,55 +1,53 @@
 <suki1:SukiWindow xmlns="https://github.com/avaloniaui"
-                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                  xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
-                  xmlns:suki1="https://github.com/kikipoulet/SukiUI"
-                  xmlns:viewModels="clr-namespace:BlenderRenderQueue.ViewModels"
-                  x:Class="BlenderRenderQueue.Views.ImagePreviewWindow"
-                  Title="图片预览"
-                  Width="800"
-                  Height="600"
-                  MinWidth="400"
-                  MinHeight="300"
-                  WindowStartupLocation="CenterOwner"
-                  BackgroundStyle="Gradient"
-                  x:DataType="viewModels:ImagePreviewWindowViewModel">
-
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:suki="using:SukiUI"
+                 xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
+                 xmlns:suki1="https://github.com/kikipoulet/SukiUI"
+                 xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
+                 x:Class="BlenderRenderQueue.Views.ImagePreviewWindow"
+                 Title="图片预览"
+                 Width="800"
+                 Height="600"
+                 MinWidth="400"
+                 MinHeight="300"
+                 WindowStartupLocation="CenterOwner"
+                 x:DataType="vm:ImagePreviewWindowViewModel"
+                 >
+    
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
+        
         <!-- 标题栏 -->
-        <Border Grid.Row="0" Background="#F5F5F5" Padding="12,8">
+        <Border Grid.Row="0" Background="#F5F5F5" Padding="12,8" Opacity="0.7">
             <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="🖼️" FontSize="16" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding ImagePath}"
-                           FontWeight="Bold"
+                <TextBlock Text="🖼️" FontSize="16" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding ImagePath}" 
+                           FontWeight="Bold" 
                            VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis" />
-                <TextBlock Text="{Binding ImageSize}"
-                           Foreground="#666"
+                           TextTrimming="CharacterEllipsis"/>
+                <TextBlock Text="{Binding ImageSize}" 
+                           Foreground="#666" 
                            VerticalAlignment="Center"
-                           Margin="8,0,0,0" />
+                           Margin="8,0,0,0"/>
             </StackPanel>
         </Border>
-
+        
         <!-- 图片预览控件 -->
-        <controls:ImagePreviewControl Grid.Row="1"
-                                      Image="{Binding Image}"
-                                      IsLoading="{Binding IsLoading}"
-                                      Margin="8" />
-
+        <controls:ImagePreviewControl x:Name="ImagePreviewControl" Grid.Row="1" Margin="8" Image="{Binding }"/>
+        
         <!-- 底部信息栏 -->
-        <Border Grid.Row="2" Background="#F5F5F5" Padding="12,8">
+        <Border Grid.Row="2" Background="#F5F5F5" Padding="12,8" Opacity="0.7">
             <StackPanel Orientation="Horizontal" Spacing="16">
-                <TextBlock Text="{Binding FileInfo}"
-                           Foreground="#666"
-                           VerticalAlignment="Center" />
-                <TextBlock Text="{Binding FrameInfo}"
-                           Foreground="#666"
-                           VerticalAlignment="Center" />
+                <TextBlock Text="{Binding FileInfo}" 
+                           Foreground="#666" 
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding FrameInfo}" 
+                           Foreground="#666" 
+                           VerticalAlignment="Center"/>
             </StackPanel>
         </Border>
     </Grid>
