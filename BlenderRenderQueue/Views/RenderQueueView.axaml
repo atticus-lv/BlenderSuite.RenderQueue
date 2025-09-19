@@ -154,7 +154,7 @@
                         </ListBox.Styles>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border Margin="2" CornerRadius="4"
+                                <Border Background="{Binding $parent[ListBox].Background}" Margin="2" CornerRadius="4"
                                         Padding="4">
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Grid.Column="0">
