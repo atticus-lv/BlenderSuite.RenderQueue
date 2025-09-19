@@ -18,17 +18,7 @@ public sealed class BlenderQueryService : IBlenderQueryService
             process,
             blendFilePath,
             "get_all_file_properties",
-            @"{
-				'frame_start': int(s.frame_start), 
-				'frame_end': int(s.frame_end),
-				'camera': (s.camera.name if s.camera else None),
-				'render_output_path': bpy.context.scene.render.filepath,
-				'render_output_format': bpy.context.scene.render.image_settings.file_format,
-				'render_engine': bpy.context.scene.render.engine,
-				'scene_name': bpy.context.scene.name,
-				'fps': bpy.context.scene.render.fps,
-				'frame_path': bpy.context.scene.render.frame_path(),
-			}",
+            null, // 不再需要 dataPythonDictLiteral，在脚本中直接构建
             root =>
             {
                 var data = root.GetProperty("data");
@@ -47,7 +37,9 @@ public sealed class BlenderQueryService : IBlenderQueryService
                     Fps = data.GetProperty("fps").ValueKind == JsonValueKind.Null
                         ? null
                         : data.GetProperty("fps").GetDouble(),
-                    FramePath = data.GetProperty("frame_path").GetString()
+                    FramePath = data.GetProperty("frame_path").ValueKind == JsonValueKind.Null
+                        ? null
+                        : data.GetProperty("frame_path").GetString()
                 };
             },
             cancellationToken);
@@ -57,13 +49,51 @@ public sealed class BlenderQueryService : IBlenderQueryService
         BasePythonProcessService process,
         string blendFilePath,
         string cmd,
-        string dataPythonDictLiteral,
+        string? dataPythonDictLiteral,
         Func<JsonElement, T> onOk,
         CancellationToken cancellationToken)
     {
         // 对路径进行简单的标准化处理
         var normalizedPath = EscapePathForPython(blendFilePath);
-        var script = $@"
+        string script;
+        if (dataPythonDictLiteral == null)
+        {
+            // 使用内置的安全获取方式
+            script = $@"
+import bpy, json
+filepath = '{normalizedPath}'
+try:
+    bpy.ops.wm.open_mainfile(filepath=filepath)
+    s=bpy.context.scene
+    
+    # 安全地获取数据，对每个可能出错的操作使用 try-except
+    def safe_get(operation, default=None):
+        try:
+            return operation()
+        except Exception:
+            return default
+    
+    data = {{
+        'frame_start': safe_get(lambda: int(s.frame_start), 1),
+        'frame_end': safe_get(lambda: int(s.frame_end), 1),
+        'camera': safe_get(lambda: s.camera.name if s.camera else None),
+        'render_output_path': safe_get(lambda: bpy.context.scene.render.filepath, ''),
+        'render_output_format': safe_get(lambda: bpy.context.scene.render.image_settings.file_format, 'PNG'),
+        'render_engine': safe_get(lambda: bpy.context.scene.render.engine, 'BLENDER_EEVEE'),
+        'scene_name': safe_get(lambda: bpy.context.scene.name, 'Scene'),
+        'fps': safe_get(lambda: bpy.context.scene.render.fps, 24.0),
+        'frame_path': safe_get(lambda: bpy.context.scene.render.frame_path() if hasattr(bpy.context.scene.render, 'frame_path') else None)
+    }}
+    
+    print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':True,'data': data}}, separators=(',', ':')))
+except Exception as e:
+    print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':False,'err':str(e)}}, separators=(',', ':')))
+";
+        }
+        else
+        {
+            // 使用传统方式
+            script = $@"
 import bpy, json
 filepath = '{normalizedPath}'
 try:
@@ -73,6 +103,7 @@ try:
 except Exception as e:
     print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':False,'err':str(e)}}, separators=(',', ':')))
 ";
+        }
 
         var res = await process.ExecuteScript(script, cmd, cancellationToken);
         return ParseResult<T>(res.Output, cmd, onOk);
