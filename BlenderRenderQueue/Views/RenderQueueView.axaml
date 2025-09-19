@@ -6,12 +6,17 @@
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              xmlns:services="clr-namespace:BlenderRenderQueue.Services"
              xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
              x:DataType="vm:MainRenderViewModel"
              services:ToplevelService.Register="{Binding}">
+
+    <UserControl.Resources>
+        <converters:IsTaskOperableConverter x:Key="IsTaskOperableConverter" />
+    </UserControl.Resources>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" ColumnDefinitions="*,Auto">
 
@@ -142,27 +147,31 @@
                                     <material:MaterialIcon Kind="Add"></material:MaterialIcon>
                                 </Button>
                                 <Button Command="{Binding RenderQueue.RemoveSelectedTaskCommand}"
-                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.IsQueueRunning}}">
                                     <material:MaterialIcon Kind="Remove"></material:MaterialIcon>
                                 </Button>
                                 
                                 <Button HorizontalContentAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}">
+                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}"
+                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.IsQueueRunning}}">
                                     <material:MaterialIcon Kind="ArrowTop"></material:MaterialIcon>
                                 </Button>
                                 <Button HorizontalContentAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}">
+                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}"
+                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.IsQueueRunning}}">
                                     <material:MaterialIcon Kind="ArrowDown"></material:MaterialIcon>
                                 </Button>
                                 
-                                <Button Command="{Binding RenderQueue.RemoveAllTasksCommand}" Margin="0 8">
+                                <Button Command="{Binding RenderQueue.RemoveAllTasksCommand}" 
+                                        IsEnabled="{Binding !RenderQueue.IsQueueRunning}" Margin="0 8">
                                     <material:MaterialIcon Kind="Clear"></material:MaterialIcon>
                                 </Button>
                                 
                             </StackPanel>
                             <ListBox Grid.Column="0" ItemsSource="{Binding RenderQueue.RenderTasks}"
+                                     Classes="WithoutCheck"
                                      SelectedItem="{Binding RenderQueue.SelectedTask}" Margin="4">
                                 <ListBox.Styles>
                                     <Style Selector="ListBoxItem">
