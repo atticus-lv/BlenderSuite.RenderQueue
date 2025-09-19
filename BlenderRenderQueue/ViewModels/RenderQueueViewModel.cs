@@ -124,17 +124,25 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         if (SelectedTask == null) return;
 
+        // 保存对选中任务的引用，避免在操作过程中被意外清空
+        var taskToRemove = SelectedTask;
+        
         // 如果任务正在运行，先停止
-        if (SelectedTask.Status == RenderTaskStatus.Running)
+        if (taskToRemove.Status == RenderTaskStatus.Running)
         {
-            SelectedTask.StopRender();
+            taskToRemove.StopRender();
         }
 
         // 取消订阅事件
-        UnsubscribeFromTaskEvents(SelectedTask);
+        UnsubscribeFromTaskEvents(taskToRemove);
         
-        RenderTasks.Remove(SelectedTask);
-        SelectedTask.Dispose();
+        // 从集合中移除任务
+        RenderTasks.Remove(taskToRemove);
+        
+        // 释放任务资源
+        taskToRemove.Dispose();
+        
+        // 清空选中任务
         SelectedTask = null;
         
         UpdateQueueStatistics();
