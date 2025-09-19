@@ -250,7 +250,67 @@ public partial class RenderTaskViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 优化图片尺寸
+    /// 从文件加载并优化图片尺寸
+    /// </summary>
+    private async Task<Bitmap?> LoadAndOptimizeImageAsync(string imagePath, int maxWidth, int maxHeight)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                Console.WriteLine($"[RenderTaskViewModel] Loading and optimizing image: {imagePath}");
+                
+                // 重新从文件加载图片
+                using (var fileStream = File.OpenRead(imagePath))
+                {
+                    var originalBitmap = new Bitmap(fileStream);
+                    var originalSize = originalBitmap.PixelSize;
+                    
+                    // 如果图片已经小于目标尺寸，直接返回
+                    if (originalSize.Width <= maxWidth && originalSize.Height <= maxHeight)
+                    {
+                        Console.WriteLine($"[RenderTaskViewModel] Image already optimal size: {originalSize.Width}x{originalSize.Height}");
+                        return originalBitmap;
+                    }
+
+                    // 计算缩放比例
+                    var scaleX = (double)maxWidth / originalSize.Width;
+                    var scaleY = (double)maxHeight / originalSize.Height;
+                    var scale = Math.Min(scaleX, scaleY);
+
+                    var newWidth = (int)(originalSize.Width * scale);
+                    var newHeight = (int)(originalSize.Height * scale);
+
+                    Console.WriteLine($"[RenderTaskViewModel] Optimizing image from {originalSize.Width}x{originalSize.Height} to {newWidth}x{newHeight}");
+
+                    // 使用RenderTargetBitmap进行缩放
+                    var renderTarget = new RenderTargetBitmap(new Avalonia.PixelSize(newWidth, newHeight));
+                    using (var drawingContext = renderTarget.CreateDrawingContext())
+                    {
+                        var sourceRect = new Avalonia.Rect(0, 0, originalSize.Width, originalSize.Height);
+                        var destRect = new Avalonia.Rect(0, 0, newWidth, newHeight);
+                        
+                        drawingContext.DrawImage(originalBitmap, sourceRect, destRect);
+                    }
+
+                    // 释放原始位图
+                    originalBitmap.Dispose();
+                    
+                    Console.WriteLine($"[RenderTaskViewModel] Image optimization completed successfully");
+                    return renderTarget;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RenderTaskViewModel] Error loading and optimizing image: {ex.Message}");
+                Console.WriteLine($"[RenderTaskViewModel] Stack trace: {ex.StackTrace}");
+                return null;
+            }
+        });
+    }
+
+    /// <summary>
+    /// 优化图片尺寸（已弃用，使用LoadAndOptimizeImageAsync代替）
     /// </summary>
     private async Task<Bitmap> OptimizeImageSizeAsync(Bitmap originalBitmap, int maxWidth, int maxHeight)
     {
@@ -335,7 +395,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         try
         {
             SetStatus(RenderTaskStatus.Running, "正在启动渲染...");
-            _startTime = DateTime.Now;
+            StartTime = DateTime.Now;
 
             _exe = exeService;
             _exe.OnOutputReceived += HandleRawOutput;
@@ -401,10 +461,10 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
 
         SetStatus(RenderTaskStatus.Cancelled, "已停止");
-        _endTime = DateTime.Now;
-        if (_startTime.HasValue)
+        EndTime = DateTime.Now;
+        if (StartTime.HasValue)
         {
-            Duration = _endTime.Value - _startTime.Value;
+            Duration = EndTime.Value - StartTime.Value;
         }
 
         EnqueueLog("渲染已停止");
@@ -499,10 +559,10 @@ public partial class RenderTaskViewModel : ViewModelBase
 
                 // 先设置状态，确保状态变化事件被触发
                 SetStatus(RenderTaskStatus.Completed, "已完成");
-                _endTime = DateTime.Now;
-                if (_startTime.HasValue)
+                EndTime = DateTime.Now;
+                if (StartTime.HasValue)
                 {
-                    Duration = _endTime.Value - _startTime.Value;
+                    Duration = EndTime.Value - StartTime.Value;
                 }
 
                 // 渲染完成后，停止 Blender 进程
@@ -527,10 +587,10 @@ public partial class RenderTaskViewModel : ViewModelBase
             case RenderError err:
                 EnqueueLog($"错误: {err.Message}");
                 SetStatus(RenderTaskStatus.Failed, "渲染失败");
-                _endTime = DateTime.Now;
-                if (_startTime.HasValue)
+                EndTime = DateTime.Now;
+                if (StartTime.HasValue)
                 {
-                    Duration = _endTime.Value - _startTime.Value;
+                    Duration = EndTime.Value - StartTime.Value;
                 }
 
                 break;
