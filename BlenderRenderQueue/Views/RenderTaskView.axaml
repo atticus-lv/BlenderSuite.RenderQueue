@@ -18,7 +18,7 @@
                 <Border
                     Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
                     CornerRadius="2" Padding="4,2">
-                    <TextBlock Text="{Binding StatusText}" FontSize="10" />
+                    <TextBlock Text="{Binding StatusText}" FontSize="12" />
                 </Border>
                 <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}"
                            VerticalAlignment="Center" />
