@@ -54,6 +54,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private readonly List<Task> _runningTasks = new();
     private BlenderExeService? _blenderService;
     private readonly IFFmpegService _ffmpegService = new FFmpegService();
+    private string? _ffmpegPath;
     private readonly object _queueLock = new object();
 
     // 事件
@@ -280,7 +281,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 检查 FFmpeg 是否可用
             if (!await _ffmpegService.IsFFmpegAvailableAsync())
             {
-                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("FFmpeg 不可用，请确保已安装 FFmpeg 并添加到系统 PATH"));
+                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("FFmpeg 不可用，请先设置有效的 FFmpeg 路径"));
                 return;
             }
 
@@ -360,6 +361,12 @@ public partial class RenderQueueViewModel : ViewModelBase
     public void SetBlenderService(BlenderExeService blenderService)
     {
         _blenderService = blenderService;
+    }
+
+    public void SetFFmpegPath(string? ffmpegPath)
+    {
+        _ffmpegPath = ffmpegPath;
+        _ffmpegService.SetFFmpegPath(ffmpegPath);
     }
 
     private async Task StartNextAvailableTasks()

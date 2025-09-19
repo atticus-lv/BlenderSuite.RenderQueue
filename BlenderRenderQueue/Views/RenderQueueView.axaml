@@ -17,19 +17,18 @@
         <!-- 顶部工具栏 -->
         <Border Grid.Row="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="0,0,0,1"
                 Padding="8">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
-                <!-- Blender路径设置 -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <!-- 第一行：Blender路径设置 -->
+                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="Blender路径:" VerticalAlignment="Center" />
                     <TextBox Text="{Binding BlenderPath, Mode=TwoWay}" IsReadOnly="True" Width="200" />
                     <Button Content="📁" Command="{Binding BrowseBlenderCommand}" />
                 </StackPanel>
 
-                <!-- Blender信息 -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Left"
-                            Margin="8 0 0 0"
-                            VerticalAlignment="Center">
+                <!-- 第一行：Blender信息 -->
+                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Left"
+                            Margin="8 0 0 0" VerticalAlignment="Center">
                     <ToolTip.Tip>
                         <TextBlock Text="{Binding BlenderHash}" />
                     </ToolTip.Tip>
@@ -40,8 +39,8 @@
                                  IsVisible="{Binding IsLoadingBlenderInfo}" />
                 </StackPanel>
 
-                <!-- 队列控制按钮 -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <!-- 第一行：队列控制按钮 -->
+                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <!-- 开始队列按钮：只在队列停止时显示 -->
                     <Button Content="开始队列" Command="{Binding RenderQueue.StartQueueCommand}"
                             IsEnabled="{Binding !RenderQueue.IsQueueRunning}" />
@@ -50,6 +49,24 @@
                     <Button Content="停止队列" Command="{Binding RenderQueue.StopQueueCommand}"
                             IsEnabled="{Binding RenderQueue.IsQueueRunning}" />
                 </StackPanel>
+
+                <!-- 第二行：FFmpeg路径设置 -->
+                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,4,0,0">
+                    <TextBlock Text="FFmpeg路径:" VerticalAlignment="Center" />
+                    <TextBox Text="{Binding FfmpegPath, Mode=TwoWay}" IsReadOnly="True" Width="200" />
+                    <Button Content="📁" Command="{Binding BrowseFFmpegCommand}" />
+                </StackPanel>
+
+                <!-- 第二行：FFmpeg信息 -->
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Left"
+                            Margin="8 0 0 0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding FfmpegPath}" />
+                    <ProgressBar IsIndeterminate="True" Width="20" Height="20"
+                                 IsVisible="{Binding IsLoadingFFmpegInfo}" />
+                </StackPanel>
+
+                <!-- 第二行：空占位 -->
+                <StackPanel Grid.Row="1" Grid.Column="2" />
 
             </Grid>
         </Border>
@@ -173,7 +190,7 @@
                                 Padding="8,4" />
                         <Button Content="🎬 生成视频" Command="{Binding RenderQueue.GenerateVideoFromSelectedTaskCommand}"
                                 IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-                                Padding="8,4" ToolTip.Tip="为选中的任务生成 H.265 视频（需要帧路径目录中有图片文件）" />
+                                Padding="8,4" ToolTip.Tip="为选中的任务生成 H.265 视频（需要设置有效的 FFmpeg 路径和帧路径目录中有图片文件）" />
                     </StackPanel>
 
                 </Grid>

@@ -18,10 +18,16 @@ public partial class MainRenderViewModel : ViewModelBase
     private string _blenderPath = string.Empty;
 
     [ObservableProperty]
+    private string _ffmpegPath = string.Empty;
+
+    [ObservableProperty]
     private RenderQueueViewModel _renderQueue = new();
 
     [ObservableProperty]
     private bool _isBlenderPathValid = false;
+
+    [ObservableProperty]
+    private bool _isFFmpegPathValid = false;
 
     [ObservableProperty]
     private string _blenderVersion = string.Empty;
@@ -36,10 +42,16 @@ public partial class MainRenderViewModel : ViewModelBase
     private string _blenderHash = string.Empty;
 
     [ObservableProperty]
+    private string _ffmpegVersion = string.Empty;
+
+    [ObservableProperty]
     private string _statusMessage = "就绪";
 
     [ObservableProperty]
     private bool _isLoadingBlenderInfo = false;
+
+    [ObservableProperty]
+    private bool _isLoadingFFmpegInfo = false;
 
     // 内部状态
     private BlenderExeService? _blenderService;
@@ -51,8 +63,9 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.QueueStatusChanged += OnQueueStatusChanged;
         RenderQueue.TaskCompleted += OnTaskCompleted;
 
-        // Windows 上尝试自动定位 Blender
+        // Windows 上尝试自动定位 Blender 和 FFmpeg
         TryAutoDetectBlender();
+        TryAutoDetectFFmpeg();
     }
 
     partial void OnBlenderPathChanged(string value)
@@ -74,6 +87,24 @@ public partial class MainRenderViewModel : ViewModelBase
 
         // 异步获取Blender版本信息
         _ = Task.Run(async () => await LoadBlenderInfoAsync(value, ct));
+    }
+
+    partial void OnFfmpegPathChanged(string value)
+    {
+        IsFFmpegPathValid = !string.IsNullOrWhiteSpace(value) && File.Exists(value);
+
+        if (!IsFFmpegPathValid)
+        {
+            FfmpegVersion = string.Empty;
+            StatusMessage = "FFmpeg路径无效";
+            return;
+        }
+
+        // 异步获取FFmpeg版本信息
+        _ = Task.Run(async () => await LoadFFmpegInfoAsync(value));
+        
+        // 设置FFmpeg路径到渲染队列
+        RenderQueue.SetFFmpegPath(value);
     }
 
     private async Task LoadBlenderInfoAsync(string blenderPath, CancellationToken cancellationToken)
@@ -114,6 +145,58 @@ public partial class MainRenderViewModel : ViewModelBase
                     ClearBlenderInfo();
                 });
             }
+        }
+    }
+
+    private async Task LoadFFmpegInfoAsync(string ffmpegPath)
+    {
+        try
+        {
+            IsLoadingFFmpegInfo = true;
+            StatusMessage = "正在加载FFmpeg信息...";
+
+            var process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = ffmpegPath,
+                    Arguments = "-version",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode == 0)
+            {
+                // 解析版本信息
+                var lines = output.Split('\n');
+                var versionLine = lines.FirstOrDefault(l => l.Contains("ffmpeg version"));
+                if (!string.IsNullOrEmpty(versionLine))
+                {
+                    var version = versionLine.Split(' ')[2]; // 提取版本号
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        FfmpegVersion = version;
+                        IsLoadingFFmpegInfo = false;
+                        StatusMessage = $"FFmpeg {version} 已就绪";
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                IsLoadingFFmpegInfo = false;
+                StatusMessage = $"加载FFmpeg信息失败: {ex.Message}";
+                FfmpegVersion = string.Empty;
+            });
         }
     }
 
@@ -160,6 +243,71 @@ public partial class MainRenderViewModel : ViewModelBase
         }
     }
 
+    private void TryAutoDetectFFmpeg()
+    {
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                // 尝试在 PATH 中查找 ffmpeg.exe
+                var ffmpegExe = FindFFmpegInPath();
+                if (!string.IsNullOrEmpty(ffmpegExe))
+                {
+                    FfmpegPath = ffmpegExe;
+                    StatusMessage = $"自动检测到 FFmpeg: {ffmpegExe}";
+                    return;
+                }
+
+                // 尝试在常见位置查找
+                var commonPaths = new[]
+                {
+                    @"C:\ffmpeg\bin\ffmpeg.exe",
+                    @"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+                    @"C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe",
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "ffmpeg", "bin", "ffmpeg.exe")
+                };
+
+                foreach (var path in commonPaths)
+                {
+                    if (!File.Exists(path)) continue;
+                    FfmpegPath = path;
+                    StatusMessage = $"自动检测到 FFmpeg: {path}";
+                    return;
+                }
+
+                StatusMessage = "未找到 FFmpeg，视频生成功能将不可用";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"自动检测FFmpeg失败: {ex.Message}";
+        }
+    }
+
+    private string? FindFFmpegInPath()
+    {
+        try
+        {
+            var pathEnv = Environment.GetEnvironmentVariable("PATH");
+            if (string.IsNullOrEmpty(pathEnv)) return null;
+
+            var paths = pathEnv.Split(Path.PathSeparator);
+            foreach (var path in paths)
+            {
+                var ffmpegPath = Path.Combine(path, "ffmpeg.exe");
+                if (File.Exists(ffmpegPath))
+                {
+                    return ffmpegPath;
+                }
+            }
+        }
+        catch
+        {
+            // 忽略错误
+        }
+        return null;
+    }
+
     [RelayCommand]
     private async Task BrowseBlender()
     {
@@ -167,6 +315,16 @@ public partial class MainRenderViewModel : ViewModelBase
         if (!string.IsNullOrWhiteSpace(path))
         {
             BlenderPath = path;
+        }
+    }
+
+    [RelayCommand]
+    private async Task BrowseFFmpeg()
+    {
+        var path = await this.SelectFile("选择 FFmpeg 可执行文件", GetFFmpegExecutableFileTypes());
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            FfmpegPath = path;
         }
     }
 
@@ -289,6 +447,15 @@ public partial class MainRenderViewModel : ViewModelBase
         return new[] { new FilePickerFileType("Executable") { Patterns = new[] { "*.exe" } } };
 #else
         return new[] { new FilePickerFileType("Blender") { Patterns = new[] { "blender", "*blender*" } } };
+#endif
+    }
+
+    private static IEnumerable<FilePickerFileType> GetFFmpegExecutableFileTypes()
+    {
+#if WINDOWS
+        return new[] { new FilePickerFileType("FFmpeg Executable") { Patterns = new[] { "ffmpeg.exe" } } };
+#else
+        return new[] { new FilePickerFileType("FFmpeg") { Patterns = new[] { "ffmpeg", "*ffmpeg*" } } };
 #endif
     }
 

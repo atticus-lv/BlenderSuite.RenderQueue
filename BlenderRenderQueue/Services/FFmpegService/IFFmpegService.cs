@@ -10,6 +10,12 @@ namespace BlenderRenderQueue.Services.FFmpegService;
 public interface IFFmpegService
 {
     /// <summary>
+    /// 设置 FFmpeg 可执行文件路径
+    /// </summary>
+    /// <param name="ffmpegPath">FFmpeg 路径</param>
+    void SetFFmpegPath(string? ffmpegPath);
+
+    /// <summary>
     /// 从图片序列生成 H.265 视频
     /// </summary>
     /// <param name="inputDirectory">输入图片目录</param>

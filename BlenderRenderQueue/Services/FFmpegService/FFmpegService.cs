@@ -16,6 +16,22 @@ namespace BlenderRenderQueue.Services.FFmpegService;
 public class FFmpegService : IFFmpegService
 {
     private static readonly string[] SupportedImageExtensions = { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff", "*.tga" };
+    private string? _ffmpegPath;
+
+    public void SetFFmpegPath(string? ffmpegPath)
+    {
+        _ffmpegPath = ffmpegPath;
+        
+        // 如果指定了 FFmpeg 路径，设置 FFMpegCore 的全局配置
+        if (!string.IsNullOrEmpty(ffmpegPath) && File.Exists(ffmpegPath))
+        {
+            var directory = Path.GetDirectoryName(ffmpegPath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                GlobalFFOptions.Current.BinaryFolder = directory;
+            }
+        }
+    }
 
     public async Task<bool> GenerateVideoFromImagesAsync(
         string inputDirectory,
