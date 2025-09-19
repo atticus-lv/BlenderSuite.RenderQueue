@@ -81,7 +81,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private string _outputLog = string.Empty;
 
     [ObservableProperty]
-    private BlendFilePropertiesViewModel _fileProperties = new();
+    private BlendScenePropertiesModel _sceneProperties = new();
 
     [ObservableProperty]
     private BlendFileInfo _fileInfo = new();
@@ -172,7 +172,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private TimeSpan? _duration;
 
     [ObservableProperty]
-    private BlendFilePropertiesViewModel _filePropertiesViewModel = new();
+    private BlendScenePropertiesModel _scenePropertiesModel = new();
 
     // 保存停止时的进度状态
     private int _lastCompletedFrame = 0;
@@ -215,7 +215,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         Animation = animation;
 
         Console.WriteLine($"[RenderTaskViewModel] Constructor - File: {Path.GetFileName(blendFilePath)}");
-        Console.WriteLine($"[RenderTaskViewModel] Initial FileProperties state - IsLoading: {FileProperties.IsLoading}, IsLoaded: {FileProperties.SceneProperties.IsLoaded}, ShowEmptyState: {FileProperties.ShowEmptyState}");
+        Console.WriteLine($"[RenderTaskViewModel] Initial SceneProperties state - IsLoading: {SceneProperties.IsLoading}, IsLoaded: {SceneProperties.SceneProperties.IsLoaded}, ShowEmptyState: {SceneProperties.ShowEmptyState}");
 
         // 加载文件信息
         LoadFileInfo();
@@ -393,11 +393,11 @@ public partial class RenderTaskViewModel : ViewModelBase
         try
         {
             EnqueueLog("[QUERY] 开始加载文件属性...");
-            await FileProperties.LoadPropertiesAsync(exeService, BlendFilePath);
+            await SceneProperties.LoadPropertiesAsync(exeService, BlendFilePath);
 
             // 从FileProperties获取帧范围信息
-            StartFrame = FileProperties.SceneProperties.FrameStart;
-            EndFrame = FileProperties.SceneProperties.FrameEnd;
+            StartFrame = SceneProperties.SceneProperties.FrameStart;
+            EndFrame = SceneProperties.SceneProperties.FrameEnd;
             EnqueueLog($"[QUERY] 文件属性加载完成: 帧范围 {StartFrame}..{EndFrame}");
         }
         catch (Exception ex)

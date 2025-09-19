@@ -5,8 +5,8 @@
              xmlns:vm="using:BlenderRenderQueue.ViewModels"
              xmlns:conv="using:Avalonia.Data.Converters"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
-             x:Class="BlenderRenderQueue.Views.BlendFilePropertiesView"
-             x:DataType="vm:BlendFilePropertiesViewModel">
+             x:Class="BlenderRenderQueue.Views.BlendScenePropertiesView"
+             x:DataType="vm:BlendScenePropertiesModel">
 
     <Grid RowDefinitions="Auto,*">
         <!-- 内容区域 -->

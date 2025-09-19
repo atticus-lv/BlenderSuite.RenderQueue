@@ -13,10 +13,10 @@ namespace BlenderRenderQueue.ViewModels;
 /// <summary>
 /// Blender文件属性展示的ViewModel
 /// </summary>
-public partial class BlendFilePropertiesViewModel : ViewModelBase
+public partial class BlendScenePropertiesModel : ViewModelBase
 {
 	[ObservableProperty]
-	private BlendFileSceneProperties _sceneProperties = new();
+	private BlendSceneProperties _sceneProperties = new();
 
 	[ObservableProperty]
 	private bool _isLoading;
@@ -40,7 +40,7 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 		get
 		{
 			var result = !SceneProperties.IsLoaded && !IsLoading;
-			Console.WriteLine($"[BlendFilePropertiesViewModel] ShowEmptyState calculated: {result} (IsLoaded: {SceneProperties.IsLoaded}, IsLoading: {IsLoading})");
+			Console.WriteLine($"[BlendScenePropertiesModel] ShowEmptyState calculated: {result} (IsLoaded: {SceneProperties.IsLoaded}, IsLoading: {IsLoading})");
 			return result;
 		}
 	}
@@ -56,14 +56,14 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 			return;
 		}
 
-		Console.WriteLine($"[BlendFilePropertiesViewModel] Starting LoadPropertiesAsync for: {Path.GetFileName(blendFilePath)}");
-		Console.WriteLine($"[BlendFilePropertiesViewModel] Initial state - IsLoading: {IsLoading}, IsLoaded: {SceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
+		Console.WriteLine($"[BlendScenePropertiesModel] Starting LoadPropertiesAsync for: {Path.GetFileName(blendFilePath)}");
+		Console.WriteLine($"[BlendScenePropertiesModel] Initial state - IsLoading: {IsLoading}, IsLoaded: {SceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
 		
 		IsLoading = true;
 		ErrorMessage = string.Empty;
 		LoadingMessage = "正在加载文件属性...";
 		
-		Console.WriteLine($"[BlendFilePropertiesViewModel] After setting IsLoading=true - IsLoading: {IsLoading}, ShowEmptyState: {ShowEmptyState}");
+		Console.WriteLine($"[BlendScenePropertiesModel] After setting IsLoading=true - IsLoading: {IsLoading}, ShowEmptyState: {ShowEmptyState}");
 
 		try
 		{
@@ -76,13 +76,13 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 			SceneProperties = properties;
 			LoadingMessage = "加载完成";
 			
-			Console.WriteLine($"[BlendFilePropertiesViewModel] Properties loaded successfully - IsLoaded: {SceneProperties.IsLoaded}");
+			Console.WriteLine($"[BlendScenePropertiesModel] Properties loaded successfully - IsLoaded: {SceneProperties.IsLoaded}");
 			
 			// 通知UI更新计算属性
 			OnPropertyChanged(nameof(HasErrorMessage));
 			OnPropertyChanged(nameof(ShowEmptyState));
 			
-			Console.WriteLine($"[BlendFilePropertiesViewModel] After loading - IsLoading: {IsLoading}, IsLoaded: {SceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
+			Console.WriteLine($"[BlendScenePropertiesModel] After loading - IsLoading: {IsLoading}, IsLoaded: {SceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
 		}
 		catch (Exception ex)
 		{
@@ -94,7 +94,7 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 		{
 			IsLoading = false;
 			OnPropertyChanged(nameof(ShowEmptyState));
-			Console.WriteLine($"[BlendFilePropertiesViewModel] Finally block - IsLoading: {IsLoading}, IsLoaded: {SceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
+			Console.WriteLine($"[BlendScenePropertiesModel] Finally block - IsLoading: {IsLoading}, IsLoaded: {SceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
 		}
 	}
 
@@ -103,7 +103,7 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 	/// </summary>
 	public void ClearProperties()
 	{
-		SceneProperties = new BlendFileSceneProperties();
+		SceneProperties = new BlendSceneProperties();
 		ErrorMessage = string.Empty;
 		LoadingMessage = string.Empty;
 		OnPropertyChanged(nameof(HasErrorMessage));

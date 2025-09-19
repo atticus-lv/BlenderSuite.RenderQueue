@@ -32,7 +32,7 @@
       <Compile Update="Views\Test\TestRenderView.axaml.cs">
         <DependentUpon>TestRenderView.axaml</DependentUpon>
       </Compile>
-      <Compile Update="Views\BlendFilePropertiesView.axaml.cs">
+      <Compile Update="Views\BlendScenePropertiesView.axaml.cs">
         <DependentUpon>BlendFilePropertiesView.axaml</DependentUpon>
       </Compile>
       <Compile Update="Views\RenderQueueView.axaml.cs">

@@ -382,7 +382,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             }
 
             // 获取帧路径目录
-            var framePath = SelectedTask.FileProperties.SceneProperties.FramePath;
+            var framePath = SelectedTask.SceneProperties.SceneProperties.FramePath;
             if (string.IsNullOrEmpty(framePath))
             {
                 QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("任务没有帧路径信息"));
@@ -408,7 +408,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             }
 
             // 获取帧率
-            var fps = SelectedTask.FileProperties.SceneProperties.Fps ?? 24.0; // 默认 24fps
+            var fps = SelectedTask.SceneProperties.SceneProperties.Fps ?? 24.0; // 默认 24fps
 
             // 生成输出视频路径：与输入目录同名，放在同一层级
             var inputDirectoryName = Path.GetFileName(frameDirectory);
@@ -880,7 +880,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
                 // 先添加到队列，不阻塞加载过程
                 Console.WriteLine($"[RenderQueueViewModel] Adding task to queue: {Path.GetFileName(taskInfo.Filepath)}");
-                Console.WriteLine($"[RenderQueueViewModel] Task initial state - IsLoading: {task.FileProperties.IsLoading}, IsLoaded: {task.FileProperties.SceneProperties.IsLoaded}, ShowEmptyState: {task.FileProperties.ShowEmptyState}");
+                Console.WriteLine($"[RenderQueueViewModel] Task initial state - IsLoading: {task.SceneProperties.IsLoading}, IsLoaded: {task.SceneProperties.SceneProperties.IsLoaded}, ShowEmptyState: {task.SceneProperties.ShowEmptyState}");
                 
                 RenderTasks.Add(task);
                 SubscribeToTaskEvents(task);
@@ -898,14 +898,14 @@ public partial class RenderQueueViewModel : ViewModelBase
                             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                             {
                                 Console.WriteLine($"[RenderQueueViewModel] Setting loading state for: {Path.GetFileName(taskInfo.Filepath)}");
-                                task.FileProperties.IsLoading = true;
-                                task.FileProperties.LoadingMessage = "正在加载文件属性...";
-                                Console.WriteLine($"[RenderQueueViewModel] After setting loading - IsLoading: {task.FileProperties.IsLoading}, ShowEmptyState: {task.FileProperties.ShowEmptyState}");
+                                task.SceneProperties.IsLoading = true;
+                                task.SceneProperties.LoadingMessage = "正在加载文件属性...";
+                                Console.WriteLine($"[RenderQueueViewModel] After setting loading - IsLoading: {task.SceneProperties.IsLoading}, ShowEmptyState: {task.SceneProperties.ShowEmptyState}");
                             });
                             
                             await task.LoadFilePropertiesAsync(_blenderService);
                             Console.WriteLine($"[RenderQueueViewModel] ✅ File properties loaded: {Path.GetFileName(taskInfo.Filepath)}");
-                            Console.WriteLine($"[RenderQueueViewModel] Final state - IsLoading: {task.FileProperties.IsLoading}, IsLoaded: {task.FileProperties.SceneProperties.IsLoaded}, ShowEmptyState: {task.FileProperties.ShowEmptyState}");
+                            Console.WriteLine($"[RenderQueueViewModel] Final state - IsLoading: {task.SceneProperties.IsLoading}, IsLoaded: {task.SceneProperties.SceneProperties.IsLoaded}, ShowEmptyState: {task.SceneProperties.ShowEmptyState}");
                         }
                         catch (Exception ex)
                         {
@@ -915,9 +915,9 @@ public partial class RenderQueueViewModel : ViewModelBase
                             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                             {
                                 Console.WriteLine($"[RenderQueueViewModel] Setting error state for: {Path.GetFileName(taskInfo.Filepath)}");
-                                task.FileProperties.IsLoading = false;
-                                task.FileProperties.ErrorMessage = $"加载失败: {ex.Message}";
-                                Console.WriteLine($"[RenderQueueViewModel] After setting error - IsLoading: {task.FileProperties.IsLoading}, ShowEmptyState: {task.FileProperties.ShowEmptyState}");
+                                task.SceneProperties.IsLoading = false;
+                                task.SceneProperties.ErrorMessage = $"加载失败: {ex.Message}";
+                                Console.WriteLine($"[RenderQueueViewModel] After setting error - IsLoading: {task.SceneProperties.IsLoading}, ShowEmptyState: {task.SceneProperties.ShowEmptyState}");
                             });
                         }
                     });

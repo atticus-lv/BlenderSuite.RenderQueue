@@ -2,9 +2,9 @@ using Avalonia.Controls;
 
 namespace BlenderRenderQueue.Views;
 
-public partial class BlendFilePropertiesView : UserControl
+public partial class BlendScenePropertiesView : UserControl
 {
-    public BlendFilePropertiesView()
+    public BlendScenePropertiesView()
     {
         InitializeComponent();
     }
