@@ -3,82 +3,39 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
-             xmlns:views="clr-namespace:BlenderRenderQueue.Views"
-             xmlns:services="clr-namespace:BlenderRenderQueue.Services"
              xmlns:conv="using:Avalonia.Data.Converters"
-             xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:views="clr-namespace:BlenderRenderQueue.Views"
+             xmlns:viewModels="clr-namespace:BlenderRenderQueue.ViewModels"
+             xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
+             xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
-             x:DataType="vm:MainRenderViewModel"
-             services:ToplevelService.Register="{Binding}">
+             x:DataType="viewModels:RenderQueueViewModel"
+             services1:ToplevelService.Register="{Binding}">
 
     <UserControl.Resources>
         <converters:IsTaskOperableConverter x:Key="IsTaskOperableConverter" />
     </UserControl.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" ColumnDefinitions="*,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" ColumnDefinitions="*,Auto">
 
         <!-- 顶部工具栏 -->
         <suki:GlassCard Grid.Row="0" Grid.ColumnSpan="2" Margin="4">
-            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="*,Auto">
 
-                <!-- 第一行：Blender路径设置 -->
-                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8"
-                            VerticalAlignment="Center">
-                    <TextBlock Text="Blender路径:" VerticalAlignment="Center" />
-                    <TextBox Text="{Binding BlenderPath, Mode=TwoWay}" IsReadOnly="True" Width="200" />
-                    <Button Content="📁" Command="{Binding BrowseBlenderCommand}" 
-                            IsEnabled="{Binding RenderQueue.CanModifyPaths}" />
-                </StackPanel>
-
-                <!-- 第一行：Blender信息 -->
-                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="2"
-                            HorizontalAlignment="Left"
-                            Margin="8 0 0 0" VerticalAlignment="Center">
-                    <ToolTip.Tip>
-                        <TextBlock Text="{Binding BlenderHash}" />
-                    </ToolTip.Tip>
-                    <TextBlock Text="{Binding BlenderVersion}" />
-                    <TextBlock Text="{Binding BlenderPlatform}" />
-                    <TextBlock Text="{Binding BlenderBranch}" />
-                    <ProgressBar IsIndeterminate="True" Width="20" Height="20"
-                                 IsVisible="{Binding IsLoadingBlenderInfo}" />
-                </StackPanel>
-
-                <!-- 第一行：队列控制按钮 -->
-                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                <!-- 队列控制按钮 -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                             VerticalAlignment="Center">
                     <!-- 开始队列按钮：只在队列停止时显示 -->
-                    <Button Content="开始队列" Classes="Flat" Command="{Binding RenderQueue.StartQueueCommand}"
-                            IsEnabled="{Binding RenderQueue.CanStartQueue}" />
+                    <Button Content="开始队列" Classes="Flat" Command="{Binding StartQueueCommand}"
+                            IsEnabled="{Binding CanStartQueue}" />
 
                     <!-- 停止队列按钮：只在队列运行时显示 -->
-                    <Button Content="停止队列" Classes="Flat Accent" Command="{Binding RenderQueue.StopQueueCommand}"
-                            IsEnabled="{Binding RenderQueue.CanStopQueue}" />
+                    <Button Content="停止队列" Classes="Flat Accent" Command="{Binding StopQueueCommand}"
+                            IsEnabled="{Binding CanStopQueue}" />
                 </StackPanel>
-
-                <!-- 第二行：FFmpeg路径设置 -->
-                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="8"
-                            VerticalAlignment="Center" Margin="0,4,0,0">
-                    <TextBlock Text="FFmpeg路径:" VerticalAlignment="Center" />
-                    <TextBox Text="{Binding FfmpegPath, Mode=TwoWay}" IsReadOnly="True" Width="200" />
-                    <Button Content="📁" Command="{Binding BrowseFFmpegCommand}" 
-                            IsEnabled="{Binding RenderQueue.CanModifyPaths}" />
-                </StackPanel>
-
-                <!-- 第二行：FFmpeg信息 -->
-                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="2"
-                            HorizontalAlignment="Left"
-                            Margin="8 0 0 0" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding FfmpegPath}" />
-                    <ProgressBar IsIndeterminate="True" Width="20" Height="20"
-                                 IsVisible="{Binding IsLoadingFFmpegInfo}" />
-                </StackPanel>
-
-                <!-- 第二行：空占位 -->
-                <StackPanel Grid.Row="1" Grid.Column="2" />
 
             </Grid>
         </suki:GlassCard>
@@ -89,26 +46,26 @@
 
                 <!-- 进度信息 -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding RenderQueue.QueueStatusText}" FontWeight="Bold" />
-                    <TextBlock Text="{Binding RenderQueue.ActiveTaskCount, StringFormat='运行中: {0}'}" />
-                    <TextBlock Text="{Binding RenderQueue.CompletedTaskCount, StringFormat='已完成: {0}'}" />
-                    <TextBlock Text="{Binding RenderQueue.FailedTaskCount, StringFormat='失败: {0}'}" />
-                    <TextBlock Text="{Binding RenderQueue.CompletedFrames, StringFormat='已渲染帧: {0}'}" />
-                    <TextBlock Text="{Binding RenderQueue.TotalFrames, StringFormat='总帧数: {0}'}" />
+                    <TextBlock Text="{Binding QueueStatusText}" FontWeight="Bold" />
+                    <TextBlock Text="{Binding ActiveTaskCount, StringFormat='运行中: {0}'}" />
+                    <TextBlock Text="{Binding CompletedTaskCount, StringFormat='已完成: {0}'}" />
+                    <TextBlock Text="{Binding FailedTaskCount, StringFormat='失败: {0}'}" />
+                    <TextBlock Text="{Binding CompletedFrames, StringFormat='已渲染帧: {0}'}" />
+                    <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" />
                 </StackPanel>
 
                 <!-- 整体进度条 -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
                             VerticalAlignment="Center">
                     <TextBlock Text="队列进度:" VerticalAlignment="Center" />
-                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.OverallQueueProgress}"
+                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallQueueProgress}"
                                  Width="200" Height="20" />
                     <TextBlock VerticalAlignment="Center">
                         <TextBlock.Text>
                             <MultiBinding StringFormat="{}{0:P1} ({1}/{2})">
-                                <Binding Path="RenderQueue.OverallQueueProgress" />
-                                <Binding Path="RenderQueue.CompletedFrames" />
-                                <Binding Path="RenderQueue.TotalFrames" />
+                                <Binding Path="OverallQueueProgress" />
+                                <Binding Path="CompletedFrames" />
+                                <Binding Path="TotalFrames" />
                             </MultiBinding>
                         </TextBlock.Text>
                     </TextBlock>
@@ -116,7 +73,7 @@
 
                 <!-- 队列设置 -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <CheckBox Content="自动开始下一个任务" IsChecked="{Binding RenderQueue.AutoStartNext}"
+                    <CheckBox Content="自动开始下一个任务" IsChecked="{Binding AutoStartNext}"
                               VerticalAlignment="Center" />
                 </StackPanel>
             </Grid>
@@ -125,11 +82,11 @@
 
         <!-- 视频生成进度 -->
         <Border Grid.Row="2" Grid.ColumnSpan="2" BorderBrush="Orange" BorderThickness="0,0,0,1" Padding="8"
-                IsVisible="{Binding RenderQueue.IsGeneratingVideo}">
+                IsVisible="{Binding IsGeneratingVideo}">
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <TextBlock Text="🎬" FontSize="16" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding RenderQueue.VideoGenerationStatus}" VerticalAlignment="Center" />
-                <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.VideoGenerationProgress}"
+                <TextBlock Text="{Binding VideoGenerationStatus}" VerticalAlignment="Center" />
+                <ProgressBar Minimum="0" Maximum="1" Value="{Binding VideoGenerationProgress}"
                              Width="200" Height="16" VerticalAlignment="Center" />
             </StackPanel>
         </Border>
@@ -154,36 +111,37 @@
                                         <Setter Property="Padding" Value="4" />
                                     </Style>
                                 </StackPanel.Styles>
-                                <Button Command="{Binding AddMultipleTasksCommand}">
-                                    <material:MaterialIcon Kind="Add"></material:MaterialIcon>
+                                <Button
+                                    Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).AddMultipleTasksCommand}">
+                                    <material:MaterialIcon Kind="Add" />
                                 </Button>
-                                <Button Command="{Binding RenderQueue.RemoveSelectedTaskCommand}"
-                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.CanModifyTasks}}">
-                                    <material:MaterialIcon Kind="Remove"></material:MaterialIcon>
+                                <Button Command="{Binding RemoveSelectedTaskCommand}"
+                                        IsEnabled="{Binding SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding CanModifyTasks}}">
+                                    <material:MaterialIcon Kind="Remove" />
                                 </Button>
-                                
+
                                 <Button HorizontalContentAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}"
-                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.CanModifyTasks}}">
-                                    <material:MaterialIcon Kind="ArrowTop"></material:MaterialIcon>
+                                        Command="{Binding MoveTaskUpCommand}"
+                                        IsEnabled="{Binding SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding CanModifyTasks}}">
+                                    <material:MaterialIcon Kind="ArrowTop" />
                                 </Button>
                                 <Button HorizontalContentAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}"
-                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.CanModifyTasks}}">
-                                    <material:MaterialIcon Kind="ArrowDown"></material:MaterialIcon>
+                                        Command="{Binding MoveTaskDownCommand}"
+                                        IsEnabled="{Binding SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding CanModifyTasks}}">
+                                    <material:MaterialIcon Kind="ArrowDown" />
                                 </Button>
-                                
-                                <Button Command="{Binding RenderQueue.RemoveAllTasksCommand}" 
-                                        IsEnabled="{Binding RenderQueue.CanModifyTasks}" Margin="0 8">
-                                    <material:MaterialIcon Kind="Clear"></material:MaterialIcon>
+
+                                <Button Command="{Binding RemoveAllTasksCommand}"
+                                        IsEnabled="{Binding CanModifyTasks}" Margin="0 8">
+                                    <material:MaterialIcon Kind="Clear" />
                                 </Button>
-                                
+
                             </StackPanel>
-                            <ListBox Grid.Column="0" ItemsSource="{Binding RenderQueue.RenderTasks}"
+                            <ListBox Grid.Column="0" ItemsSource="{Binding RenderTasks}"
                                      Classes="WithoutCheck"
-                                     SelectedItem="{Binding RenderQueue.SelectedTask}" Margin="4">
+                                     SelectedItem="{Binding SelectedTask}" Margin="4">
                                 <ListBox.Styles>
                                     <Style Selector="ListBoxItem">
                                         <Setter Property="Padding" Value="0" />
@@ -233,12 +191,12 @@
                     <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="8"
                                 HorizontalAlignment="Center">
 
-                        <Button Content="🎬 生成视频" Command="{Binding RenderQueue.GenerateVideoFromSelectedTaskCommand}"
+                        <Button Content="🎬 生成视频" Command="{Binding GenerateVideoFromSelectedTaskCommand}"
                                 Padding="8,4" ToolTip.Tip="为选中的任务生成 H.265 视频（需要设置有效的 FFmpeg 路径和帧路径目录中有图片文件）">
                             <Button.IsEnabled>
                                 <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
-                                    <Binding Path="RenderQueue.SelectedTask" Converter="{x:Static conv:ObjectConverters.IsNotNull}" />
-                                    <Binding Path="RenderQueue.CanModifyTasks" />
+                                    <Binding Path="SelectedTask" Converter="{x:Static conv:ObjectConverters.IsNotNull}" />
+                                    <Binding Path="CanModifyTasks" />
                                 </MultiBinding>
                             </Button.IsEnabled>
                         </Button>
@@ -259,23 +217,23 @@
                         <Grid RowDefinitions="Auto,*">
                             <!-- 选中任务的进度条和渲染信息 -->
                             <Border Grid.Row="0" BorderBrush="LightGray"
-                                    IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                                    IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
                                 <StackPanel Spacing="8">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <TextBlock Text="任务:" VerticalAlignment="Center" Width="80"
                                                    FontWeight="Bold" />
                                         <ProgressBar Minimum="0" Maximum="1" ShowProgressText="True"
-                                                     Value="{Binding RenderQueue.SelectedTask.OverallProgress01}"
+                                                     Value="{Binding SelectedTask.OverallProgress01}"
                                                      Height="20" Width="100" />
 
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock
-                                                Text="{Binding RenderQueue.SelectedTask.CurrentFrame, StringFormat='帧: {0}'}"
+                                                Text="{Binding SelectedTask.CurrentFrame, StringFormat='帧: {0}'}"
                                                 Margin="0,0,16,0" FontWeight="Bold" />
                                             <ProgressBar Minimum="0" Maximum="1"
-                                                         Value="{Binding RenderQueue.SelectedTask.Progress01}"
+                                                         Value="{Binding SelectedTask.Progress01}"
                                                          Height="20" Width="100" ShowProgressText="True" />
                                         </StackPanel>
 
@@ -284,7 +242,7 @@
                                     <Grid ColumnDefinitions="Auto,*,Auto,*">
                                         <TextBlock Grid.Column="0" Text="采样:" Margin="0,0,4,0" />
                                         <TextBlock Grid.Column="1"
-                                                   Text="{Binding RenderQueue.SelectedTask.SampleText}" />
+                                                   Text="{Binding SelectedTask.SampleText}" />
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -292,7 +250,7 @@
 
 
                         <Panel>
-                            <ContentControl Content="{Binding RenderQueue.SelectedTask}">
+                            <ContentControl Content="{Binding SelectedTask}">
                                 <ContentControl.ContentTemplate>
                                     <DataTemplate x:DataType="vm:RenderTaskViewModel">
                                         <views:RenderTaskView DataContext="{Binding}" />
@@ -302,7 +260,7 @@
 
                             <!-- 空状态提示 -->
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                                        IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}">
+                                        IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}">
                                 <TextBlock Text="选择一个任务查看详情" FontSize="16" Foreground="Gray" />
                             </StackPanel>
                         </Panel>
@@ -312,14 +270,6 @@
             </Border>
 
         </Grid>
-
-        <!-- 底部日志区域 -->
-        <suki:GlassCard Grid.ColumnSpan="2" Grid.Column="0" Grid.Row="4">
-            <Grid RowDefinitions="Auto,*" Grid.Row="4" Grid.ColumnSpan="2" Grid.Column="0">
-                <TextBox Grid.Row="1" Text="{Binding StatusMessage}" IsReadOnly="True"
-                         AcceptsReturn="True" TextWrapping="Wrap" />
-            </Grid>
-        </suki:GlassCard>
 
 
     </Grid>

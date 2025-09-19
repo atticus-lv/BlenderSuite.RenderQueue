@@ -78,13 +78,11 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     public bool CanStopQueue => QueueState == QueueState.Running;
     public bool CanModifyTasks => QueueState == QueueState.Idle || QueueState == QueueState.Completed;
-    public bool CanModifyPaths => QueueState == QueueState.Idle || QueueState == QueueState.Completed;
 
     // 内部状态
     private readonly List<Task> _runningTasks = new();
     private BlenderExeService? _blenderService;
     private readonly IFFmpegService _ffmpegService = new FFmpegService();
-    private string? _ffmpegPath;
     private readonly object _queueLock = new object();
 
     // 事件
@@ -109,7 +107,6 @@ public partial class RenderQueueViewModel : ViewModelBase
                 OnPropertyChanged(nameof(CanStartQueue));
                 OnPropertyChanged(nameof(CanStopQueue));
                 OnPropertyChanged(nameof(CanModifyTasks));
-                OnPropertyChanged(nameof(CanModifyPaths));
             }
         };
 
@@ -436,7 +433,6 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     public void SetFFmpegPath(string? ffmpegPath)
     {
-        _ffmpegPath = ffmpegPath;
         _ffmpegService.SetFFmpegPath(ffmpegPath);
     }
 
@@ -474,7 +470,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 using var blenderService = new BlenderExeService(_blenderService!.BlenderPath);
                 await taskCopy.StartRenderAsync(blenderService);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // 错误处理已在RenderTaskViewModel中完成
             }
@@ -603,21 +599,20 @@ public partial class RenderQueueViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanStartQueue));
         OnPropertyChanged(nameof(CanStopQueue));
         OnPropertyChanged(nameof(CanModifyTasks));
-        OnPropertyChanged(nameof(CanModifyPaths));
     }
 
-    private async Task<string> SelectBlendFile()
+    private Task<string> SelectBlendFile()
     {
         // 这里需要从主视图模型获取文件选择功能
         // 暂时返回空字符串，实际实现需要依赖注入或事件
-        return string.Empty;
+        return Task.FromResult(string.Empty);
     }
 
-    private async Task<IEnumerable<string>> SelectMultipleBlendFiles()
+    private Task<IEnumerable<string>> SelectMultipleBlendFiles()
     {
         // 这里需要从主视图模型获取文件选择功能
         // 暂时返回空集合，实际实现需要依赖注入或事件
-        return Enumerable.Empty<string>();
+        return Task.FromResult(Enumerable.Empty<string>());
     }
 
 #if DEBUG
