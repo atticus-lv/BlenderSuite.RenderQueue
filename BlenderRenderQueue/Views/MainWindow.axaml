@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:suki="https://github.com/kikipoulet/SukiUI"
+    xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
     mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
     Width="1200" Height="800"
     WindowStartupLocation="CenterScreen"
@@ -22,7 +23,9 @@
 
     <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
     <suki:SukiWindow.RightWindowTitleBarControls>
-        <Label Content="设置"></Label>
+        <Button Classes="Flat Round" Width="20" Height="20">
+            <avalonia:MaterialIcon Kind="Settings" />
+        </Button>
     </suki:SukiWindow.RightWindowTitleBarControls>
 
 </suki:SukiWindow>
