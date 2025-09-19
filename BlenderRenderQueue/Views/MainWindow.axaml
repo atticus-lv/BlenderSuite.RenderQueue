@@ -1,4 +1,4 @@
-<Window
+<suki:SukiWindow
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:BlenderRenderQueue.ViewModels"
@@ -22,4 +22,4 @@
     <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
 
 
-</Window>
+</suki:SukiWindow>
