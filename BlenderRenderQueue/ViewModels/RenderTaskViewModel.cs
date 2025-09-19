@@ -56,6 +56,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     [ObservableProperty]
     private BlendFilePropertiesViewModel _fileProperties = new();
 
+    [ObservableProperty]
+    private BlendFileInfo _fileInfo = new();
+
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 
     [ObservableProperty]
@@ -121,6 +124,17 @@ public partial class RenderTaskViewModel : ViewModelBase
         StartFrame = startFrame;
         EndFrame = endFrame;
         Animation = animation;
+        
+        // 加载文件信息
+        LoadFileInfo();
+    }
+
+    private void LoadFileInfo()
+    {
+        if (!string.IsNullOrEmpty(BlendFilePath))
+        {
+            FileInfo = BlendFileInfo.FromFilePath(BlendFilePath);
+        }
     }
 
     public async Task LoadFilePropertiesAsync(BlenderExeService exeService)
@@ -491,6 +505,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         _logTimer?.Stop();
         _logTimer?.Dispose();
         DisposeSession();
+        FileInfo?.Dispose();
     }
 
     // 转换器
