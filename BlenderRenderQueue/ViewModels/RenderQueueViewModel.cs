@@ -570,10 +570,17 @@ public partial class RenderQueueViewModel : ViewModelBase
                 {
                     QueueStatusText = "等待中";
                 }
-                else
+                else if (RenderTasks.All(t => t.Status == RenderTaskStatus.Completed || 
+                                            t.Status == RenderTaskStatus.Failed || 
+                                            t.Status == RenderTaskStatus.Cancelled))
                 {
+                    // 只有当所有任务都完成/失败/取消时，才设置为完成状态
                     QueueStatusText = "队列完成";
                     QueueState = QueueState.Completed;
+                }
+                else
+                {
+                    QueueStatusText = "运行中";
                 }
 
                 break;
