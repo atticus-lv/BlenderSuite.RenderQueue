@@ -1,4 +1,5 @@
 <suki:SukiWindow
+    BackgroundStyle="Gradient"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:BlenderRenderQueue.ViewModels"
@@ -20,6 +21,8 @@
     </Design.DataContext>
 
     <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
-
+    <suki:SukiWindow.RightWindowTitleBarControls>
+        <Label Content="设置"></Label>
+    </suki:SukiWindow.RightWindowTitleBarControls>
 
 </suki:SukiWindow>

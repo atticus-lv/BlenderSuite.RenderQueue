@@ -5,6 +5,7 @@
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.RenderTaskView"
              x:DataType="vm:RenderTaskViewModel">
@@ -25,32 +26,33 @@
             </StackPanel>
 
 
-
             <!-- 文件属性 -->
-            <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="1"
-                    CornerRadius="2" Padding="8" Margin="0,0,0,8">
+            <suki:GlassCard Grid.Row="1" Grid.ColumnSpan="2" Margin="4">
                 <views:BlendFilePropertiesView DataContext="{Binding FileProperties}" />
-            </Border>
+            </suki:GlassCard>
 
             <!-- 帧范围设置 -->
-            <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal"
-                        Spacing="8" Margin="0,0,0,8" HorizontalAlignment="Left">
+            <suki:GlassCard Grid.Row="2" Grid.ColumnSpan="2">
+                <StackPanel  Orientation="Horizontal"
+                             Spacing="8" Margin="0,0,0,8" HorizontalAlignment="Left">
 
-                <CheckBox Content="渲染动画" IsChecked="{Binding Animation}" VerticalAlignment="Center" />
-                <StackPanel Orientation="Horizontal" IsVisible="{Binding Animation}" VerticalAlignment="Center">
-                    <TextBlock Text="起始帧:" VerticalAlignment="Center" />
-                    <NumericUpDown Width="100" Value="{Binding StartFrame}" Minimum="1" Maximum="100000"
-                                   ShowButtonSpinner="False" />
-                    <TextBlock Text="结束帧:" VerticalAlignment="Center" />
-                    <NumericUpDown Width="100" Value="{Binding EndFrame}" Minimum="1" Maximum="100000"
-                                   ShowButtonSpinner="False" />
+                    <CheckBox Content="渲染动画" IsChecked="{Binding Animation}" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" IsVisible="{Binding Animation}" VerticalAlignment="Center">
+                        <TextBlock Text="起始帧:" VerticalAlignment="Center" />
+                        <NumericUpDown Width="100" Value="{Binding StartFrame}" Minimum="1" Maximum="100000"
+                                       ShowButtonSpinner="False" />
+                        <TextBlock Text="结束帧:" VerticalAlignment="Center" />
+                        <NumericUpDown Width="100" Value="{Binding EndFrame}" Minimum="1" Maximum="100000"
+                                       ShowButtonSpinner="False" />
+                    </StackPanel>
+
+
+                    <TextBlock Text="超时(秒):" VerticalAlignment="Center" />
+                    <NumericUpDown Value="{Binding RenderTimeoutSeconds}" ShowButtonSpinner="False"
+                                   Minimum="60" Maximum="3600" />
                 </StackPanel>
-
-
-                <TextBlock Text="超时(秒):" VerticalAlignment="Center" />
-                <NumericUpDown Value="{Binding RenderTimeoutSeconds}" ShowButtonSpinner="False"
-                               Minimum="60" Maximum="3600" />
-            </StackPanel>
+            </suki:GlassCard>
+            
 
             <!-- 操作按钮 -->
 
