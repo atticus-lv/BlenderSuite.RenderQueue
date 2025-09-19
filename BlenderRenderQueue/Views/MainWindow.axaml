@@ -19,9 +19,11 @@
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <ScrollViewer VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-        <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" />
-    </ScrollViewer>
+    <StackPanel>
+        <ScrollViewer>
+            <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" />
+        </ScrollViewer>
+    </StackPanel>
 
 
 </suki:SukiWindow>
