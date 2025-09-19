@@ -67,7 +67,7 @@
                             <Grid ColumnDefinitions="Auto,*">
                                 <TextBlock Text="超时:" VerticalAlignment="Center" />
                                 <NumericUpDown Grid.Column="1" Value="{Binding RenderTimeoutSeconds}"
-                                               Minimum="60" Maximum="3600" Width="120"
+                                               Minimum="300" Maximum="7200" Width="120"
                                                HorizontalAlignment="Left"
                                                suki:NumericUpDownExtensions.Unit="秒" />
                             </Grid>

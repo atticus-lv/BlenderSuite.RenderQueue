@@ -109,7 +109,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private string _logPauseButtonText = "暂停日志";
 
     [ObservableProperty]
-    private int _renderTimeoutSeconds = 300; // 默认5分钟无活动超时
+    private int _renderTimeoutSeconds = 20; // 默认60分钟无活动超时
 
     [ObservableProperty]
     private RenderTaskStatus _status = RenderTaskStatus.Pending;
@@ -145,6 +145,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     private DateTime _lastFlushTime = DateTime.MinValue;
     private const int MinFlushIntervalMs = 50;
     private const int MaxBatchSize = 100;
+    
+    // 心跳检查相关
+    private DateTime _lastActivityTime = DateTime.UtcNow;
 
     // 事件
     public event EventHandler<RenderTaskStatusChangedEventArgs>? StatusChanged;
@@ -379,9 +382,11 @@ public partial class RenderTaskViewModel : ViewModelBase
             var cmd = new BlenderCommandService();
 
             // 为渲染任务设置可配置的超时时间
-            _exe.Timeout = RenderTimeoutSeconds;
+            // 对于长时间渲染任务，使用更长的超时时间（至少30分钟）
+            var renderTimeout = Math.Max(RenderTimeoutSeconds, 3600); // 最少60分钟
+            _exe.Timeout = renderTimeout;
 
-            EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {RenderTimeoutSeconds}秒)");
+            EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {renderTimeout}秒)");
 
             await cmd.StartRenderAsync(_exe, BlendFilePath, StartFrame, EndFrame, Animation);
             EnqueueLog($"渲染指令已发送完成");
@@ -468,6 +473,16 @@ public partial class RenderTaskViewModel : ViewModelBase
     private void HandleRawError(string line)
     {
         EnqueueLog($"[ERR] {line}");
+        
+        // 检查是否是超时错误，如果是，不要立即设置为失败状态
+        if (line.Contains("操作超时") && line.Contains("render"))
+        {
+            // 对于渲染超时，只记录日志，不改变状态
+            EnqueueLog("[INFO] 检测到渲染超时，但渲染进程可能仍在继续...");
+            return;
+        }
+        
+        // 其他错误仍然会触发RenderError事件
     }
 
     private void OnProgress(RenderProgress p)

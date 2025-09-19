@@ -14,7 +14,7 @@
         <Grid ColumnDefinitions="*,Auto">
             <StackPanel Orientation="Horizontal">
                 <StackPanel Orientation="Horizontal" Margin="8" Spacing="6">
-                    <TextBlock Text="全部" VerticalAlignment="Center"  />
+                    <TextBlock Text="全部" VerticalAlignment="Center" />
                     <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallProgress01}" Height="18" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="8" Spacing="6">
@@ -29,16 +29,16 @@
                 <Button Content="开始渲染" Command="{Binding StartRenderCommand}" />
                 <Button Content="停止" Command="{Binding StopRenderCommand}" />
                 <Button Content="清空日志" Command="{Binding ClearLogCommand}" />
-                
+
             </StackPanel>
         </Grid>
-        <StackPanel Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="8" Spacing="8"
+        <StackPanel Orientation="Horizontal" Margin="8" Spacing="8"
                     HorizontalAlignment="Center">
             <TextBlock Text="无活动超时(秒):" VerticalAlignment="Center" />
-            <NumericUpDown Width="150" Value="{Binding RenderTimeoutSeconds}" Minimum="60" Maximum="3600" />
+            <NumericUpDown Width="150" Value="{Binding RenderTimeoutSeconds,Mode=TwoWay}" Minimum="60" Maximum="3600" />
             <TextBlock Text="(默认300秒=5分钟，有输出时重置)" VerticalAlignment="Center" Foreground="Gray" />
         </StackPanel>
-        
+
         <Grid ColumnDefinitions="3*,5,*">
 
             <views:BlendFilePropertiesView Grid.Column="2" DataContext="{Binding FilePropertiesViewModel}" Margin="4" />
@@ -87,7 +87,7 @@
 
 
                 <Border Grid.Row="6" Grid.ColumnSpan="3" BorderBrush="Gray" BorderThickness="1" Margin="8">
-                    <ScrollViewer  VerticalScrollBarVisibility="Auto" Name="LogScrollViewer"
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Name="LogScrollViewer"
                                   HorizontalScrollBarVisibility="Auto" MaxHeight="400">
                         <TextBox Text="{Binding OutputLog}" TextWrapping="Wrap" IsReadOnly="True" AcceptsReturn="True"
                                  BorderThickness="0" Background="Transparent" TextChanged="TextBox_OnTextChanged" />

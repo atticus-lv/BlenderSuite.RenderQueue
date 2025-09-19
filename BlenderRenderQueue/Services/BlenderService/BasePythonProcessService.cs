@@ -135,9 +135,17 @@ public abstract class BasePythonProcessService : IDisposable
                         
                         if (DateTime.UtcNow - lastActivityTime > activityTimeout)
                         {
-                            OnErrorReceived?.Invoke($"操作超时 - 无活动超过 {Timeout} 秒: {operationName}");
-                            cts.Cancel();
-                            break;
+                            // 对于渲染操作，超时不应该立即取消，而是记录警告
+                            if (operationName.Contains("render"))
+                            {
+                                OnOutputReceived?.Invoke($"[WARNING] 渲染无活动超过 {Timeout} 秒，但渲染可能仍在继续...");
+                            }
+                            else
+                            {
+                                OnErrorReceived?.Invoke($"操作超时 - 无活动超过 {Timeout} 秒: {operationName}");
+                                cts.Cancel();
+                                break;
+                            }
                         }
                     }
                 }, cts.Token);
