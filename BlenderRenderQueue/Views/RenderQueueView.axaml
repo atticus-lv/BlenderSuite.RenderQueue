@@ -120,7 +120,7 @@
         </Border>
 
         <!-- 主要内容区域 -->
-        <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="3*,5,2*">
+        <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="1*,5,2*">
 
             <!-- 左侧任务列表 -->
             <Border Grid.Column="0" BorderBrush="Black" BorderThickness="0,0,1,0">
