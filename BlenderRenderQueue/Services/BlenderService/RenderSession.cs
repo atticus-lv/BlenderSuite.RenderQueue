@@ -60,11 +60,13 @@ public sealed class RenderSession : IRenderSession
 	{
 		if (_disposed) return;
 		
-		// 先取消渲染
-		Cancel();
-		
+		// 先取消事件订阅，避免在停止过程中触发事件
 		_process.OnOutputReceived -= HandleOutput;
 		_process.OnErrorReceived -= HandleError;
+		
+		// 然后取消渲染
+		Cancel();
+		
 		_disposed = true;
 	}
 } 

@@ -42,6 +42,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     private int _currentFrame;
 
     [ObservableProperty]
+    private int _completedFrames;
+
+    [ObservableProperty]
     private string _sampleText = string.Empty;
 
     [ObservableProperty]
@@ -52,7 +55,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     [ObservableProperty]
     private BlendFilePropertiesViewModel _fileProperties = new();
-    
+
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 
     [ObservableProperty]
@@ -132,7 +135,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             EnqueueLog("[QUERY] 开始加载文件属性...");
             await FileProperties.LoadPropertiesAsync(exeService, BlendFilePath);
-            
+
             // 从FileProperties获取帧范围信息
             StartFrame = FileProperties.Properties.FrameStart;
             EndFrame = FileProperties.Properties.FrameEnd;
@@ -156,7 +159,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             SetStatus(RenderTaskStatus.Running, "正在启动渲染...");
             _startTime = DateTime.Now;
-            
+
             _exe = exeService;
             _exe.OnOutputReceived += HandleRawOutput;
             _exe.OnErrorReceived += HandleRawError;
@@ -166,12 +169,12 @@ public partial class RenderTaskViewModel : ViewModelBase
             _session.OnEvent += e => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(e));
 
             var cmd = new BlenderCommandService();
-            
+
             // 为渲染任务设置可配置的超时时间
             _exe.Timeout = RenderTimeoutSeconds;
-            
+
             EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {RenderTimeoutSeconds}秒)");
-            
+
             await cmd.StartRenderAsync(_exe, BlendFilePath, StartFrame, EndFrame, Animation);
             EnqueueLog($"渲染指令已发送完成");
         }
@@ -203,9 +206,15 @@ public partial class RenderTaskViewModel : ViewModelBase
     public void StopRender()
     {
         // 只停止渲染会话，不释放BlenderExeService
-        try { _session?.Dispose(); } catch { }
+        try
+        {
+            _session?.Dispose();
+        }
+        catch
+        { }
+
         _session = null;
-        
+
         // 取消事件订阅，但不释放_exe服务
         if (_exe is not null)
         {
@@ -213,13 +222,14 @@ public partial class RenderTaskViewModel : ViewModelBase
             _exe.OnErrorReceived -= HandleRawError;
             // 注意：不释放_exe，因为它可能被其他任务使用
         }
-        
+
         SetStatus(RenderTaskStatus.Cancelled, "已停止");
         _endTime = DateTime.Now;
         if (_startTime.HasValue)
         {
             Duration = _endTime.Value - _startTime.Value;
         }
+
         EnqueueLog("渲染已停止");
     }
 
@@ -229,7 +239,9 @@ public partial class RenderTaskViewModel : ViewModelBase
         OutputLog = string.Empty;
         _logLineCount = 0;
         // 清空队列中的待处理日志
-        while (_logQueue.TryDequeue(out _)) { }
+        while (_logQueue.TryDequeue(out _))
+        { }
+
         EnqueueLog("日志已清空");
     }
 
@@ -254,7 +266,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         Engine = p.Engine.ToString();
         CurrentFrame = p.CurrentFrame;
-        SampleText = p.SampleCurrent.HasValue && p.SampleTotal.HasValue ? $"{p.SampleCurrent}/{p.SampleTotal}" : string.Empty;
+        SampleText = p.SampleCurrent.HasValue && p.SampleTotal.HasValue
+            ? $"{p.SampleCurrent}/{p.SampleTotal}"
+            : string.Empty;
         SavedPath = p.SavedPath ?? string.Empty;
 
         if (p.SampleCurrent.HasValue && p.SampleTotal.HasValue && p.SampleTotal.Value > 0)
@@ -270,9 +284,9 @@ public partial class RenderTaskViewModel : ViewModelBase
         var totalFrames = Math.Max(0, EndFrame - StartFrame + 1);
         if (totalFrames > 0)
         {
-            var completedFrames = Math.Max(0, p.CurrentFrame - StartFrame);
+            CompletedFrames = Math.Max(0, p.CurrentFrame - StartFrame + 1);
             double perFrame = Progress01; // 当前帧内进度
-            OverallProgress01 = Math.Clamp((completedFrames + perFrame) / totalFrames, 0, 1);
+            OverallProgress01 = Math.Clamp((CompletedFrames + perFrame) / totalFrames, 0, 1);
         }
         else
         {
@@ -303,16 +317,25 @@ public partial class RenderTaskViewModel : ViewModelBase
             case RenderCompletedAll:
                 EnqueueLog("全部帧完成");
                 OverallProgress01 = 1;
+
+                // 先设置状态，确保状态变化事件被触发
                 SetStatus(RenderTaskStatus.Completed, "已完成");
                 _endTime = DateTime.Now;
                 if (_startTime.HasValue)
                 {
                     Duration = _endTime.Value - _startTime.Value;
                 }
-                
+
                 // 渲染完成后，停止 Blender 进程
                 try
                 {
+                    // 先取消事件订阅，避免在停止过程中触发事件
+                    if (_exe is not null)
+                    {
+                        _exe.OnOutputReceived -= HandleRawOutput;
+                        _exe.OnErrorReceived -= HandleRawError;
+                    }
+
                     _session?.Dispose();
                     _session = null;
                 }
@@ -320,6 +343,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 {
                     EnqueueLog($"停止渲染进程时出错: {ex.Message}");
                 }
+
                 break;
             case RenderError err:
                 EnqueueLog($"错误: {err.Message}");
@@ -329,6 +353,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 {
                     Duration = _endTime.Value - _startTime.Value;
                 }
+
                 break;
         }
     }
@@ -337,13 +362,20 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         Status = status;
         StatusText = statusText;
+
+        // 当任务开始运行时，初始化CurrentFrame为StartFrame
+        if (status == RenderTaskStatus.Running && CurrentFrame == 0)
+        {
+            CurrentFrame = StartFrame;
+        }
+
         StatusChanged?.Invoke(this, new RenderTaskStatusChangedEventArgs(status, statusText));
     }
 
     private void EnqueueLog(string line)
     {
         if (IsLogPaused) return;
-        
+
         // 简单的重复日志过滤
         if (!string.IsNullOrWhiteSpace(line) && _logQueue.Count < 500) // 防止队列过大
         {
@@ -354,22 +386,22 @@ public partial class RenderTaskViewModel : ViewModelBase
     private void FlushLogQueue()
     {
         if (_logQueue.IsEmpty || IsLogPaused || _isFlushing) return;
-        
+
         // 防止频繁刷新
         var now = DateTime.Now;
         if ((now - _lastFlushTime).TotalMilliseconds < MinFlushIntervalMs) return;
-        
+
         lock (_logLock)
         {
             if (_isFlushing) return;
             _isFlushing = true;
         }
-        
+
         try
         {
             var sb = new StringBuilder();
             int dequeued = 0;
-            
+
             // 限制单次处理的日志数量，避免UI阻塞
             while (_logQueue.TryDequeue(out var line) && dequeued < MaxBatchSize)
             {
@@ -381,19 +413,17 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (string.IsNullOrEmpty(text)) return;
 
             _lastFlushTime = now;
-            
+
             // 使用低优先级调度，减少对UI的影响
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                UpdateOutputLog(text);
-            }, Avalonia.Threading.DispatcherPriority.Background);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => { UpdateOutputLog(text); },
+                Avalonia.Threading.DispatcherPriority.Background);
         }
         finally
         {
             _isFlushing = false;
         }
     }
-    
+
     private void UpdateOutputLog(string newText)
     {
         // 将新文本追加到现有日志，并按行数限制截断最旧部分
@@ -422,19 +452,28 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         if (string.IsNullOrEmpty(s)) return 0;
         int count = 1;
-        for (int i = 0; i < s.Length; i++) if (s[i] == '\n') count++;
+        for (int i = 0; i < s.Length; i++)
+            if (s[i] == '\n')
+                count++;
         return count;
     }
 
     private void DisposeSession()
     {
-        try { _session?.Dispose(); } catch { }
+        try
+        {
+            _session?.Dispose();
+        }
+        catch
+        { }
+
         if (_exe is not null)
         {
             _exe.OnOutputReceived -= HandleRawOutput;
             _exe.OnErrorReceived -= HandleRawError;
             // 注意：不释放_exe，因为它可能被其他任务使用
         }
+
         _session = null;
         _exe = null;
     }
@@ -444,6 +483,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         OverallProgress01 = 0;
         Progress01 = 0;
         CurrentFrame = 0;
+        CompletedFrames = 0;
     }
 
     public void Dispose()
@@ -466,14 +506,15 @@ public class StatusToColorConverter : IValueConverter
         {
             return status switch
             {
-                RenderTaskStatus.Pending => "#FFA500",    // 橙色
-                RenderTaskStatus.Running => "#00FF00",    // 绿色
-                RenderTaskStatus.Completed => "#008000",  // 深绿色
-                RenderTaskStatus.Failed => "#FF0000",     // 红色
-                RenderTaskStatus.Cancelled => "#808080",  // 灰色
-                _ => "#CCCCCC"                            // 默认灰色
+                RenderTaskStatus.Pending => "#FFA500", // 橙色
+                RenderTaskStatus.Running => "#00FF00", // 绿色
+                RenderTaskStatus.Completed => "#008000", // 深绿色
+                RenderTaskStatus.Failed => "#FF0000", // 红色
+                RenderTaskStatus.Cancelled => "#808080", // 灰色
+                _ => "#CCCCCC" // 默认灰色
             };
         }
+
         return "#CCCCCC";
     }
 
@@ -483,15 +524,14 @@ public class StatusToColorConverter : IValueConverter
     }
 }
 
-
 // 渲染任务状态枚举
 public enum RenderTaskStatus
 {
-    Pending,    // 等待中
-    Running,    // 运行中
-    Completed,  // 已完成
-    Failed,     // 失败
-    Cancelled   // 已取消
+    Pending, // 等待中
+    Running, // 运行中
+    Completed, // 已完成
+    Failed, // 失败
+    Cancelled // 已取消
 }
 
 // 状态变化事件参数

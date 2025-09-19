@@ -66,9 +66,9 @@ public class FFmpegService : IFFmpegService
             var inputPattern = Path.Combine(inputDirectory, imagePattern);
             
             // 调试信息：记录找到的文件和模式
-            System.Diagnostics.Debug.WriteLine($"找到 {imageFiles.Length} 个图片文件");
-            System.Diagnostics.Debug.WriteLine($"使用模式: {inputPattern}");
-            System.Diagnostics.Debug.WriteLine($"前几个文件: {string.Join(", ", imageFiles.Take(3).Select(Path.GetFileName))}");
+            Console.WriteLine($"找到 {imageFiles.Length} 个图片文件");
+            Console.WriteLine($"使用模式: {inputPattern}");
+            Console.WriteLine($"前几个文件: {string.Join(", ", imageFiles.Take(3).Select(Path.GetFileName))}");
             
             await FFMpegArguments
                 .FromFileInput(inputPattern, false, options => options

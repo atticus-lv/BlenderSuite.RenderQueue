@@ -93,6 +93,8 @@
                     <TextBlock Text="{Binding RenderQueue.ActiveTaskCount, StringFormat='运行中: {0}'}" />
                     <TextBlock Text="{Binding RenderQueue.CompletedTaskCount, StringFormat='已完成: {0}'}" />
                     <TextBlock Text="{Binding RenderQueue.FailedTaskCount, StringFormat='失败: {0}'}" />
+                    <TextBlock Text="{Binding RenderQueue.CompletedFrames, StringFormat='已渲染帧: {0}'}" />
+                    <TextBlock Text="{Binding RenderQueue.TotalFrames, StringFormat='总帧数: {0}'}" />
                 </StackPanel>
 
                 <!-- 整体进度条 -->
@@ -101,8 +103,15 @@
                     <TextBlock Text="队列进度:" VerticalAlignment="Center" />
                     <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.OverallQueueProgress}"
                                  Width="200" Height="20" />
-                    <TextBlock Text="{Binding RenderQueue.OverallQueueProgress, StringFormat='{}{0:P1}'}"
-                               VerticalAlignment="Center" />
+                    <TextBlock VerticalAlignment="Center">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0:P1} ({1}/{2})">
+                                <Binding Path="RenderQueue.OverallQueueProgress" />
+                                <Binding Path="RenderQueue.CompletedFrames" />
+                                <Binding Path="RenderQueue.TotalFrames" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
                 </StackPanel>
 
                 <!-- 队列设置 -->
