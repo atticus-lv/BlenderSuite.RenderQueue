@@ -53,6 +53,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
 	private void ShowSettingsDialog()
 	{
+		// 确保设置ViewModel存在
+		if (_settingsViewModel == null)
+		{
+			InitializeSettings();
+		}
+
 		DialogManager.CreateDialog()
 			.WithTitle("设置")
 			.WithContent(_settingsViewModel)
