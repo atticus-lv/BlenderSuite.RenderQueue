@@ -38,9 +38,6 @@
                     <TextBlock Text="{Binding BlenderBranch}" />
                     <ProgressBar IsIndeterminate="True" Width="20" Height="20"
                                  IsVisible="{Binding IsLoadingBlenderInfo}" />
-
-                    <TextBlock Margin="8 0 0 0" Text="{Binding StatusMessage}" VerticalAlignment="Center"
-                               Foreground="Gray" />
                 </StackPanel>
 
                 <!-- 队列控制按钮 -->
@@ -239,10 +236,15 @@
 
         </Grid>
 
-        <!-- 底部状态栏 -->
+        <!-- 底部日志区域 -->
         <Border Grid.Row="4" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="0,1,0,0"
                 Padding="8">
-            <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" />
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock Grid.Row="0" Text="日志信息:" FontWeight="Bold" Margin="0,0,0,4" />
+                <TextBox Grid.Row="1" Text="{Binding StatusMessage}" IsReadOnly="True" 
+                         AcceptsReturn="True" TextWrapping="Wrap" 
+                         Background="White" Foreground="Black" />
+            </Grid>
         </Border>
 
     </Grid>
