@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.FFmpegService;
+using BlenderRenderQueue.Models;
 using System.Collections.Generic;
 using System.IO;
 using Avalonia.Platform.Storage;
@@ -21,13 +22,10 @@ public partial class RenderQueueViewModel : ViewModelBase
     private RenderTaskViewModel? _selectedTask;
 
     [ObservableProperty]
-    private bool _isQueueRunning = false;
+    private QueueState _queueState = QueueState.Idle;
 
     [ObservableProperty]
     private int _activeTaskCount = 0;
-
-    [ObservableProperty]
-    private bool _hasRunningTasks = false;
 
     [ObservableProperty]
     private int _completedTaskCount = 0;
@@ -53,6 +51,22 @@ public partial class RenderQueueViewModel : ViewModelBase
     [ObservableProperty]
     private string _videoGenerationStatus = string.Empty; // 视频生成状态
 
+    // 计算属性 - 用于UI绑定
+    public bool IsQueueRunning => QueueState == QueueState.Running;
+    public bool HasRunningTasks => ActiveTaskCount > 0;
+    public bool CanStartQueue 
+    { 
+        get 
+        {
+            var canStart = (QueueState == QueueState.Idle || QueueState == QueueState.Completed) && RenderTasks.Any();
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] CanStartQueue: {canStart} (QueueState: {QueueState}, TaskCount: {RenderTasks.Count})");
+            return canStart;
+        }
+    }
+    public bool CanStopQueue => QueueState == QueueState.Running;
+    public bool CanModifyTasks => QueueState == QueueState.Idle || QueueState == QueueState.Completed;
+    public bool CanModifyPaths => QueueState == QueueState.Idle || QueueState == QueueState.Completed;
+
     // 内部状态
     private readonly List<Task> _runningTasks = new();
     private BlenderExeService? _blenderService;
@@ -68,6 +82,20 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         // 监听任务状态变化
         RenderTasks.CollectionChanged += (s, e) => UpdateQueueStatistics();
+        
+        // 监听队列状态变化，通知计算属性更新
+        PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(QueueState) || e.PropertyName == nameof(ActiveTaskCount) || e.PropertyName == nameof(RenderTasks))
+            {
+                OnPropertyChanged(nameof(IsQueueRunning));
+                OnPropertyChanged(nameof(HasRunningTasks));
+                OnPropertyChanged(nameof(CanStartQueue));
+                OnPropertyChanged(nameof(CanStopQueue));
+                OnPropertyChanged(nameof(CanModifyTasks));
+                OnPropertyChanged(nameof(CanModifyPaths));
+            }
+        };
         
         // Debug 模式下添加测试任务
 #if DEBUG
@@ -119,6 +147,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             SubscribeToTaskEvents(task);
         }
         
+        System.Diagnostics.Debug.WriteLine($"[DEBUG] AddMultipleTasks completed - Total tasks: {RenderTasks.Count}");
         UpdateQueueStatistics();
     }
 
@@ -193,10 +222,17 @@ public partial class RenderQueueViewModel : ViewModelBase
     [RelayCommand]
     private async Task StartQueue()
     {
-        if (IsQueueRunning) return;
-        if (!RenderTasks.Any()) return;
+        System.Diagnostics.Debug.WriteLine($"[DEBUG] StartQueue called - CanStartQueue: {CanStartQueue}, QueueState: {QueueState}, TaskCount: {RenderTasks.Count}, BlenderService: {_blenderService != null}");
+        
+        if (!CanStartQueue) 
+        {
+            System.Diagnostics.Debug.WriteLine("[DEBUG] StartQueue aborted - CanStartQueue is false");
+            return;
+        }
+        
         if (_blenderService == null)
         {
+            System.Diagnostics.Debug.WriteLine("[DEBUG] StartQueue aborted - BlenderService is null");
             QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("需要先设置Blender路径"));
             return;
         }
@@ -215,7 +251,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             task.ResetProgress();
         }
 
-        IsQueueRunning = true;
+        QueueState = QueueState.Running;
         QueueStatusText = "队列运行中";
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已启动"));
 
@@ -226,7 +262,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     [RelayCommand]
     private void StopQueue()
     {
-        if (!IsQueueRunning) return;
+        if (!CanStopQueue) return;
 
         // 停止所有运行中的任务
         foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
@@ -234,7 +270,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             task.StopRender();
         }
 
-        IsQueueRunning = false;
+        QueueState = QueueState.Idle;
         QueueStatusText = "队列已停止";
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已停止"));
     }
@@ -387,10 +423,18 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     private async Task StartNextAvailableTasks()
     {
-        if (!IsQueueRunning) return;
+        System.Diagnostics.Debug.WriteLine($"[DEBUG] StartNextAvailableTasks called - QueueState: {QueueState}");
+        
+        if (QueueState != QueueState.Running) 
+        {
+            System.Diagnostics.Debug.WriteLine("[DEBUG] StartNextAvailableTasks aborted - QueueState is not Running");
+            return;
+        }
 
         // 单任务模式：先停止所有正在运行的任务，然后启动下一个
         var runningTasks = RenderTasks.Where(t => t.Status == RenderTaskStatus.Running).ToList();
+        System.Diagnostics.Debug.WriteLine($"[DEBUG] Found {runningTasks.Count} running tasks to stop");
+        
         foreach (var task in runningTasks)
         {
             task.StopRender();
@@ -401,7 +445,13 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         // 启动下一个待处理的任务
         var pendingTask = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending);
-        if (pendingTask == null) return;
+        if (pendingTask == null) 
+        {
+            System.Diagnostics.Debug.WriteLine("[DEBUG] No pending tasks found");
+            return;
+        }
+        
+        System.Diagnostics.Debug.WriteLine($"[DEBUG] Starting task: {pendingTask.BlendFileName}");
 
         var taskCopy = pendingTask; // 避免闭包问题
         var runningTask = Task.Run(async () =>
@@ -419,9 +469,15 @@ public partial class RenderQueueViewModel : ViewModelBase
             finally
             {
                 // 任务完成后，尝试启动下一个任务
-                if (AutoStartNext && IsQueueRunning)
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] Task completed - AutoStartNext: {AutoStartNext}, QueueState: {QueueState}");
+                if (AutoStartNext && QueueState == QueueState.Running)
                 {
+                    System.Diagnostics.Debug.WriteLine("[DEBUG] Starting next task...");
                     await StartNextAvailableTasks();
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[DEBUG] Not starting next task - AutoStartNext or QueueState check failed");
                 }
             }
         });
@@ -454,12 +510,8 @@ public partial class RenderQueueViewModel : ViewModelBase
             TaskCompleted?.Invoke(this, new TaskCompletedEventArgs(task, e.Status));
         }
 
-        // 如果启用了自动开始下一个任务，且当前任务完成，尝试启动下一个
-        if (AutoStartNext && IsQueueRunning && 
-            (e.Status == RenderTaskStatus.Completed || e.Status == RenderTaskStatus.Failed || e.Status == RenderTaskStatus.Cancelled))
-        {
-            _ = Task.Run(async () => await StartNextAvailableTasks());
-        }
+        // 注意：不在这里启动下一个任务，因为StartNextAvailableTasks的finally块中已经处理了
+        System.Diagnostics.Debug.WriteLine($"[DEBUG] OnTaskStatusChanged - Task: {task?.BlendFileName}, Status: {e.Status}, AutoStartNext: {AutoStartNext}, QueueState: {QueueState}");
     }
 
     private void OnTaskProgressChanged(object? sender, RenderTaskProgressEventArgs e)
@@ -475,9 +527,10 @@ public partial class RenderQueueViewModel : ViewModelBase
     private void UpdateQueueStatistics()
     {
         ActiveTaskCount = RenderTasks.Count(t => t.Status == RenderTaskStatus.Running);
-        HasRunningTasks = ActiveTaskCount > 0;
         CompletedTaskCount = RenderTasks.Count(t => t.Status == RenderTaskStatus.Completed);
         FailedTaskCount = RenderTasks.Count(t => t.Status == RenderTaskStatus.Failed || t.Status == RenderTaskStatus.Cancelled);
+        
+        System.Diagnostics.Debug.WriteLine($"[DEBUG] UpdateQueueStatistics - TaskCount: {RenderTasks.Count}, Active: {ActiveTaskCount}, Completed: {CompletedTaskCount}, Failed: {FailedTaskCount}, QueueState: {QueueState}");
 
         // 计算整体进度
         if (RenderTasks.Any())
@@ -498,38 +551,61 @@ public partial class RenderQueueViewModel : ViewModelBase
             OverallQueueProgress = 0.0;
         }
 
-        // 更新队列状态文本
-        if (IsQueueRunning)
+        // 更新队列状态文本和状态
+        switch (QueueState)
         {
-            if (ActiveTaskCount > 0)
-            {
-                QueueStatusText = $"运行中 ({ActiveTaskCount} 个任务)";
-            }
-            else if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending))
-            {
-                QueueStatusText = "等待中";
-            }
-            else
-            {
+            case QueueState.Running:
+                if (ActiveTaskCount > 0)
+                {
+                    QueueStatusText = $"运行中 ({ActiveTaskCount} 个任务)";
+                }
+                else if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending))
+                {
+                    QueueStatusText = "等待中";
+                }
+                else
+                {
+                    QueueStatusText = "队列完成";
+                    QueueState = QueueState.Completed;
+                }
+                break;
+                
+            case QueueState.Idle:
+                if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending))
+                {
+                    QueueStatusText = "队列空闲";
+                }
+                else if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Completed || t.Status == RenderTaskStatus.Failed || t.Status == RenderTaskStatus.Cancelled))
+                {
+                    QueueStatusText = "队列完成";
+                    // 不自动改变状态，让用户手动决定是否重新开始
+                }
+                else
+                {
+                    QueueStatusText = "队列为空";
+                }
+                break;
+                
+            case QueueState.Completed:
                 QueueStatusText = "队列完成";
-                IsQueueRunning = false;
-            }
+                break;
+                
+            case QueueState.Paused:
+                QueueStatusText = "队列已暂停";
+                break;
+                
+            case QueueState.Error:
+                QueueStatusText = "队列错误";
+                break;
         }
-        else
-        {
-            if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending))
-            {
-                QueueStatusText = "队列空闲";
-            }
-            else if (RenderTasks.Any())
-            {
-                QueueStatusText = "队列完成";
-            }
-            else
-            {
-                QueueStatusText = "队列为空";
-            }
-        }
+        
+        // 通知计算属性更新
+        OnPropertyChanged(nameof(IsQueueRunning));
+        OnPropertyChanged(nameof(HasRunningTasks));
+        OnPropertyChanged(nameof(CanStartQueue));
+        OnPropertyChanged(nameof(CanStopQueue));
+        OnPropertyChanged(nameof(CanModifyTasks));
+        OnPropertyChanged(nameof(CanModifyPaths));
     }
 
     private async Task<string> SelectBlendFile()
