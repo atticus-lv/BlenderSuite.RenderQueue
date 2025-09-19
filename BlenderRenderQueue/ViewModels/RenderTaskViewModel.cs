@@ -169,11 +169,16 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 try
                 {
-                    return new Bitmap(imagePath);
+                    // 使用文件流加载图片，更安全
+                    using (var fileStream = File.OpenRead(imagePath))
+                    {
+                        return new Bitmap(fileStream);
+                    }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[RenderTaskViewModel] Error loading image: {ex.Message}");
+                    Console.WriteLine($"[RenderTaskViewModel] Stack trace: {ex.StackTrace}");
                     return null;
                 }
             });
@@ -185,12 +190,56 @@ public partial class RenderTaskViewModel : ViewModelBase
                 // 在UI线程更新属性
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
-                    RenderedImage?.Dispose();
-                    RenderedImage = bitmap;
-                    RenderedImagePath = imagePath;
-                    HasRenderedImage = true;
-                    Console.WriteLine($"[RenderTaskViewModel] ✅ Rendered image loaded successfully: {imagePath}");
-                    Console.WriteLine($"[RenderTaskViewModel] Image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
+                    try
+                    {
+                        RenderedImage?.Dispose();
+                        RenderedImage = bitmap;
+                        RenderedImagePath = imagePath;
+                        HasRenderedImage = true;
+                        Console.WriteLine($"[RenderTaskViewModel] ✅ Rendered image loaded successfully: {imagePath}");
+                        Console.WriteLine($"[RenderTaskViewModel] Image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[RenderTaskViewModel] Error setting rendered image: {ex.Message}");
+                        HasRenderedImage = false;
+                    }
+                });
+                
+                // 在后台优化图片尺寸
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        // 重新从文件加载图片进行优化，避免使用可能被UI使用的bitmap
+                        var optimizedBitmap = await LoadAndOptimizeImageAsync(imagePath, 120, 90);
+                        
+                        // 在UI线程更新为优化后的图片
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
+                            try
+                            {
+                                if (optimizedBitmap != null)
+                                {
+                                    RenderedImage?.Dispose();
+                                    RenderedImage = optimizedBitmap;
+                                    Console.WriteLine($"[RenderTaskViewModel] ✅ Optimized image applied: {optimizedBitmap.PixelSize.Width}x{optimizedBitmap.PixelSize.Height}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"[RenderTaskViewModel] ⚠️ Optimized bitmap is null, keeping original");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"[RenderTaskViewModel] Error applying optimized image: {ex.Message}");
+                            }
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[RenderTaskViewModel] Error optimizing image: {ex.Message}");
+                    }
                 });
             }
         }
@@ -214,6 +263,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 // 如果图片已经小于目标尺寸，直接返回
                 if (originalSize.Width <= maxWidth && originalSize.Height <= maxHeight)
                 {
+                    Console.WriteLine($"[RenderTaskViewModel] Image already optimal size: {originalSize.Width}x{originalSize.Height}");
                     return originalBitmap;
                 }
 
@@ -237,15 +287,14 @@ public partial class RenderTaskViewModel : ViewModelBase
                     drawingContext.DrawImage(originalBitmap, sourceRect, destRect);
                 }
 
-                // 释放传入的位图副本（不是原始位图）
-                originalBitmap.Dispose();
-                
-                // 返回RenderTargetBitmap
+                // 注意：不释放originalBitmap，因为它可能还在被UI使用
+                Console.WriteLine($"[RenderTaskViewModel] Image optimization completed successfully");
                 return renderTarget;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[RenderTaskViewModel] Error optimizing image: {ex.Message}");
+                Console.WriteLine($"[RenderTaskViewModel] Stack trace: {ex.StackTrace}");
                 return originalBitmap; // 返回原始图片
             }
         });
