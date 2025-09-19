@@ -238,14 +238,20 @@
                                             Width="120" Height="90" Background="#F5F5F5" 
                                             CornerRadius="4" BorderBrush="#DDD" BorderThickness="1">
                                         <Grid>
-                                            <!-- 缩略图 -->
+                                            <!-- 渲染图片 (优先显示) -->
+                                            <Image Source="{Binding SelectedTask.RenderedImage}" 
+                                                   Stretch="Uniform" 
+                                                   IsVisible="{Binding SelectedTask.HasRenderedImage}"
+                                                   Name="RenderedImageControl" />
+                                            
+                                            <!-- 文件缩略图 (备选) -->
                                             <Image Source="{Binding SelectedTask.FileInfo.Thumbnail}" 
                                                    Stretch="Uniform" 
-                                                   IsVisible="{Binding SelectedTask.FileInfo.HasThumbnail}" />
+                                                   IsVisible="{Binding SelectedTask.HasRenderedImage, Converter={x:Static conv:BoolConverters.Not}}" />
                                             
                                             <!-- 占位符 -->
                                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                       IsVisible="{Binding SelectedTask.FileInfo.HasThumbnail, Converter={x:Static conv:BoolConverters.Not}}">
+                                                       IsVisible="{Binding SelectedTask.HasRenderedImage, Converter={x:Static conv:BoolConverters.Not}}">
                                                 <TextBlock Text="🖼️" FontSize="24" HorizontalAlignment="Center" />
                                                 <TextBlock Text="预览图" FontSize="10" HorizontalAlignment="Center" 
                                                            Foreground="#666" Margin="0,4,0,0" />

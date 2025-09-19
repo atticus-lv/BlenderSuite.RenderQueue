@@ -12,6 +12,8 @@ using BlenderRenderQueue.ViewModels;
 using Avalonia.Data.Converters;
 using System.Globalization;
 using BlenderRenderQueue.Models;
+using Avalonia.Media.Imaging;
+using System.IO;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -58,6 +60,15 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     [ObservableProperty]
     private BlendFileInfo _fileInfo = new();
+
+    [ObservableProperty]
+    private Bitmap? _renderedImage;
+
+    [ObservableProperty]
+    private string _renderedImagePath = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasRenderedImage = false;
 
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 
@@ -135,6 +146,109 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             FileInfo = BlendFileInfo.FromFilePath(BlendFilePath);
         }
+    }
+
+
+    /// <summary>
+    /// 加载并优化渲染图片
+    /// </summary>
+    private async Task LoadRenderedImageAsync(string imagePath)
+    {
+        try
+        {
+            Console.WriteLine($"[RenderTaskViewModel] Loading rendered image: {imagePath}");
+            
+            if (!File.Exists(imagePath))
+            {
+                Console.WriteLine($"[RenderTaskViewModel] Rendered image file does not exist: {imagePath}");
+                return;
+            }
+
+            // 在后台线程加载图片
+            var bitmap = await Task.Run(() =>
+            {
+                try
+                {
+                    return new Bitmap(imagePath);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[RenderTaskViewModel] Error loading image: {ex.Message}");
+                    return null;
+                }
+            });
+
+            if (bitmap != null)
+            {
+                Console.WriteLine($"[RenderTaskViewModel] Original image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
+                
+                // 在UI线程更新属性
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    RenderedImage?.Dispose();
+                    RenderedImage = bitmap;
+                    RenderedImagePath = imagePath;
+                    HasRenderedImage = true;
+                    Console.WriteLine($"[RenderTaskViewModel] ✅ Rendered image loaded successfully: {imagePath}");
+                    Console.WriteLine($"[RenderTaskViewModel] Image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderTaskViewModel] Error in LoadRenderedImageAsync: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 优化图片尺寸
+    /// </summary>
+    private async Task<Bitmap> OptimizeImageSizeAsync(Bitmap originalBitmap, int maxWidth, int maxHeight)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                var originalSize = originalBitmap.PixelSize;
+                
+                // 如果图片已经小于目标尺寸，直接返回
+                if (originalSize.Width <= maxWidth && originalSize.Height <= maxHeight)
+                {
+                    return originalBitmap;
+                }
+
+                // 计算缩放比例
+                var scaleX = (double)maxWidth / originalSize.Width;
+                var scaleY = (double)maxHeight / originalSize.Height;
+                var scale = Math.Min(scaleX, scaleY);
+
+                var newWidth = (int)(originalSize.Width * scale);
+                var newHeight = (int)(originalSize.Height * scale);
+
+                Console.WriteLine($"[RenderTaskViewModel] Optimizing image from {originalSize.Width}x{originalSize.Height} to {newWidth}x{newHeight}");
+
+                // 使用RenderTargetBitmap进行缩放
+                var renderTarget = new RenderTargetBitmap(new Avalonia.PixelSize(newWidth, newHeight));
+                using (var drawingContext = renderTarget.CreateDrawingContext())
+                {
+                    var sourceRect = new Avalonia.Rect(0, 0, originalSize.Width, originalSize.Height);
+                    var destRect = new Avalonia.Rect(0, 0, newWidth, newHeight);
+                    
+                    drawingContext.DrawImage(originalBitmap, sourceRect, destRect);
+                }
+
+                // 释放传入的位图副本（不是原始位图）
+                originalBitmap.Dispose();
+                
+                // 返回RenderTargetBitmap
+                return renderTarget;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RenderTaskViewModel] Error optimizing image: {ex.Message}");
+                return originalBitmap; // 返回原始图片
+            }
+        });
     }
 
     public async Task LoadFilePropertiesAsync(BlenderExeService exeService)
@@ -324,6 +438,8 @@ public partial class RenderTaskViewModel : ViewModelBase
                 break;
             case RenderSaved saved:
                 EnqueueLog($"已保存: {saved.Path} (帧 {saved.Frame})");
+                // 加载渲染完成的图片
+                _ = Task.Run(async () => await LoadRenderedImageAsync(saved.Path));
                 break;
             case RenderCompletedFrame done:
                 EnqueueLog($"帧 {done.Frame} 完成，用时 {done.Time}");
@@ -506,6 +622,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         _logTimer?.Dispose();
         DisposeSession();
         FileInfo?.Dispose();
+        RenderedImage?.Dispose();
     }
 
     // 转换器
