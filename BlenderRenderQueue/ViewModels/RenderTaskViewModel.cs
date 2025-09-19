@@ -52,6 +52,16 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public int TotalFrames => Math.Max(0, EndFrame - StartFrame + 1);
 
+    partial void OnStartFrameChanged(int value)
+    {
+        OnPropertyChanged(nameof(TotalFrames));
+    }
+
+    partial void OnEndFrameChanged(int value)
+    {
+        OnPropertyChanged(nameof(TotalFrames));
+    }
+
     [ObservableProperty]
     private string _sampleText = string.Empty;
 

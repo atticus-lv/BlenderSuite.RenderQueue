@@ -217,7 +217,7 @@
                                     <TextBlock Grid.Row="0" Grid.Column="2"
                                                VerticalAlignment="Center" FontWeight="Bold" MinWidth="80">
                                         <TextBlock.Text>
-                                            <MultiBinding StringFormat="{}进度: {0}/{1}">
+                                            <MultiBinding StringFormat="{}进度: {0}/{1} ">
                                                 <Binding Path="SelectedTask.CompletedFrames" />
                                                 <Binding Path="SelectedTask.TotalFrames" />
                                             </MultiBinding>
