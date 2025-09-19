@@ -20,14 +20,16 @@
             <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
                 <!-- 第一行：Blender路径设置 -->
-                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8"
+                            VerticalAlignment="Center">
                     <TextBlock Text="Blender路径:" VerticalAlignment="Center" />
                     <TextBox Text="{Binding BlenderPath, Mode=TwoWay}" IsReadOnly="True" Width="200" />
                     <Button Content="📁" Command="{Binding BrowseBlenderCommand}" />
                 </StackPanel>
 
                 <!-- 第一行：Blender信息 -->
-                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Left"
+                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="2"
+                            HorizontalAlignment="Left"
                             Margin="8 0 0 0" VerticalAlignment="Center">
                     <ToolTip.Tip>
                         <TextBlock Text="{Binding BlenderHash}" />
@@ -40,7 +42,8 @@
                 </StackPanel>
 
                 <!-- 第一行：队列控制按钮 -->
-                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                            VerticalAlignment="Center">
                     <!-- 开始队列按钮：只在队列停止时显示 -->
                     <Button Content="开始队列" Command="{Binding RenderQueue.StartQueueCommand}"
                             IsEnabled="{Binding !RenderQueue.IsQueueRunning}" />
@@ -51,14 +54,16 @@
                 </StackPanel>
 
                 <!-- 第二行：FFmpeg路径设置 -->
-                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,4,0,0">
+                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="8"
+                            VerticalAlignment="Center" Margin="0,4,0,0">
                     <TextBlock Text="FFmpeg路径:" VerticalAlignment="Center" />
                     <TextBox Text="{Binding FfmpegPath, Mode=TwoWay}" IsReadOnly="True" Width="200" />
                     <Button Content="📁" Command="{Binding BrowseFFmpegCommand}" />
                 </StackPanel>
 
                 <!-- 第二行：FFmpeg信息 -->
-                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Left"
+                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="2"
+                            HorizontalAlignment="Left"
                             Margin="8 0 0 0" VerticalAlignment="Center">
                     <TextBlock Text="{Binding FfmpegPath}" />
                     <ProgressBar IsIndeterminate="True" Width="20" Height="20"
@@ -115,7 +120,7 @@
         </Border>
 
         <!-- 主要内容区域 -->
-        <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="300,5,*,5,*">
+        <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="3*,5,2*">
 
             <!-- 左侧任务列表 -->
             <Border Grid.Column="0" BorderBrush="Black" BorderThickness="0,0,1,0">
@@ -124,8 +129,15 @@
                     <!-- 任务操作按钮 -->
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="4" Margin="8"
                                 HorizontalAlignment="Center">
-                        <Button Content="添加任务" Command="{Binding AddSingleTaskCommand}" Padding="8,4" />
-                        <Button Content="批量添加" Command="{Binding AddMultipleTasksCommand}" Padding="8,4" />
+                        <!-- <Button Content="添加任务" Command="{Binding AddSingleTaskCommand}" Padding="8,4" /> -->
+                        <Button Content="添加" Command="{Binding AddMultipleTasksCommand}" Padding="8,4" />
+                        <Button Content="删除" Command="{Binding RenderQueue.RemoveSelectedTaskCommand}"
+                                IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                Padding="8,4" />
+                        <!-- <Button Content="移除完成" Command="{Binding RenderQueue.RemoveCompletedTasksCommand}" -->
+                        <!--         Padding="8,4" /> -->
+                        <Button Content="清空" Command="{Binding RenderQueue.RemoveAllTasksCommand}"
+                                Padding="8,4" />
                     </StackPanel>
 
                     <!-- 任务列表 -->
@@ -181,13 +193,7 @@
                     <!-- 任务操作按钮 -->
                     <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4" Margin="8"
                                 HorizontalAlignment="Center">
-                        <Button Content="移除选中" Command="{Binding RenderQueue.RemoveSelectedTaskCommand}"
-                                IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-                                Padding="8,4" />
-                        <Button Content="移除完成" Command="{Binding RenderQueue.RemoveCompletedTasksCommand}"
-                                Padding="8,4" />
-                        <Button Content="清空队列" Command="{Binding RenderQueue.RemoveAllTasksCommand}"
-                                Padding="8,4" />
+
                         <Button Content="🎬 生成视频" Command="{Binding RenderQueue.GenerateVideoFromSelectedTaskCommand}"
                                 IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                 Padding="8,4" ToolTip.Tip="为选中的任务生成 H.265 视频（需要设置有效的 FFmpeg 路径和帧路径目录中有图片文件）" />
@@ -199,65 +205,66 @@
             <!-- 第一个分隔条 -->
             <GridSplitter Grid.Column="1" Background="LightGray" Width="5" HorizontalAlignment="Stretch" />
 
-            <!-- 中间任务进度区域 -->
-            <Border Grid.Column="2" BorderBrush="LightGray" BorderThickness="0,0,1,0">
-                <Grid RowDefinitions="Auto,*">
-
-                    <!-- 选中任务的进度条和渲染信息 -->
-                    <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="8"
-                            IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-                        <StackPanel Spacing="8">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="任务:" VerticalAlignment="Center" Width="80" FontWeight="Bold" />
-                                <ProgressBar Minimum="0" Maximum="1" ShowProgressText="True"
-                                             Value="{Binding RenderQueue.SelectedTask.OverallProgress01}"
-                                             Height="20" Width="200" />
-                                <Grid ColumnDefinitions="Auto,*,Auto,*">
-                                    <TextBlock Grid.Column="0" Text="当前帧:" Margin="0,0,4,0" />
-                                    <TextBlock Grid.Column="1" Text="{Binding RenderQueue.SelectedTask.CurrentFrame}"
-                                               Margin="0,0,16,0" />
-                                </Grid>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="帧:" VerticalAlignment="Center" Width="80" FontWeight="Bold" />
-                                <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.SelectedTask.Progress01}"
-                                             Height="20" Width="200" ShowProgressText="True" />
-                                <Grid ColumnDefinitions="Auto,*,Auto,*">
-                                    <TextBlock Grid.Column="0" Text="采样:" Margin="0,0,4,0" />
-                                    <TextBlock Grid.Column="1" Text="{Binding RenderQueue.SelectedTask.SampleText}" />
-                                </Grid>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- 空状态提示 -->
-                    <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}">
-                        <TextBlock Text="选择一个任务查看进度" FontSize="16" Foreground="Gray" />
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <!-- 第二个分隔条 -->
-            <GridSplitter Grid.Column="3" Background="LightGray" Width="5" HorizontalAlignment="Stretch" />
 
             <!-- 右侧任务详情 -->
-            <Border Grid.Column="4">
-                <Grid>
-                    <ContentControl Content="{Binding RenderQueue.SelectedTask}">
-                        <ContentControl.ContentTemplate>
-                            <DataTemplate x:DataType="vm:RenderTaskViewModel">
-                                <views:RenderTaskView DataContext="{Binding}" />
-                            </DataTemplate>
-                        </ContentControl.ContentTemplate>
-                    </ContentControl>
+            <Border Grid.Column="2">
+                <StackPanel>
+                    <Border BorderBrush="LightGray" BorderThickness="0,0,1,0">
+                        <Grid RowDefinitions="Auto,*">
+                            <!-- 选中任务的进度条和渲染信息 -->
+                            <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="8"
+                                    IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                                <StackPanel Spacing="8">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="任务:" VerticalAlignment="Center" Width="80" FontWeight="Bold" />
+                                        <ProgressBar Minimum="0" Maximum="1" ShowProgressText="True"
+                                                     Value="{Binding RenderQueue.SelectedTask.OverallProgress01}"
+                                                     Height="20" Width="100" />
 
-                    <!-- 空状态提示 -->
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                                IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}">
-                        <TextBlock Text="选择一个任务查看详情" FontSize="16" Foreground="Gray" />
-                    </StackPanel>
-                </Grid>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock
+                                                Text="{Binding RenderQueue.SelectedTask.CurrentFrame, StringFormat='帧: {0}'}"
+                                                Margin="0,0,16,0" FontWeight="Bold" />
+                                            <ProgressBar Minimum="0" Maximum="1"
+                                                         Value="{Binding RenderQueue.SelectedTask.Progress01}"
+                                                         Height="20" Width="100" ShowProgressText="True" />
+                                        </StackPanel>
+
+
+                                    </StackPanel>
+                                    <Expander Header="当前帧">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,*">
+                                            <TextBlock Grid.Column="0" Text="采样:" Margin="0,0,4,0" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding RenderQueue.SelectedTask.SampleText}" />
+                                        </Grid>
+                                    </Expander>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <ScrollViewer>
+                        <Grid>
+                            <ContentControl Content="{Binding RenderQueue.SelectedTask}">
+                                <ContentControl.ContentTemplate>
+                                    <DataTemplate x:DataType="vm:RenderTaskViewModel">
+                                        <views:RenderTaskView DataContext="{Binding}" />
+                                    </DataTemplate>
+                                </ContentControl.ContentTemplate>
+                            </ContentControl>
+
+                            <!-- 空状态提示 -->
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}">
+                                <TextBlock Text="选择一个任务查看详情" FontSize="16" Foreground="Gray" />
+                            </StackPanel>
+                        </Grid>
+                    </ScrollViewer>
+
+                </StackPanel>
+
             </Border>
 
         </Grid>
@@ -267,8 +274,8 @@
                 Padding="8">
             <Grid RowDefinitions="Auto,*">
                 <TextBlock Grid.Row="0" Text="日志信息:" FontWeight="Bold" Margin="0,0,0,4" />
-                <TextBox Grid.Row="1" Text="{Binding StatusMessage}" IsReadOnly="True" 
-                         AcceptsReturn="True" TextWrapping="Wrap" 
+                <TextBox Grid.Row="1" Text="{Binding StatusMessage}" IsReadOnly="True"
+                         AcceptsReturn="True" TextWrapping="Wrap"
                          Background="White" Foreground="Black" />
             </Grid>
         </Border>
