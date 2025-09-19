@@ -44,5 +44,8 @@
       <Compile Update="Views\SettingsView.axaml.cs">
         <DependentUpon>SettingsView.axaml</DependentUpon>
       </Compile>
+      <Compile Update="Views\ImagePreviewWindow.axaml.cs">
+        <DependentUpon>ImagePreviewWindow.axaml</DependentUpon>
+      </Compile>
     </ItemGroup>
 </Project>

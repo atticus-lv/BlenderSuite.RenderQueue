@@ -14,6 +14,7 @@ using System.Globalization;
 using BlenderRenderQueue.Models;
 using Avalonia.Media.Imaging;
 using System.IO;
+using BlenderRenderQueue.Views;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -71,6 +72,30 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _hasRenderedImage = false;
+
+    [RelayCommand]
+    private void OpenImagePreview()
+    {
+        if (!HasRenderedImage || string.IsNullOrEmpty(RenderedImagePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var viewModel = new ImagePreviewWindowViewModel(RenderedImagePath, CurrentFrame);
+            var window = new ImagePreviewWindow(viewModel);
+            
+            // 显示窗口
+            window.ShowWindow();
+            
+            Console.WriteLine($"[RenderTaskViewModel] ✅ Image preview window opened: {RenderedImagePath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderTaskViewModel] Error opening image preview: {ex.Message}");
+        }
+    }
 
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 

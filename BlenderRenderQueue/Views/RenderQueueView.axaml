@@ -247,10 +247,12 @@
                                     <suki:GlassCard Grid.Row="0" Grid.RowSpan="3" Grid.Column="0">
                                         <Grid>
                                             <!-- 渲染图片 (优先显示) -->
-                                            <Image Source="{Binding SelectedTask.RenderedImage}"
-                                                   Stretch="Uniform"
+                                            <Image Source="{Binding SelectedTask.RenderedImage}" 
+                                                   Stretch="Uniform" 
                                                    IsVisible="{Binding SelectedTask.HasRenderedImage}"
-                                                   Name="RenderedImageControl" />
+                                                   Name="RenderedImageControl"
+                                                   Cursor="Hand"
+                                                   DoubleTapped="OnRenderedImageDoubleTapped"/>
 
                                             <!-- 文件缩略图 (备选) -->
                                             <Image Source="{Binding SelectedTask.FileInfo.Thumbnail}"
