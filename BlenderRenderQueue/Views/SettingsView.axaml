@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
+             xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             mc:Ignorable="d"
+             x:Class="BlenderRenderQueue.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel"
+             services1:ToplevelService.Register="{Binding}">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" Margin="16">
+        
+        <!-- 标题 -->
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="3" Text="路径设置" FontSize="18" FontWeight="Bold" 
+                   HorizontalAlignment="Center" Margin="0,0,0,16" />
+
+        <!-- Blender路径设置 -->
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Blender路径:" VerticalAlignment="Center" 
+                   Margin="0,0,8,0" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BlenderPath, Mode=TwoWay}" 
+                 IsReadOnly="True" Margin="0,0,8,0" />
+        <Button Grid.Row="1" Grid.Column="2" Content="📁" Command="{Binding BrowseBlenderCommand}" 
+                IsEnabled="{Binding IsBlenderPathValid, Converter={x:Static conv:BoolConverters.Not}}" />
+
+        <!-- Blender信息 -->
+        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8" 
+                    Margin="0,4,0,0" VerticalAlignment="Center">
+            <TextBlock Text="{Binding BlenderVersion}" />
+            <TextBlock Text="{Binding BlenderPlatform}" />
+            <TextBlock Text="{Binding BlenderBranch}" />
+            <ProgressBar IsIndeterminate="True" Width="16" Height="16"
+                         IsVisible="{Binding IsLoadingBlenderInfo}" />
+        </StackPanel>
+
+        <!-- FFmpeg路径设置 -->
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="FFmpeg路径:" VerticalAlignment="Center" 
+                   Margin="0,16,8,0" />
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding FfmpegPath, Mode=TwoWay}" 
+                 IsReadOnly="True" Margin="0,16,8,0" />
+        <Button Grid.Row="3" Grid.Column="2" Content="📁" Command="{Binding BrowseFFmpegCommand}" 
+                IsEnabled="{Binding IsFFmpegPathValid, Converter={x:Static conv:BoolConverters.Not}}" />
+
+        <!-- FFmpeg信息 -->
+        <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal" Spacing="8" 
+                    Margin="0,4,0,0" VerticalAlignment="Center">
+            <TextBlock Text="{Binding FfmpegVersion}" />
+            <ProgressBar IsIndeterminate="True" Width="16" Height="16"
+                         IsVisible="{Binding IsLoadingFFmpegInfo}" />
+        </StackPanel>
+
+    </Grid>
+
+</UserControl>

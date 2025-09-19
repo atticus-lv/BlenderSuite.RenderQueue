@@ -10,67 +10,13 @@
              x:Class="BlenderRenderQueue.Views.MainRenderView"
              x:DataType="vm:MainRenderViewModel">
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <Grid RowDefinitions="*,Auto">
         
-        <!-- 顶部工具栏：Blender和FFmpeg路径设置 -->
-        <suki:GlassCard Grid.Row="0" Margin="4">
-            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
-
-                <!-- 第一行：Blender路径设置 -->
-                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8"
-                            VerticalAlignment="Center">
-                    <TextBlock Text="Blender路径:" VerticalAlignment="Center" />
-                    <TextBox Text="{Binding BlenderPath, Mode=TwoWay}" IsReadOnly="True" Width="200" />
-                    <Button Content="📁" Command="{Binding BrowseBlenderCommand}" 
-                            IsEnabled="{Binding IsBlenderPathValid, Converter={x:Static conv:BoolConverters.Not}}" />
-                </StackPanel>
-
-                <!-- 第一行：Blender信息 -->
-                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="2"
-                            HorizontalAlignment="Left"
-                            Margin="8 0 0 0" VerticalAlignment="Center">
-                    <ToolTip.Tip>
-                        <TextBlock Text="{Binding BlenderHash}" />
-                    </ToolTip.Tip>
-                    <TextBlock Text="{Binding BlenderVersion}" />
-                    <TextBlock Text="{Binding BlenderPlatform}" />
-                    <TextBlock Text="{Binding BlenderBranch}" />
-                    <ProgressBar IsIndeterminate="True" Width="20" Height="20"
-                                 IsVisible="{Binding IsLoadingBlenderInfo}" />
-                </StackPanel>
-
-                <!-- 第一行：空占位 -->
-                <StackPanel Grid.Row="0" Grid.Column="2" />
-
-                <!-- 第二行：FFmpeg路径设置 -->
-                <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" Spacing="8"
-                            VerticalAlignment="Center" Margin="0,4,0,0">
-                    <TextBlock Text="FFmpeg路径:" VerticalAlignment="Center" />
-                    <TextBox Text="{Binding FfmpegPath, Mode=TwoWay}" IsReadOnly="True" Width="200" />
-                    <Button Content="📁" Command="{Binding BrowseFFmpegCommand}" 
-                            IsEnabled="{Binding IsFFmpegPathValid, Converter={x:Static conv:BoolConverters.Not}}" />
-                </StackPanel>
-
-                <!-- 第二行：FFmpeg信息 -->
-                <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="2"
-                            HorizontalAlignment="Left"
-                            Margin="8 0 0 0" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding FfmpegVersion}" />
-                    <ProgressBar IsIndeterminate="True" Width="20" Height="20"
-                                 IsVisible="{Binding IsLoadingFFmpegInfo}" />
-                </StackPanel>
-
-                <!-- 第二行：空占位 -->
-                <StackPanel Grid.Row="1" Grid.Column="2" />
-
-            </Grid>
-        </suki:GlassCard>
-
         <!-- 渲染队列视图 -->
-        <views:RenderQueueView Grid.Row="1" DataContext="{Binding RenderQueue}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+        <views:RenderQueueView Grid.Row="0" DataContext="{Binding RenderQueue}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
 
         <!-- 底部日志区域 -->
-        <suki:GlassCard Grid.Row="2" Margin="4">
+        <suki:GlassCard Grid.Row="1" Margin="4">
             <TextBox Text="{Binding StatusMessage}" IsReadOnly="True"
                      AcceptsReturn="True" TextWrapping="Wrap" />
         </suki:GlassCard>

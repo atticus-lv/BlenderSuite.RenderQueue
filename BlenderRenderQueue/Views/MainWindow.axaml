@@ -21,10 +21,15 @@
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
+    <suki:SukiWindow.Hosts>
+        <suki:SukiDialogHost Manager="{Binding DialogManager}"/>
+    </suki:SukiWindow.Hosts>
+
     <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
     <suki:SukiWindow.RightWindowTitleBarControls>
-        <Button Classes="Flat Round" Width="20" Height="20">
-            <avalonia:MaterialIcon Kind="Settings" />
+        <Button Classes="Flat Round" HorizontalContentAlignment="Center"
+                Command="{Binding OpenSettingsCommand}">
+            <avalonia:MaterialIcon Kind="Settings"  HorizontalAlignment="Center" />
         </Button>
     </suki:SukiWindow.RightWindowTitleBarControls>
 

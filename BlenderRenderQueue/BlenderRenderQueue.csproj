@@ -38,5 +38,8 @@
       <Compile Update="Views\MainRenderView.axaml.cs">
         <DependentUpon>MainRenderView.axaml</DependentUpon>
       </Compile>
+      <Compile Update="Views\SettingsView.axaml.cs">
+        <DependentUpon>SettingsView.axaml</DependentUpon>
+      </Compile>
     </ItemGroup>
 </Project>
