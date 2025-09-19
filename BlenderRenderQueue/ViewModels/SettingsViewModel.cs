@@ -201,10 +201,7 @@ public partial class SettingsViewModel : ViewModelBase
                     var asyncExe = await BlenderRenderQueue.Helpers.BlenderLocator.FindBlenderExeAsync();
                     if (!string.IsNullOrWhiteSpace(asyncExe))
                     {
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                        {
-                            BlenderPath = asyncExe;
-                        });
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() => { BlenderPath = asyncExe; });
                     }
                 });
             }
@@ -235,7 +232,8 @@ public partial class SettingsViewModel : ViewModelBase
                     @"C:\ffmpeg\bin\ffmpeg.exe",
                     @"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
                     @"C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe",
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "ffmpeg", "bin", "ffmpeg.exe")
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "ffmpeg", "bin",
+                        "ffmpeg.exe")
                 };
 
                 foreach (var path in commonPaths)
@@ -273,6 +271,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             // 忽略错误
         }
+
         return null;
     }
 
