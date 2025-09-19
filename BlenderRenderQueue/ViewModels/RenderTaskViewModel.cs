@@ -115,15 +115,21 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         try
         {
-            EnqueueLog("[INFO] Refreshing file information...");
-            FileInfo.Refresh();
-            EnqueueLog("[INFO] File information refreshed successfully");
+            EnqueueLog("[INFO] Requesting task refresh...");
+            
+            // 触发事件，请求父级刷新任务
+            RefreshRequested?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
         {
-            EnqueueLog($"[ERROR] Failed to refresh file information: {ex.Message}");
+            EnqueueLog($"[ERROR] Failed to request refresh: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// 刷新请求事件
+    /// </summary>
+    public event EventHandler? RefreshRequested;
 
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 

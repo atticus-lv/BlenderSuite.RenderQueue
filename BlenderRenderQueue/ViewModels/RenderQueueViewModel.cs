@@ -78,7 +78,15 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     public bool CanStopQueue => QueueState == QueueState.Running;
-    public bool CanModifyTasks => QueueState == QueueState.Idle || QueueState == QueueState.Completed;
+    public bool CanModifyTasks 
+    {
+        get
+        {
+            var result = QueueState == QueueState.Idle || QueueState == QueueState.Completed;
+            Console.WriteLine($"[RenderQueueViewModel] CanModifyTasks: {result} (QueueState: {QueueState})");
+            return result;
+        }
+    }
 
     // 内部状态
     private readonly List<Task> _runningTasks = new();
@@ -358,6 +366,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 
+
     [RelayCommand]
     private async Task GenerateVideoFromSelectedTask()
     {
@@ -523,12 +532,14 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         task.StatusChanged += OnTaskStatusChanged;
         task.ProgressChanged += OnTaskProgressChanged;
+        task.RefreshRequested += OnTaskRefreshRequested;
     }
 
     private void UnsubscribeFromTaskEvents(RenderTaskViewModel task)
     {
         task.StatusChanged -= OnTaskStatusChanged;
         task.ProgressChanged -= OnTaskProgressChanged;
+        task.RefreshRequested -= OnTaskRefreshRequested;
     }
 
     private void OnTaskStatusChanged(object? sender, RenderTaskStatusChangedEventArgs e)
@@ -547,6 +558,55 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 进度变化时只需要通知UI更新计算属性
         OnPropertyChanged(nameof(OverallQueueProgress));
         OnPropertyChanged(nameof(CompletedFrames));
+    }
+
+    private async void OnTaskRefreshRequested(object? sender, EventArgs e)
+    {
+        var task = sender as RenderTaskViewModel;
+        if (task == null || _blenderService == null) return;
+
+        Console.WriteLine($"[RenderQueueViewModel] Task refresh requested for: {Path.GetFileName(task.BlendFilePath)}");
+
+        try
+        {
+            // 保存当前选中任务的索引和文件路径
+            var currentIndex = RenderTasks.IndexOf(task);
+            var filePath = task.BlendFilePath;
+            
+            // 停止当前任务（如果正在运行）
+            if (task.Status == RenderTaskStatus.Running)
+            {
+                task.StopRender();
+            }
+
+            // 取消订阅事件并释放资源
+            UnsubscribeFromTaskEvents(task);
+            task.Dispose();
+
+            // 创建新的任务实例
+            var newTask = new RenderTaskViewModel(filePath, 1, 1, true);
+            
+            // 重新加载文件属性
+            await newTask.LoadFilePropertiesAsync(_blenderService);
+            
+            // 替换原任务
+            RenderTasks[currentIndex] = newTask;
+            
+            // 重新订阅事件
+            SubscribeToTaskEvents(newTask);
+            
+            // 如果这是当前选中的任务，重新选中
+            if (SelectedTask == task)
+            {
+                SelectedTask = newTask;
+            }
+            
+            StatusMessageChanged?.Invoke(this, $"任务已重新加载: {Path.GetFileName(filePath)}");
+        }
+        catch (Exception ex)
+        {
+            StatusMessageChanged?.Invoke(this, $"重新加载任务失败: {ex.Message}");
+        }
     }
 
     private void OnTaskPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
