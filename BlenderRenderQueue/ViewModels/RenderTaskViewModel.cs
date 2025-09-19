@@ -169,6 +169,9 @@ public partial class RenderTaskViewModel : ViewModelBase
         EndFrame = endFrame;
         Animation = animation;
 
+        Console.WriteLine($"[RenderTaskViewModel] Constructor - File: {Path.GetFileName(blendFilePath)}");
+        Console.WriteLine($"[RenderTaskViewModel] Initial FileProperties state - IsLoading: {FileProperties.IsLoading}, IsLoaded: {FileProperties.SceneProperties.IsLoaded}, ShowEmptyState: {FileProperties.ShowEmptyState}");
+
         // 加载文件信息
         LoadFileInfo();
     }

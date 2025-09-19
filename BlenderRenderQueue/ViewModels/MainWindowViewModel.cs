@@ -109,10 +109,34 @@ public partial class MainWindowViewModel : ViewModelBase
 				await _settingsViewModel.LoadSettingsFromFileAsync();
 			}
 			
-			// 加载渲染队列数据
+			// 等待BlenderService初始化完成后再加载队列数据
 			if (Content is MainRenderViewModel mainRender && mainRender.RenderQueue != null)
 			{
-				await mainRender.RenderQueue.LoadQueueDataAsync();
+				Console.WriteLine("[MainWindowViewModel] Waiting for BlenderService initialization...");
+				
+				// 等待BlenderService初始化（最多等待10秒）
+				var maxWaitTime = TimeSpan.FromSeconds(10);
+				var startTime = DateTime.UtcNow;
+				
+				while (DateTime.UtcNow - startTime < maxWaitTime)
+				{
+					// 检查BlenderService是否已初始化
+					if (mainRender.RenderQueue.IsBlenderServiceReady())
+					{
+						Console.WriteLine("[MainWindowViewModel] BlenderService is ready, loading queue data...");
+						await mainRender.RenderQueue.LoadQueueDataAsync();
+						break;
+					}
+					
+					await Task.Delay(500); // 每500ms检查一次
+				}
+				
+				// 如果超时，仍然尝试加载队列数据（但可能没有BlenderService）
+				if (DateTime.UtcNow - startTime >= maxWaitTime)
+				{
+					Console.WriteLine("[MainWindowViewModel] ⚠️ BlenderService initialization timeout, loading queue data anyway...");
+					await mainRender.RenderQueue.LoadQueueDataAsync();
+				}
 			}
 			
 			Console.WriteLine("[MainWindowViewModel] ✅ Saved data loaded successfully");

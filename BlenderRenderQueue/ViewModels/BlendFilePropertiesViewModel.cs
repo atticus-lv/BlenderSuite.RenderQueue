@@ -33,6 +33,19 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 	public bool HasErrorMessage => !string.IsNullOrEmpty(ErrorMessage);
 
 	/// <summary>
+	/// 是否显示空状态（文件未加载且不在加载中）
+	/// </summary>
+	public bool ShowEmptyState
+	{
+		get
+		{
+			var result = !SceneProperties.IsLoaded && !IsLoading;
+			Console.WriteLine($"[BlendFilePropertiesViewModel] ShowEmptyState calculated: {result} (IsLoaded: {SceneProperties.IsLoaded}, IsLoading: {IsLoading})");
+			return result;
+		}
+	}
+
+	/// <summary>
 	/// 加载文件属性
 	/// </summary>
 	public async Task LoadPropertiesAsync(BasePythonProcessService process, string blendFilePath, CancellationToken cancellationToken = default)
@@ -43,9 +56,14 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 			return;
 		}
 
+		Console.WriteLine($"[BlendFilePropertiesViewModel] Starting LoadPropertiesAsync for: {Path.GetFileName(blendFilePath)}");
+		Console.WriteLine($"[BlendFilePropertiesViewModel] Initial state - IsLoading: {IsLoading}, IsLoaded: {SceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
+		
 		IsLoading = true;
 		ErrorMessage = string.Empty;
 		LoadingMessage = "正在加载文件属性...";
+		
+		Console.WriteLine($"[BlendFilePropertiesViewModel] After setting IsLoading=true - IsLoading: {IsLoading}, ShowEmptyState: {ShowEmptyState}");
 
 		try
 		{
@@ -58,17 +76,25 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 			SceneProperties = properties;
 			LoadingMessage = "加载完成";
 			
+			Console.WriteLine($"[BlendFilePropertiesViewModel] Properties loaded successfully - IsLoaded: {SceneProperties.IsLoaded}");
+			
 			// 通知UI更新计算属性
 			OnPropertyChanged(nameof(HasErrorMessage));
+			OnPropertyChanged(nameof(ShowEmptyState));
+			
+			Console.WriteLine($"[BlendFilePropertiesViewModel] After loading - IsLoading: {IsLoading}, IsLoaded: {SceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
 		}
 		catch (Exception ex)
 		{
 			ErrorMessage = $"加载文件属性失败: {ex.Message}";
 			OnPropertyChanged(nameof(HasErrorMessage));
+			OnPropertyChanged(nameof(ShowEmptyState));
 		}
 		finally
 		{
 			IsLoading = false;
+			OnPropertyChanged(nameof(ShowEmptyState));
+			Console.WriteLine($"[BlendFilePropertiesViewModel] Finally block - IsLoading: {IsLoading}, IsLoaded: {SceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
 		}
 	}
 
@@ -81,6 +107,7 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 		ErrorMessage = string.Empty;
 		LoadingMessage = string.Empty;
 		OnPropertyChanged(nameof(HasErrorMessage));
+		OnPropertyChanged(nameof(ShowEmptyState));
 	}
 
 	/// <summary>

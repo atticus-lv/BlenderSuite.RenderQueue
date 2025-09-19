@@ -142,7 +142,7 @@
                 </Border>
 
                 <!-- 空状态 -->
-                <Border CornerRadius="4" Padding="20" IsVisible="{Binding !SceneProperties.IsLoaded}">
+                <Border CornerRadius="4" Padding="20" IsVisible="{Binding ShowEmptyState}">
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                         <TextBlock Text="📄" FontSize="24" HorizontalAlignment="Center" />
                         <TextBlock Text="文件未加载" HorizontalAlignment="Center"

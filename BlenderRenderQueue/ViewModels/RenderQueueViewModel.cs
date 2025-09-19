@@ -449,6 +449,15 @@ public partial class RenderQueueViewModel : ViewModelBase
     public void SetBlenderService(BlenderExeService blenderService)
     {
         _blenderService = blenderService;
+        Console.WriteLine("[RenderQueueViewModel] BlenderService set successfully");
+    }
+
+    /// <summary>
+    /// 检查BlenderService是否已准备就绪
+    /// </summary>
+    public bool IsBlenderServiceReady()
+    {
+        return _blenderService != null;
     }
 
     public void SetFFmpegPath(string? ffmpegPath)
@@ -792,14 +801,54 @@ public partial class RenderQueueViewModel : ViewModelBase
                     taskInfo.EndFrame, 
                     true); // AutoStart 默认为 true
 
-                // 自动加载文件属性
-                if (_blenderService != null)
-                {
-                    await task.LoadFilePropertiesAsync(_blenderService);
-                }
-
+                // 先添加到队列，不阻塞加载过程
+                Console.WriteLine($"[RenderQueueViewModel] Adding task to queue: {Path.GetFileName(taskInfo.Filepath)}");
+                Console.WriteLine($"[RenderQueueViewModel] Task initial state - IsLoading: {task.FileProperties.IsLoading}, IsLoaded: {task.FileProperties.SceneProperties.IsLoaded}, ShowEmptyState: {task.FileProperties.ShowEmptyState}");
+                
                 RenderTasks.Add(task);
                 SubscribeToTaskEvents(task);
+
+                // 异步加载文件属性，不等待完成
+                if (_blenderService != null)
+                {
+                    Console.WriteLine($"[RenderQueueViewModel] Starting async file properties loading for: {Path.GetFileName(taskInfo.Filepath)}");
+                    
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            // 设置加载状态
+                            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                            {
+                                Console.WriteLine($"[RenderQueueViewModel] Setting loading state for: {Path.GetFileName(taskInfo.Filepath)}");
+                                task.FileProperties.IsLoading = true;
+                                task.FileProperties.LoadingMessage = "正在加载文件属性...";
+                                Console.WriteLine($"[RenderQueueViewModel] After setting loading - IsLoading: {task.FileProperties.IsLoading}, ShowEmptyState: {task.FileProperties.ShowEmptyState}");
+                            });
+                            
+                            await task.LoadFilePropertiesAsync(_blenderService);
+                            Console.WriteLine($"[RenderQueueViewModel] ✅ File properties loaded: {Path.GetFileName(taskInfo.Filepath)}");
+                            Console.WriteLine($"[RenderQueueViewModel] Final state - IsLoading: {task.FileProperties.IsLoading}, IsLoaded: {task.FileProperties.SceneProperties.IsLoaded}, ShowEmptyState: {task.FileProperties.ShowEmptyState}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to load file properties for {Path.GetFileName(taskInfo.Filepath)}: {ex.Message}");
+                            
+                            // 设置错误状态
+                            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                            {
+                                Console.WriteLine($"[RenderQueueViewModel] Setting error state for: {Path.GetFileName(taskInfo.Filepath)}");
+                                task.FileProperties.IsLoading = false;
+                                task.FileProperties.ErrorMessage = $"加载失败: {ex.Message}";
+                                Console.WriteLine($"[RenderQueueViewModel] After setting error - IsLoading: {task.FileProperties.IsLoading}, ShowEmptyState: {task.FileProperties.ShowEmptyState}");
+                            });
+                        }
+                    });
+                }
+                else
+                {
+                    Console.WriteLine($"[RenderQueueViewModel] ⚠️ BlenderService is null, skipping file properties loading for: {Path.GetFileName(taskInfo.Filepath)}");
+                }
             }
 
             Console.WriteLine($"[RenderQueueViewModel] ✅ Queue data loaded successfully - {RenderTasks.Count} tasks");
