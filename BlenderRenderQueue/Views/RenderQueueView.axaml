@@ -164,7 +164,7 @@
                                         <Border Background="{Binding $parent[ListBox].Background}" Margin="2"
                                                 CornerRadius="4"
                                                 Padding="4">
-                                            <Grid ColumnDefinitions="*,Auto">
+                                            <Grid ColumnDefinitions="*,Auto,Auto">
                                                 <StackPanel Grid.Column="0">
                                                     <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold"
                                                                TextTrimming="CharacterEllipsis" />
@@ -183,6 +183,12 @@
                                                                  Value="{Binding OverallProgress01}"
                                                                  Height="4" Margin="0,2,0,0" />
                                                 </StackPanel>
+                                                <!-- Enable ToggleSwitch -->
+                                                <ToggleSwitch Grid.Column="1" 
+                                                                   IsChecked="{Binding Enable}"
+                                                                   Margin="8,0"
+                                                                   VerticalAlignment="Center"
+                                                                   ToolTip.Tip="启用/禁用此任务" />
                                             </Grid>
                                         </Border>
                                     </DataTemplate>

@@ -61,4 +61,7 @@ public class RenderTaskInfo
 
     [JsonPropertyName("LastRenderedFrame")]
     public int LastRenderedFrame { get; set; } = 0;
+
+    [JsonPropertyName("Enable")]
+    public bool Enable { get; set; } = true;
 }

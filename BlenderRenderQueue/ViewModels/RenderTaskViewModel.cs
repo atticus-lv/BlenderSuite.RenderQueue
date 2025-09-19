@@ -36,6 +36,15 @@ public partial class RenderTaskViewModel : ViewModelBase
     private bool _autoStart = true;
 
     [ObservableProperty]
+    private bool _enable = true;
+
+    partial void OnEnableChanged(bool value)
+    {
+        // 当 Enable 属性变化时，触发父级保存数据
+        EnableChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    [ObservableProperty]
     private double _progress01; // 当前帧进度
 
     [ObservableProperty]
@@ -130,6 +139,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// 刷新请求事件
     /// </summary>
     public event EventHandler? RefreshRequested;
+
+    /// <summary>
+    /// Enable 属性变化事件
+    /// </summary>
+    public event EventHandler? EnableChanged;
 
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 

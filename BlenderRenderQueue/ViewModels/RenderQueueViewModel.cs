@@ -70,9 +70,9 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         get
         {
-            var canStart = (QueueState == QueueState.Idle || QueueState == QueueState.Completed) && RenderTasks.Any();
+            var canStart = (QueueState == QueueState.Idle || QueueState == QueueState.Completed) && RenderTasks.Any(t => t.Enable);
             Console.WriteLine(
-                $"[DEBUG] CanStartQueue: {canStart} (QueueState: {QueueState}, TaskCount: {RenderTasks.Count})");
+                $"[DEBUG] CanStartQueue: {canStart} (QueueState: {QueueState}, EnabledTaskCount: {RenderTasks.Count(t => t.Enable)})");
             return canStart;
         }
     }
@@ -279,15 +279,15 @@ public partial class RenderQueueViewModel : ViewModelBase
             return;
         }
 
-        // 停止队列：重置所有任务状态，从头开始
-        foreach (var task in RenderTasks)
+        // 停止队列：重置所有启用的任务状态，从头开始
+        foreach (var task in RenderTasks.Where(t => t.Enable))
         {
             if (task.Status == RenderTaskStatus.Running)
             {
                 task.StopRender();
             }
 
-            // 重置所有任务状态为等待中，从头开始
+            // 重置启用的任务状态为等待中，从头开始
             task.Status = RenderTaskStatus.Pending;
             task.StatusText = "等待中";
             // 重置进度信息
@@ -492,8 +492,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 等待一下确保任务停止
         await Task.Delay(100);
 
-        // 启动下一个待处理的任务
-        var pendingTask = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending);
+        // 启动下一个待处理且启用的任务
+        var pendingTask = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable);
         if (pendingTask == null)
         {
             return;
@@ -533,6 +533,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.StatusChanged += OnTaskStatusChanged;
         task.ProgressChanged += OnTaskProgressChanged;
         task.RefreshRequested += OnTaskRefreshRequested;
+        task.EnableChanged += OnTaskEnableChanged;
     }
 
     private void UnsubscribeFromTaskEvents(RenderTaskViewModel task)
@@ -540,6 +541,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.StatusChanged -= OnTaskStatusChanged;
         task.ProgressChanged -= OnTaskProgressChanged;
         task.RefreshRequested -= OnTaskRefreshRequested;
+        task.EnableChanged -= OnTaskEnableChanged;
     }
 
     private void OnTaskStatusChanged(object? sender, RenderTaskStatusChangedEventArgs e)
@@ -609,6 +611,17 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 
+    private void OnTaskEnableChanged(object? sender, EventArgs e)
+    {
+        // 当任务的 Enable 状态变化时，自动保存数据
+        AutoSaveQueueData();
+        
+        // 更新队列统计信息
+        UpdateQueueStatistics();
+        
+        Console.WriteLine($"[RenderQueueViewModel] Task enable state changed, auto-saving data");
+    }
+
     private void OnTaskPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         // 当任务的 CompletedFrames 或 OverallProgress01 变化时，更新队列进度
@@ -635,15 +648,15 @@ public partial class RenderQueueViewModel : ViewModelBase
                 {
                     QueueStatusText = $"运行中 ({ActiveTaskCount} 个任务)";
                 }
-                else if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending))
+                else if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending && t.Enable))
                 {
                     QueueStatusText = "等待中";
                 }
-                else if (RenderTasks.All(t => t.Status == RenderTaskStatus.Completed || 
-                                            t.Status == RenderTaskStatus.Failed || 
-                                            t.Status == RenderTaskStatus.Cancelled))
+                else if (RenderTasks.Where(t => t.Enable).All(t => t.Status == RenderTaskStatus.Completed || 
+                                                                 t.Status == RenderTaskStatus.Failed || 
+                                                                 t.Status == RenderTaskStatus.Cancelled))
                 {
-                    // 只有当所有任务都完成/失败/取消时，才设置为完成状态
+                    // 只有当所有启用的任务都完成/失败/取消时，才设置为完成状态
                     QueueStatusText = "队列完成";
                     QueueState = QueueState.Completed;
                 }
@@ -655,11 +668,11 @@ public partial class RenderQueueViewModel : ViewModelBase
                 break;
 
             case QueueState.Idle:
-                if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending))
+                if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending && t.Enable))
                 {
                     QueueStatusText = "队列空闲";
                 }
-                else if (RenderTasks.Any(t =>
+                else if (RenderTasks.Where(t => t.Enable).Any(t =>
                              t.Status == RenderTaskStatus.Completed || t.Status == RenderTaskStatus.Failed ||
                              t.Status == RenderTaskStatus.Cancelled))
                 {
@@ -798,7 +811,8 @@ public partial class RenderQueueViewModel : ViewModelBase
                         Filepath = task.BlendFilePath,
                         StartFrame = task.StartFrame,
                         EndFrame = task.EndFrame,
-                        LastRenderedFrame = task.CurrentFrame
+                        LastRenderedFrame = task.CurrentFrame,
+                        Enable = task.Enable
                     }
                 }).ToList()
             };
@@ -860,6 +874,9 @@ public partial class RenderQueueViewModel : ViewModelBase
                     taskInfo.StartFrame, 
                     taskInfo.EndFrame, 
                     true); // AutoStart 默认为 true
+                
+                // 设置 Enable 属性
+                task.Enable = taskInfo.Enable;
 
                 // 先添加到队列，不阻塞加载过程
                 Console.WriteLine($"[RenderQueueViewModel] Adding task to queue: {Path.GetFileName(taskInfo.Filepath)}");
