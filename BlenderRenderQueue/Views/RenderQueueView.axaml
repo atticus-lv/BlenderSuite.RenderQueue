@@ -12,7 +12,7 @@
              x:DataType="vm:MainRenderViewModel"
              services:ToplevelService.Register="{Binding}">
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto" ColumnDefinitions="*,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" ColumnDefinitions="*,Auto">
 
         <!-- 顶部工具栏 -->
         <Border Grid.Row="0" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="0,0,0,1"
@@ -84,12 +84,24 @@
                     <CheckBox Content="自动开始下一个任务" IsChecked="{Binding RenderQueue.AutoStartNext}"
                               VerticalAlignment="Center" />
                 </StackPanel>
-
             </Grid>
         </Border>
 
+        <!-- 视频生成进度 -->
+        <Border Grid.Row="2" Grid.ColumnSpan="2" BorderBrush="Orange" BorderThickness="0,0,0,1" Padding="8"
+                IsVisible="{Binding RenderQueue.IsGeneratingVideo}">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="🎬" FontSize="16" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding RenderQueue.VideoGenerationStatus}" VerticalAlignment="Center" />
+                <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.VideoGenerationProgress}"
+                             Width="200" Height="16" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding RenderQueue.VideoGenerationProgress, StringFormat='{}{0:P1}'}"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
         <!-- 主要内容区域 -->
-        <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="300,*">
+        <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="300,*">
 
             <!-- 左侧任务列表 -->
             <Border Grid.Column="0" BorderBrush="Black" BorderThickness="0,0,1,0">
@@ -162,6 +174,9 @@
                                 Padding="8,4" />
                         <Button Content="清空队列" Command="{Binding RenderQueue.RemoveAllTasksCommand}"
                                 Padding="8,4" />
+                        <Button Content="🎬 生成视频" Command="{Binding RenderQueue.GenerateVideoFromSelectedTaskCommand}"
+                                IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                Padding="8,4" ToolTip.Tip="为选中的任务生成 H.265 视频（需要帧路径目录中有图片文件）" />
                     </StackPanel>
 
                 </Grid>
@@ -225,7 +240,7 @@
         </Grid>
 
         <!-- 底部状态栏 -->
-        <Border Grid.Row="3" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="0,1,0,0"
+        <Border Grid.Row="4" Grid.ColumnSpan="2" BorderBrush="Gray" BorderThickness="0,1,0,0"
                 Padding="8">
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" />
         </Border>

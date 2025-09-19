@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BlenderRenderQueue.Services.BlenderService;
+using BlenderRenderQueue.Services.FFmpegService;
 using System.Collections.Generic;
 using System.IO;
 using Avalonia.Platform.Storage;
@@ -40,9 +41,19 @@ public partial class RenderQueueViewModel : ViewModelBase
     [ObservableProperty]
     private bool _autoStartNext = true; // 自动开始下一个任务
 
+    [ObservableProperty]
+    private bool _isGeneratingVideo = false; // 是否正在生成视频
+
+    [ObservableProperty]
+    private double _videoGenerationProgress = 0.0; // 视频生成进度
+
+    [ObservableProperty]
+    private string _videoGenerationStatus = string.Empty; // 视频生成状态
+
     // 内部状态
     private readonly List<Task> _runningTasks = new();
     private BlenderExeService? _blenderService;
+    private readonly IFFmpegService _ffmpegService = new FFmpegService();
     private readonly object _queueLock = new object();
 
     // 事件
@@ -256,6 +267,93 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (index < RenderTasks.Count - 1)
         {
             RenderTasks.Move(index, RenderTasks.Count - 1);
+        }
+    }
+
+    [RelayCommand]
+    private async Task GenerateVideoFromSelectedTask()
+    {
+        if (SelectedTask == null) return;
+
+        try
+        {
+            // 检查 FFmpeg 是否可用
+            if (!await _ffmpegService.IsFFmpegAvailableAsync())
+            {
+                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("FFmpeg 不可用，请确保已安装 FFmpeg 并添加到系统 PATH"));
+                return;
+            }
+
+            // 获取帧路径目录
+            var framePath = SelectedTask.FileProperties.Properties.FramePath;
+            if (string.IsNullOrEmpty(framePath))
+            {
+                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("任务没有帧路径信息"));
+                return;
+            }
+
+            var frameDirectory = Path.GetDirectoryName(framePath);
+            if (string.IsNullOrEmpty(frameDirectory) || !Directory.Exists(frameDirectory))
+            {
+                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"帧路径目录不存在: {frameDirectory}"));
+                return;
+            }
+
+            // 检查目录中是否有图片文件
+            var supportedExtensions = new[] { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff", "*.tga" };
+            var hasImages = supportedExtensions.Any(ext => Directory.GetFiles(frameDirectory, ext, SearchOption.TopDirectoryOnly).Length > 0);
+            
+            if (!hasImages)
+            {
+                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"帧路径目录中没有找到图片文件: {frameDirectory}"));
+                return;
+            }
+
+            // 获取帧率
+            var fps = SelectedTask.FileProperties.Properties.Fps ?? 24.0; // 默认 24fps
+
+            // 生成输出视频路径：与输入目录同名，放在同一层级
+            var inputDirectoryName = Path.GetFileName(frameDirectory);
+            var parentDirectory = Path.GetDirectoryName(frameDirectory);
+            var outputVideoPath = Path.Combine(parentDirectory ?? "", $"{inputDirectoryName}.mp4");
+
+            // 开始生成视频
+            IsGeneratingVideo = true;
+            VideoGenerationProgress = 0.0;
+            VideoGenerationStatus = "正在生成视频...";
+            QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"开始生成视频: {outputVideoPath}"));
+
+            // 生成视频
+            var success = await _ffmpegService.GenerateVideoFromImagesAsync(
+                frameDirectory,
+                outputVideoPath,
+                fps,
+                progress => 
+                {
+                    // 更新进度
+                    VideoGenerationProgress = progress;
+                    VideoGenerationStatus = $"生成进度: {progress:P1}";
+                });
+
+            if (success)
+            {
+                VideoGenerationStatus = "视频生成完成";
+                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"视频生成完成: {outputVideoPath}"));
+            }
+            else
+            {
+                VideoGenerationStatus = "视频生成失败";
+                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("视频生成失败"));
+            }
+        }
+        catch (Exception ex)
+        {
+            VideoGenerationStatus = $"生成失败: {ex.Message}";
+            QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"生成视频时出错: {ex.Message}"));
+        }
+        finally
+        {
+            IsGeneratingVideo = false;
         }
     }
 
