@@ -524,6 +524,7 @@ public class StatusToColorConverter : IValueConverter
     }
 }
 
+
 // 渲染任务状态枚举
 public enum RenderTaskStatus
 {
