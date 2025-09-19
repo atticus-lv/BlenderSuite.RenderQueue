@@ -7,6 +7,7 @@
              xmlns:services="clr-namespace:BlenderRenderQueue.Services"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
              x:DataType="vm:MainRenderViewModel"
@@ -128,28 +129,40 @@
                     <!-- 任务列表 -->
                     <suki:GlassCard Grid.Row="1" Padding="0">
 
-                        <StackPanel>
+                        <Grid ColumnDefinitions="*,1,Auto">
                             <!-- 任务操作按钮 -->
-                            <StackPanel Orientation="Horizontal" Spacing="4" Margin="8"
+                            <StackPanel Grid.Column="2" Orientation="Vertical" Spacing="2" Margin="4"
                                         HorizontalAlignment="Center">
-                                <!-- <Button Content="添加任务" Command="{Binding AddSingleTaskCommand}" Padding="8,4" /> -->
-                                <Button Content="添加" Command="{Binding AddMultipleTasksCommand}" />
-                                <Button Content="删除" Command="{Binding RenderQueue.RemoveSelectedTaskCommand}"
-                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-                                         />
-                                <!-- <Button Content="移除完成" Command="{Binding RenderQueue.RemoveCompletedTasksCommand}" -->
-                                <!--         Padding="8,4" /> -->
-                                <Button Content="清空" Command="{Binding RenderQueue.RemoveAllTasksCommand}"
-                                         />
+                                <StackPanel.Styles>
+                                    <Style Selector="Button">
+                                        <Setter Property="Padding" Value="4" />
+                                    </Style>
+                                </StackPanel.Styles>
+                                <Button Command="{Binding AddMultipleTasksCommand}">
+                                    <material:MaterialIcon Kind="Add"></material:MaterialIcon>
+                                </Button>
+                                <Button Command="{Binding RenderQueue.RemoveSelectedTaskCommand}"
+                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                                    <material:MaterialIcon Kind="Remove"></material:MaterialIcon>
+                                </Button>
                                 
-                                <Button Content="上移" HorizontalContentAlignment="Center"
-                                        VerticalAlignment="Center" Margin="4 0 4 0"
-                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}" />
-                                <Button Content="下移" HorizontalContentAlignment="Center"
+                                <Button HorizontalContentAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}" />
+                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}">
+                                    <material:MaterialIcon Kind="ArrowTop"></material:MaterialIcon>
+                                </Button>
+                                <Button HorizontalContentAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}">
+                                    <material:MaterialIcon Kind="ArrowDown"></material:MaterialIcon>
+                                </Button>
+                                
+                                <Button Command="{Binding RenderQueue.RemoveAllTasksCommand}" Margin="0 8">
+                                    <material:MaterialIcon Kind="Clear"></material:MaterialIcon>
+                                </Button>
+                                
                             </StackPanel>
-                            <ListBox ItemsSource="{Binding RenderQueue.RenderTasks}"
+                            <ListBox Grid.Column="0" ItemsSource="{Binding RenderQueue.RenderTasks}"
                                      SelectedItem="{Binding RenderQueue.SelectedTask}" Margin="4">
                                 <ListBox.Styles>
                                     <Style Selector="ListBoxItem">
@@ -190,7 +203,7 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
 
-                        </StackPanel>
+                        </Grid>
 
 
                     </suki:GlassCard>
@@ -275,7 +288,7 @@
         </Grid>
 
         <!-- 底部日志区域 -->
-        <suki:GlassCard Grid.ColumnSpan="2" Grid.Column="0" Grid.Row="4" >
+        <suki:GlassCard Grid.ColumnSpan="2" Grid.Column="0" Grid.Row="4">
             <Grid RowDefinitions="Auto,*" Grid.Row="4" Grid.ColumnSpan="2" Grid.Column="0">
                 <TextBox Grid.Row="1" Text="{Binding StatusMessage}" IsReadOnly="True"
                          AcceptsReturn="True" TextWrapping="Wrap" />

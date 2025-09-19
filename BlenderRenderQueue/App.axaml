@@ -3,6 +3,7 @@
              x:Class="BlenderRenderQueue.App"
              xmlns:local="using:BlenderRenderQueue"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:material="using:Material.Icons.Avalonia"
              RequestedThemeVariant="Dark">
     <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
@@ -12,6 +13,7 @@
 
     <Application.Styles>
         <suki:SukiTheme ThemeColor="Blue" Locale="zh-CN"  />
+        <material:MaterialIconStyles />
     </Application.Styles>
     
 </Application>
