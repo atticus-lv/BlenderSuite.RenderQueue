@@ -125,7 +125,7 @@
                                     </Style>
                                 </StackPanel.Styles>
                                 <Button
-                                    Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).AddMultipleTasksCommand}">
+                                    Command="{Binding AddMultipleTasksCommand}">
                                     <material:MaterialIcon Kind="Add" />
                                 </Button>
                                 <Button Command="{Binding RemoveSelectedTaskCommand}"

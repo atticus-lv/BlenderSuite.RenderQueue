@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.FFmpegService;
+using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Models;
 using System.Collections.Generic;
 using System.IO;
@@ -88,6 +89,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     // 事件
     public event EventHandler<QueueStatusChangedEventArgs>? QueueStatusChanged;
     public event EventHandler<TaskCompletedEventArgs>? TaskCompleted;
+    public event EventHandler<string>? StatusMessageChanged;
 
     public RenderQueueViewModel()
     {
@@ -119,36 +121,45 @@ public partial class RenderQueueViewModel : ViewModelBase
     [RelayCommand]
     private async Task AddTask()
     {
+        if (_blenderService == null)
+        {
+            StatusMessageChanged?.Invoke(this, "请先设置有效的Blender路径");
+            return;
+        }
+
         var blendFile = await SelectBlendFile();
         if (string.IsNullOrWhiteSpace(blendFile)) return;
 
-        var task = new RenderTaskViewModel(blendFile, 1, 1, true);
-
-        // 如果有Blender服务，自动加载文件属性
-        if (_blenderService != null)
-        {
-            await task.LoadFilePropertiesAsync(_blenderService);
-        }
-
-        RenderTasks.Add(task);
-
-        // 订阅任务事件
-        SubscribeToTaskEvents(task);
-
-        UpdateQueueStatistics();
+        await AddTaskToQueue(blendFile);
     }
 
     [RelayCommand]
     private async Task AddMultipleTasks()
     {
+        if (_blenderService == null)
+        {
+            StatusMessageChanged?.Invoke(this, "请先设置有效的Blender路径");
+            return;
+        }
+
         var blendFiles = await SelectMultipleBlendFiles();
         if (blendFiles == null || !blendFiles.Any()) return;
 
         foreach (var blendFile in blendFiles)
         {
-            var task = new RenderTaskViewModel(blendFile, 1, 1, true);
+            await AddTaskToQueue(blendFile);
+        }
 
-            // 如果有Blender服务，自动加载文件属性
+        Console.WriteLine($"[DEBUG] AddMultipleTasks completed - Total tasks: {RenderTasks.Count}");
+    }
+
+    private async Task AddTaskToQueue(string blendFilePath)
+    {
+        try
+        {
+            var task = new RenderTaskViewModel(blendFilePath, 1, 1, true);
+
+            // 自动加载文件属性
             if (_blenderService != null)
             {
                 await task.LoadFilePropertiesAsync(_blenderService);
@@ -158,10 +169,13 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             // 订阅任务事件
             SubscribeToTaskEvents(task);
-        }
 
-        Console.WriteLine($"[DEBUG] AddMultipleTasks completed - Total tasks: {RenderTasks.Count}");
-        UpdateQueueStatistics();
+            StatusMessageChanged?.Invoke(this, $"已添加任务: {Path.GetFileName(blendFilePath)}");
+        }
+        catch (Exception ex)
+        {
+            StatusMessageChanged?.Invoke(this, $"添加任务失败: {ex.Message}");
+        }
     }
 
     [RelayCommand]
@@ -601,18 +615,28 @@ public partial class RenderQueueViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanModifyTasks));
     }
 
-    private Task<string> SelectBlendFile()
+    private async Task<string> SelectBlendFile()
     {
-        // 这里需要从主视图模型获取文件选择功能
-        // 暂时返回空字符串，实际实现需要依赖注入或事件
-        return Task.FromResult(string.Empty);
+        // 使用文件选择器选择单个Blend文件
+        var fileTypes = new[]
+        {
+            new FilePickerFileType("Blend Files") { Patterns = new[] { "*.blend" } }
+        };
+        
+        var result = await this.SelectFile("选择 Blend 文件", fileTypes);
+        return result ?? string.Empty;
     }
 
-    private Task<IEnumerable<string>> SelectMultipleBlendFiles()
+    private async Task<IEnumerable<string>> SelectMultipleBlendFiles()
     {
-        // 这里需要从主视图模型获取文件选择功能
-        // 暂时返回空集合，实际实现需要依赖注入或事件
-        return Task.FromResult(Enumerable.Empty<string>());
+        // 使用文件选择器选择多个Blend文件
+        var fileTypes = new[]
+        {
+            new FilePickerFileType("Blend Files") { Patterns = new[] { "*.blend" } }
+        };
+        
+        var result = await this.SelectFiles("选择多个 Blend 文件", fileTypes);
+        return result ?? Enumerable.Empty<string>();
     }
 
 #if DEBUG

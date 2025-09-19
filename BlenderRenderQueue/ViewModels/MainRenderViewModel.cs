@@ -62,6 +62,7 @@ public partial class MainRenderViewModel : ViewModelBase
         // 订阅渲染队列事件
         RenderQueue.QueueStatusChanged += OnQueueStatusChanged;
         RenderQueue.TaskCompleted += OnTaskCompleted;
+        RenderQueue.StatusMessageChanged += OnRenderQueueStatusMessageChanged;
 
         // Windows 上尝试自动定位 Blender 和 FFmpeg
         TryAutoDetectBlender();
@@ -328,82 +329,15 @@ public partial class MainRenderViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
-    private async Task AddSingleTask()
-    {
-        if (!IsBlenderPathValid)
-        {
-            StatusMessage = "请先设置有效的Blender路径";
-            return;
-        }
-
-        var blendFile = await this.SelectFile("选择 Blend 文件", GetBlendFileTypes());
-        if (!string.IsNullOrWhiteSpace(blendFile))
-        {
-            await AddTaskToQueue(blendFile);
-        }
-    }
-
-    [RelayCommand]
-    private async Task AddMultipleTasks()
-    {
-        if (!IsBlenderPathValid)
-        {
-            StatusMessage = "请先设置有效的Blender路径";
-            return;
-        }
-
-        var blendFiles = await this.SelectFiles("选择多个 Blend 文件", GetBlendFileTypes());
-        if (blendFiles != null && blendFiles.Any())
-        {
-            foreach (var blendFile in blendFiles)
-            {
-                await AddTaskToQueue(blendFile);
-            }
-        }
-    }
-
-
-    private async Task AddTaskToQueue(string blendFilePath)
-    {
-        try
-        {
-            var task = new RenderTaskViewModel(blendFilePath, 1, 1, true);
-
-            // 自动加载文件属性
-            if (_blenderService != null)
-            {
-                await task.LoadFilePropertiesAsync(_blenderService);
-            }
-
-            RenderQueue.RenderTasks.Add(task);
-
-            // 订阅任务事件
-            SubscribeToTaskEvents(task);
-
-            StatusMessage = $"已添加任务: {Path.GetFileName(blendFilePath)}";
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"添加任务失败: {ex.Message}";
-        }
-    }
-
-    private void SubscribeToTaskEvents(RenderTaskViewModel task)
-    {
-        task.StatusChanged += OnTaskStatusChanged;
-        task.ProgressChanged += OnTaskProgressChanged;
-    }
-
-    private void UnsubscribeFromTaskEvents(RenderTaskViewModel task)
-    {
-        task.StatusChanged -= OnTaskStatusChanged;
-        task.ProgressChanged -= OnTaskProgressChanged;
-    }
 
     private void OnQueueStatusChanged(object? sender, QueueStatusChangedEventArgs e)
     {
         StatusMessage = e.StatusMessage;
+    }
+
+    private void OnRenderQueueStatusMessageChanged(object? sender, string message)
+    {
+        StatusMessage = message;
     }
 
     private void OnTaskCompleted(object? sender, TaskCompletedEventArgs e)
@@ -466,6 +400,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
         RenderQueue.QueueStatusChanged -= OnQueueStatusChanged;
         RenderQueue.TaskCompleted -= OnTaskCompleted;
+        RenderQueue.StatusMessageChanged -= OnRenderQueueStatusMessageChanged;
 
         RenderQueue.Dispose();
         _blenderService?.Dispose();
