@@ -6,7 +6,7 @@ namespace BlenderRenderQueue.Models;
 /// <summary>
 ///     Blender文件属性信息
 /// </summary>
-public class BlendFileProperties
+public class BlendFileSceneProperties
 {
     public string FilePath { get; set; } = string.Empty;
     public int FrameStart { get; set; }
@@ -34,7 +34,7 @@ public class BlendFileProperties
     /// <summary>
     /// 从另一个BlendFileProperties对象加载属性
     /// </summary>
-    public void LoadFrom(BlendFileProperties source)
+    public void LoadFrom(BlendFileSceneProperties source)
     {
         FilePath = source.FilePath;
         FrameStart = source.FrameStart;

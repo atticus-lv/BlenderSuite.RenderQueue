@@ -16,7 +16,7 @@ namespace BlenderRenderQueue.ViewModels;
 public partial class BlendFilePropertiesViewModel : ViewModelBase
 {
 	[ObservableProperty]
-	private BlendFileProperties _properties = new();
+	private BlendFileSceneProperties _sceneProperties = new();
 
 	[ObservableProperty]
 	private bool _isLoading;
@@ -55,7 +55,7 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 			LoadingMessage = "正在获取文件属性...";
 			var properties = await queryService.GetAllFilePropertiesAsync(process, blendFilePath, cancellationToken);
 
-			Properties = properties;
+			SceneProperties = properties;
 			LoadingMessage = "加载完成";
 			
 			// 通知UI更新计算属性
@@ -77,7 +77,7 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 	/// </summary>
 	public void ClearProperties()
 	{
-		Properties = new BlendFileProperties();
+		SceneProperties = new BlendFileSceneProperties();
 		ErrorMessage = string.Empty;
 		LoadingMessage = string.Empty;
 		OnPropertyChanged(nameof(HasErrorMessage));
@@ -91,7 +91,7 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 	{
 		try
 		{
-			if (string.IsNullOrEmpty(Properties.FramePath))
+			if (string.IsNullOrEmpty(SceneProperties.FramePath))
 			{
 				ErrorMessage = "帧路径为空，无法打开文件夹";
 				OnPropertyChanged(nameof(HasErrorMessage));
@@ -99,7 +99,7 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 			}
 
 			// 获取帧路径所在的目录
-			var framePathDirectory = Path.GetDirectoryName(Properties.FramePath);
+			var framePathDirectory = Path.GetDirectoryName(SceneProperties.FramePath);
 			
 			if (string.IsNullOrEmpty(framePathDirectory))
 			{
@@ -135,6 +135,6 @@ public partial class BlendFilePropertiesViewModel : ViewModelBase
 	/// <summary>
 	/// 是否可以打开帧路径文件夹
 	/// </summary>
-	public bool CanOpenFramePathDirectory => !string.IsNullOrEmpty(Properties.FramePath) && 
-	                                         !string.IsNullOrEmpty(Path.GetDirectoryName(Properties.FramePath));
+	public bool CanOpenFramePathDirectory => !string.IsNullOrEmpty(SceneProperties.FramePath) && 
+	                                         !string.IsNullOrEmpty(Path.GetDirectoryName(SceneProperties.FramePath));
 }

@@ -10,11 +10,11 @@ public sealed class BlenderQueryService : IBlenderQueryService
 {
     private const string Prefix = "[BRQ] ";
 
-    public async Task<BlendFileProperties> GetAllFilePropertiesAsync(BasePythonProcessService process,
+    public async Task<BlendFileSceneProperties> GetAllFilePropertiesAsync(BasePythonProcessService process,
         string blendFilePath,
         CancellationToken cancellationToken = default)
     {
-        return await QueryAsync<BlendFileProperties>(
+        return await QueryAsync<BlendFileSceneProperties>(
             process,
             blendFilePath,
             "get_all_file_properties",
@@ -32,7 +32,7 @@ public sealed class BlenderQueryService : IBlenderQueryService
             root =>
             {
                 var data = root.GetProperty("data");
-                return new BlendFileProperties
+                return new BlendFileSceneProperties
                 {
                     FilePath = blendFilePath,
                     FrameStart = data.GetProperty("frame_start").GetInt32(),

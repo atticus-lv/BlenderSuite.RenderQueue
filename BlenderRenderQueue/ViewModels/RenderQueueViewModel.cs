@@ -367,7 +367,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             }
 
             // 获取帧路径目录
-            var framePath = SelectedTask.FileProperties.Properties.FramePath;
+            var framePath = SelectedTask.FileProperties.SceneProperties.FramePath;
             if (string.IsNullOrEmpty(framePath))
             {
                 QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("任务没有帧路径信息"));
@@ -393,7 +393,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             }
 
             // 获取帧率
-            var fps = SelectedTask.FileProperties.Properties.Fps ?? 24.0; // 默认 24fps
+            var fps = SelectedTask.FileProperties.SceneProperties.Fps ?? 24.0; // 默认 24fps
 
             // 生成输出视频路径：与输入目录同名，放在同一层级
             var inputDirectoryName = Path.GetFileName(frameDirectory);

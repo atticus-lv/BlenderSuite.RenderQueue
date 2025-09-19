@@ -182,8 +182,8 @@ public partial class TestRenderViewModel : ViewModelBase
 					await FilePropertiesViewModel.LoadPropertiesAsync(_exe, BlendFilePath);
 					
 					// 从FilePropertiesViewModel获取帧范围信息
-					StartFrame = FilePropertiesViewModel.Properties.FrameStart;
-					EndFrame = FilePropertiesViewModel.Properties.FrameEnd;
+					StartFrame = FilePropertiesViewModel.SceneProperties.FrameStart;
+					EndFrame = FilePropertiesViewModel.SceneProperties.FrameEnd;
 					EnqueueLog($"[QUERY] 文件属性加载完成: 帧范围 {StartFrame}..{EndFrame}");
 				}
 				finally
