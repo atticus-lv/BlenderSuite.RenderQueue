@@ -115,7 +115,7 @@
         </Border>
 
         <!-- 主要内容区域 -->
-        <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="300,*">
+        <Grid Grid.Row="3" Grid.ColumnSpan="2" ColumnDefinitions="300,5,*,5,*">
 
             <!-- 左侧任务列表 -->
             <Border Grid.Column="0" BorderBrush="Black" BorderThickness="0,0,1,0">
@@ -196,45 +196,54 @@
                 </Grid>
             </Border>
 
-            <!-- 右侧任务详情 -->
-            <Grid Grid.Column="1" RowDefinitions="Auto,*">
+            <!-- 第一个分隔条 -->
+            <GridSplitter Grid.Column="1" Background="LightGray" Width="5" HorizontalAlignment="Stretch" />
 
-                <!-- 选中任务的进度条和渲染信息 -->
-                <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="8"
-                        IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-                    <StackPanel Spacing="8">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="任务进度:" VerticalAlignment="Center" Width="80" FontWeight="Bold" />
-                            <ProgressBar Minimum="0" Maximum="1"
-                                         Value="{Binding RenderQueue.SelectedTask.OverallProgress01}"
-                                         Height="20" Width="300" />
-                            <TextBlock
-                                Text="{Binding RenderQueue.SelectedTask.OverallProgress01, StringFormat='{}{0:P1}'}"
-                                VerticalAlignment="Center" Width="50" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,*">
-                                <TextBlock Grid.Column="0" Text="当前帧:" Margin="0,0,4,0" />
-                                <TextBlock Grid.Column="1" Text="{Binding RenderQueue.SelectedTask.CurrentFrame}"
-                                           Margin="0,0,16,0" />
-                            </Grid>
+            <!-- 中间任务进度区域 -->
+            <Border Grid.Column="2" BorderBrush="LightGray" BorderThickness="0,0,1,0">
+                <Grid RowDefinitions="Auto,*">
+
+                    <!-- 选中任务的进度条和渲染信息 -->
+                    <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="0,0,0,1" Padding="8"
+                            IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="任务:" VerticalAlignment="Center" Width="80" FontWeight="Bold" />
+                                <ProgressBar Minimum="0" Maximum="1" ShowProgressText="True"
+                                             Value="{Binding RenderQueue.SelectedTask.OverallProgress01}"
+                                             Height="20" Width="200" />
+                                <Grid ColumnDefinitions="Auto,*,Auto,*">
+                                    <TextBlock Grid.Column="0" Text="当前帧:" Margin="0,0,4,0" />
+                                    <TextBlock Grid.Column="1" Text="{Binding RenderQueue.SelectedTask.CurrentFrame}"
+                                               Margin="0,0,16,0" />
+                                </Grid>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="帧:" VerticalAlignment="Center" Width="80" FontWeight="Bold" />
+                                <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.SelectedTask.Progress01}"
+                                             Height="20" Width="200" ShowProgressText="True" />
+                                <Grid ColumnDefinitions="Auto,*,Auto,*">
+                                    <TextBlock Grid.Column="0" Text="采样:" Margin="0,0,4,0" />
+                                    <TextBlock Grid.Column="1" Text="{Binding RenderQueue.SelectedTask.SampleText}" />
+                                </Grid>
+                            </StackPanel>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="帧进度:" VerticalAlignment="Center" Width="80" FontWeight="Bold" />
-                            <ProgressBar Minimum="0" Maximum="1" Value="{Binding RenderQueue.SelectedTask.Progress01}"
-                                         Height="20" Width="300" />
-                            <TextBlock Text="{Binding RenderQueue.SelectedTask.Progress01, StringFormat='{}{0:P1}'}"
-                                       VerticalAlignment="Center" Width="50" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,*">
-                                <TextBlock Grid.Column="0" Text="采样:" Margin="0,0,4,0" />
-                                <TextBlock Grid.Column="1" Text="{Binding RenderQueue.SelectedTask.SampleText}" />
-                            </Grid>
-                        </StackPanel>
+                    </Border>
 
-
+                    <!-- 空状态提示 -->
+                    <StackPanel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsVisible="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}">
+                        <TextBlock Text="选择一个任务查看进度" FontSize="16" Foreground="Gray" />
                     </StackPanel>
-                </Border>
+                </Grid>
+            </Border>
 
-                <!-- 任务详情 -->
-                <Grid Grid.Row="1">
+            <!-- 第二个分隔条 -->
+            <GridSplitter Grid.Column="3" Background="LightGray" Width="5" HorizontalAlignment="Stretch" />
+
+            <!-- 右侧任务详情 -->
+            <Border Grid.Column="4">
+                <Grid>
                     <ContentControl Content="{Binding RenderQueue.SelectedTask}">
                         <ContentControl.ContentTemplate>
                             <DataTemplate x:DataType="vm:RenderTaskViewModel">
@@ -249,7 +258,7 @@
                         <TextBlock Text="选择一个任务查看详情" FontSize="16" Foreground="Gray" />
                     </StackPanel>
                 </Grid>
-            </Grid>
+            </Border>
 
         </Grid>
 
