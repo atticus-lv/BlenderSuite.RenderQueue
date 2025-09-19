@@ -65,6 +65,11 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         // 监听任务状态变化
         RenderTasks.CollectionChanged += (s, e) => UpdateQueueStatistics();
+        
+        // Debug 模式下添加测试任务
+#if DEBUG
+        AddTestTaskIfExists();
+#endif
     }
 
     [RelayCommand]
@@ -528,6 +533,57 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 暂时返回空集合，实际实现需要依赖注入或事件
         return Enumerable.Empty<string>();
     }
+
+#if DEBUG
+    private async void AddTestTaskIfExists()
+    {
+        try
+        {
+            var testBlendPath = @"C:\Users\atticus\Downloads\test_file\test_file.blend";
+            
+            if (!File.Exists(testBlendPath))
+            {
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] 测试文件不存在: {testBlendPath}");
+                return;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] 开始等待 Blender 服务准备就绪...");
+            
+            // 等待 Blender 服务准备就绪，超时时间5秒
+            var timeout = TimeSpan.FromSeconds(5);
+            var startTime = DateTime.Now;
+            
+            while (_blenderService == null && DateTime.Now - startTime < timeout)
+            {
+                await Task.Delay(100); // 每100ms检查一次
+            }
+            
+            if (_blenderService == null)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DEBUG] 等待 Blender 服务超时，跳过添加测试任务");
+                return;
+            }
+            
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] Blender 服务已就绪，添加测试任务: {testBlendPath}");
+            
+            var task = new RenderTaskViewModel(testBlendPath, 1, 1, true);
+            
+            // 自动加载文件属性
+            await task.LoadFilePropertiesAsync(_blenderService);
+            
+            RenderTasks.Add(task);
+            
+            // 订阅任务事件
+            SubscribeToTaskEvents(task);
+            
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] 测试任务添加完成: {testBlendPath}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[DEBUG] 添加测试任务失败: {ex.Message}");
+        }
+    }
+#endif
 
     public void Dispose()
     {
