@@ -208,36 +208,43 @@
                     <StackPanel>
                         <Grid RowDefinitions="Auto,*">
                             <!-- 选中任务的进度条和渲染信息 -->
-                            <Border Grid.Row="0" BorderBrush="LightGray"
-                                    IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-                                <StackPanel Spacing="8">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="任务:" VerticalAlignment="Center" Width="80"
-                                                   FontWeight="Bold" />
-                                        <ProgressBar Minimum="0" Maximum="1" ShowProgressText="True"
-                                                     Value="{Binding SelectedTask.OverallProgress01}"
-                                                     Height="20" Width="100" />
-
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <TextBlock
-                                                Text="{Binding SelectedTask.CurrentFrame, StringFormat='帧: {0}'}"
-                                                Margin="0,0,16,0" FontWeight="Bold" />
-                                            <ProgressBar Minimum="0" Maximum="1"
-                                                         Value="{Binding SelectedTask.Progress01}"
-                                                         Height="20" Width="100" ShowProgressText="True" />
+                            <suki:GlassCard Grid.Row="0" Margin="0,0,0,8"
+                                           IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                                <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                    <!-- 任务进度 -->
+                                    <TextBlock Grid.Row="0" Grid.Column="2" Text="任务进度:" 
+                                               VerticalAlignment="Center" FontWeight="Bold" MinWidth="80" />
+                                    <ProgressBar Grid.Row="0" Grid.Column="2" Minimum="0" Maximum="1" 
+                                                 ShowProgressText="True" Value="{Binding SelectedTask.OverallProgress01}"
+                                                 Height="20" Margin="0,0,8,0" />
+                                    
+                                    <!-- 当前帧进度 -->
+                                    <TextBlock Grid.Row="1" Grid.Column="2" 
+                                               Text="{Binding SelectedTask.CurrentFrame, StringFormat='当前帧: {0}'}"
+                                               VerticalAlignment="Center" FontWeight="Bold" />
+                                    <ProgressBar Grid.Row="1" Grid.Column="2" Minimum="0" Maximum="1"
+                                                 Value="{Binding SelectedTask.Progress01}" Height="20" 
+                                                 ShowProgressText="True" Margin="0,0,8,0" />
+                                    
+                                    <!-- 采样信息 -->
+                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="采样:" 
+                                               VerticalAlignment="Center" FontWeight="Bold" />
+                                    <TextBlock Grid.Row="2" Grid.Column="2" 
+                                               Text="{Binding SelectedTask.SampleText}" 
+                                               VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    
+                                    <!-- 预览图区域 (预留) -->
+                                    <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" 
+                                            Width="120" Height="90" Background="#F5F5F5" 
+                                            CornerRadius="4" BorderBrush="#DDD" BorderThickness="1">
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <TextBlock Text="🖼️" FontSize="24" HorizontalAlignment="Center" />
+                                            <TextBlock Text="预览图" FontSize="10" HorizontalAlignment="Center" 
+                                                       Foreground="#666" Margin="0,4,0,0" />
                                         </StackPanel>
-
-
-                                    </StackPanel>
-                                    <Grid ColumnDefinitions="Auto,*,Auto,*">
-                                        <TextBlock Grid.Column="0" Text="采样:" Margin="0,0,4,0" />
-                                        <TextBlock Grid.Column="1"
-                                                   Text="{Binding SelectedTask.SampleText}" />
-                                    </Grid>
-                                </StackPanel>
-                            </Border>
+                                    </Border>
+                                </Grid>
+                            </suki:GlassCard>
                         </Grid>
 
 

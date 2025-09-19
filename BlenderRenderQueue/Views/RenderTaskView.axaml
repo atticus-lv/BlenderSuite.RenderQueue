@@ -29,7 +29,7 @@
                 </StackPanel>
             </suki:GroupBox.Header>
             <TabControl Grid.Row="1">
-                <TabItem Header="文件设置">
+                <TabItem Header="文件信息">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="16" Margin="8">
                             <!-- 文件属性 -->
@@ -74,7 +74,7 @@
                         </StackPanel>
                     </suki:GlassCard>
                 </TabItem>
-                <TabItem Header="渲染日志">
+                <TabItem Header="日志">
                     <Grid RowDefinitions="Auto,*">
                         <!-- 日志控制按钮 -->
                         <suki:GlassCard Grid.Row="0" Margin="0,0,0,8">
