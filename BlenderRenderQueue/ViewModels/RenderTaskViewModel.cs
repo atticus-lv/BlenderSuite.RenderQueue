@@ -46,6 +46,8 @@ public partial class RenderTaskViewModel : ViewModelBase
     [ObservableProperty]
     private int _completedFrames;
 
+    public int TotalFrames => Math.Max(0, EndFrame - StartFrame + 1);
+
     [ObservableProperty]
     private string _sampleText = string.Empty;
 
@@ -135,7 +137,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         StartFrame = startFrame;
         EndFrame = endFrame;
         Animation = animation;
-        
+
         // 加载文件信息
         LoadFileInfo();
     }
@@ -157,7 +159,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         try
         {
             Console.WriteLine($"[RenderTaskViewModel] Loading rendered image: {imagePath}");
-            
+
             if (!File.Exists(imagePath))
             {
                 Console.WriteLine($"[RenderTaskViewModel] Rendered image file does not exist: {imagePath}");
@@ -185,18 +187,19 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             if (bitmap != null)
             {
-                Console.WriteLine($"[RenderTaskViewModel] Original image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
-                
+                Console.WriteLine(
+                    $"[RenderTaskViewModel] Original image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
+
                 // 释放原始bitmap，因为我们只需要优化版本
                 bitmap.Dispose();
-                
+
                 // 直接加载并显示优化版本
                 _ = Task.Run(async () =>
                 {
                     try
                     {
                         var optimizedBitmap = await LoadAndOptimizeImageAsync(imagePath, 120, 90);
-                        
+
                         // 在UI线程更新为优化后的图片
                         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                         {
@@ -208,11 +211,13 @@ public partial class RenderTaskViewModel : ViewModelBase
                                     RenderedImage = optimizedBitmap;
                                     RenderedImagePath = imagePath;
                                     HasRenderedImage = true;
-                                    Console.WriteLine($"[RenderTaskViewModel] ✅ Optimized image loaded and displayed: {optimizedBitmap.PixelSize.Width}x{optimizedBitmap.PixelSize.Height}");
+                                    Console.WriteLine(
+                                        $"[RenderTaskViewModel] ✅ Optimized image loaded and displayed: {optimizedBitmap.PixelSize.Width}x{optimizedBitmap.PixelSize.Height}");
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"[RenderTaskViewModel] ⚠️ Failed to load optimized image, showing placeholder");
+                                    Console.WriteLine(
+                                        $"[RenderTaskViewModel] ⚠️ Failed to load optimized image, showing placeholder");
                                     HasRenderedImage = false;
                                 }
                             }
@@ -246,17 +251,18 @@ public partial class RenderTaskViewModel : ViewModelBase
             try
             {
                 Console.WriteLine($"[RenderTaskViewModel] Loading and optimizing image: {imagePath}");
-                
+
                 // 重新从文件加载图片
                 using (var fileStream = File.OpenRead(imagePath))
                 {
                     var originalBitmap = new Bitmap(fileStream);
                     var originalSize = originalBitmap.PixelSize;
-                    
+
                     // 如果图片已经小于目标尺寸，直接返回
                     if (originalSize.Width <= maxWidth && originalSize.Height <= maxHeight)
                     {
-                        Console.WriteLine($"[RenderTaskViewModel] Image already optimal size: {originalSize.Width}x{originalSize.Height}");
+                        Console.WriteLine(
+                            $"[RenderTaskViewModel] Image already optimal size: {originalSize.Width}x{originalSize.Height}");
                         return originalBitmap;
                     }
 
@@ -268,7 +274,8 @@ public partial class RenderTaskViewModel : ViewModelBase
                     var newWidth = (int)(originalSize.Width * scale);
                     var newHeight = (int)(originalSize.Height * scale);
 
-                    Console.WriteLine($"[RenderTaskViewModel] Optimizing image from {originalSize.Width}x{originalSize.Height} to {newWidth}x{newHeight}");
+                    Console.WriteLine(
+                        $"[RenderTaskViewModel] Optimizing image from {originalSize.Width}x{originalSize.Height} to {newWidth}x{newHeight}");
 
                     // 使用RenderTargetBitmap进行缩放
                     var renderTarget = new RenderTargetBitmap(new Avalonia.PixelSize(newWidth, newHeight));
@@ -276,13 +283,13 @@ public partial class RenderTaskViewModel : ViewModelBase
                     {
                         var sourceRect = new Avalonia.Rect(0, 0, originalSize.Width, originalSize.Height);
                         var destRect = new Avalonia.Rect(0, 0, newWidth, newHeight);
-                        
+
                         drawingContext.DrawImage(originalBitmap, sourceRect, destRect);
                     }
 
                     // 释放原始位图
                     originalBitmap.Dispose();
-                    
+
                     Console.WriteLine($"[RenderTaskViewModel] Image optimization completed successfully");
                     return renderTarget;
                 }
@@ -306,11 +313,12 @@ public partial class RenderTaskViewModel : ViewModelBase
             try
             {
                 var originalSize = originalBitmap.PixelSize;
-                
+
                 // 如果图片已经小于目标尺寸，直接返回
                 if (originalSize.Width <= maxWidth && originalSize.Height <= maxHeight)
                 {
-                    Console.WriteLine($"[RenderTaskViewModel] Image already optimal size: {originalSize.Width}x{originalSize.Height}");
+                    Console.WriteLine(
+                        $"[RenderTaskViewModel] Image already optimal size: {originalSize.Width}x{originalSize.Height}");
                     return originalBitmap;
                 }
 
@@ -322,7 +330,8 @@ public partial class RenderTaskViewModel : ViewModelBase
                 var newWidth = (int)(originalSize.Width * scale);
                 var newHeight = (int)(originalSize.Height * scale);
 
-                Console.WriteLine($"[RenderTaskViewModel] Optimizing image from {originalSize.Width}x{originalSize.Height} to {newWidth}x{newHeight}");
+                Console.WriteLine(
+                    $"[RenderTaskViewModel] Optimizing image from {originalSize.Width}x{originalSize.Height} to {newWidth}x{newHeight}");
 
                 // 使用RenderTargetBitmap进行缩放
                 var renderTarget = new RenderTargetBitmap(new Avalonia.PixelSize(newWidth, newHeight));
@@ -330,7 +339,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 {
                     var sourceRect = new Avalonia.Rect(0, 0, originalSize.Width, originalSize.Height);
                     var destRect = new Avalonia.Rect(0, 0, newWidth, newHeight);
-                    
+
                     drawingContext.DrawImage(originalBitmap, sourceRect, destRect);
                 }
 
@@ -751,7 +760,6 @@ public class StatusToColorConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
-
 
 // 渲染任务状态枚举
 public enum RenderTaskStatus
