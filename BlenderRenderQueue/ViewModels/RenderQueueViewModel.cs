@@ -27,6 +27,9 @@ public partial class RenderQueueViewModel : ViewModelBase
     private int _activeTaskCount = 0;
 
     [ObservableProperty]
+    private bool _hasRunningTasks = false;
+
+    [ObservableProperty]
     private int _completedTaskCount = 0;
 
     [ObservableProperty]
@@ -472,6 +475,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private void UpdateQueueStatistics()
     {
         ActiveTaskCount = RenderTasks.Count(t => t.Status == RenderTaskStatus.Running);
+        HasRunningTasks = ActiveTaskCount > 0;
         CompletedTaskCount = RenderTasks.Count(t => t.Status == RenderTaskStatus.Completed);
         FailedTaskCount = RenderTasks.Count(t => t.Status == RenderTaskStatus.Failed || t.Status == RenderTaskStatus.Cancelled);
 

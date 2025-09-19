@@ -29,7 +29,8 @@
                             VerticalAlignment="Center">
                     <TextBlock Text="Blender路径:" VerticalAlignment="Center" />
                     <TextBox Text="{Binding BlenderPath, Mode=TwoWay}" IsReadOnly="True" Width="200" />
-                    <Button Content="📁" Command="{Binding BrowseBlenderCommand}" />
+                    <Button Content="📁" Command="{Binding BrowseBlenderCommand}" 
+                            IsEnabled="{Binding !RenderQueue.HasRunningTasks}" />
                 </StackPanel>
 
                 <!-- 第一行：Blender信息 -->
@@ -51,11 +52,11 @@
                             VerticalAlignment="Center">
                     <!-- 开始队列按钮：只在队列停止时显示 -->
                     <Button Content="开始队列" Classes="Flat" Command="{Binding RenderQueue.StartQueueCommand}"
-                            IsEnabled="{Binding !RenderQueue.IsQueueRunning}" />
+                            IsEnabled="{Binding !RenderQueue.HasRunningTasks}" />
 
                     <!-- 停止队列按钮：只在队列运行时显示 -->
                     <Button Content="停止队列" Classes="Flat Accent" Command="{Binding RenderQueue.StopQueueCommand}"
-                            IsEnabled="{Binding RenderQueue.IsQueueRunning}" />
+                            IsEnabled="{Binding RenderQueue.HasRunningTasks}" />
                 </StackPanel>
 
                 <!-- 第二行：FFmpeg路径设置 -->
@@ -63,7 +64,8 @@
                             VerticalAlignment="Center" Margin="0,4,0,0">
                     <TextBlock Text="FFmpeg路径:" VerticalAlignment="Center" />
                     <TextBox Text="{Binding FfmpegPath, Mode=TwoWay}" IsReadOnly="True" Width="200" />
-                    <Button Content="📁" Command="{Binding BrowseFFmpegCommand}" />
+                    <Button Content="📁" Command="{Binding BrowseFFmpegCommand}" 
+                            IsEnabled="{Binding !RenderQueue.HasRunningTasks}" />
                 </StackPanel>
 
                 <!-- 第二行：FFmpeg信息 -->
@@ -147,25 +149,25 @@
                                     <material:MaterialIcon Kind="Add"></material:MaterialIcon>
                                 </Button>
                                 <Button Command="{Binding RenderQueue.RemoveSelectedTaskCommand}"
-                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.IsQueueRunning}}">
+                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.HasRunningTasks}}">
                                     <material:MaterialIcon Kind="Remove"></material:MaterialIcon>
                                 </Button>
                                 
                                 <Button HorizontalContentAlignment="Center"
                                         VerticalAlignment="Center"
                                         Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskUpCommand}"
-                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.IsQueueRunning}}">
+                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.HasRunningTasks}}">
                                     <material:MaterialIcon Kind="ArrowTop"></material:MaterialIcon>
                                 </Button>
                                 <Button HorizontalContentAlignment="Center"
                                         VerticalAlignment="Center"
                                         Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).RenderQueue.MoveTaskDownCommand}"
-                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.IsQueueRunning}}">
+                                        IsEnabled="{Binding RenderQueue.SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding RenderQueue.HasRunningTasks}}">
                                     <material:MaterialIcon Kind="ArrowDown"></material:MaterialIcon>
                                 </Button>
                                 
                                 <Button Command="{Binding RenderQueue.RemoveAllTasksCommand}" 
-                                        IsEnabled="{Binding !RenderQueue.IsQueueRunning}" Margin="0 8">
+                                        IsEnabled="{Binding !RenderQueue.HasRunningTasks}" Margin="0 8">
                                     <material:MaterialIcon Kind="Clear"></material:MaterialIcon>
                                 </Button>
                                 
@@ -223,8 +225,14 @@
                                 HorizontalAlignment="Center">
 
                         <Button Content="🎬 生成视频" Command="{Binding RenderQueue.GenerateVideoFromSelectedTaskCommand}"
-                                IsEnabled="{Binding RenderQueue.SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-                                Padding="8,4" ToolTip.Tip="为选中的任务生成 H.265 视频（需要设置有效的 FFmpeg 路径和帧路径目录中有图片文件）" />
+                                Padding="8,4" ToolTip.Tip="为选中的任务生成 H.265 视频（需要设置有效的 FFmpeg 路径和帧路径目录中有图片文件）">
+                            <Button.IsEnabled>
+                                <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
+                                    <Binding Path="RenderQueue.SelectedTask" Converter="{x:Static conv:ObjectConverters.IsNotNull}" />
+                                    <Binding Path="!RenderQueue.HasRunningTasks" />
+                                </MultiBinding>
+                            </Button.IsEnabled>
+                        </Button>
                     </StackPanel>
 
                 </Grid>
