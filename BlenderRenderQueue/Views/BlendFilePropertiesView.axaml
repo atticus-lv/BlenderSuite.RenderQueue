@@ -33,12 +33,12 @@
                 <Border CornerRadius="4" Padding="15" IsVisible="{Binding SceneProperties.IsLoaded}">
                     <StackPanel Spacing="8">
 
-                        <!-- 文件路径 -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="文件路径:" FontWeight="SemiBold" MinWidth="100" />
-                            <TextBlock Grid.Column="1" Text="{Binding SceneProperties.FilePath}" TextWrapping="Wrap"
-                                       FontSize="12" Foreground="#1976D2" VerticalAlignment="Center" />
-                        </Grid>
+                        <!-- ~1~ 文件路径 @1@ -->
+                        <!-- <Grid ColumnDefinitions="Auto,*"> -->
+                        <!--     <TextBlock Grid.Column="0" Text="文件路径:" FontWeight="SemiBold" MinWidth="100" /> -->
+                        <!--     <TextBlock Grid.Column="1" Text="{Binding SceneProperties.FilePath}" TextWrapping="Wrap" -->
+                        <!--                FontSize="12" Foreground="#1976D2" VerticalAlignment="Center" /> -->
+                        <!-- </Grid> -->
 
                         <!-- 文件名称 -->
                         <!-- <Grid ColumnDefinitions="Auto,*"> -->
@@ -47,7 +47,7 @@
                         <!-- </Grid> -->
 
                         <!-- 分隔线 -->
-                        <Rectangle Height="1" Fill="Gray" Margin="0,8" />
+                        <!-- <Rectangle Height="1" Fill="Gray" Margin="0,8" /> -->
 
 
                         <!-- 场景名称 -->
