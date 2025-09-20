@@ -17,11 +17,5 @@ public partial class RenderQueueView : UserControl
         AvaloniaXamlLoader.Load(this);
     }
 
-    private void OnRenderedImageDoubleTapped(object? sender, TappedEventArgs e)
-    {
-        if (DataContext is RenderQueueViewModel viewModel && viewModel.SelectedTask != null)
-        {
-            viewModel.SelectedTask.OpenImagePreviewCommand.Execute(null);
-        }
-    }
+    
 }

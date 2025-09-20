@@ -225,102 +225,24 @@
                 </Grid>
             </Border>
 
-            <!-- 第一个分隔条 -->
-            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Margin="4"
-                          CornerRadius="2" Opacity="0.2" />
-
 
             <!-- 右侧任务详情 -->
             <Border Grid.Column="2" Margin="4">
-                <ScrollViewer>
-                    <StackPanel>
-                        <Grid RowDefinitions="Auto,*">
-                            <!-- 选中任务的进度条和渲染信息 -->
-                            <suki:GlassCard Grid.Row="0" Margin="0,0,0,8"
-                                            IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
-                                    <!-- 任务进度 -->
-
-                                    <TextBlock Grid.Row="0" Grid.Column="2"
-                                               VerticalAlignment="Center" FontWeight="Bold" MinWidth="80">
-                                        <TextBlock.Text>
-                                            <MultiBinding StringFormat="{}进度: {0}/{1} ">
-                                                <Binding Path="SelectedTask.CompletedFrames" />
-                                                <Binding Path="SelectedTask.TotalFrames" />
-                                            </MultiBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                    <ProgressBar Grid.Row="0" Grid.Column="3" Minimum="0" Maximum="1"
-                                                 ShowProgressText="False"
-                                                 Value="{Binding SelectedTask.OverallProgress01}"
-                                                 Height="20" Margin="0,0,8,0" />
-
-                                    <!-- 当前帧进度 -->
-                                    <TextBlock Grid.Row="1" Grid.Column="2"
-                                               Text="{Binding SelectedTask.CurrentFrame, StringFormat='当前帧: {0}'}"
-                                               VerticalAlignment="Center" FontWeight="Bold" />
-                                    <ProgressBar Grid.Row="1" Grid.Column="3" Minimum="0" Maximum="1"
-                                                 Value="{Binding SelectedTask.Progress01}" Height="20"
-                                                 ShowProgressText="False" Margin="0,0,8,0" />
-
-                                    <!-- 采样信息 -->
-                                    <TextBlock Grid.Row="2" Grid.Column="2" Text="采样:"
-                                               VerticalAlignment="Center" FontWeight="Bold" />
-                                    <TextBlock Grid.Row="2" Grid.Column="3"
-                                               Text="{Binding SelectedTask.SampleText}"
-                                               VerticalAlignment="Center" Margin="0,0,8,0" />
-
-                                    <!-- 预览图区域 -->
-                                    <suki:GlassCard Grid.Row="0" Grid.RowSpan="3" Grid.Column="0">
-                                        <Grid>
-                                            <!-- 渲染图片 (优先显示) -->
-                                            <Image Source="{Binding SelectedTask.RenderedImage}"
-                                                   Stretch="Uniform"
-                                                   IsVisible="{Binding SelectedTask.HasRenderedImage}"
-                                                   Name="RenderedImageControl"
-                                                   Cursor="Hand"
-                                                   DoubleTapped="OnRenderedImageDoubleTapped" />
-
-                                            <!-- 文件缩略图 (备选) -->
-                                            <Image Source="{Binding SelectedTask.FileInfo.Thumbnail}"
-                                                   Stretch="Uniform"
-                                                   IsVisible="{Binding SelectedTask.HasRenderedImage, Converter={x:Static conv:BoolConverters.Not}}" />
-
-                                            <!-- 占位符 -->
-                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                        IsVisible="{Binding SelectedTask.HasRenderedImage, Converter={x:Static conv:BoolConverters.Not}}">
-                                                <TextBlock Text="🖼️" FontSize="24" HorizontalAlignment="Center" />
-                                                <TextBlock Text="预览图" FontSize="10" HorizontalAlignment="Center"
-                                                           Foreground="#666" Margin="0,4,0,0" />
-                                            </StackPanel>
-                                        </Grid>
-                                    </suki:GlassCard>
-
-                                </Grid>
-                            </suki:GlassCard>
-                        </Grid>
-
-
-                        <Panel>
-                            <ContentControl Content="{Binding SelectedTask}">
-                                <ContentControl.ContentTemplate>
-                                    <DataTemplate x:DataType="vm:RenderTaskViewModel">
-                                        <views:RenderTaskView DataContext="{Binding}" />
-                                    </DataTemplate>
-                                </ContentControl.ContentTemplate>
-                            </ContentControl>
-
-                            <!-- 空状态提示 -->
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                                        IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}">
-                                <TextBlock Text="选择一个任务查看详情" FontSize="16" Foreground="Gray" />
-                            </StackPanel>
-                        </Panel>
-                    </StackPanel>
-                </ScrollViewer>
-
+                <Panel>
+                    <!-- 空状态提示 -->
+                    <TextBlock Text="选择一个任务查看" FontSize="20" Foreground="Gray" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold"
+                               IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                    <ScrollViewer>
+                        <ContentControl Content="{Binding SelectedTask}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate x:DataType="vm:RenderTaskViewModel">
+                                    <views:RenderTaskView DataContext="{Binding}" />
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
+                    </ScrollViewer>
+                </Panel>
             </Border>
-
         </Grid>
 
 
