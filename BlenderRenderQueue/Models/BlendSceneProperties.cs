@@ -32,6 +32,7 @@ public class BlendSceneProperties
     public string? FramePath { get; set; }
     public double? CyclesTimeLimit { get; set; }
     public List<string>? ReferencedScenes { get; set; }
+    public List<string>? TimelineCameras { get; set; }
     public int TotalFrames => Math.Max(0, FrameEnd - FrameStart + 1);
     public bool IsLoaded => !string.IsNullOrEmpty(FilePath);
     public string FileName => IsLoaded ? Path.GetFileName(FilePath) : string.Empty;
@@ -61,6 +62,30 @@ public class BlendSceneProperties
     /// 是否为复合场景
     /// </summary>
     public bool IsCompositeScene => ReferencedScenes != null && ReferencedScenes.Any();
+    
+    /// <summary>
+    /// 相机类型显示文本
+    /// </summary>
+    public string CameraTypeDisplayText
+    {
+        get
+        {
+            if (TimelineCameras == null || !TimelineCameras.Any())
+            {
+                return "单一相机";
+            }
+            else
+            {
+                var cameraNames = string.Join(", ", TimelineCameras);
+                return $"多相机 ({cameraNames})";
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 是否为多相机场景
+    /// </summary>
+    public bool IsMultiCameraScene => TimelineCameras != null && TimelineCameras.Any();
 
     /// <summary>
     /// 从另一个BlendFileProperties对象加载属性
@@ -80,5 +105,6 @@ public class BlendSceneProperties
         FramePath = source.FramePath;
         CyclesTimeLimit = source.CyclesTimeLimit;
         ReferencedScenes = source.ReferencedScenes;
+        TimelineCameras = source.TimelineCameras;
     }
 }

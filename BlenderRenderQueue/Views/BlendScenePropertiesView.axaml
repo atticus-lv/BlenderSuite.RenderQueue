@@ -60,6 +60,14 @@
                                        VerticalAlignment="Center" />
                         </Grid>
 
+                        <!-- 相机类型 -->
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="相机类型:" FontWeight="SemiBold" MinWidth="80"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.CameraTypeDisplayText}"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+
 
                         <!-- 场景信息分隔线 -->
                         <Rectangle Height="1" Fill="Transparent" Margin="0,8"

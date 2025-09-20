@@ -57,7 +57,10 @@ public sealed class BlenderQueryService : IBlenderQueryService
                             : sceneInfo.GetProperty("cycles_time_limit").GetDouble(),
                         ReferencedScenes = sceneInfo.GetProperty("referenced_scenes").ValueKind == JsonValueKind.Null
                             ? null
-                            : sceneInfo.GetProperty("referenced_scenes").EnumerateArray().Select(x => x.GetString()!).Where(x => x != null).ToList()
+                            : sceneInfo.GetProperty("referenced_scenes").EnumerateArray().Select(x => x.GetString()!).Where(x => x != null).ToList(),
+                        TimelineCameras = sceneInfo.GetProperty("timeline_cameras").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("timeline_cameras").EnumerateArray().Select(x => x.GetString()!).Where(x => x != null).ToList()
                     };
                 }
                 
@@ -116,6 +119,21 @@ try:
         except Exception:
             return []
     
+    # 获取时间轴标记中的相机列表
+    def get_timeline_cameras(scene):
+        try:
+            # 检查是否有timeline_markers
+            if not hasattr(scene, 'timeline_markers'):
+                return []
+            
+            # 获取所有时间轴标记中的相机
+            cams = [m.camera for m in scene.timeline_markers if m.camera and m.camera.type == ""CAMERA""]
+            
+            # 返回去重后的相机名称列表
+            return list(set([cam.name for cam in cams if cam.name]))
+        except Exception:
+            return []
+    
     # 获取所有场景数据
     scene_data = {{}}
     active_scene_name = bpy.context.scene.name
@@ -132,7 +150,8 @@ try:
             'fps': safe_get(lambda: scene.render.fps, 24.0),
             'frame_path': safe_get(lambda: scene.render.frame_path() if hasattr(scene.render, 'frame_path') else None),
             'cycles_time_limit': safe_get(lambda: scene.cycles.time_limit if hasattr(scene, 'cycles') else None),
-            'referenced_scenes': safe_get(lambda: get_referenced_scenes(scene), [])
+            'referenced_scenes': safe_get(lambda: get_referenced_scenes(scene), []),
+            'timeline_cameras': safe_get(lambda: get_timeline_cameras(scene), [])
         }}
     
     data = {{
