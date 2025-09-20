@@ -9,15 +9,10 @@
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              xmlns:viewModels="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
-             xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
              x:DataType="viewModels:RenderQueueViewModel"
              services1:ToplevelService.Register="{Binding}">
-
-    <UserControl.Resources>
-        <converters:IsTaskOperableConverter x:Key="IsTaskOperableConverter" />
-    </UserControl.Resources>
 
     <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
 
@@ -109,7 +104,6 @@
 
                     <!-- 任务列表 -->
                     <suki:GlassCard Grid.Row="1" Padding="0">
-
                         <Grid ColumnDefinitions="*,1,Auto">
                             <!-- 任务操作按钮 -->
                             <StackPanel Grid.Column="2" Orientation="Vertical" Spacing="2" Margin="4"
@@ -123,32 +117,63 @@
                                     Command="{Binding AddMultipleTasksCommand}">
                                     <material:MaterialIcon Kind="Add" />
                                 </Button>
-                                <Button Command="{Binding RemoveSelectedTaskCommand}"
-                                        IsEnabled="{Binding SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding CanModifyTasks}}">
+                                <Button Command="{Binding RemoveSelectedTaskCommand}">
+                                    <Button.IsEnabled>
+                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                            <Binding Path="SelectedTask"
+                                                     Converter="{x:Static ObjectConverters.IsNotNull}" />
+                                            <Binding
+                                                Path="CanStartQueue"/>
+                                        </MultiBinding>
+                                    </Button.IsEnabled>
                                     <material:MaterialIcon Kind="Remove" />
                                 </Button>
 
                                 <Button HorizontalContentAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Command="{Binding MoveTaskUpCommand}"
-                                        IsEnabled="{Binding SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding CanModifyTasks}}">
+                                        Command="{Binding MoveTaskUpCommand}">
+                                    <Button.IsEnabled>
+                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                            <Binding
+                                                Path="SelectedTask"
+                                                Converter="{x:Static ObjectConverters.IsNotNull}" />
+                                            <Binding
+                                                Path="CanStartQueue" />
+                                        </MultiBinding>
+                                    </Button.IsEnabled>
                                     <material:MaterialIcon Kind="ArrowTop" />
                                 </Button>
                                 <Button HorizontalContentAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Command="{Binding MoveTaskDownCommand}"
-                                        IsEnabled="{Binding SelectedTask, Converter={StaticResource IsTaskOperableConverter}, ConverterParameter={Binding CanModifyTasks}}">
+                                        Command="{Binding MoveTaskDownCommand}">
+                                    <Button.IsEnabled>
+                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                            <Binding
+                                                Path="SelectedTask"
+                                                Converter="{x:Static ObjectConverters.IsNotNull}" />
+                                            <Binding
+                                                Path="CanStartQueue" />
+                                        </MultiBinding>
+                                    </Button.IsEnabled>
                                     <material:MaterialIcon Kind="ArrowDown" />
                                 </Button>
 
-                                <Button Command="{Binding RemoveAllTasksCommand}"
-                                        IsEnabled="{Binding CanModifyTasks}" Margin="0 8">
+                                <Button Command="{Binding RemoveAllTasksCommand}">
                                     <material:MaterialIcon Kind="Clear" />
+                                    <Button.IsEnabled>
+                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                            <Binding
+                                                Path="SelectedTask"
+                                                Converter="{x:Static ObjectConverters.IsNotNull}" />
+                                            <Binding
+                                                Path="CanStartQueue" />
+                                        </MultiBinding>
+                                    </Button.IsEnabled>
                                 </Button>
 
                             </StackPanel>
                             <ListBox Grid.Column="0" ItemsSource="{Binding RenderTasks}"
-                                     Classes="WithoutCheck"
+                                     Classes="WithoutCheck" IsEnabled="{Binding CanStartQueue}"
                                      SelectedItem="{Binding SelectedTask}" Margin="4">
                                 <ListBox.Styles>
                                     <Style Selector="ListBoxItem">
@@ -184,11 +209,11 @@
                                                                  Height="4" Margin="0,2,0,0" />
                                                 </StackPanel>
                                                 <!-- Enable ToggleSwitch -->
-                                                <ToggleSwitch Grid.Column="1" 
-                                                                   IsChecked="{Binding Enable}"
-                                                                   Margin="8,0"
-                                                                   VerticalAlignment="Center"
-                                                                   ToolTip.Tip="启用/禁用此任务" />
+                                                <ToggleSwitch Grid.Column="1"
+                                                              IsChecked="{Binding Enable}"
+                                                              Margin="8,0"
+                                                              VerticalAlignment="Center"
+                                                              ToolTip.Tip="启用/禁用此任务" />
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -253,12 +278,12 @@
                                     <suki:GlassCard Grid.Row="0" Grid.RowSpan="3" Grid.Column="0">
                                         <Grid>
                                             <!-- 渲染图片 (优先显示) -->
-                                            <Image Source="{Binding SelectedTask.RenderedImage}" 
-                                                   Stretch="Uniform" 
+                                            <Image Source="{Binding SelectedTask.RenderedImage}"
+                                                   Stretch="Uniform"
                                                    IsVisible="{Binding SelectedTask.HasRenderedImage}"
                                                    Name="RenderedImageControl"
                                                    Cursor="Hand"
-                                                   DoubleTapped="OnRenderedImageDoubleTapped"/>
+                                                   DoubleTapped="OnRenderedImageDoubleTapped" />
 
                                             <!-- 文件缩略图 (备选) -->
                                             <Image Source="{Binding SelectedTask.FileInfo.Thumbnail}"
