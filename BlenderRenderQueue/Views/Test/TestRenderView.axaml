@@ -41,7 +41,7 @@
 
         <Grid ColumnDefinitions="3*,5,*">
 
-            <views:BlendScenePropertiesView Grid.Column="2" DataContext="{Binding ScenePropertiesModel}" Margin="4" />
+            <views:BlendScenePropertiesView Grid.Column="2" DataContext="{Binding ScenePropertiesViewModel}" Margin="4" />
 
             <Rectangle Grid.Column="1" Width="1" Fill="Gray" Margin="0,8" />
 

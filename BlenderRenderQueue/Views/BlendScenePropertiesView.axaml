@@ -6,7 +6,7 @@
              xmlns:conv="using:Avalonia.Data.Converters"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Views.BlendScenePropertiesView"
-             x:DataType="vm:BlendScenePropertiesModel">
+             x:DataType="vm:BlendScenePropertiesViewModel">
 
     <Grid RowDefinitions="Auto,*">
         <!-- 内容区域 -->

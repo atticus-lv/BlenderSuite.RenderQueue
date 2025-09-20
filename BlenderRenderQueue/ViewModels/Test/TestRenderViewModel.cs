@@ -67,7 +67,7 @@ public partial class TestRenderViewModel : ViewModelBase
 	private BlenderExeService? _exe;
 
 	[ObservableProperty]
-	private BlendScenePropertiesModel _scenePropertiesModel = new();
+	private BlendScenePropertiesViewModel _scenePropertiesViewModel = new();
 
 	// 日志批量刷新
 	private readonly ConcurrentQueue<string> _logQueue = new();
@@ -179,11 +179,11 @@ public partial class TestRenderViewModel : ViewModelBase
 
 				try
 				{
-					await ScenePropertiesModel.LoadPropertiesAsync(_exe, BlendFilePath);
+					await ScenePropertiesViewModel.LoadPropertiesAsync(_exe, BlendFilePath);
 					
 					// 从FilePropertiesViewModel获取帧范围信息
-					StartFrame = ScenePropertiesModel.SceneProperties.FrameStart;
-					EndFrame = ScenePropertiesModel.SceneProperties.FrameEnd;
+					StartFrame = ScenePropertiesViewModel.SceneProperties.FrameStart;
+					EndFrame = ScenePropertiesViewModel.SceneProperties.FrameEnd;
 					EnqueueLog($"[QUERY] 文件属性加载完成: 帧范围 {StartFrame}..{EndFrame}");
 				}
 				finally
