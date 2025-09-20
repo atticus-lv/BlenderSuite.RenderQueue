@@ -21,15 +21,6 @@ public sealed class BlenderCommandService : IBlenderCommandService
 		sb.AppendLine("import bpy");
 		sb.AppendLine($"filepath = '{normalizedPath}'");
 		sb.AppendLine("bpy.ops.wm.open_mainfile(filepath=filepath)");
-		if (animation)
-		{
-			sb.AppendLine($"bpy.context.scene.frame_start = {startFrame}");
-			sb.AppendLine($"bpy.context.scene.frame_end = {endFrame}");
-		}
-		else
-		{
-			sb.AppendLine($"bpy.context.scene.frame_set({startFrame})");
-		}
 		sb.AppendLine($"bpy.ops.render.render(animation={(animation ? "True" : "False")}, start_frame={startFrame}, end_frame={endFrame})");
 
 		await process.ExecuteScript(sb.ToString(), "render_start", cancellationToken);
