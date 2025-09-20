@@ -70,7 +70,8 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         get
         {
-            var canStart = (QueueState == QueueState.Idle || QueueState == QueueState.Completed) && RenderTasks.Any(t => t.Enable);
+            var canStart = (QueueState == QueueState.Idle || QueueState == QueueState.Completed) &&
+                           RenderTasks.Any(t => t.Enable);
             // Console.WriteLine(
             //     $"[DEBUG] CanStartQueue: {canStart} (QueueState: {QueueState}, EnabledTaskCount: {RenderTasks.Count(t => t.Enable)})");
             return canStart;
@@ -78,7 +79,8 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     public bool CanStopQueue => QueueState == QueueState.Running;
-    public bool CanModifyTasks 
+
+    public bool CanModifyTasks
     {
         get
         {
@@ -103,7 +105,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     public RenderQueueViewModel()
     {
         // 监听任务状态变化
-        RenderTasks.CollectionChanged += (s, e) => 
+        RenderTasks.CollectionChanged += (s, e) =>
         {
             UpdateQueueStatistics();
             // 任务集合变化时自动保存
@@ -283,7 +285,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 第一次点击：设置预备删除状态
             // 先清除其他任务的预备删除状态
             ClearPendingDeletionStates();
-            
+
             // 设置当前任务为预备删除状态
             taskToRemove.IsPendingDeletion = true;
         }
@@ -658,7 +660,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 保存当前选中任务的索引和文件路径
             var currentIndex = RenderTasks.IndexOf(task);
             var filePath = task.BlendFilePath;
-            
+
             // 停止当前任务（如果正在运行）
             if (task.Status == RenderTaskStatus.Running)
             {
@@ -671,22 +673,22 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             // 创建新的任务实例
             var newTask = new RenderTaskViewModel(filePath, 1, 1, true);
-            
+
             // 重新加载文件属性
             await newTask.LoadFilePropertiesAsync(_blenderService);
-            
+
             // 替换原任务
             RenderTasks[currentIndex] = newTask;
-            
+
             // 重新订阅事件
             SubscribeToTaskEvents(newTask);
-            
+
             // 如果这是当前选中的任务，重新选中
             if (SelectedTask == task)
             {
                 SelectedTask = newTask;
             }
-            
+
             StatusMessageChanged?.Invoke(this, $"任务已重新加载: {Path.GetFileName(filePath)}");
         }
         catch (Exception ex)
@@ -699,10 +701,10 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         // 当任务的 Enable 状态变化时，自动保存数据
         AutoSaveQueueData();
-        
+
         // 更新队列统计信息
         UpdateQueueStatistics();
-        
+
         Console.WriteLine($"[RenderQueueViewModel] Task enable state changed, auto-saving data");
     }
 
@@ -724,7 +726,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             // 检测并选择最佳的Blender可执行文件
             var blenderExecutable = GetBestBlenderExecutable(_blenderService.BlenderPath);
-            
+
             // 启动Blender进程打开文件（独立进程，不关联到程序本体）
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
@@ -742,7 +744,9 @@ public partial class RenderQueueViewModel : ViewModelBase
                 // 立即释放进程句柄，让进程完全独立运行
                 process.Dispose();
             }
-            Console.WriteLine($"[RenderQueueViewModel] ✅ Opened file in Blender: {e.FilePath} (using {Path.GetFileName(blenderExecutable)})");
+
+            Console.WriteLine(
+                $"[RenderQueueViewModel] ✅ Opened file in Blender: {e.FilePath} (using {Path.GetFileName(blenderExecutable)})");
         }
         catch (Exception ex)
         {
@@ -761,7 +765,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             var directory = Path.GetDirectoryName(blenderPath);
             var fileName = Path.GetFileName(blenderPath);
-            
+
             if (string.IsNullOrEmpty(directory))
             {
                 return blenderPath;
@@ -785,19 +789,22 @@ public partial class RenderQueueViewModel : ViewModelBase
                     var parentLauncherPath = Path.Combine(parentDirectory, "blender-launcher.exe");
                     if (File.Exists(parentLauncherPath))
                     {
-                        Console.WriteLine($"[RenderQueueViewModel] ✅ Found blender-launcher.exe in parent directory, using: {parentLauncherPath}");
+                        Console.WriteLine(
+                            $"[RenderQueueViewModel] ✅ Found blender-launcher.exe in parent directory, using: {parentLauncherPath}");
                         return parentLauncherPath;
                     }
                 }
             }
 
             // 如果找不到 launcher，使用原始路径
-            Console.WriteLine($"[RenderQueueViewModel] ⚠️ blender-launcher.exe not found, using original: {blenderPath}");
+            Console.WriteLine(
+                $"[RenderQueueViewModel] ⚠️ blender-launcher.exe not found, using original: {blenderPath}");
             return blenderPath;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RenderQueueViewModel] ⚠️ Error detecting best Blender executable: {ex.Message}, using original: {blenderPath}");
+            Console.WriteLine(
+                $"[RenderQueueViewModel] ⚠️ Error detecting best Blender executable: {ex.Message}, using original: {blenderPath}");
             return blenderPath;
         }
     }
@@ -805,7 +812,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private void OnTaskPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         // 当任务的 CompletedFrames 或 OverallProgress01 变化时，更新队列进度
-        if (e.PropertyName == nameof(RenderTaskViewModel.CompletedFrames) || 
+        if (e.PropertyName == nameof(RenderTaskViewModel.CompletedFrames) ||
             e.PropertyName == nameof(RenderTaskViewModel.OverallProgress01))
         {
             OnPropertyChanged(nameof(OverallQueueProgress));
@@ -832,9 +839,9 @@ public partial class RenderQueueViewModel : ViewModelBase
                 {
                     QueueStatusText = "等待中";
                 }
-                else if (RenderTasks.Where(t => t.Enable).All(t => t.Status == RenderTaskStatus.Completed || 
-                                                                 t.Status == RenderTaskStatus.Failed || 
-                                                                 t.Status == RenderTaskStatus.Cancelled))
+                else if (RenderTasks.Where(t => t.Enable).All(t => t.Status == RenderTaskStatus.Completed ||
+                                                                   t.Status == RenderTaskStatus.Failed ||
+                                                                   t.Status == RenderTaskStatus.Cancelled))
                 {
                     // 只有当所有启用的任务都完成/失败/取消时，才设置为完成状态
                     QueueStatusText = "队列完成";
@@ -897,7 +904,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             new FilePickerFileType("Blend Files") { Patterns = new[] { "*.blend" } }
         };
-        
+
         var result = await this.SelectFile("选择 Blend 文件", fileTypes);
         return result ?? string.Empty;
     }
@@ -909,7 +916,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             new FilePickerFileType("Blend Files") { Patterns = new[] { "*.blend" } }
         };
-        
+
         var result = await this.SelectFiles("选择多个 Blend 文件", fileTypes);
         return result ?? Enumerable.Empty<string>();
     }
@@ -1000,7 +1007,8 @@ public partial class RenderQueueViewModel : ViewModelBase
             var success = await _dataPersistenceService.SaveDataAsync(appData);
             if (success)
             {
-                Console.WriteLine($"[RenderQueueViewModel] ✅ Queue data saved successfully - {RenderTasks.Count} tasks");
+                Console.WriteLine(
+                    $"[RenderQueueViewModel] ✅ Queue data saved successfully - {RenderTasks.Count} tasks");
             }
             else
             {
@@ -1021,7 +1029,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         try
         {
             var appData = await _dataPersistenceService.LoadDataAsync();
-            
+
             // 加载设置
             if (!string.IsNullOrEmpty(appData.Settings.BlenderPath))
             {
@@ -1031,7 +1039,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                     _blenderService = new BlenderExeService(appData.Settings.BlenderPath);
                 }
             }
-            
+
             if (!string.IsNullOrEmpty(appData.Settings.FfmpegPath))
             {
                 _ffmpegService.SetFFmpegPath(appData.Settings.FfmpegPath);
@@ -1041,7 +1049,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             foreach (var taskData in appData.RenderQueue)
             {
                 var taskInfo = taskData.RenderTask;
-                
+
                 // 检查文件是否存在
                 if (!File.Exists(taskInfo.Filepath))
                 {
@@ -1050,26 +1058,29 @@ public partial class RenderQueueViewModel : ViewModelBase
                 }
 
                 var task = new RenderTaskViewModel(
-                    taskInfo.Filepath, 
-                    taskInfo.StartFrame, 
-                    taskInfo.EndFrame, 
+                    taskInfo.Filepath,
+                    taskInfo.StartFrame,
+                    taskInfo.EndFrame,
                     true); // AutoStart 默认为 true
-                
+
                 // 设置 Enable 属性
                 task.Enable = taskInfo.Enable;
 
                 // 先添加到队列，不阻塞加载过程
-                Console.WriteLine($"[RenderQueueViewModel] Adding task to queue: {Path.GetFileName(taskInfo.Filepath)}");
-                Console.WriteLine($"[RenderQueueViewModel] Task initial state - IsLoading: {task.ScenePropertiesView.IsLoading}, IsLoaded: {task.ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
-                
+                Console.WriteLine(
+                    $"[RenderQueueViewModel] Adding task to queue: {Path.GetFileName(taskInfo.Filepath)}");
+                Console.WriteLine(
+                    $"[RenderQueueViewModel] Task initial state - IsLoading: {task.ScenePropertiesView.IsLoading}, IsLoaded: {task.ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
+
                 RenderTasks.Add(task);
                 SubscribeToTaskEvents(task);
 
                 // 异步加载文件属性，不等待完成
                 if (_blenderService != null)
                 {
-                    Console.WriteLine($"[RenderQueueViewModel] Starting async file properties loading for: {Path.GetFileName(taskInfo.Filepath)}");
-                    
+                    Console.WriteLine(
+                        $"[RenderQueueViewModel] Starting async file properties loading for: {Path.GetFileName(taskInfo.Filepath)}");
+
                     _ = Task.Run(async () =>
                     {
                         try
@@ -1077,34 +1088,42 @@ public partial class RenderQueueViewModel : ViewModelBase
                             // 设置加载状态
                             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                             {
-                                Console.WriteLine($"[RenderQueueViewModel] Setting loading state for: {Path.GetFileName(taskInfo.Filepath)}");
+                                Console.WriteLine(
+                                    $"[RenderQueueViewModel] Setting loading state for: {Path.GetFileName(taskInfo.Filepath)}");
                                 task.ScenePropertiesView.IsLoading = true;
                                 task.ScenePropertiesView.LoadingMessage = "正在加载文件属性...";
-                                Console.WriteLine($"[RenderQueueViewModel] After setting loading - IsLoading: {task.ScenePropertiesView.IsLoading}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
+                                Console.WriteLine(
+                                    $"[RenderQueueViewModel] After setting loading - IsLoading: {task.ScenePropertiesView.IsLoading}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
                             });
-                            
+
                             await task.LoadFilePropertiesAsync(_blenderService);
-                            Console.WriteLine($"[RenderQueueViewModel] ✅ File properties loaded: {Path.GetFileName(taskInfo.Filepath)}");
-                            Console.WriteLine($"[RenderQueueViewModel] Final state - IsLoading: {task.ScenePropertiesView.IsLoading}, IsLoaded: {task.ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
+                            Console.WriteLine(
+                                $"[RenderQueueViewModel] ✅ File properties loaded: {Path.GetFileName(taskInfo.Filepath)}");
+                            Console.WriteLine(
+                                $"[RenderQueueViewModel] Final state - IsLoading: {task.ScenePropertiesView.IsLoading}, IsLoaded: {task.ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to load file properties for {Path.GetFileName(taskInfo.Filepath)}: {ex.Message}");
-                            
+                            Console.WriteLine(
+                                $"[RenderQueueViewModel] ❌ Failed to load file properties for {Path.GetFileName(taskInfo.Filepath)}: {ex.Message}");
+
                             // 设置错误状态
                             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                             {
-                                Console.WriteLine($"[RenderQueueViewModel] Setting error state for: {Path.GetFileName(taskInfo.Filepath)}");
+                                Console.WriteLine(
+                                    $"[RenderQueueViewModel] Setting error state for: {Path.GetFileName(taskInfo.Filepath)}");
                                 task.ScenePropertiesView.IsLoading = false;
                                 task.ScenePropertiesView.ErrorMessage = $"加载失败: {ex.Message}";
-                                Console.WriteLine($"[RenderQueueViewModel] After setting error - IsLoading: {task.ScenePropertiesView.IsLoading}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
+                                Console.WriteLine(
+                                    $"[RenderQueueViewModel] After setting error - IsLoading: {task.ScenePropertiesView.IsLoading}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
                             });
                         }
                     });
                 }
                 else
                 {
-                    Console.WriteLine($"[RenderQueueViewModel] ⚠️ BlenderService is null, skipping file properties loading for: {Path.GetFileName(taskInfo.Filepath)}");
+                    Console.WriteLine(
+                        $"[RenderQueueViewModel] ⚠️ BlenderService is null, skipping file properties loading for: {Path.GetFileName(taskInfo.Filepath)}");
                 }
             }
 
