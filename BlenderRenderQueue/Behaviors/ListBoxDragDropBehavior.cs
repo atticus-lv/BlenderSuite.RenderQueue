@@ -18,18 +18,12 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
     private RenderTaskViewModel? _previousDropItem;
     private bool _isDragging;
 
-    public ListBoxDragDropBehavior()
-    {
-        Console.WriteLine("[DragDrop] ListBoxDragDropBehavior created");
-    }
-
     protected override void OnAttached()
     {
         base.OnAttached();
 
         if (AssociatedObject is null) return;
 
-        Console.WriteLine("[DragDrop] OnAttached - adding event handlers");
         AssociatedObject.AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, RoutingStrategies.Tunnel);
         AssociatedObject.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased);
         AssociatedObject.AddHandler(InputElement.PointerMovedEvent, OnPointerMoved);
@@ -48,16 +42,19 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        Console.WriteLine("[DragDrop] OnPointerPressed called");
+        // 检查是否点击在拖拽手柄上，如果不是则忽略拖拽
+        if (!IsClickOnDragHandle(e))
+        {
+            return;
+        }
+        
         _dragItem = GetMouseOverItem(sender, e);
         if (_dragItem == null)
         {
-            Console.WriteLine("[DragDrop] No drag item found");
             return;
         }
 
         _startPoint = e.GetPosition(AssociatedObject.GetVisualRoot() as Visual);
-        Console.WriteLine($"[DragDrop] Pointer pressed on: {_dragItem.BlendFileName}");
     }
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
@@ -107,8 +104,6 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         if (_dragItem == null) return;
 
         var dropItem = GetMouseOverItem(sender, e);
-        Console.WriteLine(
-            $"[DragDrop] Pointer released - DragItem: {_dragItem?.BlendFileName}, DropItem: {dropItem?.BlendFileName}");
 
         if (dropItem == null || dropItem == _dragItem)
         {
@@ -128,16 +123,31 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
             var dragIndex = viewModel.RenderTasks.IndexOf(_dragItem);
             var dropIndex = viewModel.RenderTasks.IndexOf(dropItem);
 
-            Console.WriteLine($"[DragDrop] Moving from index {dragIndex} to {dropIndex}");
-
             if (dragIndex >= 0 && dropIndex >= 0)
             {
                 viewModel.RenderTasks.Move(dragIndex, dropIndex);
-                Console.WriteLine("[DragDrop] Move completed");
             }
         }
 
         ResetDragState();
+    }
+
+    private bool IsClickOnDragHandle(PointerEventArgs e)
+    {
+        var point = e.GetPosition((Visual)AssociatedObject);
+        var visuals = AssociatedObject.GetVisualsAt(point).ToList();
+
+        // 检查是否点击在Tag为"DragHandle"的Border上
+        foreach (var visual in visuals)
+        {
+            // 检查是否是Border控件且Tag为"DragHandle"
+            if (visual is Border border && border.Tag?.ToString() == "DragHandle")
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private RenderTaskViewModel? GetMouseOverItem(object? sender, PointerEventArgs e)
@@ -145,9 +155,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         var point = e.GetPosition((Visual)sender);
         var visuals = ((Visual)sender).GetVisualsAt(point).ToList();
 
-        Console.WriteLine($"[DragDrop] Found {visuals.Count} visuals at point");
-
-        // 查找ListBoxItem，跳过Border等装饰元素
+        // 查找ListBoxItem，支持整个item区域作为drop目标
         foreach (var visual in visuals)
         {
             var listBoxItem = visual.GetLogicalAncestors().OfType<ListBoxItem>().FirstOrDefault();
@@ -156,13 +164,11 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
                 var dataContext = listBoxItem.DataContext as RenderTaskViewModel;
                 if (dataContext != null)
                 {
-                    Console.WriteLine($"[DragDrop] GetMouseOverItem found: {dataContext.BlendFileName}");
                     return dataContext;
                 }
             }
         }
 
-        Console.WriteLine("[DragDrop] GetMouseOverItem found no item");
         return null;
     }
 
