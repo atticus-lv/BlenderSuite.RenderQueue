@@ -45,6 +45,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     }
 
     [ObservableProperty]
+    private bool _isDropTarget = false;
+
+    [ObservableProperty]
     private double _progress01; // 当前帧进度
 
     [ObservableProperty]

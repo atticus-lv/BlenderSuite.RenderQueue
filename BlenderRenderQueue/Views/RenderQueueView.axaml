@@ -9,6 +9,8 @@
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              xmlns:viewModels="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
+             xmlns:behaviors="clr-namespace:BlenderRenderQueue.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
              x:DataType="viewModels:RenderQueueViewModel"
@@ -173,8 +175,11 @@
 
                             </StackPanel>
                             <ListBox Grid.Column="0" ItemsSource="{Binding RenderTasks}"
-                                     Classes="WithoutCheck" IsEnabled="{Binding CanModifyTasks}"
+                                     Classes="WithoutCheck"
                                      SelectedItem="{Binding SelectedTask}" Margin="4">
+                                <i:Interaction.Behaviors>
+                                    <behaviors:ListBoxDragDropBehavior />
+                                </i:Interaction.Behaviors>
                                 <ListBox.Styles>
                                     <Style Selector="ListBoxItem:selected /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor50}" />
