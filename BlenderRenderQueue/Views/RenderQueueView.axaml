@@ -103,7 +103,7 @@
         <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="1*,5,2*" Margin="4">
 
             <!-- 左侧任务列表 -->
-            <Border Grid.Column="0">
+            <Border Grid.Column="0" Margin="4">
                 <Grid RowDefinitions="Auto,*,Auto">
 
 
@@ -206,7 +206,7 @@
 
             <!-- 第一个分隔条 -->
             <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Margin="4"
-                          CornerRadius="2" />
+                          CornerRadius="2" Opacity="0.2" />
 
 
             <!-- 右侧任务详情 -->
