@@ -71,8 +71,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         get
         {
             var canStart = (QueueState == QueueState.Idle || QueueState == QueueState.Completed) && RenderTasks.Any(t => t.Enable);
-            Console.WriteLine(
-                $"[DEBUG] CanStartQueue: {canStart} (QueueState: {QueueState}, EnabledTaskCount: {RenderTasks.Count(t => t.Enable)})");
+            // Console.WriteLine(
+            //     $"[DEBUG] CanStartQueue: {canStart} (QueueState: {QueueState}, EnabledTaskCount: {RenderTasks.Count(t => t.Enable)})");
             return canStart;
         }
     }
@@ -83,7 +83,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         get
         {
             var result = QueueState == QueueState.Idle || QueueState == QueueState.Completed;
-            Console.WriteLine($"[RenderQueueViewModel] CanModifyTasks: {result} (QueueState: {QueueState})");
+            // Console.WriteLine($"[RenderQueueViewModel] CanModifyTasks: {result} (QueueState: {QueueState})");
             return result;
         }
     }

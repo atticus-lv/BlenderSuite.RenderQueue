@@ -123,7 +123,7 @@
                                             <Binding Path="SelectedTask"
                                                      Converter="{x:Static ObjectConverters.IsNotNull}" />
                                             <Binding
-                                                Path="CanStartQueue"/>
+                                                Path="CanModifyTasks"/>
                                         </MultiBinding>
                                     </Button.IsEnabled>
                                     <material:MaterialIcon Kind="Remove" />
@@ -138,7 +138,7 @@
                                                 Path="SelectedTask"
                                                 Converter="{x:Static ObjectConverters.IsNotNull}" />
                                             <Binding
-                                                Path="CanStartQueue" />
+                                                Path="CanModifyTasks" />
                                         </MultiBinding>
                                     </Button.IsEnabled>
                                     <material:MaterialIcon Kind="ArrowTop" />
@@ -152,7 +152,7 @@
                                                 Path="SelectedTask"
                                                 Converter="{x:Static ObjectConverters.IsNotNull}" />
                                             <Binding
-                                                Path="CanStartQueue" />
+                                                Path="CanModifyTasks" />
                                         </MultiBinding>
                                     </Button.IsEnabled>
                                     <material:MaterialIcon Kind="ArrowDown" />
@@ -166,14 +166,14 @@
                                                 Path="SelectedTask"
                                                 Converter="{x:Static ObjectConverters.IsNotNull}" />
                                             <Binding
-                                                Path="CanStartQueue" />
+                                                Path="CanModifyTasks" />
                                         </MultiBinding>
                                     </Button.IsEnabled>
                                 </Button>
 
                             </StackPanel>
                             <ListBox Grid.Column="0" ItemsSource="{Binding RenderTasks}"
-                                     Classes="WithoutCheck" IsEnabled="{Binding CanStartQueue}"
+                                     Classes="WithoutCheck" IsEnabled="{Binding CanModifyTasks}"
                                      SelectedItem="{Binding SelectedTask}" Margin="4">
                                 <ListBox.Styles>
                                     <Style Selector="ListBoxItem">
