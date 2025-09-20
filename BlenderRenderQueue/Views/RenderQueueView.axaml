@@ -123,7 +123,7 @@
                                             <Binding Path="SelectedTask"
                                                      Converter="{x:Static ObjectConverters.IsNotNull}" />
                                             <Binding
-                                                Path="CanModifyTasks"/>
+                                                Path="CanModifyTasks" />
                                         </MultiBinding>
                                     </Button.IsEnabled>
                                     <material:MaterialIcon Kind="Remove" />
@@ -176,12 +176,8 @@
                                      Classes="WithoutCheck" IsEnabled="{Binding CanModifyTasks}"
                                      SelectedItem="{Binding SelectedTask}" Margin="4">
                                 <ListBox.Styles>
-                                    <Style Selector="ListBoxItem">
-                                        <Setter Property="Padding" Value="0" />
-                                        <Setter Property="Background" Value="Transparent" />
-                                    </Style>
-                                    <Style Selector="ListBoxItem:selected">
-                                        <Setter Property="Background" Value="Transparent" />
+                                    <Style Selector="ListBoxItem:selected /template/ Border">
+                                        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor50}" />
                                     </Style>
                                 </ListBox.Styles>
                                 <ListBox.ItemTemplate>
