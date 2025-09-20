@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace BlenderRenderQueue.Models;
 
@@ -29,11 +31,36 @@ public class BlendSceneProperties
     public double? Fps { get; set; }
     public string? FramePath { get; set; }
     public double? CyclesTimeLimit { get; set; }
+    public List<string>? ReferencedScenes { get; set; }
     public int TotalFrames => Math.Max(0, FrameEnd - FrameStart + 1);
     public bool IsLoaded => !string.IsNullOrEmpty(FilePath);
     public string FileName => IsLoaded ? Path.GetFileName(FilePath) : string.Empty;
     public bool IsCyclesEngine => RenderEngine == "CYCLES";
     public bool HasCyclesTimeLimit => IsCyclesEngine && CyclesTimeLimit.HasValue && CyclesTimeLimit.Value > 0;
+    
+    /// <summary>
+    /// 场景类型显示文本
+    /// </summary>
+    public string SceneTypeDisplayText
+    {
+        get
+        {
+            if (ReferencedScenes == null || !ReferencedScenes.Any())
+            {
+                return "单一场景";
+            }
+            else
+            {
+                var sceneNames = string.Join(", ", ReferencedScenes);
+                return $"复合场景 ({sceneNames})";
+            }
+        }
+    }
+    
+    /// <summary>
+    /// 是否为复合场景
+    /// </summary>
+    public bool IsCompositeScene => ReferencedScenes != null && ReferencedScenes.Any();
 
     /// <summary>
     /// 从另一个BlendFileProperties对象加载属性
@@ -52,5 +79,6 @@ public class BlendSceneProperties
         Fps = source.Fps;
         FramePath = source.FramePath;
         CyclesTimeLimit = source.CyclesTimeLimit;
+        ReferencedScenes = source.ReferencedScenes;
     }
 }

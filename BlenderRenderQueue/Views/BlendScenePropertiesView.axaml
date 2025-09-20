@@ -43,12 +43,21 @@
                                        VerticalAlignment="Center" />
                             <ComboBox Grid.Column="1" ItemsSource="{Binding SceneNames}"
                                       SelectedItem="{Binding ActiveSceneName}"
-                                      IsEnabled="{Binding !IsLoading}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" FontWeight="SemiBold" />
+                                      IsEnabled="{Binding !IsLoading}" HorizontalContentAlignment="Center"
+                                      VerticalContentAlignment="Center" FontWeight="SemiBold" />
                             <TextBlock Grid.Column="2" Text="不是文件默认场景" FontStyle="Italic" Foreground="#FF9800"
                                        FontSize="12"
                                        VerticalAlignment="Center"
                                        IsVisible="{Binding IsNotDefaultScene}" />
 
+                        </Grid>
+
+                        <!-- 场景类型 -->
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0" Text="场景类型:" FontWeight="SemiBold" MinWidth="80"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.SceneTypeDisplayText}"
+                                       VerticalAlignment="Center" />
                         </Grid>
 
 
@@ -96,6 +105,7 @@
                                        VerticalAlignment="Center" />
                         </Grid>
 
+
                         <!-- FPS -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="帧率:" FontWeight="SemiBold" MinWidth="80" />
@@ -122,7 +132,7 @@
                         <!-- Cycles时间限制 -->
                         <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding ActiveSceneProperties.HasCyclesTimeLimit}">
                             <TextBlock Grid.Column="0" Text="时间限制:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" 
+                            <TextBlock Grid.Column="1"
                                        Text="{Binding ActiveSceneProperties.CyclesTimeLimit, StringFormat='{}{0:F1} 秒'}" />
                         </Grid>
 

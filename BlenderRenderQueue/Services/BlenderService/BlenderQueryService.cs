@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -53,7 +54,10 @@ public sealed class BlenderQueryService : IBlenderQueryService
                             : sceneInfo.GetProperty("frame_path").GetString(),
                         CyclesTimeLimit = sceneInfo.GetProperty("cycles_time_limit").ValueKind == JsonValueKind.Null
                             ? null
-                            : sceneInfo.GetProperty("cycles_time_limit").GetDouble()
+                            : sceneInfo.GetProperty("cycles_time_limit").GetDouble(),
+                        ReferencedScenes = sceneInfo.GetProperty("referenced_scenes").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("referenced_scenes").EnumerateArray().Select(x => x.GetString()!).Where(x => x != null).ToList()
                     };
                 }
                 
@@ -89,6 +93,29 @@ try:
         except Exception:
             return default
     
+    # 获取场景引用的其他场景列表
+    def get_referenced_scenes(scene):
+        try:
+            # 检查是否有sequence_editor
+            if not hasattr(scene, 'sequence_editor') or scene.sequence_editor is None:
+                return []
+            
+            # 检查是否有strips_all
+            if not hasattr(scene.sequence_editor, 'strips_all'):
+                return []
+            
+            # 如果strips_all为空，跳过
+            if len(scene.sequence_editor.strips_all) == 0:
+                return []
+            
+            # 使用列表推导式获取所有SCENE类型的strip
+            strip_scenes = [strip.scene.name for strip in scene.sequence_editor.strips_all if strip.type == ""SCENE""]
+            
+            # 返回去重后的列表
+            return list(set(strip_scenes))
+        except Exception:
+            return []
+    
     # 获取所有场景数据
     scene_data = {{}}
     active_scene_name = bpy.context.scene.name
@@ -104,7 +131,8 @@ try:
             'render_engine': safe_get(lambda: scene.render.engine, 'BLENDER_EEVEE'),
             'fps': safe_get(lambda: scene.render.fps, 24.0),
             'frame_path': safe_get(lambda: scene.render.frame_path() if hasattr(scene.render, 'frame_path') else None),
-            'cycles_time_limit': safe_get(lambda: scene.cycles.time_limit if hasattr(scene, 'cycles') else None)
+            'cycles_time_limit': safe_get(lambda: scene.cycles.time_limit if hasattr(scene, 'cycles') else None),
+            'referenced_scenes': safe_get(lambda: get_referenced_scenes(scene), [])
         }}
     
     data = {{
