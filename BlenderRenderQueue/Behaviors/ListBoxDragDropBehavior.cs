@@ -48,11 +48,11 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        Console.WriteLine($"[DragDrop] OnPointerPressed called");
+        Console.WriteLine("[DragDrop] OnPointerPressed called");
         _dragItem = GetMouseOverItem(sender, e);
         if (_dragItem == null)
         {
-            Console.WriteLine($"[DragDrop] No drag item found");
+            Console.WriteLine("[DragDrop] No drag item found");
             return;
         }
 
@@ -67,10 +67,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         var dropItem = GetMouseOverItem(sender, e);
         if (dropItem != null && dropItem != _dragItem)
         {
-            if (_previousDropItem != null && _previousDropItem != dropItem)
-            {
-                _previousDropItem.IsDropTarget = false;
-            }
+            if (_previousDropItem != null && _previousDropItem != dropItem) _previousDropItem.IsDropTarget = false;
 
             dropItem.IsDropTarget = true;
             _previousDropItem = dropItem;
@@ -90,17 +87,18 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
             return;
         }
 
+
         var currentPosition = e.GetPosition(AssociatedObject.GetVisualRoot() as Visual);
         if (!IsDragThresholdExceeded(currentPosition)) return;
 
-        if (!_isDragging)
-        {
-            _isDragging = true;
-        }
+        if (!_isDragging) _isDragging = true;
 
         if (_isDragging)
         {
-            AssociatedObject.Cursor = new Cursor(StandardCursorType.DragMove);
+            var viewModel = AssociatedObject.DataContext as RenderQueueViewModel;
+            AssociatedObject.Cursor = viewModel is { CanModifyTasks: false }
+                ? new Cursor(StandardCursorType.No)
+                : new Cursor(StandardCursorType.DragMove);
         }
     }
 
@@ -109,8 +107,9 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         if (_dragItem == null) return;
 
         var dropItem = GetMouseOverItem(sender, e);
-        Console.WriteLine($"[DragDrop] Pointer released - DragItem: {_dragItem?.BlendFileName}, DropItem: {dropItem?.BlendFileName}");
-        
+        Console.WriteLine(
+            $"[DragDrop] Pointer released - DragItem: {_dragItem?.BlendFileName}, DropItem: {dropItem?.BlendFileName}");
+
         if (dropItem == null || dropItem == _dragItem)
         {
             ResetDragState();
@@ -120,15 +119,21 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         var viewModel = AssociatedObject.DataContext as RenderQueueViewModel;
         if (viewModel != null)
         {
+            if (!viewModel.CanModifyTasks)
+            {
+                ResetDragState();
+                return;
+            }
+
             var dragIndex = viewModel.RenderTasks.IndexOf(_dragItem);
             var dropIndex = viewModel.RenderTasks.IndexOf(dropItem);
-            
+
             Console.WriteLine($"[DragDrop] Moving from index {dragIndex} to {dropIndex}");
-            
+
             if (dragIndex >= 0 && dropIndex >= 0)
             {
                 viewModel.RenderTasks.Move(dragIndex, dropIndex);
-                Console.WriteLine($"[DragDrop] Move completed");
+                Console.WriteLine("[DragDrop] Move completed");
             }
         }
 
@@ -139,9 +144,9 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
     {
         var point = e.GetPosition((Visual)sender);
         var visuals = ((Visual)sender).GetVisualsAt(point).ToList();
-        
+
         Console.WriteLine($"[DragDrop] Found {visuals.Count} visuals at point");
-        
+
         // 查找ListBoxItem，跳过Border等装饰元素
         foreach (var visual in visuals)
         {
@@ -156,8 +161,8 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
                 }
             }
         }
-        
-        Console.WriteLine($"[DragDrop] GetMouseOverItem found no item");
+
+        Console.WriteLine("[DragDrop] GetMouseOverItem found no item");
         return null;
     }
 
