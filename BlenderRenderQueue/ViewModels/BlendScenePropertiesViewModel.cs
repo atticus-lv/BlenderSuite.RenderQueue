@@ -55,7 +55,7 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
 
     partial void OnActiveSceneNameChanged(string value)
     {
-        Console.WriteLine($"[BlendScenePropertiesViewModel] ActiveSceneName changing from '{ActiveSceneName}' to '{value}'");
+        // Console.WriteLine($"[BlendScenePropertiesViewModel] ActiveSceneName changing from '{ActiveSceneName}' to '{value}'");
         
         // 更新当前激活场景的属性
         _activeSceneProperties = ActiveSceneProperties;
@@ -69,7 +69,7 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowEmptyState));
         OnPropertyChanged(nameof(IsNotDefaultScene));
         
-        Console.WriteLine($"[BlendScenePropertiesViewModel] ActiveSceneName changed to: {value}, ActiveSceneProperties.IsLoaded: {ActiveSceneProperties.IsLoaded}");
+        // Console.WriteLine($"[BlendScenePropertiesViewModel] ActiveSceneName changed to: {value}, ActiveSceneProperties.IsLoaded: {ActiveSceneProperties.IsLoaded}");
     }
 
     [ObservableProperty]
@@ -176,8 +176,8 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
             OnPropertyChanged(nameof(ActiveSceneProperties));
             OnPropertyChanged(nameof(SceneNames));
 
-            Console.WriteLine(
-                $"[BlendScenePropertiesViewModel] After loading - IsLoading: {IsLoading}, IsLoaded: {ActiveSceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
+            // Console.WriteLine(
+            //     $"[BlendScenePropertiesViewModel] After loading - IsLoading: {IsLoading}, IsLoaded: {ActiveSceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
         }
         catch (Exception ex)
         {

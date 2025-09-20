@@ -347,13 +347,13 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         if (!CanStartQueue)
         {
-            Console.WriteLine("[DEBUG] StartQueue aborted - CanStartQueue is false");
+            // Console.WriteLine("[DEBUG] StartQueue aborted - CanStartQueue is false");
             return;
         }
 
         if (_blenderService == null)
         {
-            Console.WriteLine("[DEBUG] StartQueue aborted - BlenderService is null");
+            // Console.WriteLine("[DEBUG] StartQueue aborted - BlenderService is null");
             QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("需要先设置Blender路径"));
             return;
         }
@@ -540,7 +540,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     public void SetBlenderService(BlenderExeService blenderService)
     {
         _blenderService = blenderService;
-        Console.WriteLine("[RenderQueueViewModel] BlenderService set successfully");
+        // Console.WriteLine("[RenderQueueViewModel] BlenderService set successfully");
     }
 
     /// <summary>
