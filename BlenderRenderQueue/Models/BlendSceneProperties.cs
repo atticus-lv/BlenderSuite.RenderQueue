@@ -11,6 +11,7 @@ public class BlendSceneProperties
     public string FilePath { get; set; } = string.Empty;
     public int FrameStart { get; set; }
     public int FrameEnd { get; set; }
+    public int FrameCurrent { get; set; }
     public string? CameraName { get; set; }
     public string? RenderOutputPath { get; set; }
     public string? RenderOutputFormat { get; set; }
@@ -39,6 +40,7 @@ public class BlendSceneProperties
         FilePath = source.FilePath;
         FrameStart = source.FrameStart;
         FrameEnd = source.FrameEnd;
+        FrameCurrent = source.FrameCurrent;
         CameraName = source.CameraName;
         RenderOutputPath = source.RenderOutputPath;
         RenderOutputFormat = source.RenderOutputFormat;

@@ -37,6 +37,7 @@ public sealed class BlenderQueryService : IBlenderQueryService
                         FilePath = blendFilePath,
                         FrameStart = sceneInfo.GetProperty("frame_start").GetInt32(),
                         FrameEnd = sceneInfo.GetProperty("frame_end").GetInt32(),
+                        FrameCurrent = sceneInfo.GetProperty("frame_current").GetInt32(),
                         CameraName = sceneInfo.GetProperty("camera").ValueKind == JsonValueKind.Null
                             ? null
                             : sceneInfo.GetProperty("camera").GetString(),
@@ -93,6 +94,7 @@ try:
         scene_data[scene.name] = {{
             'frame_start': safe_get(lambda: int(scene.frame_start), 1),
             'frame_end': safe_get(lambda: int(scene.frame_end), 1),
+            'frame_current': safe_get(lambda: int(scene.frame_current), 1),
             'camera': safe_get(lambda: scene.camera.name if scene.camera else None),
             'render_output_path': safe_get(lambda: scene.render.filepath, ''),
             'render_output_format': safe_get(lambda: scene.render.image_settings.file_format, 'PNG'),
