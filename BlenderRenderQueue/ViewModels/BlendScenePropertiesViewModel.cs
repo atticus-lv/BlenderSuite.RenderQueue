@@ -45,7 +45,9 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _defaultSceneName = string.Empty;
-
+    
+    public bool IsNotDefaultScene => ActiveSceneName != DefaultSceneName;
+    
     partial void OnActiveSceneNameChanged(string value)
     {
         Console.WriteLine($"[BlendScenePropertiesViewModel] ActiveSceneName changing from '{ActiveSceneName}' to '{value}'");
