@@ -131,35 +131,6 @@
                                     <material:MaterialIcon Kind="Remove" />
                                 </Button>
 
-                                <Button HorizontalContentAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Command="{Binding MoveTaskUpCommand}">
-                                    <Button.IsEnabled>
-                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                            <Binding
-                                                Path="SelectedTask"
-                                                Converter="{x:Static ObjectConverters.IsNotNull}" />
-                                            <Binding
-                                                Path="CanModifyTasks" />
-                                        </MultiBinding>
-                                    </Button.IsEnabled>
-                                    <material:MaterialIcon Kind="ArrowTop" />
-                                </Button>
-                                <Button HorizontalContentAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Command="{Binding MoveTaskDownCommand}">
-                                    <Button.IsEnabled>
-                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                            <Binding
-                                                Path="SelectedTask"
-                                                Converter="{x:Static ObjectConverters.IsNotNull}" />
-                                            <Binding
-                                                Path="CanModifyTasks" />
-                                        </MultiBinding>
-                                    </Button.IsEnabled>
-                                    <material:MaterialIcon Kind="ArrowDown" />
-                                </Button>
-
                                 <Button Command="{Binding RemoveAllTasksCommand}">
                                     <material:MaterialIcon Kind="Clear" />
                                     <Button.IsEnabled>
