@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.BlenderService;
+using BlenderRenderQueue.Helpers;
 using CommunityToolkit.Mvvm.Input;
 
 namespace BlenderRenderQueue.ViewModels;
@@ -216,53 +217,33 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
     [RelayCommand]
     private void OpenFramePathDirectory()
     {
-        try
+        if (string.IsNullOrEmpty(ActiveSceneProperties.FramePath))
         {
-            if (string.IsNullOrEmpty(ActiveSceneProperties.FramePath))
-            {
-                ErrorMessage = "帧路径为空，无法打开文件夹";
-                OnPropertyChanged(nameof(HasErrorMessage));
-                return;
-            }
-
-            // 获取帧路径所在的目录
-            var framePathDirectory = Path.GetDirectoryName(ActiveSceneProperties.FramePath);
-
-            if (string.IsNullOrEmpty(framePathDirectory))
-            {
-                ErrorMessage = "无法获取帧路径的目录";
-                OnPropertyChanged(nameof(HasErrorMessage));
-                return;
-            }
-
-            if (!Directory.Exists(framePathDirectory))
-            {
-                ErrorMessage = $"帧路径目录不存在: {framePathDirectory}";
-                OnPropertyChanged(nameof(HasErrorMessage));
-                return;
-            }
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "explorer.exe",
-                Arguments = $"\"{framePathDirectory.Replace('/', '\\')}\"",
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Normal
-            };
-
-            Process.Start(startInfo);
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"打开帧路径文件夹失败: {ex.Message}";
+            ErrorMessage = "帧路径为空，无法打开文件夹";
             OnPropertyChanged(nameof(HasErrorMessage));
+            return;
+        }
+
+        var success = FileSystemHelper.OpenFileDirectory(ActiveSceneProperties.FramePath);
+        if (!success)
+        {
+            ErrorMessage = "打开帧路径文件夹失败";
+            OnPropertyChanged(nameof(HasErrorMessage));
+        }
+        else
+        {
+            // 清除之前的错误信息
+            if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                ErrorMessage = string.Empty;
+                OnPropertyChanged(nameof(HasErrorMessage));
+            }
         }
     }
 
     /// <summary>
     /// 是否可以打开帧路径文件夹
     /// </summary>
-    public bool CanOpenFramePathDirectory => !string.IsNullOrEmpty(ActiveSceneProperties.FramePath) &&
-                                             !string.IsNullOrEmpty(
-                                                 Path.GetDirectoryName(ActiveSceneProperties.FramePath));
+    public bool CanOpenFramePathDirectory => !string.IsNullOrEmpty(ActiveSceneProperties.FramePath) && 
+                                             FileSystemHelper.CanOpenFileDirectory(ActiveSceneProperties.FramePath);
 }
