@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+    <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -106,46 +106,35 @@
 
                     <!-- 任务列表 -->
                     <suki:GlassCard Grid.Row="1" Padding="0">
-                        <Grid ColumnDefinitions="*,1,Auto">
-                            <!-- 任务操作按钮 -->
-                            <StackPanel Grid.Column="2" Orientation="Vertical" Spacing="2" Margin="4"
-                                        HorizontalAlignment="Center">
-                                <StackPanel.Styles>
-                                    <Style Selector="Button">
-                                        <Setter Property="Padding" Value="4" />
-                                    </Style>
-                                </StackPanel.Styles>
-                                <Button
-                                    Command="{Binding AddMultipleTasksCommand}">
-                                    <material:MaterialIcon Kind="Add" />
+                        <Grid>
+                            <!-- 叠加在ListBox上方的按钮 -->
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="20"
+                                        HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.5"
+                                        ZIndex="1">
+                                <Button Command="{Binding AddMultipleTasksCommand}"
+                                        Classes="Flat Outlined" ToolTip.Tip="添加">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <material:MaterialIcon Kind="Add" />
+                                        <TextBlock Text="添加" />
+                                    </StackPanel>
                                 </Button>
-                                <Button Command="{Binding RemoveSelectedTaskCommand}">
+                                <Button Command="{Binding RemoveAllTasksCommand}"
+                                        Classes="Flat Outlined" ToolTip.Tip="清空">
                                     <Button.IsEnabled>
                                         <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                            <Binding Path="SelectedTask"
-                                                     Converter="{x:Static ObjectConverters.IsNotNull}" />
-                                            <Binding
-                                                Path="CanModifyTasks" />
+                                            <Binding Path="RenderTasks.Count"
+                                                     Converter="{x:Static conv:ObjectConverters.IsNotNull}" />
+                                            <Binding Path="CanModifyTasks" />
                                         </MultiBinding>
                                     </Button.IsEnabled>
-                                    <material:MaterialIcon Kind="Remove" />
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <material:MaterialIcon Kind="Trash" />
+                                        <TextBlock Text="清空" />
+                                    </StackPanel>
                                 </Button>
-
-                                <Button Command="{Binding RemoveAllTasksCommand}">
-                                    <material:MaterialIcon Kind="Clear" />
-                                    <Button.IsEnabled>
-                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                            <Binding
-                                                Path="SelectedTask"
-                                                Converter="{x:Static ObjectConverters.IsNotNull}" />
-                                            <Binding
-                                                Path="CanModifyTasks" />
-                                        </MultiBinding>
-                                    </Button.IsEnabled>
-                                </Button>
-
                             </StackPanel>
-                            <ListBox Grid.Column="0" ItemsSource="{Binding RenderTasks}"
+
+                            <ListBox ItemsSource="{Binding RenderTasks}"
                                      Classes="WithoutCheck"
                                      SelectedItem="{Binding SelectedTask}" Margin="4">
                                 <i:Interaction.Behaviors>
@@ -186,12 +175,23 @@
                                                               Margin="8,0"
                                                               VerticalAlignment="Center"
                                                               ToolTip.Tip="启用/禁用此任务" />
+                                                <!-- 删除按钮 -->
+                                                <Button Grid.Column="2"
+                                                        Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Classes="Danger Icon"
+                                                        Margin="4,0,0,0"
+                                                        Width="20" Height="20"
+                                                        Padding="0"
+                                                        VerticalAlignment="Center"
+                                                        ToolTip.Tip="删除此任务">
+                                                    <material:MaterialIcon Kind="Delete" />
+                                                </Button>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
-
                         </Grid>
 
 

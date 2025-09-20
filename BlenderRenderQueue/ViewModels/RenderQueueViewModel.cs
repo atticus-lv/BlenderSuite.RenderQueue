@@ -222,6 +222,35 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void RemoveTask(RenderTaskViewModel? taskToRemove)
+    {
+        if (taskToRemove == null) return;
+
+        // 如果任务正在运行，先停止
+        if (taskToRemove.Status == RenderTaskStatus.Running)
+        {
+            taskToRemove.StopRender();
+        }
+
+        // 取消订阅事件
+        UnsubscribeFromTaskEvents(taskToRemove);
+
+        // 从集合中移除任务
+        RenderTasks.Remove(taskToRemove);
+
+        // 释放任务资源
+        taskToRemove.Dispose();
+
+        // 如果删除的是当前选中的任务，清空选中任务
+        if (SelectedTask == taskToRemove)
+        {
+            SelectedTask = null;
+        }
+
+        UpdateQueueStatistics();
+    }
+
+    [RelayCommand]
     private void RemoveAllTasks()
     {
         // 停止所有运行中的任务
