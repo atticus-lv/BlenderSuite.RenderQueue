@@ -205,12 +205,12 @@
             </Border>
 
             <!-- 第一个分隔条 -->
-            <GridSplitter Grid.Column="1" Background="LightGray" Width="4" HorizontalAlignment="Stretch" Margin="4"
+            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Margin="4"
                           CornerRadius="2" />
 
 
             <!-- 右侧任务详情 -->
-            <Border Grid.Column="2" Margin="8">
+            <Border Grid.Column="2" Margin="4">
                 <ScrollViewer>
                     <StackPanel>
                         <Grid RowDefinitions="Auto,*">
