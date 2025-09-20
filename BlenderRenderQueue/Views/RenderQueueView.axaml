@@ -22,32 +22,36 @@
 
         <!-- 队列统计信息 -->
         <suki:GlassCard Grid.Row="1" Grid.ColumnSpan="2" Margin=" 8 8 8 4">
-            <Grid ColumnDefinitions="Auto,Auto,*">
+            <Grid ColumnDefinitions="Auto,*">
 
+                <StackPanel>
+                    <!-- 进度信息 -->
+                    <StackPanel Margin="0 0 " Orientation="Horizontal" Spacing="4"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="{Binding QueueStatusText}" FontWeight="Bold" />
+                        <TextBlock Text="{Binding CompletedTaskCount, StringFormat='已完成: {0}'}" />
+                        <TextBlock Text="{Binding FailedTaskCount, StringFormat='失败: {0}'}" />
+                        <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallQueueProgress}"
+                                     Width="200" Height="30" />
+                        <TextBlock VerticalAlignment="Center">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0:P1} ({1}/{2})">
+                                    <Binding Path="OverallQueueProgress" />
+                                    <Binding Path="CompletedFrames" />
+                                    <Binding Path="TotalFrames" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+
+
+                </StackPanel>
                 <!-- 整体进度条 -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
-                            VerticalAlignment="Center">
-                    <TextBlock Text="{Binding QueueStatusText}" FontWeight="Bold" />
-                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallQueueProgress}"
-                                 Width="200" Height="20" />
-                    <TextBlock VerticalAlignment="Center">
-                        <TextBlock.Text>
-                            <MultiBinding StringFormat="{}{0:P1} ({1}/{2})">
-                                <Binding Path="OverallQueueProgress" />
-                                <Binding Path="CompletedFrames" />
-                                <Binding Path="TotalFrames" />
-                            </MultiBinding>
-                        </TextBlock.Text>
-                    </TextBlock>
-                </StackPanel>
-
-                <!-- 进度信息 -->
-                <StackPanel Margin="8 0 " Grid.Column="1" Orientation="Horizontal" Spacing="4"
-                            VerticalAlignment="Center">
-                    <TextBlock Text="{Binding CompletedTaskCount, StringFormat='已完成: {0}'}" />
-                    <TextBlock Text="{Binding FailedTaskCount, StringFormat='失败: {0}'}" />
-                    <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
-                </StackPanel>
 
 
                 <!-- 队列设置 -->
@@ -187,13 +191,15 @@
 
                                                 <!-- Enable ToggleSwitch -->
                                                 <ToggleSwitch Grid.Column="1"
+                                                              IsEnabled="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks}"
                                                               IsChecked="{Binding Enable}"
                                                               Margin="8,0"
                                                               VerticalAlignment="Center"
                                                               ToolTip.Tip="启用/禁用此任务" />
 
                                                 <!-- 删除按钮区域 -->
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="4,0,0,0">
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="4,0,0,0"
+                                                            IsEnabled="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks}">
                                                     <!-- 普通删除按钮 -->
                                                     <Button
                                                         Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
@@ -251,9 +257,11 @@
             <Border Grid.Column="2" Margin="4">
                 <Panel>
                     <!-- 空状态提示 -->
-                    <TextBlock Text="选择一个任务查看" FontSize="20" Foreground="Gray" VerticalAlignment="Center"
-                               HorizontalAlignment="Center" FontWeight="SemiBold"
-                               IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                    <suki:GlassCard
+                        IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}">
+                        <TextBlock Text="选择一个任务查看" FontSize="20" Foreground="Gray" VerticalAlignment="Center"
+                                   HorizontalAlignment="Center" FontWeight="SemiBold" />
+                    </suki:GlassCard>
                     <ScrollViewer>
                         <ContentControl Content="{Binding SelectedTask}">
                             <ContentControl.ContentTemplate>
