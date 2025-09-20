@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,11 +11,11 @@ public sealed class BlenderQueryService : IBlenderQueryService
 {
     private const string Prefix = "[BRQ] ";
 
-    public async Task<BlendSceneProperties> GetAllFilePropertiesAsync(BasePythonProcessService process,
+    public async Task<(string ActiveScene, Dictionary<string, BlendSceneProperties> SceneData)> GetAllFilePropertiesAsync(BasePythonProcessService process,
         string blendFilePath,
         CancellationToken cancellationToken = default)
     {
-        return await QueryAsync<BlendSceneProperties>(
+        return await QueryAsync<(string, Dictionary<string, BlendSceneProperties>)>(
             process,
             blendFilePath,
             "get_all_file_properties",
@@ -22,25 +23,37 @@ public sealed class BlenderQueryService : IBlenderQueryService
             root =>
             {
                 var data = root.GetProperty("data");
-                return new BlendSceneProperties
+                var activeScene = data.GetProperty("active_scene").GetString() ?? string.Empty;
+                var sceneData = new Dictionary<string, BlendSceneProperties>();
+                
+                var scenesData = data.GetProperty("scene_data");
+                foreach (var sceneProperty in scenesData.EnumerateObject())
                 {
-                    FilePath = blendFilePath,
-                    FrameStart = data.GetProperty("frame_start").GetInt32(),
-                    FrameEnd = data.GetProperty("frame_end").GetInt32(),
-                    CameraName = data.GetProperty("camera").ValueKind == JsonValueKind.Null
-                        ? null
-                        : data.GetProperty("camera").GetString(),
-                    RenderOutputPath = data.GetProperty("render_output_path").GetString(),
-                    RenderOutputFormat = data.GetProperty("render_output_format").GetString(),
-                    RenderEngine = data.GetProperty("render_engine").GetString(),
-                    SceneName = data.GetProperty("scene_name").GetString(),
-                    Fps = data.GetProperty("fps").ValueKind == JsonValueKind.Null
-                        ? null
-                        : data.GetProperty("fps").GetDouble(),
-                    FramePath = data.GetProperty("frame_path").ValueKind == JsonValueKind.Null
-                        ? null
-                        : data.GetProperty("frame_path").GetString()
-                };
+                    var sceneName = sceneProperty.Name;
+                    var sceneInfo = sceneProperty.Value;
+                    
+                    sceneData[sceneName] = new BlendSceneProperties
+                    {
+                        FilePath = blendFilePath,
+                        FrameStart = sceneInfo.GetProperty("frame_start").GetInt32(),
+                        FrameEnd = sceneInfo.GetProperty("frame_end").GetInt32(),
+                        CameraName = sceneInfo.GetProperty("camera").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("camera").GetString(),
+                        RenderOutputPath = sceneInfo.GetProperty("render_output_path").GetString(),
+                        RenderOutputFormat = sceneInfo.GetProperty("render_output_format").GetString(),
+                        RenderEngine = sceneInfo.GetProperty("render_engine").GetString(),
+                        SceneName = sceneName,
+                        Fps = sceneInfo.GetProperty("fps").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("fps").GetDouble(),
+                        FramePath = sceneInfo.GetProperty("frame_path").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("frame_path").GetString()
+                    };
+                }
+                
+                return (activeScene, sceneData);
             },
             cancellationToken);
     }
@@ -64,7 +77,6 @@ import bpy, json
 filepath = '{normalizedPath}'
 try:
     bpy.ops.wm.open_mainfile(filepath=filepath)
-    s=bpy.context.scene
     
     # 安全地获取数据，对每个可能出错的操作使用 try-except
     def safe_get(operation, default=None):
@@ -73,16 +85,25 @@ try:
         except Exception:
             return default
     
+    # 获取所有场景数据
+    scene_data = {{}}
+    active_scene_name = bpy.context.scene.name
+    
+    for scene in bpy.data.scenes:
+        scene_data[scene.name] = {{
+            'frame_start': safe_get(lambda: int(scene.frame_start), 1),
+            'frame_end': safe_get(lambda: int(scene.frame_end), 1),
+            'camera': safe_get(lambda: scene.camera.name if scene.camera else None),
+            'render_output_path': safe_get(lambda: scene.render.filepath, ''),
+            'render_output_format': safe_get(lambda: scene.render.image_settings.file_format, 'PNG'),
+            'render_engine': safe_get(lambda: scene.render.engine, 'BLENDER_EEVEE'),
+            'fps': safe_get(lambda: scene.render.fps, 24.0),
+            'frame_path': safe_get(lambda: scene.render.frame_path() if hasattr(scene.render, 'frame_path') else None)
+        }}
+    
     data = {{
-        'frame_start': safe_get(lambda: int(s.frame_start), 1),
-        'frame_end': safe_get(lambda: int(s.frame_end), 1),
-        'camera': safe_get(lambda: s.camera.name if s.camera else None),
-        'render_output_path': safe_get(lambda: bpy.context.scene.render.filepath, ''),
-        'render_output_format': safe_get(lambda: bpy.context.scene.render.image_settings.file_format, 'PNG'),
-        'render_engine': safe_get(lambda: bpy.context.scene.render.engine, 'BLENDER_EEVEE'),
-        'scene_name': safe_get(lambda: bpy.context.scene.name, 'Scene'),
-        'fps': safe_get(lambda: bpy.context.scene.render.fps, 24.0),
-        'frame_path': safe_get(lambda: bpy.context.scene.render.frame_path() if hasattr(bpy.context.scene.render, 'frame_path') else None)
+        'active_scene': active_scene_name,
+        'scene_data': scene_data
     }}
     
     print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':True,'data': data}}, separators=(',', ':')))

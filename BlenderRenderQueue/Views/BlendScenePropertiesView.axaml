@@ -30,8 +30,18 @@
                 </Border>
 
                 <!-- 文件信息 -->
-                <Border CornerRadius="4" Padding="15" IsVisible="{Binding SceneProperties.IsLoaded}">
+                <Border CornerRadius="4" Padding="15" IsVisible="{Binding ActiveSceneProperties.IsLoaded}">
                     <StackPanel Spacing="8">
+
+                        <!-- 场景选择器 -->
+                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding SceneNames.Count, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                            <TextBlock Grid.Column="0" Text="当前场景:" FontWeight="SemiBold" MinWidth="80" VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding SceneNames}" SelectedItem="{Binding ActiveSceneName}" 
+                                      IsEnabled="{Binding !IsLoading}" />
+                        </Grid>
+
+                        <!-- 场景信息分隔线 -->
+                        <Rectangle Height="1" Fill="Gray" Margin="0,8" IsVisible="{Binding SceneNames.Count, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
                         <!-- ~1~ 文件路径 @1@ -->
                         <!-- <Grid ColumnDefinitions="Auto,*"> -->
@@ -53,10 +63,10 @@
                         <!-- 场景名称 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="场景:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding SceneProperties.SceneName}"
-                                       IsVisible="{Binding SceneProperties.SceneName, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.SceneName}"
+                                       IsVisible="{Binding ActiveSceneProperties.SceneName, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding SceneProperties.SceneName, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                                       IsVisible="{Binding ActiveSceneProperties.SceneName, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                         <!-- 帧范围 -->
@@ -64,11 +74,11 @@
                             <TextBlock Grid.Column="0" Text="帧范围:" FontWeight="SemiBold" MinWidth="80"
                                        VerticalAlignment="Center" />
                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding SceneProperties.FrameStart}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ActiveSceneProperties.FrameStart}" VerticalAlignment="Center" />
                                 <TextBlock Text="~" />
-                                <TextBlock Text="{Binding SceneProperties.FrameEnd}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ActiveSceneProperties.FrameEnd}" VerticalAlignment="Center" />
                                 <TextBlock Text="(" />
-                                <TextBlock Text="{Binding SceneProperties.TotalFrames}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ActiveSceneProperties.TotalFrames}" VerticalAlignment="Center" />
                                 <TextBlock Text="帧 )" />
                             </StackPanel>
                         </Grid>
@@ -76,29 +86,29 @@
                         <!-- 渲染引擎 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="渲染引擎:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding SceneProperties.RenderEngineDisplayName}"
-                                       IsVisible="{Binding SceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.RenderEngineDisplayName}"
+                                       IsVisible="{Binding ActiveSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding SceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                                       IsVisible="{Binding ActiveSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                         <!-- FPS -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="帧率:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding SceneProperties.Fps, StringFormat='{}{0:F2} fps'}"
-                                       IsVisible="{Binding SceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.Fps, StringFormat='{}{0:F2} fps'}"
+                                       IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding SceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+                                       IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNull}}" />
                         </Grid>
 
 
                         <!-- 相机名称 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="相机:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding SceneProperties.CameraName}"
-                                       IsVisible="{Binding SceneProperties.CameraName, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.CameraName}"
+                                       IsVisible="{Binding ActiveSceneProperties.CameraName, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding SceneProperties.CameraName, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                                       IsVisible="{Binding ActiveSceneProperties.CameraName, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                         <!-- 分隔线 -->
@@ -107,22 +117,22 @@
                         <!-- 输出路径 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="输出路径:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding SceneProperties.RenderOutputPath}"
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.RenderOutputPath}"
                                        TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
-                                       IsVisible="{Binding SceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                                       IsVisible="{Binding ActiveSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding SceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                                       IsVisible="{Binding ActiveSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                         <!-- Frame Path -->
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <TextBlock Grid.Column="0" Text="真实帧路径:" FontWeight="SemiBold" MinWidth="80"
                                        VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding SceneProperties.FramePath}"
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.FramePath}"
                                        TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
-                                       IsVisible="{Binding SceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                                       IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding SceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                                       IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                             <Button Grid.Column="2" Content="📁" ToolTip.Tip="打开文件夹"
                                     Command="{Binding OpenFramePathDirectoryCommand}"
                                     IsEnabled="{Binding CanOpenFramePathDirectory}"
@@ -132,10 +142,10 @@
                         <!-- 输出格式 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="输出格式:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding SceneProperties.RenderOutputFormat}"
-                                       IsVisible="{Binding SceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.RenderOutputFormat}"
+                                       IsVisible="{Binding ActiveSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
-                                       IsVisible="{Binding SceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                                       IsVisible="{Binding ActiveSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                     </StackPanel>
