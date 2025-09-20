@@ -226,28 +226,52 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         if (taskToRemove == null) return;
 
-        // 如果任务正在运行，先停止
-        if (taskToRemove.Status == RenderTaskStatus.Running)
+        // 如果任务已经处于预备删除状态，则真正删除
+        if (taskToRemove.IsPendingDeletion)
         {
-            taskToRemove.StopRender();
+            // 如果任务正在运行，先停止
+            if (taskToRemove.Status == RenderTaskStatus.Running)
+            {
+                taskToRemove.StopRender();
+            }
+
+            // 取消订阅事件
+            UnsubscribeFromTaskEvents(taskToRemove);
+
+            // 从集合中移除任务
+            RenderTasks.Remove(taskToRemove);
+
+            // 释放任务资源
+            taskToRemove.Dispose();
+
+            // 如果删除的是当前选中的任务，清空选中任务
+            if (SelectedTask == taskToRemove)
+            {
+                SelectedTask = null;
+            }
+
+            UpdateQueueStatistics();
         }
-
-        // 取消订阅事件
-        UnsubscribeFromTaskEvents(taskToRemove);
-
-        // 从集合中移除任务
-        RenderTasks.Remove(taskToRemove);
-
-        // 释放任务资源
-        taskToRemove.Dispose();
-
-        // 如果删除的是当前选中的任务，清空选中任务
-        if (SelectedTask == taskToRemove)
+        else
         {
-            SelectedTask = null;
+            // 第一次点击：设置预备删除状态
+            // 先清除其他任务的预备删除状态
+            ClearPendingDeletionStates();
+            
+            // 设置当前任务为预备删除状态
+            taskToRemove.IsPendingDeletion = true;
         }
+    }
 
-        UpdateQueueStatistics();
+    /// <summary>
+    /// 清除所有任务的预备删除状态
+    /// </summary>
+    private void ClearPendingDeletionStates()
+    {
+        foreach (var task in RenderTasks)
+        {
+            task.IsPendingDeletion = false;
+        }
     }
 
     [RelayCommand]
@@ -307,6 +331,9 @@ public partial class RenderQueueViewModel : ViewModelBase
             QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("需要先设置Blender路径"));
             return;
         }
+
+        // 开始队列时清空所有预备删除状态
+        ClearPendingDeletionStates();
 
         // 停止队列：重置所有启用的任务状态，从头开始
         foreach (var task in RenderTasks.Where(t => t.Enable))

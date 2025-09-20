@@ -16,6 +16,7 @@
              x:DataType="viewModels:RenderQueueViewModel"
              services1:ToplevelService.Register="{Binding}">
 
+
     <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
 
 
@@ -175,18 +176,32 @@
                                                               Margin="8,0"
                                                               VerticalAlignment="Center"
                                                               ToolTip.Tip="启用/禁用此任务" />
-                                                <!-- 删除按钮 -->
-                                                <Button Grid.Column="2"
-                                                        Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
-                                                        CommandParameter="{Binding}"
-                                                        Classes="Danger Icon"
-                                                        Margin="4,0,0,0"
-                                                        Width="20" Height="20"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        ToolTip.Tip="删除此任务">
-                                                    <material:MaterialIcon Kind="Delete" />
-                                                </Button>
+                                                <!-- 删除按钮区域 -->
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="4,0,0,0">
+                                                    <!-- 普通删除按钮 -->
+                                                    <Button Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Width="30" Height="30"
+                                                            Padding="0"
+                                                            VerticalAlignment="Center"
+                                                            Classes="Basic Icon"
+                                                            ToolTip.Tip="删除此任务"
+                                                            IsVisible="{Binding IsPendingDeletion, Converter={x:Static conv:BoolConverters.Not}}">
+                                                        <material:MaterialIcon Kind="Delete" Width="24" Height="24" />
+                                                    </Button>
+                                                    
+                                                    <!-- 确认删除按钮 -->
+                                                    <Button Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Width="30" Height="30"
+                                                            Padding="0"
+                                                            VerticalAlignment="Center"
+                                                            Classes="Danger Icon"
+                                                            ToolTip.Tip="再次点击确认删除"
+                                                            IsVisible="{Binding IsPendingDeletion}">
+                                                        <material:MaterialIcon Kind="Delete" Width="24" Height="24" />
+                                                    </Button>
+                                                </StackPanel>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
