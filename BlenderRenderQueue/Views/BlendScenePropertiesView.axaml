@@ -119,6 +119,13 @@
                                        IsVisible="{Binding ActiveSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
+                        <!-- Cycles时间限制 -->
+                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding ActiveSceneProperties.HasCyclesTimeLimit}">
+                            <TextBlock Grid.Column="0" Text="时间限制:" FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="1" 
+                                       Text="{Binding ActiveSceneProperties.CyclesTimeLimit, StringFormat='{}{0:F1} 秒'}" />
+                        </Grid>
+
 
                         <!-- 相机名称 -->
                         <Grid ColumnDefinitions="Auto,*">

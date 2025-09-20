@@ -50,7 +50,10 @@ public sealed class BlenderQueryService : IBlenderQueryService
                             : sceneInfo.GetProperty("fps").GetDouble(),
                         FramePath = sceneInfo.GetProperty("frame_path").ValueKind == JsonValueKind.Null
                             ? null
-                            : sceneInfo.GetProperty("frame_path").GetString()
+                            : sceneInfo.GetProperty("frame_path").GetString(),
+                        CyclesTimeLimit = sceneInfo.GetProperty("cycles_time_limit").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("cycles_time_limit").GetDouble()
                     };
                 }
                 
@@ -100,7 +103,8 @@ try:
             'render_output_format': safe_get(lambda: scene.render.image_settings.file_format, 'PNG'),
             'render_engine': safe_get(lambda: scene.render.engine, 'BLENDER_EEVEE'),
             'fps': safe_get(lambda: scene.render.fps, 24.0),
-            'frame_path': safe_get(lambda: scene.render.frame_path() if hasattr(scene.render, 'frame_path') else None)
+            'frame_path': safe_get(lambda: scene.render.frame_path() if hasattr(scene.render, 'frame_path') else None),
+            'cycles_time_limit': safe_get(lambda: scene.cycles.time_limit if hasattr(scene, 'cycles') else None)
         }}
     
     data = {{
