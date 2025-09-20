@@ -1,4 +1,4 @@
-    <UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -142,8 +142,13 @@
                                     <behaviors:ListBoxDragDropBehavior />
                                 </i:Interaction.Behaviors>
                                 <ListBox.Styles>
+                                    <Style Selector="ListBoxItem /template/ Border">
+                                    </Style>
+                                    <Style Selector="ListBoxItem:pointerover /template/ Border">
+                                        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
+                                    </Style>
                                     <Style Selector="ListBoxItem:selected /template/ Border">
-                                        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor50}" />
+                                        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
                                     </Style>
                                 </ListBox.Styles>
                                 <ListBox.ItemTemplate>
@@ -152,8 +157,8 @@
                                                 CornerRadius="4"
                                                 Padding="4">
                                             <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                                                
-                                                
+
+
                                                 <StackPanel Grid.Column="0">
                                                     <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold"
                                                                TextTrimming="CharacterEllipsis" />
@@ -172,49 +177,51 @@
                                                                  Value="{Binding OverallProgress01}"
                                                                  Height="4" Margin="0,2,0,0" />
                                                 </StackPanel>
-                                                
+
                                                 <!-- Enable ToggleSwitch -->
                                                 <ToggleSwitch Grid.Column="1"
                                                               IsChecked="{Binding Enable}"
                                                               Margin="8,0"
                                                               VerticalAlignment="Center"
                                                               ToolTip.Tip="启用/禁用此任务" />
-                                                              
+
                                                 <!-- 删除按钮区域 -->
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="4,0,0,0">
                                                     <!-- 普通删除按钮 -->
-                                                    <Button Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
-                                                            CommandParameter="{Binding}"
-                                                            Width="30" Height="30"
-                                                            Padding="0"
-                                                            VerticalAlignment="Center"
-                                                            Classes="Basic Icon"
-                                                            ToolTip.Tip="删除此任务"
-                                                            IsVisible="{Binding IsPendingDeletion, Converter={x:Static conv:BoolConverters.Not}}">
+                                                    <Button
+                                                        Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Width="30" Height="30"
+                                                        Padding="0"
+                                                        VerticalAlignment="Center"
+                                                        Classes="Basic Icon"
+                                                        ToolTip.Tip="删除此任务"
+                                                        IsVisible="{Binding IsPendingDeletion, Converter={x:Static conv:BoolConverters.Not}}">
                                                         <material:MaterialIcon Kind="Delete" Width="24" Height="24" />
                                                     </Button>
-                                                    
+
                                                     <!-- 确认删除按钮 -->
-                                                    <Button Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
-                                                            CommandParameter="{Binding}"
-                                                            Width="30" Height="30"
-                                                            Padding="0"
-                                                            VerticalAlignment="Center"
-                                                            Classes="Danger Icon"
-                                                            IsVisible="{Binding IsPendingDeletion}">
+                                                    <Button
+                                                        Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Width="30" Height="30"
+                                                        Padding="0"
+                                                        VerticalAlignment="Center"
+                                                        Classes="Danger Icon"
+                                                        IsVisible="{Binding IsPendingDeletion}">
                                                         <material:MaterialIcon Kind="Delete" Width="24" Height="24" />
                                                     </Button>
                                                 </StackPanel>
                                                 <!-- 拖拽手柄 -->
-                                                <Border Grid.Column="3" 
-                                                        Width="32" 
+                                                <Border Grid.Column="3"
+                                                        Width="32"
                                                         VerticalAlignment="Stretch"
                                                         Margin="8,0,0,0"
                                                         Background="Transparent"
                                                         Tag="DragHandle">
-                                                    <material:MaterialIcon Kind="Drag" 
-                                                                           Width="20" Height="20" 
-                                                                           VerticalAlignment="Center" 
+                                                    <material:MaterialIcon Kind="Drag"
+                                                                           Width="20" Height="20"
+                                                                           VerticalAlignment="Center"
                                                                            HorizontalAlignment="Center"
                                                                            Foreground="Gray" />
                                                 </Border>
