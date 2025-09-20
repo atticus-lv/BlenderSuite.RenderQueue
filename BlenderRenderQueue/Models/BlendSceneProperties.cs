@@ -77,13 +77,13 @@ public class BlendSceneProperties
             else
             {
                 var cameraNames = string.Join(", ", TimelineCameras);
-                return $"多相机 ({cameraNames})";
+                return $"时间线相机 ({cameraNames})";
             }
         }
     }
     
     /// <summary>
-    /// 是否为多相机场景
+    /// 是否为时间线相机场景
     /// </summary>
     public bool IsMultiCameraScene => TimelineCameras != null && TimelineCameras.Any();
 

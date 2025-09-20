@@ -60,15 +60,6 @@
                                        VerticalAlignment="Center" />
                         </Grid>
 
-                        <!-- 相机类型 -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="相机类型:" FontWeight="SemiBold" MinWidth="80"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.CameraTypeDisplayText}"
-                                       VerticalAlignment="Center" />
-                        </Grid>
-
-
                         <!-- 场景信息分隔线 -->
                         <Rectangle Height="1" Fill="Transparent" Margin="0,8"
                                    IsVisible="{Binding SceneNames.Count, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
@@ -146,12 +137,19 @@
 
 
                         <!-- 相机名称 -->
-                        <Grid ColumnDefinitions="Auto,*">
+                        <Grid ColumnDefinitions="Auto,*"
+                              IsVisible="{Binding ActiveSceneProperties.IsMultiCameraScene, Converter={x:Static conv:BoolConverters.Not}}">
                             <TextBlock Grid.Column="0" Text="相机:" FontWeight="SemiBold" MinWidth="80" />
                             <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.CameraName}"
                                        IsVisible="{Binding ActiveSceneProperties.CameraName, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.CameraName, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding ActiveSceneProperties.IsMultiCameraScene}">
+                            <TextBlock Grid.Column="0" Text="相机:" FontWeight="SemiBold" MinWidth="80"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.CameraTypeDisplayText}"
+                                       VerticalAlignment="Center" />
                         </Grid>
 
                         <!-- 分隔线 -->
