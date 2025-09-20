@@ -13,18 +13,33 @@
 
     <Grid>
         <StackPanel Spacing="8" HorizontalAlignment="Stretch">
-            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold" FontSize="20"
-                           VerticalAlignment="Center" />
-                <Border
-                    Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
-                    CornerRadius="4" Padding="8,4">
-                    <TextBlock Text="{Binding StatusText}" FontSize="12" FontWeight="Bold" />
-                </Border>
-                <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}"
-                           VerticalAlignment="Center" FontSize="14" />
-
-            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold" FontSize="20"
+                                           VerticalAlignment="Center" />
+                                <Border
+                                    Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
+                                    CornerRadius="4" Padding="8,4">
+                                    <TextBlock Text="{Binding StatusText}" FontSize="12" FontWeight="Bold" />
+                                </Border>
+                                <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}"
+                                           VerticalAlignment="Center" FontSize="14" />
+                                
+                            </StackPanel>
+                <Button Grid.Column="1" Margin="8" VerticalAlignment="Center"
+                        Command="{Binding RefreshFileInfoCommand}"
+                        IsEnabled="True"
+                        ToolTip.Tip="重新加载任务（包括文件信息和渲染设置）"
+                        Classes="Outlined Round"
+                        Width="120"
+                        FontSize="12">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <avalonia:MaterialIcon Kind="Refresh" />
+                        <TextBlock Text="重载文件" Margin="4,0,0,0" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+            
 
             <Grid ColumnDefinitions="*,8,*">
                 <suki:GlassCard>
@@ -69,7 +84,7 @@
                                      ShowProgressText="False"
                                      Value="{Binding OverallProgress01}"
                                      Height="20" Margin="0,0,8,0" />
-    
+
                         <!-- 当前帧进度 -->
                         <TextBlock Grid.Row="1" Grid.Column="2"
                                    Text="{Binding CurrentFrame, StringFormat='当前帧: {0}'}"
@@ -85,7 +100,6 @@
                                    Text="{Binding SampleText}"
                                    VerticalAlignment="Center" Margin="0,0,8,0" />
 
-                        
 
                     </Grid>
                 </suki:GlassCard>
@@ -116,25 +130,12 @@
                                     <TextBlock Grid.Row="3" Grid.Column="0" Text="文件路径:" FontWeight="Bold"
                                                VerticalAlignment="Center" />
                                     <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding FileInfo.FilePath}"
-                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                               TextWrapping="Wrap" />
                                 </Grid>
 
                             </StackPanel>
                         </Grid>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <Button Margin="8"
-                                    Command="{Binding RefreshFileInfoCommand}"
-                                    IsEnabled="True"
-                                    ToolTip.Tip="重新加载任务（包括文件信息和渲染设置）"
-                                    Classes="Flat Accent Round"
-                                    Width="120"
-                                    FontSize="12">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <avalonia:MaterialIcon Kind="Refresh" />
-                                    <TextBlock Text="重载文件" Margin="4,0,0,0" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
                     </StackPanel>
                 </suki:GlassCard>
             </Grid>
