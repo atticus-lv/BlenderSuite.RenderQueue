@@ -18,7 +18,7 @@
 
 
         <!-- 队列统计信息 -->
-        <suki:GlassCard Grid.Row="1" Grid.ColumnSpan="2" Margin="4">
+        <suki:GlassCard Grid.Row="1" Grid.ColumnSpan="2" Margin=" 8 8 8 4">
             <Grid ColumnDefinitions="Auto,Auto,*">
 
                 <!-- 整体进度条 -->
@@ -230,7 +230,8 @@
             <Border Grid.Column="2" Margin="4">
                 <Panel>
                     <!-- 空状态提示 -->
-                    <TextBlock Text="选择一个任务查看" FontSize="20" Foreground="Gray" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold"
+                    <TextBlock Text="选择一个任务查看" FontSize="20" Foreground="Gray" VerticalAlignment="Center"
+                               HorizontalAlignment="Center" FontWeight="SemiBold"
                                IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}" />
                     <ScrollViewer>
                         <ContentControl Content="{Binding SelectedTask}">
