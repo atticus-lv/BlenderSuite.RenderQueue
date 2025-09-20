@@ -73,7 +73,37 @@ public class BlenderExeService : BasePythonProcessService
         _process.ErrorDataReceived += (_, e) =>
         {
             if (e.Data == null) return;
-            RaiseErrorReceived($"Error: {e.Data}");
+            
+            // 过滤掉一些常见的Blender警告信息，这些不应该被当作错误
+            var data = e.Data;
+            // 检查是否是真正的Blender崩溃（显著特征：输出"Blender quit"）
+            var isBlenderCrash = data.Contains("Blender quit", StringComparison.OrdinalIgnoreCase);
+            
+            if (isBlenderCrash)
+            {
+                // 这是真正的Blender崩溃，应该被当作错误处理
+                RaiseErrorReceived($"Error: {e.Data}");
+                return;
+            }
+            
+            // 过滤掉Blender后台模式下的常见警告和第三方插件错误，这些不是真正的渲染失败
+            var isNonCriticalWarning = data.Contains("GPU functions for drawing are not available in background mode") ||
+                                     data.Contains("invalid non-printable character U+FEFF") ||
+                                     data.Contains("SystemError") ||
+                                     data.Contains("SyntaxError") ||
+                                     data.Contains("Traceback") ||
+                                     data.Contains("Warning") ||
+                                     data.Contains("DeprecationWarning");
+            
+            if (isNonCriticalWarning)
+            {
+                // 将非关键警告作为普通输出处理
+                RaiseOutputReceived($"[INFO] {e.Data}");
+                return;
+            }
+            
+            // 其他情况作为警告处理
+            RaiseOutputReceived($"[WARN] {e.Data}");
         };
 
         try
