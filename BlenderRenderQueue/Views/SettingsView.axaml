@@ -4,18 +4,22 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
-
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" Margin="16">
+    <suki:GroupBox>
+           <suki:GroupBox.Header>
+               <TextBlock Text="依赖路径"></TextBlock>
+           </suki:GroupBox.Header>
+        <suki:GroupBox.Content>
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" Margin="16">
         
         <!-- 标题 -->
-        <TextBlock Grid.Row="0" Grid.ColumnSpan="3" Text="路径设置" FontSize="18" FontWeight="Bold" 
-                   HorizontalAlignment="Center" Margin="0,0,0,16" />
+        
 
         <!-- Blender路径设置 -->
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="Blender路径:" VerticalAlignment="Center" 
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Blender:" VerticalAlignment="Center" 
                    Margin="0,0,8,0" />
         <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BlenderPath, Mode=TwoWay}" 
                  IsReadOnly="True" Margin="0,0,0,0" />
@@ -34,7 +38,7 @@
         </StackPanel>
 
         <!-- FFmpeg路径设置 -->
-        <TextBlock Grid.Row="3" Grid.Column="0" Text="FFmpeg路径:" VerticalAlignment="Center" 
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="FFmpeg:" VerticalAlignment="Center" 
                    Margin="0,16,8,0" />
         <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding FfmpegPath, Mode=TwoWay}" 
                  IsReadOnly="True" Margin="0,16,0,0" />
@@ -51,5 +55,8 @@
         </StackPanel>
 
     </Grid>
+        </suki:GroupBox.Content>
+    </suki:GroupBox>
+    
 
 </UserControl>
