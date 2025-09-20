@@ -8,7 +8,7 @@ using Avalonia.Media;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 
-namespace BlenderRenderQueue.Controls;
+namespace BlenderRenderQueue.Behaviors;
 
 public class ImagePanZoomBehavior : Behavior<Panel>
 {

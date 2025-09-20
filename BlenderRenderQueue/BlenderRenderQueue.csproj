@@ -50,7 +50,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Behaviors\" />
       <Folder Include="Converters\" />
     </ItemGroup>
 </Project>
