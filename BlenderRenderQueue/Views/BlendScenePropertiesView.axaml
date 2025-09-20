@@ -12,36 +12,44 @@
         <!-- 内容区域 -->
         <ScrollViewer Grid.Row="1">
             <StackPanel Spacing="10">
-
                 <!-- 加载状态 -->
-                <Border CornerRadius="4" Padding="10" IsVisible="{Binding IsLoading}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="⏳" FontSize="16" />
-                        <TextBlock Text="{Binding LoadingMessage}" VerticalAlignment="Center" />
+                <Border CornerRadius="4" Padding="10" IsVisible="{Binding IsLoading}" VerticalAlignment="Center"
+                        HorizontalAlignment="Center">
+                    <StackPanel Orientation="Vertical" Spacing="8">
+                        <ProgressBar IsIndeterminate="True" />
+                        <TextBlock Text="{Binding LoadingMessage}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </StackPanel>
                 </Border>
 
                 <!-- 错误信息 -->
-                <Border CornerRadius="4" Padding="10" IsVisible="{Binding HasErrorMessage}">
+                <Border CornerRadius="4" Padding="10" IsVisible="{Binding HasErrorMessage}"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="❌" FontSize="16" />
-                        <TextBlock Text="{Binding ErrorMessage}" VerticalAlignment="Center" Foreground="#C62828" />
+                        <TextBlock Text="{Binding ErrorMessage}" VerticalAlignment="Center" Foreground="#C62828"
+                                   FontWeight="Bold" />
                     </StackPanel>
                 </Border>
 
                 <!-- 文件信息 -->
                 <Border CornerRadius="4" Padding="15" IsVisible="{Binding ActiveSceneProperties.IsLoaded}">
-                    <StackPanel Spacing="8">
+                    <StackPanel Spacing="4">
 
                         <!-- 场景选择器 -->
-                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding SceneNames.Count, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-                            <TextBlock Grid.Column="0" Text="当前场景:" FontWeight="SemiBold" MinWidth="80" VerticalAlignment="Center" />
-                            <ComboBox Grid.Column="1" ItemsSource="{Binding SceneNames}" SelectedItem="{Binding ActiveSceneName}" 
+                        <TextBlock Text="{Binding DefaultSceneName, StringFormat='默认场景:  {0}'}" FontWeight="Bold"></TextBlock>
+                        <Grid ColumnDefinitions="Auto,*"
+                              IsVisible="{Binding SceneNames.Count, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                            <TextBlock Grid.Column="0" Text="当前场景:" FontWeight="SemiBold" MinWidth="80"
+                                       VerticalAlignment="Center" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding SceneNames}"
+                                      SelectedItem="{Binding ActiveSceneName}"
                                       IsEnabled="{Binding !IsLoading}" />
                         </Grid>
 
                         <!-- 场景信息分隔线 -->
-                        <Rectangle Height="1" Fill="Gray" Margin="0,8" IsVisible="{Binding SceneNames.Count, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                        <Rectangle Height="1" Fill="Gray" Margin="0,8"
+                                   IsVisible="{Binding SceneNames.Count, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
 
                         <!-- ~1~ 文件路径 @1@ -->
                         <!-- <Grid ColumnDefinitions="Auto,*"> -->
@@ -78,7 +86,8 @@
                                 <TextBlock Text="~" />
                                 <TextBlock Text="{Binding ActiveSceneProperties.FrameEnd}" VerticalAlignment="Center" />
                                 <TextBlock Text="(" />
-                                <TextBlock Text="{Binding ActiveSceneProperties.TotalFrames}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ActiveSceneProperties.TotalFrames}"
+                                           VerticalAlignment="Center" />
                                 <TextBlock Text="帧 )" />
                             </StackPanel>
                         </Grid>
@@ -95,7 +104,8 @@
                         <!-- FPS -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="帧率:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.Fps, StringFormat='{}{0:F2} fps'}"
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding ActiveSceneProperties.Fps, StringFormat='{}{0:F2} fps'}"
                                        IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNull}}" />
