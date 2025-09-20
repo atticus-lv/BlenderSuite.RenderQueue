@@ -152,6 +152,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// </summary>
     public event EventHandler? EnableChanged;
 
+    /// <summary>
+    /// 请求在Blender中打开文件事件
+    /// </summary>
+    public event EventHandler<OpenInBlenderRequestedEventArgs>? OpenInBlenderRequested;
+
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 
     [ObservableProperty]
@@ -520,6 +525,26 @@ public partial class RenderTaskViewModel : ViewModelBase
         LogPauseButtonText = IsLogPaused ? "继续日志" : "暂停日志";
     }
 
+    [RelayCommand]
+    private void OpenInBlender()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(BlendFilePath) || !File.Exists(BlendFilePath))
+            {
+                EnqueueLog("[ERROR] 文件不存在，无法在Blender中打开");
+                return;
+            }
+
+            // 触发事件，请求父级提供Blender路径并打开文件
+            OpenInBlenderRequested?.Invoke(this, new OpenInBlenderRequestedEventArgs(BlendFilePath));
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"[ERROR] 打开Blender失败: {ex.Message}");
+        }
+    }
+
     private void HandleRawOutput(string line)
     {
         EnqueueLog($"[OUT] {line}");
@@ -841,5 +866,16 @@ public class RenderTaskProgressEventArgs : EventArgs
         OverallProgress = overallProgress;
         CurrentFrameProgress = currentFrameProgress;
         CurrentFrame = currentFrame;
+    }
+}
+
+// 请求在Blender中打开文件事件参数
+public class OpenInBlenderRequestedEventArgs : EventArgs
+{
+    public string FilePath { get; }
+
+    public OpenInBlenderRequestedEventArgs(string filePath)
+    {
+        FilePath = filePath;
     }
 }

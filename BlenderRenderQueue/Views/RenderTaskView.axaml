@@ -26,18 +26,26 @@
                                            VerticalAlignment="Center" FontSize="14" />
                                 
                             </StackPanel>
-                <Button Grid.Column="1" Margin="8" VerticalAlignment="Center"
-                        Command="{Binding RefreshFileInfoCommand}"
-                        IsEnabled="True"
-                        ToolTip.Tip="重新加载任务（包括文件信息和渲染设置）"
-                        Classes="Outlined Round"
-                        Width="120"
-                        FontSize="12">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <avalonia:MaterialIcon Kind="Refresh" />
-                        <TextBlock Text="重载文件" Margin="4,0,0,0" />
-                    </StackPanel>
-                </Button>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="8" VerticalAlignment="Center">
+                    <Button Command="{Binding OpenInBlenderCommand}"
+                            IsEnabled="True"
+                            Classes="Outlined Rounded"
+                            Width="120"
+                            FontSize="12">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <avalonia:MaterialIcon Kind="OpenInNew" />
+                            <TextBlock Text="打开文件" Margin="4,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding RefreshFileInfoCommand}"
+                            IsEnabled="True"
+                            Classes="Rounded"
+                            FontSize="12">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <avalonia:MaterialIcon Kind="Refresh" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </Grid>
             
 

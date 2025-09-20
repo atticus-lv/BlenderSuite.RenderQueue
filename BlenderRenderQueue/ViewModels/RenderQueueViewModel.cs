@@ -616,6 +616,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.ProgressChanged += OnTaskProgressChanged;
         task.RefreshRequested += OnTaskRefreshRequested;
         task.EnableChanged += OnTaskEnableChanged;
+        task.OpenInBlenderRequested += OnTaskOpenInBlenderRequested;
     }
 
     private void UnsubscribeFromTaskEvents(RenderTaskViewModel task)
@@ -624,6 +625,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.ProgressChanged -= OnTaskProgressChanged;
         task.RefreshRequested -= OnTaskRefreshRequested;
         task.EnableChanged -= OnTaskEnableChanged;
+        task.OpenInBlenderRequested -= OnTaskOpenInBlenderRequested;
     }
 
     private void OnTaskStatusChanged(object? sender, RenderTaskStatusChangedEventArgs e)
@@ -702,6 +704,102 @@ public partial class RenderQueueViewModel : ViewModelBase
         UpdateQueueStatistics();
         
         Console.WriteLine($"[RenderQueueViewModel] Task enable state changed, auto-saving data");
+    }
+
+    private void OnTaskOpenInBlenderRequested(object? sender, OpenInBlenderRequestedEventArgs e)
+    {
+        try
+        {
+            if (_blenderService == null || string.IsNullOrEmpty(_blenderService.BlenderPath))
+            {
+                Console.WriteLine($"[RenderQueueViewModel] ❌ BlenderService is null or BlenderPath is empty");
+                return;
+            }
+
+            if (!File.Exists(e.FilePath))
+            {
+                Console.WriteLine($"[RenderQueueViewModel] ❌ File does not exist: {e.FilePath}");
+                return;
+            }
+
+            // 检测并选择最佳的Blender可执行文件
+            var blenderExecutable = GetBestBlenderExecutable(_blenderService.BlenderPath);
+            
+            // 启动Blender进程打开文件（独立进程，不关联到程序本体）
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = blenderExecutable,
+                Arguments = $"\"{e.FilePath}\"",
+                UseShellExecute = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal,
+                CreateNoWindow = false
+            };
+
+            // 启动独立进程，不等待其结束
+            var process = System.Diagnostics.Process.Start(startInfo);
+            if (process != null)
+            {
+                // 立即释放进程句柄，让进程完全独立运行
+                process.Dispose();
+            }
+            Console.WriteLine($"[RenderQueueViewModel] ✅ Opened file in Blender: {e.FilePath} (using {Path.GetFileName(blenderExecutable)})");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Error opening file in Blender: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 获取最佳的Blender可执行文件，优先选择blender-launcher.exe
+    /// </summary>
+    /// <param name="blenderPath">当前配置的Blender路径</param>
+    /// <returns>最佳的Blender可执行文件路径</returns>
+    private string GetBestBlenderExecutable(string blenderPath)
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(blenderPath);
+            var fileName = Path.GetFileName(blenderPath);
+            
+            if (string.IsNullOrEmpty(directory))
+            {
+                return blenderPath;
+            }
+
+            // 优先检测 blender-launcher.exe
+            var launcherPath = Path.Combine(directory, "blender-launcher.exe");
+            if (File.Exists(launcherPath))
+            {
+                Console.WriteLine($"[RenderQueueViewModel] ✅ Found blender-launcher.exe, using: {launcherPath}");
+                return launcherPath;
+            }
+
+            // 如果当前就是 blender.exe，尝试查找同目录下的 blender-launcher.exe
+            if (fileName.Equals("blender.exe", StringComparison.OrdinalIgnoreCase))
+            {
+                // 检查父目录（Steam版本通常在子目录中）
+                var parentDirectory = Directory.GetParent(directory)?.FullName;
+                if (!string.IsNullOrEmpty(parentDirectory))
+                {
+                    var parentLauncherPath = Path.Combine(parentDirectory, "blender-launcher.exe");
+                    if (File.Exists(parentLauncherPath))
+                    {
+                        Console.WriteLine($"[RenderQueueViewModel] ✅ Found blender-launcher.exe in parent directory, using: {parentLauncherPath}");
+                        return parentLauncherPath;
+                    }
+                }
+            }
+
+            // 如果找不到 launcher，使用原始路径
+            Console.WriteLine($"[RenderQueueViewModel] ⚠️ blender-launcher.exe not found, using original: {blenderPath}");
+            return blenderPath;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ⚠️ Error detecting best Blender executable: {ex.Message}, using original: {blenderPath}");
+            return blenderPath;
+        }
     }
 
     private void OnTaskPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
