@@ -125,7 +125,17 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
 
             if (dragIndex >= 0 && dropIndex >= 0)
             {
+                // 记录当前选中的任务
+                var currentlySelected = viewModel.SelectedTask;
+                
                 viewModel.RenderTasks.Move(dragIndex, dropIndex);
+                
+                // 如果当前选中的任务就是被拖拽的任务，保持选中状态
+                if (currentlySelected == _dragItem)
+                {
+                    viewModel.SelectedTask = _dragItem;
+                }
+                // 否则保持原来的选中状态不变
             }
         }
 

@@ -235,6 +235,10 @@ public partial class RenderQueueViewModel : ViewModelBase
                 taskToRemove.StopRender();
             }
 
+            // 如果删除的是当前选中的任务，记录位置以便选择新任务
+            var wasSelected = SelectedTask == taskToRemove;
+            var selectedIndex = wasSelected ? RenderTasks.IndexOf(taskToRemove) : -1;
+
             // 取消订阅事件
             UnsubscribeFromTaskEvents(taskToRemove);
 
@@ -244,10 +248,32 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 释放任务资源
             taskToRemove.Dispose();
 
-            // 如果删除的是当前选中的任务，清空选中任务
-            if (SelectedTask == taskToRemove)
+            // 如果删除的是当前选中的任务，选择最近的其他任务
+            if (wasSelected)
             {
-                SelectedTask = null;
+                if (RenderTasks.Count > 0)
+                {
+                    if (selectedIndex < RenderTasks.Count)
+                    {
+                        // 选择原来位置的任务（现在是下一个任务）
+                        SelectedTask = RenderTasks[selectedIndex];
+                    }
+                    else if (selectedIndex > 0)
+                    {
+                        // 选择上一个任务
+                        SelectedTask = RenderTasks[selectedIndex - 1];
+                    }
+                    else
+                    {
+                        // 选择第一个任务
+                        SelectedTask = RenderTasks[0];
+                    }
+                }
+                else
+                {
+                    // 没有其他任务，清空选中
+                    SelectedTask = null;
+                }
             }
 
             UpdateQueueStatistics();
