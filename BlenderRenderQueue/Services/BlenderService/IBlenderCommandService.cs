@@ -7,8 +7,8 @@ public interface IBlenderCommandService
 {
 	Task StartRenderAsync(BasePythonProcessService process,
 		string blendFilePath,
-		int startFrame,
-		int endFrame,
 		bool animation,
+		int? startFrame = null,
+		int? endFrame = null,
 		CancellationToken cancellationToken = default);
 } 

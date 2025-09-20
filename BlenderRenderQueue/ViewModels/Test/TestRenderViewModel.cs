@@ -242,7 +242,7 @@ public partial class TestRenderViewModel : ViewModelBase
 			_exe.Timeout = RenderTimeoutSeconds;
 			
 			EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {RenderTimeoutSeconds}秒)");
-			await cmd.StartRenderAsync(_exe, BlendFilePath, StartFrame, EndFrame, Animation);
+			await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, StartFrame, EndFrame);
 			EnqueueLog($"渲染指令已发送完成");
 		}
 		catch (TaskCanceledException ex)

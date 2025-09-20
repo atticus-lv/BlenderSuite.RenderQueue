@@ -33,6 +33,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     private bool _animation = true;
 
     [ObservableProperty]
+    private bool _overrideFrameRange = false;
+
+    [ObservableProperty]
     private bool _autoStart = true;
 
     [ObservableProperty]
@@ -446,9 +449,17 @@ public partial class RenderTaskViewModel : ViewModelBase
             var renderTimeout = Math.Max(RenderTimeoutSeconds, 3600); // 最少60分钟
             _exe.Timeout = renderTimeout;
 
-            EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {renderTimeout}秒)");
-
-            await cmd.StartRenderAsync(_exe, BlendFilePath, StartFrame, EndFrame, Animation);
+            // 根据覆写设置决定是否传递帧范围参数
+            if (OverrideFrameRange)
+            {
+                EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {renderTimeout}秒)");
+                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, StartFrame, EndFrame);
+            }
+            else
+            {
+                EnqueueLog($"开始渲染: 使用场景默认帧范围, animation={Animation} (无活动超时: {renderTimeout}秒)");
+                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation);
+            }
             EnqueueLog($"渲染指令已发送完成");
         }
         catch (TaskCanceledException ex)

@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,9 +8,9 @@ public sealed class BlenderCommandService : IBlenderCommandService
 {
 	public async Task StartRenderAsync(BasePythonProcessService process,
 		string blendFilePath,
-		int startFrame,
-		int endFrame,
 		bool animation,
+		int? startFrame = null,
+		int? endFrame = null,
 		CancellationToken cancellationToken = default)
 	{
 		// 注意：这里通过 Python 控制台环境执行，设置场景帧并调用渲染
@@ -21,7 +20,16 @@ public sealed class BlenderCommandService : IBlenderCommandService
 		sb.AppendLine("import bpy");
 		sb.AppendLine($"filepath = '{normalizedPath}'");
 		sb.AppendLine("bpy.ops.wm.open_mainfile(filepath=filepath)");
-		sb.AppendLine($"bpy.ops.render.render(animation={(animation ? "True" : "False")}, start_frame={startFrame}, end_frame={endFrame})");
+		
+		// 构建渲染命令，只有当提供了帧范围参数时才使用自定义帧范围
+		if (startFrame.HasValue && endFrame.HasValue)
+		{
+			sb.AppendLine($"bpy.ops.render.render(animation={(animation ? "True" : "False")}, start_frame={startFrame.Value}, end_frame={endFrame.Value})");
+		}
+		else
+		{
+			sb.AppendLine($"bpy.ops.render.render(animation={(animation ? "True" : "False")})");
+		}
 
 		await process.ExecuteScript(sb.ToString(), "render_start", cancellationToken);
 	}
