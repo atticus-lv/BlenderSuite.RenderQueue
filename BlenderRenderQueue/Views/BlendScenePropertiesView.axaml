@@ -39,15 +39,18 @@
                         <!-- 场景选择器 -->
                         <Grid ColumnDefinitions="Auto,Auto,*"
                               IsVisible="{Binding SceneNames.Count, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-                            <TextBlock Grid.Column="0" Text="当前场景:" FontWeight="SemiBold" MinWidth="80"
+                            <TextBlock Grid.Column="0" Text="选择场景:" FontWeight="SemiBold" MinWidth="80"
                                        VerticalAlignment="Center" />
                             <ComboBox Grid.Column="1" ItemsSource="{Binding SceneNames}"
                                       SelectedItem="{Binding ActiveSceneName}"
                                       IsEnabled="{Binding !IsLoading}" />
-                            <TextBlock Grid.Column="2" Text="不是文件默认场景"
-                                       IsVisible="{Binding IsNotDefaultScene,Mode=TwoWay}">
-                            </TextBlock>
+                            <TextBlock Grid.Column="2" Text="不是文件默认场景" FontStyle="Italic" Foreground="#FF9800"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       IsVisible="{Binding IsNotDefaultScene}" />
+
                         </Grid>
+
 
                         <!-- 场景信息分隔线 -->
                         <Rectangle Height="1" Fill="Gray" Margin="0,8"

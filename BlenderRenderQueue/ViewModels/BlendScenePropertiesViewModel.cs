@@ -45,9 +45,14 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _defaultSceneName = string.Empty;
-    
-    public bool IsNotDefaultScene => ActiveSceneName != DefaultSceneName;
-    
+
+    partial void OnDefaultSceneNameChanged(string value)
+    {
+        // 当默认场景名称改变时，触发IsNotDefaultScene的通知
+        OnPropertyChanged(nameof(IsNotDefaultScene));
+        Console.WriteLine($"[BlendScenePropertiesViewModel] DefaultSceneName changed to: {value}");
+    }
+
     partial void OnActiveSceneNameChanged(string value)
     {
         Console.WriteLine($"[BlendScenePropertiesViewModel] ActiveSceneName changing from '{ActiveSceneName}' to '{value}'");
@@ -62,6 +67,7 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
         OnPropertyChanged(nameof(ActiveSceneProperties));
         OnPropertyChanged(nameof(CanOpenFramePathDirectory));
         OnPropertyChanged(nameof(ShowEmptyState));
+        OnPropertyChanged(nameof(IsNotDefaultScene));
         
         Console.WriteLine($"[BlendScenePropertiesViewModel] ActiveSceneName changed to: {value}, ActiveSceneProperties.IsLoaded: {ActiveSceneProperties.IsLoaded}");
     }
@@ -100,6 +106,13 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
 
     [ObservableProperty]
     private List<string> _sceneNames = new();
+
+    /// <summary>
+    /// 当前场景是否不是默认场景
+    /// </summary>
+    public bool IsNotDefaultScene => !string.IsNullOrEmpty(ActiveSceneName) && 
+                                     !string.IsNullOrEmpty(DefaultSceneName) && 
+                                     ActiveSceneName != DefaultSceneName;
 
     /// <summary>
     /// 是否显示空状态（文件未加载且不在加载中）
