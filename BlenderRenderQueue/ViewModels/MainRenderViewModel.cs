@@ -499,28 +499,10 @@ public partial class MainRenderViewModel : ViewModelBase
     /// <param name="videoPath">视频路径</param>
     private void PlayVideo(string videoPath)
     {
-        try
+        var success = FileSystemHelper.PlayVideo(videoPath);
+        if (!success)
         {
-            if (string.IsNullOrEmpty(videoPath) || !File.Exists(videoPath))
-            {
-                ShowToast("播放失败", "视频文件不存在", NotificationType.Error);
-                return;
-            }
-
-            // 使用系统默认程序播放视频
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = videoPath,
-                UseShellExecute = true
-            };
-
-            Process.Start(startInfo);
-            Console.WriteLine($"[MainRenderViewModel] ✅ Playing video: {videoPath}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[MainRenderViewModel] ❌ Error playing video: {ex.Message}");
-            ShowToast("播放失败", $"无法播放视频: {ex.Message}", NotificationType.Error);
+            ShowToast("播放失败", "无法播放视频文件", NotificationType.Error);
         }
     }
 

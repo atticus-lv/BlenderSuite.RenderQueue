@@ -72,4 +72,43 @@ public static class FileSystemHelper
         var directory = Path.GetDirectoryName(filePath);
         return !string.IsNullOrEmpty(directory) && Directory.Exists(directory);
     }
+
+    /// <summary>
+    /// 使用系统默认程序播放视频文件
+    /// </summary>
+    /// <param name="videoPath">视频文件路径</param>
+    /// <returns>操作是否成功</returns>
+    public static bool PlayVideo(string videoPath)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(videoPath))
+            {
+                Console.WriteLine("[FileSystemHelper] ❌ Video path is null or empty");
+                return false;
+            }
+
+            if (!File.Exists(videoPath))
+            {
+                Console.WriteLine($"[FileSystemHelper] ❌ Video file does not exist: {videoPath}");
+                return false;
+            }
+
+            // 使用系统默认程序播放视频
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = videoPath,
+                UseShellExecute = true
+            };
+
+            Process.Start(startInfo);
+            Console.WriteLine($"[FileSystemHelper] ✅ Playing video: {videoPath}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FileSystemHelper] ❌ Error playing video: {ex.Message}");
+            return false;
+        }
+    }
 }
