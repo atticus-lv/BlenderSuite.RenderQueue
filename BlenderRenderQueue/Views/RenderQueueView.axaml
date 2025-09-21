@@ -195,6 +195,28 @@
                                                                 </MultiBinding>
                                                             </TextBlock.Text>
                                                         </TextBlock>
+                                                        <!-- 场景覆写信息 -->
+                                                        <TextBlock FontSize="10" Foreground="Orange" IsVisible="{Binding OverrideScene}">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding StringFormat="场景: {0}">
+                                                                    <Binding Path="SelectedSceneName" />
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
+                                                        <!-- 默认场景信息 -->
+                                                        <TextBlock FontSize="10">
+                                                            <TextBlock.IsVisible>
+                                                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                    <Binding Path="IsValid" />
+                                                                    <Binding Path="OverrideScene" Converter="{x:Static BoolConverters.Not}" />
+                                                                </MultiBinding>
+                                                            </TextBlock.IsVisible>
+                                                            <TextBlock.Text>
+                                                                <MultiBinding StringFormat="场景: {0}">
+                                                                    <Binding Path="SelectedSceneName" />
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
                                                         <TextBlock Text="文件无效" FontSize="10" Foreground="Red"
                                                                    IsVisible="{Binding IsValid, Converter={x:Static BoolConverters.Not}}" />
                                                     </StackPanel>

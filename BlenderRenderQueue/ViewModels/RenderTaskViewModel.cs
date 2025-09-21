@@ -508,6 +508,12 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 更新场景名称列表
             AvailableSceneNames = ScenePropertiesView.SceneNames;
             
+            // 如果没有覆写场景，设置默认场景名称
+            if (!OverrideScene && string.IsNullOrEmpty(SelectedSceneName))
+            {
+                SelectedSceneName = ScenePropertiesView.ActiveSceneName;
+            }
+            
             // 触发显示属性更新
             OnPropertyChanged(nameof(DisplayStartFrame));
             OnPropertyChanged(nameof(DisplayEndFrame));
