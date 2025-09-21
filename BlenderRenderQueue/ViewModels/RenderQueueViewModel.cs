@@ -665,6 +665,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 保存当前选中任务的索引和文件路径
             var currentIndex = RenderTasks.IndexOf(task);
             var filePath = task.BlendFilePath;
+            var wasSelected = SelectedTask == task; // 保存是否被选中的状态
 
             // 停止当前任务（如果正在运行）
             if (task.Status == RenderTaskStatus.Running)
@@ -688,8 +689,8 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 重新订阅事件
             SubscribeToTaskEvents(newTask);
 
-            // 如果这是当前选中的任务，重新选中
-            if (SelectedTask == task)
+            // 如果这是之前选中的任务，重新选中新任务
+            if (wasSelected)
             {
                 SelectedTask = newTask;
             }
