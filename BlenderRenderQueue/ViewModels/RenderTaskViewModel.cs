@@ -941,7 +941,7 @@ public class StatusToColorConverter : IValueConverter
             return status switch
             {
                 RenderTaskStatus.Pending => "#FFA500", // 橙色
-                RenderTaskStatus.Running => "#00FF00", // 绿色
+                RenderTaskStatus.Running => "#00C000", // 绿色
                 RenderTaskStatus.Completed => "#008000", // 深绿色
                 RenderTaskStatus.Failed => "#FF0000", // 红色
                 RenderTaskStatus.Cancelled => "#808080", // 灰色
