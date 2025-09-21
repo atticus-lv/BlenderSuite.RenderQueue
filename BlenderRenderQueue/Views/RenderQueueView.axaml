@@ -24,8 +24,8 @@
 
     <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
 
-        <Grid Row="0" ColumnDefinitions="*,Auto">
-            <suki:GlassCard Margin="8">
+        <Grid Row="0" ColumnDefinitions="*,*,Auto">
+            <suki:GlassCard Margin="8 4 4 4">
                 <StackPanel Orientation="Horizontal">
                     <Border Width="100" Height="100">
                         <Grid>
@@ -75,13 +75,16 @@
 
 
                     </StackPanel>
-                    <views:RenderTaskProgressPreviewView DataContext="{Binding CurrentRenderingTask}"
-                                                         IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
-                                                         Margin="16  0 " />
+
                 </StackPanel>
             </suki:GlassCard>
+            <suki:GlassCard Grid.Column="1" Margin="4" IsVisible="{Binding IsQueueRunning}" >
+                <views:RenderTaskProgressPreviewView DataContext="{Binding CurrentRenderingTask}"
+                                                     IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                                     Margin="16  0 " />
+            </suki:GlassCard>
             <!-- 队列统计信息 -->
-            <suki:GlassCard Grid.Column="1" Margin="8">
+            <suki:GlassCard Grid.Column="2" Margin="4 4 8 4">
                 <StackPanel Orientation="Vertical" Spacing="8"
                             VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="4">
@@ -127,7 +130,7 @@
 
 
         <!-- 主要内容区域 -->
-        <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="1*,5,2*" Margin="4">
+        <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="1*,0,2*" Margin="4">
 
             <!-- 左侧任务列表 -->
             <Border Grid.Column="0" Margin="4">
