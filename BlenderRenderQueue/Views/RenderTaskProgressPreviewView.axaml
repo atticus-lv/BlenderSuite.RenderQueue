@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:design="clr-namespace:BlenderRenderQueue.ViewModels.DesignTime"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
              mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="200"
              x:Class="BlenderRenderQueue.Views.RenderTaskProgressPreviewView"
              x:DataType="vm:RenderTaskViewModel">
@@ -49,7 +50,7 @@
                 </StackPanel>
             </Grid>
         </Border>
-
+        
         <!-- 进度信息区域 -->
         <StackPanel Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Spacing="4">
             <!-- 总体进度 -->
@@ -70,7 +71,7 @@
                              Height="16" VerticalAlignment="Center" />
             </Grid>
             <TextBlock
-                Text="{Binding CurrentFrame, StringFormat='当前帧: {0}'}"
+                Text="{Binding CurrentFrame, StringFormat='帧: {0}'}"
                 VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
                 MinWidth="60" />
             <!-- 当前帧 -->
