@@ -46,11 +46,13 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         task3.SelectedSceneName = "Render_Scene";
         
         var task4 = new DesignTimeRenderTaskViewModel();
-        task4.BlendFilePath = @"C:\Users\Design\Documents\Blender\MissingFile.blend";
+        task4.BlendFilePath = @"C:\Users\Design\Documents\Blender\LoadingFile.blend";
         task4.Status = RenderTaskStatus.Pending;
-        task4.StatusText = "文件无效";
-        task4.IsValid = false;
+        task4.StatusText = "加载中";
+        task4.IsValid = true;
         task4.OverrideScene = false;
+        // 设置加载状态
+        task4.ScenePropertiesView.IsLoading = true;
         
         var task5 = new DesignTimeRenderTaskViewModel();
         task5.BlendFilePath = @"C:\Users\Design\Documents\Blender\Animation5.blend";

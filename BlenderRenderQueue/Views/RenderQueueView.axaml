@@ -34,8 +34,7 @@
                              HorizontalAlignment="Center"
                              VerticalAlignment="Center">
                         <suki:WaveProgress
-                            Value="{Binding OverallQueueProgressInt}">
-                        </suki:WaveProgress>
+                            Value="{Binding OverallQueueProgressInt}" />
                     </Viewbox>
                 </Border>
 
@@ -60,7 +59,7 @@
 
 
                 </StackPanel>
-                
+
                 <Grid Grid.Column="2" ColumnDefinitions="*,Auto">
 
                     <!-- 队列控制按钮 -->
@@ -177,9 +176,14 @@
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
 
                                                 <Panel Margin="0 0 8 0" VerticalAlignment="Center">
+                                                    <!-- error icon -->
                                                     <material:MaterialIcon Kind="ErrorOutline"
                                                                            Foreground="{DynamicResource SukiDangerColor}"
                                                                            IsVisible="{Binding !IsValid}" />
+                                                    <!-- loading icon -->
+                                                    <suki:Loading Width="16" Height="16" LoadingStyle="Simple"
+                                                                  IsVisible="{Binding ScenePropertiesView.IsLoading}" />
+                                                    <!--render status icon -->
                                                     <Border Width="16" Height="16"
                                                             VerticalAlignment="Top"
                                                             Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
@@ -188,26 +192,41 @@
                                                             <MultiBinding Converter="{x:Static BoolConverters.And}">
                                                                 <Binding Path="IsValid" />
                                                                 <Binding Path="Enable" />
+                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
                                                             </MultiBinding>
                                                         </Border.IsVisible>
                                                     </Border>
-
+                                                    <!--not render icon -->
                                                     <Border Width="16" Height="16"
                                                             VerticalAlignment="Top"
-                                                            IsVisible="{Binding IsValid}"
                                                             Background="{DynamicResource SukiPrimaryColor10}"
                                                             CornerRadius="8">
+                                                        <Border.IsVisible>
+                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                <Binding Path="IsValid" />
+                                                                <Binding Path="!Enable" />
+                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                            </MultiBinding>
+                                                        </Border.IsVisible>
                                                     </Border>
                                                 </Panel>
 
 
                                                 <StackPanel Grid.Column="1" Margin="8 0 0 0">
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
-
                                                         <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold"
                                                                    TextTrimming="CharacterEllipsis" />
                                                     </StackPanel>
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+
+                                                    <!-- 加载状态显示 -->
+                                                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                                                IsVisible="{Binding ScenePropertiesView.IsLoading}">
+                                                        <TextBlock Text="正在加载..." FontSize="10" Foreground="Gray" />
+                                                    </StackPanel>
+
+                                                    <!-- 正常状态显示 -->
+                                                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                                                IsVisible="{Binding !ScenePropertiesView.IsLoading}">
                                                         <!-- 场景覆写信息 -->
                                                         <TextBlock FontSize="12"
                                                                    Foreground="{DynamicResource SukiAccentColor}"
@@ -235,24 +254,31 @@
                                                             </TextBlock.IsVisible>
                                                         </TextBlock>
 
-                                                         <TextBlock FontSize="12" IsVisible="{Binding IsValid}">
-                                                             <TextBlock.Text>
-                                                                 <MultiBinding StringFormat="{}{0}-{1}">
-                                                                     <Binding Path="RealStartFrame" />
-                                                                     <Binding Path="RealEndFrame" />
-                                                                 </MultiBinding>
-                                                             </TextBlock.Text>
-                                                         </TextBlock>
+                                                        <TextBlock FontSize="12" IsVisible="{Binding IsValid}">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding StringFormat="{}{0}-{1}">
+                                                                    <Binding Path="RealStartFrame" />
+                                                                    <Binding Path="RealEndFrame" />
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
 
                                                         <TextBlock Text="文件无效" FontSize="10"
                                                                    Foreground="{DynamicResource SukiDangerColor}"
                                                                    FontWeight="Bold"
                                                                    IsVisible="{Binding IsValid, Converter={x:Static BoolConverters.Not}}" />
                                                     </StackPanel>
+
                                                     <ProgressBar Minimum="0" Maximum="1"
                                                                  Value="{Binding OverallProgress01}"
-                                                                 Height="4" Margin="0,2,0,0"
-                                                                 IsVisible="{Binding IsValid}" />
+                                                                 Height="4" Margin="0,2,0,0">
+                                                        <ProgressBar.IsVisible>
+                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                <Binding Path="IsValid" />
+                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                            </MultiBinding>
+                                                        </ProgressBar.IsVisible>
+                                                    </ProgressBar>
                                                 </StackPanel>
 
                                                 <!-- Enable ToggleSwitch -->
@@ -261,8 +287,15 @@
                                                               IsChecked="{Binding Enable}"
                                                               Margin="16,0, 0,0"
                                                               VerticalAlignment="Center"
-                                                              IsVisible="{Binding IsValid}"
-                                                              ToolTip.Tip="启用/禁用此任务" />
+                                                              ToolTip.Tip="启用/禁用此任务">
+                                                    <ToggleSwitch.IsVisible>
+                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                            <Binding Path="IsValid" />
+                                                            <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                        </MultiBinding>
+                                                    </ToggleSwitch.IsVisible>
+                                                </ToggleSwitch>
+
 
                                                 <!-- 删除按钮区域 -->
                                                 <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="4,0,0,0"
@@ -275,9 +308,16 @@
                                                         Padding="0"
                                                         VerticalAlignment="Center"
                                                         Classes="Basic Icon"
-                                                        ToolTip.Tip="删除此任务"
-                                                        IsVisible="{Binding IsPendingDeletion, Converter={x:Static conv:BoolConverters.Not}}">
+                                                        ToolTip.Tip="删除此任务">
                                                         <material:MaterialIcon Kind="Delete" Width="24" Height="24" />
+                                                        <Button.IsVisible>
+                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                <Binding Path="IsValid" />
+                                                                <Binding Path="!IsPendingDeletion" />
+                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                            </MultiBinding>
+                                                        </Button.IsVisible>
+
                                                     </Button>
 
                                                     <!-- 确认删除按钮 -->
@@ -287,9 +327,15 @@
                                                         Width="30" Height="30"
                                                         Padding="0"
                                                         VerticalAlignment="Center"
-                                                        Classes="Danger Icon"
-                                                        IsVisible="{Binding IsPendingDeletion}">
+                                                        Classes="Danger Icon">
                                                         <material:MaterialIcon Kind="Delete" Width="24" Height="24" />
+                                                        <Button.IsVisible>
+                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                <Binding Path="IsValid" />
+                                                                <Binding Path="IsPendingDeletion" />
+                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                            </MultiBinding>
+                                                        </Button.IsVisible>
                                                     </Button>
                                                 </StackPanel>
                                                 <!-- 拖拽手柄 -->

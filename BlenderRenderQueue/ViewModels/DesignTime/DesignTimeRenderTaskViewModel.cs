@@ -40,6 +40,9 @@ public class DesignTimeRenderTaskViewModel : RenderTaskViewModel
         // 设置场景属性视图
         ScenePropertiesView = new DesignTimeBlendScenePropertiesViewModel();
         
+        // 设置加载状态（设计时测试）
+        ScenePropertiesView.IsLoading = false; // 设置为 false 显示正常状态
+        
         // 设置可用场景名称
         AvailableSceneNames = new List<string> { "Scene", "Animation", "Render_Scene" };
         
