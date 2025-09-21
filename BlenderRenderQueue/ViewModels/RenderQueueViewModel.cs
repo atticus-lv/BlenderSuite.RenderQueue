@@ -634,6 +634,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.RefreshRequested += OnTaskRefreshRequested;
         task.EnableChanged += OnTaskEnableChanged;
         task.OverrideFrameRangeChanged += OnTaskOverrideFrameRangeChanged;
+        task.OverrideSceneChanged += OnTaskOverrideSceneChanged;
+        task.SceneSelectionChanged += OnTaskSceneSelectionChanged;
         task.FrameRangeChanged += OnTaskFrameRangeChanged;
         task.OpenInBlenderRequested += OnTaskOpenInBlenderRequested;
     }
@@ -645,6 +647,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.RefreshRequested -= OnTaskRefreshRequested;
         task.EnableChanged -= OnTaskEnableChanged;
         task.OverrideFrameRangeChanged -= OnTaskOverrideFrameRangeChanged;
+        task.OverrideSceneChanged -= OnTaskOverrideSceneChanged;
+        task.SceneSelectionChanged -= OnTaskSceneSelectionChanged;
         task.FrameRangeChanged -= OnTaskFrameRangeChanged;
         task.OpenInBlenderRequested -= OnTaskOpenInBlenderRequested;
     }
@@ -737,6 +741,20 @@ public partial class RenderQueueViewModel : ViewModelBase
         UpdateQueueStatistics();
 
         Console.WriteLine($"[RenderQueueViewModel] Task override frame range state changed, auto-saving data");
+    }
+
+    private void OnTaskOverrideSceneChanged(object? sender, EventArgs e)
+    {
+        // 当任务的覆写场景状态变化时，自动保存数据
+        AutoSaveQueueData();
+        Console.WriteLine($"[RenderQueueViewModel] Task override scene state changed, auto-saving data");
+    }
+
+    private void OnTaskSceneSelectionChanged(object? sender, EventArgs e)
+    {
+        // 当任务的场景选择变化时，自动保存数据
+        AutoSaveQueueData();
+        Console.WriteLine($"[RenderQueueViewModel] Task scene selection changed, auto-saving data");
     }
 
     private void OnTaskFrameRangeChanged(object? sender, EventArgs e)

@@ -189,6 +189,31 @@
                                                            Minimum="1" Maximum="100000" Width="120" />
                                         </Grid>
                                     </StackPanel>
+                                    
+                                    <CheckBox Content="覆写场景" IsChecked="{Binding OverrideScene}" />
+                                    <StackPanel IsVisible="{Binding OverrideScene}" Spacing="8" Margin="16,0,0,0">
+                                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="场景:"
+                                                       VerticalAlignment="Center" />
+                                            <ComboBox Grid.Row="0" Grid.Column="1" 
+                                                      ItemsSource="{Binding AvailableSceneNames}"
+                                                      SelectedItem="{Binding SelectedSceneName}"
+                                                      Width="200" HorizontalAlignment="Left" />
+                                        </Grid>
+                                        
+                                        <!-- 场景选择警告 -->
+                                        <Border Grid.Row="1" Grid.ColumnSpan="2" 
+                                                Background="#FFF3CD" BorderBrush="#FFEAA7" BorderThickness="1" 
+                                                CornerRadius="4" Padding="8" Margin="0,4,0,0"
+                                                IsVisible="{Binding ShowSceneOverrideWarning}">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="⚠️" FontSize="16" VerticalAlignment="Center" />
+                                                <TextBlock Text="选择的场景在当前文件中不存在，将使用默认场景渲染" 
+                                                           FontSize="12" VerticalAlignment="Center" 
+                                                           Foreground="#856404" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
                                 </StackPanel>
                             </StackPanel>
 

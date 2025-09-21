@@ -119,7 +119,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
         // 异步获取FFmpeg版本信息
         _ = Task.Run(async () => await LoadFFmpegInfoAsync(value));
-
+        
         // 设置FFmpeg路径到渲染队列
         RenderQueue.SetFFmpegPath(value);
     }

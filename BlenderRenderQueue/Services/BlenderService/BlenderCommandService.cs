@@ -11,6 +11,7 @@ public sealed class BlenderCommandService : IBlenderCommandService
 		bool animation,
 		int? startFrame = null,
 		int? endFrame = null,
+		string? sceneName = null,
 		CancellationToken cancellationToken = default)
 	{
 		// 注意：这里通过 Python 控制台环境执行，设置场景帧并调用渲染
@@ -21,14 +22,26 @@ public sealed class BlenderCommandService : IBlenderCommandService
 		sb.AppendLine($"filepath = '{normalizedPath}'");
 		sb.AppendLine("bpy.ops.wm.open_mainfile(filepath=filepath)");
 		
-		// 构建渲染命令，只有当提供了帧范围参数时才使用自定义帧范围
+		// 构建渲染命令
+		var renderCommand = $"bpy.ops.render.render(animation={(animation ? "True" : "False")}";
+		
+		// 添加帧范围参数
 		if (startFrame.HasValue && endFrame.HasValue)
 		{
-			sb.AppendLine($"bpy.ops.render.render(animation={(animation ? "True" : "False")}, start_frame={startFrame.Value}, end_frame={endFrame.Value})");
+			renderCommand += $", start_frame={startFrame.Value}, end_frame={endFrame.Value}";
+		}
+		
+		renderCommand += ")";
+		
+		// 如果指定了场景名称，使用场景覆写
+		if (!string.IsNullOrEmpty(sceneName))
+		{
+			sb.AppendLine($"with bpy.context.temp_override(scene=bpy.data.scenes['{sceneName}']):");
+			sb.AppendLine($"    {renderCommand}");
 		}
 		else
 		{
-			sb.AppendLine($"bpy.ops.render.render(animation={(animation ? "True" : "False")})");
+			sb.AppendLine(renderCommand);
 		}
 
 		await process.ExecuteScript(sb.ToString(), "render_start", cancellationToken);

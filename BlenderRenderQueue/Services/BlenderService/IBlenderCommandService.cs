@@ -10,5 +10,6 @@ public interface IBlenderCommandService
 		bool animation,
 		int? startFrame = null,
 		int? endFrame = null,
+		string? sceneName = null,
 		CancellationToken cancellationToken = default);
 } 

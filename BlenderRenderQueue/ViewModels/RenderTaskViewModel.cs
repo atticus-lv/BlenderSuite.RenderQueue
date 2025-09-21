@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -36,6 +37,12 @@ public partial class RenderTaskViewModel : ViewModelBase
     private bool _overrideFrameRange = false;
 
     [ObservableProperty]
+    private bool _overrideScene = false;
+
+    [ObservableProperty]
+    private string _selectedSceneName = string.Empty;
+
+    [ObservableProperty]
     private bool _autoStart = true;
 
     [ObservableProperty]
@@ -43,6 +50,13 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isValid = true;
+
+    // 场景覆写相关属性
+    [ObservableProperty]
+    private List<string> _availableSceneNames = new();
+    
+    public bool HasValidSceneSelection => !string.IsNullOrEmpty(SelectedSceneName) && AvailableSceneNames.Contains(SelectedSceneName);
+    public bool ShowSceneOverrideWarning => OverrideScene && !HasValidSceneSelection;
 
     partial void OnEnableChanged(bool value)
     {
@@ -104,6 +118,26 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(DisplayTotalFrames));
         // 当覆写帧范围状态变化时，触发父级保存数据
         OverrideFrameRangeChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    partial void OnOverrideSceneChanged(bool value)
+    {
+        // 触发相关属性更新
+        OnPropertyChanged(nameof(HasValidSceneSelection));
+        OnPropertyChanged(nameof(ShowSceneOverrideWarning));
+        
+        // 触发父级保存数据
+        OverrideSceneChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    partial void OnSelectedSceneNameChanged(string value)
+    {
+        // 触发相关属性更新
+        OnPropertyChanged(nameof(HasValidSceneSelection));
+        OnPropertyChanged(nameof(ShowSceneOverrideWarning));
+        
+        // 触发父级保存数据
+        SceneSelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
     [ObservableProperty]
@@ -189,6 +223,16 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// 覆写帧范围状态变化事件
     /// </summary>
     public event EventHandler? OverrideFrameRangeChanged;
+
+    /// <summary>
+    /// 覆写场景状态变化事件
+    /// </summary>
+    public event EventHandler? OverrideSceneChanged;
+
+    /// <summary>
+    /// 场景选择变化事件
+    /// </summary>
+    public event EventHandler? SceneSelectionChanged;
 
     /// <summary>
     /// 帧范围变化事件
@@ -461,10 +505,15 @@ public partial class RenderTaskViewModel : ViewModelBase
                 EnqueueLog($"[QUERY] 文件属性加载完成: 使用场景默认帧范围 {ScenePropertiesView.SceneProperties.FrameStart}..{ScenePropertiesView.SceneProperties.FrameEnd}");
             }
             
+            // 更新场景名称列表
+            AvailableSceneNames = ScenePropertiesView.SceneNames;
+            
             // 触发显示属性更新
             OnPropertyChanged(nameof(DisplayStartFrame));
             OnPropertyChanged(nameof(DisplayEndFrame));
             OnPropertyChanged(nameof(DisplayTotalFrames));
+            OnPropertyChanged(nameof(HasValidSceneSelection));
+            OnPropertyChanged(nameof(ShowSceneOverrideWarning));
         }
         catch (Exception ex)
         {
@@ -500,16 +549,26 @@ public partial class RenderTaskViewModel : ViewModelBase
             var renderTimeout = Math.Max(RenderTimeoutSeconds, 3600); // 最少60分钟
             _exe.Timeout = renderTimeout;
 
-            // 根据覆写设置决定是否传递帧范围参数
+            // 根据覆写设置决定是否传递帧范围和场景参数
+            string? sceneName = OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) ? SelectedSceneName : null;
+            
             if (OverrideFrameRange)
             {
                 EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {renderTimeout}秒)");
-                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, StartFrame, EndFrame);
+                if (sceneName != null)
+                {
+                    EnqueueLog($"使用场景覆写: {sceneName}");
+                }
+                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, StartFrame, EndFrame, sceneName);
             }
             else
             {
                 EnqueueLog($"开始渲染: 使用场景默认帧范围, animation={Animation} (无活动超时: {renderTimeout}秒)");
-                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation);
+                if (sceneName != null)
+                {
+                    EnqueueLog($"使用场景覆写: {sceneName}");
+                }
+                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, null, null, sceneName);
             }
             EnqueueLog($"渲染指令已发送完成");
         }

@@ -76,6 +76,9 @@ public class OverrideData
 {
     [JsonPropertyName("OverrideFrameRange")]
     public OverrideFrameRangeData? OverrideFrameRange { get; set; }
+
+    [JsonPropertyName("OverrideScene")]
+    public OverrideSceneData? OverrideScene { get; set; }
 }
 
 /// <summary>
@@ -88,4 +91,13 @@ public class OverrideFrameRangeData
 
     [JsonPropertyName("EndFrame")]
     public int EndFrame { get; set; } = 1;
+}
+
+/// <summary>
+/// 覆写场景数据
+/// </summary>
+public class OverrideSceneData
+{
+    [JsonPropertyName("SceneName")]
+    public string SceneName { get; set; } = string.Empty;
 }
