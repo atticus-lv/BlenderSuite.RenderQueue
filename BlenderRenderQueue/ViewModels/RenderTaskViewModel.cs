@@ -443,10 +443,17 @@ public partial class RenderTaskViewModel : ViewModelBase
             EnqueueLog("[QUERY] 开始加载文件属性...");
             await ScenePropertiesView.LoadPropertiesAsync(exeService, BlendFilePath);
 
-            // 从FileProperties获取帧范围信息
-            StartFrame = ScenePropertiesView.SceneProperties.FrameStart;
-            EndFrame = ScenePropertiesView.SceneProperties.FrameEnd;
-            EnqueueLog($"[QUERY] 文件属性加载完成: 帧范围 {StartFrame}..{EndFrame}");
+            // 只有在覆写模式下才设置帧范围，否则使用场景默认值
+            if (OverrideFrameRange)
+            {
+                // 如果当前是覆写模式，保持现有的 StartFrame 和 EndFrame 值
+                EnqueueLog($"[QUERY] 文件属性加载完成: 使用覆写帧范围 {StartFrame}..{EndFrame}");
+            }
+            else
+            {
+                // 非覆写模式，使用场景默认帧范围
+                EnqueueLog($"[QUERY] 文件属性加载完成: 使用场景默认帧范围 {ScenePropertiesView.SceneProperties.FrameStart}..{ScenePropertiesView.SceneProperties.FrameEnd}");
+            }
             
             // 触发显示属性更新
             OnPropertyChanged(nameof(DisplayStartFrame));

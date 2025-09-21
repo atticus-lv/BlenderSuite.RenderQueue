@@ -173,6 +173,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         try
         {
+            // 新任务默认不覆写帧范围，使用场景默认值
             var task = new RenderTaskViewModel(blendFilePath, 1, 1, true, false);
 
             // 自动加载文件属性
@@ -1022,8 +1023,8 @@ public partial class RenderQueueViewModel : ViewModelBase
                     {
                         Filename = Path.GetFileName(task.BlendFilePath),
                         Filepath = task.BlendFilePath,
-                        StartFrame = task.StartFrame,
-                        EndFrame = task.EndFrame,
+                        StartFrame = 1, // 默认值，实际不使用
+                        EndFrame = 1,   // 默认值，实际不使用
                         LastRenderedFrame = task.CurrentFrame,
                         Enable = task.Enable,
                         Override = task.OverrideFrameRange ? new OverrideData
@@ -1093,8 +1094,8 @@ public partial class RenderQueueViewModel : ViewModelBase
 
                 // 确定是否使用覆写帧范围
                 bool overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;
-                int startFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.StartFrame : taskInfo.StartFrame;
-                int endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : taskInfo.EndFrame;
+                int startFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.StartFrame : 1; // 默认值，将从文件读取
+                int endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : 1;   // 默认值，将从文件读取
 
                 var task = new RenderTaskViewModel(
                     taskInfo.Filepath,
