@@ -53,12 +53,12 @@ public partial class RenderQueueViewModel : ViewModelBase
     public bool IsQueueRunning => QueueState == QueueState.Running;
     public bool HasRunningTasks => ActiveTaskCount > 0;
 
-    // 帧数相关的计算属性 - 只计算启用且有效的任务，使用显示用的帧范围
-    public int TotalFrames => RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t => t.DisplayTotalFrames);
+    // 帧数相关的计算属性 - 只计算启用且有效的任务，使用实际渲染用的帧范围
+    public int TotalFrames => RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t => t.RealTotalFrames);
 
     public int CompletedFrames => RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t =>
     {
-        var totalFrames = Math.Max(0, t.DisplayTotalFrames);
+        var totalFrames = Math.Max(0, t.RealTotalFrames);
         return (int)(totalFrames * t.OverallProgress01);
     });
 

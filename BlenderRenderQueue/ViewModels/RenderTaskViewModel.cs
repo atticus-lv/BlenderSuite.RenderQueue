@@ -93,6 +93,49 @@ public partial class RenderTaskViewModel : ViewModelBase
     public int DisplayEndFrame => OverrideFrameRange ? EndFrame : ScenePropertiesView.SceneProperties.FrameEnd;
     public int DisplayTotalFrames => Math.Max(0, DisplayEndFrame - DisplayStartFrame + 1);
 
+    // 实际渲染用的帧范围属性（优先级：覆写帧范围 > 覆写场景帧范围 > 默认场景帧范围）
+    public int RealStartFrame
+    {
+        get
+        {
+            if (OverrideFrameRange)
+            {
+                return StartFrame;
+            }
+            else if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) && 
+                     ScenePropertiesView.AllScenes.ContainsKey(SelectedSceneName))
+            {
+                return ScenePropertiesView.AllScenes[SelectedSceneName].FrameStart;
+            }
+            else
+            {
+                return ScenePropertiesView.SceneProperties.FrameStart;
+            }
+        }
+    }
+
+    public int RealEndFrame
+    {
+        get
+        {
+            if (OverrideFrameRange)
+            {
+                return EndFrame;
+            }
+            else if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) && 
+                     ScenePropertiesView.AllScenes.ContainsKey(SelectedSceneName))
+            {
+                return ScenePropertiesView.AllScenes[SelectedSceneName].FrameEnd;
+            }
+            else
+            {
+                return ScenePropertiesView.SceneProperties.FrameEnd;
+            }
+        }
+    }
+
+    public int RealTotalFrames => Math.Max(0, RealEndFrame - RealStartFrame + 1);
+
     partial void OnStartFrameChanged(int value)
     {
         OnPropertyChanged(nameof(TotalFrames));
@@ -116,6 +159,9 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(DisplayStartFrame));
         OnPropertyChanged(nameof(DisplayEndFrame));
         OnPropertyChanged(nameof(DisplayTotalFrames));
+        OnPropertyChanged(nameof(RealStartFrame));
+        OnPropertyChanged(nameof(RealEndFrame));
+        OnPropertyChanged(nameof(RealTotalFrames));
         // 当覆写帧范围状态变化时，触发父级保存数据
         OverrideFrameRangeChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -125,6 +171,9 @@ public partial class RenderTaskViewModel : ViewModelBase
         // 触发相关属性更新
         OnPropertyChanged(nameof(HasValidSceneSelection));
         OnPropertyChanged(nameof(ShowSceneOverrideWarning));
+        OnPropertyChanged(nameof(RealStartFrame));
+        OnPropertyChanged(nameof(RealEndFrame));
+        OnPropertyChanged(nameof(RealTotalFrames));
         
         // 触发父级保存数据
         OverrideSceneChanged?.Invoke(this, EventArgs.Empty);
@@ -135,6 +184,9 @@ public partial class RenderTaskViewModel : ViewModelBase
         // 触发相关属性更新
         OnPropertyChanged(nameof(HasValidSceneSelection));
         OnPropertyChanged(nameof(ShowSceneOverrideWarning));
+        OnPropertyChanged(nameof(RealStartFrame));
+        OnPropertyChanged(nameof(RealEndFrame));
+        OnPropertyChanged(nameof(RealTotalFrames));
         
         // 触发父级保存数据
         SceneSelectionChanged?.Invoke(this, EventArgs.Empty);

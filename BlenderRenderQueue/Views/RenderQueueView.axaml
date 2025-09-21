@@ -227,14 +227,14 @@
                                                             </TextBlock.IsVisible>
                                                         </TextBlock>
 
-                                                        <TextBlock FontSize="12" IsVisible="{Binding IsValid}">
-                                                            <TextBlock.Text>
-                                                                <MultiBinding StringFormat="{}{0}-{1}">
-                                                                    <Binding Path="DisplayStartFrame" />
-                                                                    <Binding Path="DisplayEndFrame" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
+                                                         <TextBlock FontSize="12" IsVisible="{Binding IsValid}">
+                                                             <TextBlock.Text>
+                                                                 <MultiBinding StringFormat="{}{0}-{1}">
+                                                                     <Binding Path="RealStartFrame" />
+                                                                     <Binding Path="RealEndFrame" />
+                                                                 </MultiBinding>
+                                                             </TextBlock.Text>
+                                                         </TextBlock>
 
                                                         <TextBlock Text="文件无效" FontSize="10"
                                                                    Foreground="{DynamicResource SukiDangerColor}"
