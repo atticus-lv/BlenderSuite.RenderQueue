@@ -5,7 +5,8 @@
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:design="clr-namespace:BlenderRenderQueue.ViewModels.DesignTime"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
-             mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="200"
+
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
              x:Class="BlenderRenderQueue.Views.RenderTaskProgressPreviewView"
              x:DataType="vm:RenderTaskViewModel">
 
@@ -22,6 +23,7 @@
                 VerticalAlignment="Center"
                 ClipToBounds="True">
             <Grid>
+                
                 <!-- 渲染图片 (优先显示) -->
                 <Border CornerRadius="8" ClipToBounds="True">
                     <Image Source="{Binding RenderedImage}"
@@ -48,49 +50,43 @@
                     <TextBlock Text="等待图像..." FontSize="8" HorizontalAlignment="Center"
                                Foreground="#666" Margin="0,2,0,0" />
                 </StackPanel>
+                
+                <TextBlock
+                    Text="{Binding CurrentFrame, StringFormat='帧: {0}'}" Margin="2"
+                    FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
             </Grid>
         </Border>
-        
+
         <!-- 进度信息区域 -->
-        <StackPanel Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Spacing="4">
+        <StackPanel Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Spacing="4" >
             <!-- 总体进度 -->
-            <Grid ColumnDefinitions="Auto,8,*" RowDefinitions="Auto">
-                <TextBlock Grid.Row="0" Grid.Column="0"
-                           VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
-                           MinWidth="60">
-                    <TextBlock.Text>
-                        <MultiBinding StringFormat="{}进度: {0}/{1}">
-                            <Binding Path="CompletedFrames" />
-                            <Binding Path="RealTotalFrames" />
-                        </MultiBinding>
-                    </TextBlock.Text>
-                </TextBlock>
-                <ProgressBar Grid.Row="0" Grid.Column="2"
-                             Minimum="0" Maximum="1"
-                             Value="{Binding OverallProgress01}"
-                             Height="16" VerticalAlignment="Center" />
-            </Grid>
             <TextBlock
-                Text="{Binding CurrentFrame, StringFormat='帧: {0}'}"
                 VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
-                MinWidth="60" />
+                MinWidth="60">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="{}进度: {0}/{1}">
+                        <Binding Path="CompletedFrames" />
+                        <Binding Path="RealTotalFrames" />
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+            <ProgressBar
+                Minimum="0" Maximum="1" MaxWidth="200"
+                Value="{Binding OverallProgress01}" ShowProgressText="False"
+                Height="16" HorizontalAlignment="Left" />
+
             <!-- 当前帧 -->
-            <Grid ColumnDefinitions="Auto,8,*" RowDefinitions="Auto">
-                <!-- 采样信息 -->
-                <Grid ColumnDefinitions="Auto,8,*" RowDefinitions="Auto">
-                    <TextBlock Grid.Row="0" Grid.Column="0"
-                               Text="采样:"
-                               VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
-                               MinWidth="60" />
-                    <TextBlock Grid.Row="0" Grid.Column="2"
-                               Text="{Binding SampleText}"
-                               VerticalAlignment="Center" FontSize="12" />
-                </Grid>
-                <ProgressBar Grid.Row="0" Grid.Column="2"
-                             Minimum="0" Maximum="1"
-                             Value="{Binding Progress01}"
-                             Height="16" VerticalAlignment="Center" />
+            <Grid ColumnDefinitions="Auto,8,Auto" RowDefinitions="Auto">
+                <TextBlock Grid.Row="0" Grid.Column="0" FontWeight="Bold"
+                           Text="{Binding SampleText,StringFormat=采样: {0}}"
+                           FontSize="12" />
             </Grid>
+            <ProgressBar MaxWidth="200"
+                         Minimum="0" Maximum="1"
+                         Value="{Binding Progress01}"
+                         ShowProgressText="False"
+                         Height="16"
+                         HorizontalAlignment="Left" />
 
 
         </StackPanel>
