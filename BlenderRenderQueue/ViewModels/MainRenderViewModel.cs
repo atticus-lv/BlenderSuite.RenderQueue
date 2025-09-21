@@ -1,14 +1,15 @@
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using Avalonia.Threading;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
-using Avalonia.Platform.Storage;
-using System.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using SukiUI.Dialogs;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -24,10 +25,10 @@ public partial class MainRenderViewModel : ViewModelBase
     private RenderQueueViewModel _renderQueue = new();
 
     [ObservableProperty]
-    private bool _isBlenderPathValid = false;
+    private bool _isBlenderPathValid;
 
     [ObservableProperty]
-    private bool _isFFmpegPathValid = false;
+    private bool _isFFmpegPathValid;
 
     [ObservableProperty]
     private string _blenderVersion = string.Empty;
@@ -48,14 +49,16 @@ public partial class MainRenderViewModel : ViewModelBase
     private string _statusMessage = "就绪";
 
     [ObservableProperty]
-    private bool _isLoadingBlenderInfo = false;
+    private bool _isLoadingBlenderInfo;
 
     [ObservableProperty]
-    private bool _isLoadingFFmpegInfo = false;
+    private bool _isLoadingFFmpegInfo;
+
 
     // 内部状态
     private BlenderExeService? _blenderService;
     private CancellationTokenSource? _versionCts;
+    private SettingsViewModel? _settingsViewModel;
 
     public MainRenderViewModel()
     {
@@ -63,6 +66,13 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.QueueStatusChanged += OnQueueStatusChanged;
         RenderQueue.TaskCompleted += OnTaskCompleted;
         RenderQueue.StatusMessageChanged += OnRenderQueueStatusMessageChanged;
+        RenderQueue.ConfirmDialogRequested += OnConfirmDialogRequested;
+
+        // 初始化设置并检测路径
+        InitializeSettings();
+
+        // 异步加载保存的数据
+        _ = Task.Run(async () => await LoadSavedDataAsync());
     }
 
     partial void OnBlenderPathChanged(string value)
@@ -99,7 +109,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
         // 异步获取FFmpeg版本信息
         _ = Task.Run(async () => await LoadFFmpegInfoAsync(value));
-        
+
         // 设置FFmpeg路径到渲染队列
         RenderQueue.SetFFmpegPath(value);
     }
@@ -117,7 +127,7 @@ public partial class MainRenderViewModel : ViewModelBase
             if (cancellationToken.IsCancellationRequested) return;
 
             // 更新UI线程上的属性
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Post(() =>
             {
                 BlenderVersion = info.Version;
                 BlenderPlatform = info.Platform;
@@ -134,14 +144,12 @@ public partial class MainRenderViewModel : ViewModelBase
         catch (Exception ex)
         {
             if (!cancellationToken.IsCancellationRequested)
-            {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                Dispatcher.UIThread.Post(() =>
                 {
                     IsLoadingBlenderInfo = false;
                     StatusMessage = $"加载Blender信息失败: {ex.Message}";
                     ClearBlenderInfo();
                 });
-            }
         }
     }
 
@@ -152,9 +160,9 @@ public partial class MainRenderViewModel : ViewModelBase
             IsLoadingFFmpegInfo = true;
             StatusMessage = "正在加载FFmpeg信息...";
 
-            var process = new System.Diagnostics.Process
+            var process = new Process
             {
-                StartInfo = new System.Diagnostics.ProcessStartInfo
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = ffmpegPath,
                     Arguments = "-version",
@@ -177,7 +185,7 @@ public partial class MainRenderViewModel : ViewModelBase
                 if (!string.IsNullOrEmpty(versionLine))
                 {
                     var version = versionLine.Split(' ')[2]; // 提取版本号
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    Dispatcher.UIThread.Post(() =>
                     {
                         FfmpegVersion = version;
                         IsLoadingFFmpegInfo = false;
@@ -188,7 +196,7 @@ public partial class MainRenderViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Post(() =>
             {
                 IsLoadingFFmpegInfo = false;
                 StatusMessage = $"加载FFmpeg信息失败: {ex.Message}";
@@ -205,7 +213,153 @@ public partial class MainRenderViewModel : ViewModelBase
         BlenderHash = string.Empty;
     }
 
+    private void InitializeSettings()
+    {
+        _settingsViewModel = new SettingsViewModel();
 
+        // 订阅设置变化事件
+        _settingsViewModel.SettingsChanged += OnSettingsChanged;
+        _settingsViewModel.InitializationCompleted += OnInitializationCompleted;
+
+        // 开始初始化检测
+        _settingsViewModel.StartInitialization();
+    }
+
+    private void OnInitializationCompleted(object? sender, InitializationCompletedEventArgs e)
+    {
+        // 如果检测失败，自动弹出设置对话框
+        if (!e.IsBlenderDetected || !e.IsFFmpegDetected)
+            ShowSettingsDialog();
+        else
+            // 检测成功，直接应用设置
+            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.FfmpegPath);
+    }
+
+    [RelayCommand]
+    private void OpenSettings()
+    {
+        ShowSettingsDialog();
+    }
+
+    private void ShowSettingsDialog()
+    {
+        // 确保设置ViewModel存在
+        if (_settingsViewModel == null) InitializeSettings();
+
+        // 使用 ToplevelService 获取顶层窗口的 DialogManager
+        var dialogManager = GetDialogManager();
+        if (dialogManager != null)
+            dialogManager.CreateDialog()
+                .WithTitle("设置")
+                .WithContent(_settingsViewModel!)
+                .WithActionButton("保存", _ => { _settingsViewModel!.SaveSettingsCommand.Execute(null); }, true)
+                .WithActionButton("取消", _ => { }, true)
+                .Dismiss().ByClickingBackground()
+                .TryShow();
+    }
+
+    private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
+    {
+        ApplySettings(e.BlenderPath, e.FfmpegPath);
+    }
+
+    private void ApplySettings(string blenderPath, string ffmpegPath)
+    {
+        BlenderPath = blenderPath;
+        FfmpegPath = ffmpegPath;
+    }
+
+    /// <summary>
+    ///     通过 ToplevelService 获取顶层窗口的 DialogManager
+    /// </summary>
+    private ISukiDialogManager? GetDialogManager()
+    {
+        try
+        {
+            // 通过 ToplevelService 获取当前 ViewModel 对应的 Visual
+            var visual = ToplevelService.GetVisualForContext(this);
+            if (visual == null) return null;
+
+            // 获取顶层窗口
+            var topLevel = ToplevelService.GetTopLevelForContext(this);
+            if (topLevel == null) return null;
+
+            // 获取顶层窗口的 DataContext (应该是 MainWindowViewModel)
+            if (topLevel.DataContext is MainWindowViewModel mainWindowViewModel)
+                return mainWindowViewModel.DialogManager;
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainRenderViewModel] Error getting DialogManager: {ex.Message}");
+            return null;
+        }
+    }
+
+    private void OnConfirmDialogRequested(object? sender, ConfirmDialogRequestedEventArgs e)
+    {
+        // 使用 ToplevelService 获取顶层窗口的 DialogManager
+        var dialogManager = GetDialogManager();
+        if (dialogManager != null)
+            dialogManager.CreateDialog()
+                .WithTitle(e.Title)
+                .WithContent(e.Content)
+                .WithActionButton(e.CancelButtonText, _ => { }, true)
+                .WithActionButton(e.ConfirmButtonText, _ => e.ConfirmAction(), true, "Flat", "Danger")
+                .TryShow();
+    }
+
+    /// <summary>
+    ///     加载保存的数据
+    /// </summary>
+    private async Task LoadSavedDataAsync()
+    {
+        try
+        {
+            Console.WriteLine("[MainRenderViewModel] Starting to load saved data...");
+
+            // 等待设置初始化完成
+            await Task.Delay(1000);
+
+            // 加载设置
+            if (_settingsViewModel != null) await _settingsViewModel.LoadSettingsFromFileAsync();
+
+            // 等待BlenderService初始化完成后再加载队列数据
+            Console.WriteLine("[MainRenderViewModel] Waiting for BlenderService initialization...");
+
+            // 等待BlenderService初始化（最多等待10秒）
+            var maxWaitTime = TimeSpan.FromSeconds(10);
+            var startTime = DateTime.UtcNow;
+
+            while (DateTime.UtcNow - startTime < maxWaitTime)
+            {
+                // 检查BlenderService是否已初始化
+                if (RenderQueue.IsBlenderServiceReady())
+                {
+                    Console.WriteLine("[MainRenderViewModel] BlenderService is ready, loading queue data...");
+                    await RenderQueue.LoadQueueDataAsync();
+                    break;
+                }
+
+                await Task.Delay(500); // 每500ms检查一次
+            }
+
+            // 如果超时，仍然尝试加载队列数据（但可能没有BlenderService）
+            if (DateTime.UtcNow - startTime >= maxWaitTime)
+            {
+                Console.WriteLine(
+                    "[MainRenderViewModel] ⚠️ BlenderService initialization timeout, loading queue data anyway...");
+                await RenderQueue.LoadQueueDataAsync();
+            }
+
+            Console.WriteLine("[MainRenderViewModel] ✅ Saved data loaded successfully");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainRenderViewModel] ❌ Error loading saved data: {ex.Message}");
+        }
+    }
 
 
     private void OnQueueStatusChanged(object? sender, QueueStatusChangedEventArgs e)
@@ -254,6 +408,13 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.QueueStatusChanged -= OnQueueStatusChanged;
         RenderQueue.TaskCompleted -= OnTaskCompleted;
         RenderQueue.StatusMessageChanged -= OnRenderQueueStatusMessageChanged;
+        RenderQueue.ConfirmDialogRequested -= OnConfirmDialogRequested;
+
+        if (_settingsViewModel != null)
+        {
+            _settingsViewModel.SettingsChanged -= OnSettingsChanged;
+            _settingsViewModel.InitializationCompleted -= OnInitializationCompleted;
+        }
 
         RenderQueue.Dispose();
         _blenderService?.Dispose();
