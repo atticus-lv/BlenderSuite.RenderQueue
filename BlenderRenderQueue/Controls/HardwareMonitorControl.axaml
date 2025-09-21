@@ -16,7 +16,7 @@
                     <suki:WaveProgress Value="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad }"></suki:WaveProgress>
                 </Viewbox>
             </Border>
-            <TextBlock Text="CPU" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold" />
+            <TextBlock Text="CPU" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"  FontSize="18"/>
             <!-- <TextBlock -->
             <!--     Text="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad, StringFormat={}{0:F1}%}" -->
             <!--     VerticalAlignment="Center" /> -->
@@ -43,7 +43,7 @@
                 </Viewbox>
             </Border>
             
-            <TextBlock Text="GPU" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+            <TextBlock Text="GPU" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold" FontSize="18"/>
 
             <!-- <TextBlock Text="温度:" Grid.Row="1" Grid.Column="0" Margin="0,0,10,0" /> -->
             <!-- <TextBlock Text="{Binding $parent[controls:HardwareMonitorControl].GpuTemperature, StringFormat={}{0:F1}°C}" /> -->
