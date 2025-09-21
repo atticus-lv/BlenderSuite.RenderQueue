@@ -15,6 +15,7 @@ using System.Globalization;
 using BlenderRenderQueue.Models;
 using Avalonia.Media.Imaging;
 using System.IO;
+using System.Linq;
 using BlenderRenderQueue.Views;
 
 namespace BlenderRenderQueue.ViewModels;
@@ -54,8 +55,10 @@ public partial class RenderTaskViewModel : ViewModelBase
     // 场景覆写相关属性
     [ObservableProperty]
     private List<string> _availableSceneNames = new();
-    
-    public bool HasValidSceneSelection => !string.IsNullOrEmpty(SelectedSceneName) && AvailableSceneNames.Contains(SelectedSceneName);
+
+    public bool HasValidSceneSelection =>
+        !string.IsNullOrEmpty(SelectedSceneName) && AvailableSceneNames.Contains(SelectedSceneName);
+
     public bool ShowSceneOverrideWarning => OverrideScene && !HasValidSceneSelection;
 
     partial void OnEnableChanged(bool value)
@@ -102,7 +105,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 return StartFrame;
             }
-            else if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) && 
+            else if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) &&
                      ScenePropertiesView.AllScenes.ContainsKey(SelectedSceneName))
             {
                 return ScenePropertiesView.AllScenes[SelectedSceneName].FrameStart;
@@ -122,7 +125,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 return EndFrame;
             }
-            else if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) && 
+            else if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) &&
                      ScenePropertiesView.AllScenes.ContainsKey(SelectedSceneName))
             {
                 return ScenePropertiesView.AllScenes[SelectedSceneName].FrameEnd;
@@ -174,7 +177,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(RealStartFrame));
         OnPropertyChanged(nameof(RealEndFrame));
         OnPropertyChanged(nameof(RealTotalFrames));
-        
+
         // 触发父级保存数据
         OverrideSceneChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -187,7 +190,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(RealStartFrame));
         OnPropertyChanged(nameof(RealEndFrame));
         OnPropertyChanged(nameof(RealTotalFrames));
-        
+
         // 触发父级保存数据
         SceneSelectionChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -246,7 +249,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         try
         {
             EnqueueLog("[INFO] Requesting task refresh...");
-            
+
             // 触发事件，请求父级刷新任务
             RefreshRequested?.Invoke(this, EventArgs.Empty);
         }
@@ -336,7 +339,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private DateTime _lastFlushTime = DateTime.MinValue;
     private const int MinFlushIntervalMs = 50;
     private const int MaxBatchSize = 100;
-    
+
     // 心跳检查相关
     private DateTime _lastActivityTime = DateTime.UtcNow;
 
@@ -353,7 +356,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         _logTimer.Start();
     }
 
-    public RenderTaskViewModel(string blendFilePath, int startFrame, int endFrame, bool animation = true, bool overrideFrameRange = false) : this()
+    public RenderTaskViewModel(string blendFilePath, int startFrame, int endFrame, bool animation = true,
+        bool overrideFrameRange = false) : this()
     {
         BlendFilePath = blendFilePath;
         StartFrame = startFrame;
@@ -364,8 +368,10 @@ public partial class RenderTaskViewModel : ViewModelBase
         // 检查文件有效性
         IsValid = !string.IsNullOrEmpty(blendFilePath) && File.Exists(blendFilePath);
 
-        Console.WriteLine($"[RenderTaskViewModel] Constructor - File: {Path.GetFileName(blendFilePath)}, IsValid: {IsValid}");
-        Console.WriteLine($"[RenderTaskViewModel] Initial ScenePropertiesView state - IsLoading: {ScenePropertiesView.IsLoading}, IsLoaded: {ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {ScenePropertiesView.ShowEmptyState}");
+        Console.WriteLine(
+            $"[RenderTaskViewModel] Constructor - File: {Path.GetFileName(blendFilePath)}, IsValid: {IsValid}");
+        Console.WriteLine(
+            $"[RenderTaskViewModel] Initial ScenePropertiesView state - IsLoading: {ScenePropertiesView.IsLoading}, IsLoaded: {ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {ScenePropertiesView.ShowEmptyState}");
 
         // 加载文件信息
         LoadFileInfo();
@@ -554,18 +560,20 @@ public partial class RenderTaskViewModel : ViewModelBase
             else
             {
                 // 非覆写模式，使用场景默认帧范围
-                EnqueueLog($"[QUERY] 文件属性加载完成: 使用场景默认帧范围 {ScenePropertiesView.SceneProperties.FrameStart}..{ScenePropertiesView.SceneProperties.FrameEnd}");
+                EnqueueLog(
+                    $"[QUERY] 文件属性加载完成: 使用场景默认帧范围 {ScenePropertiesView.SceneProperties.FrameStart}..{ScenePropertiesView.SceneProperties.FrameEnd}");
             }
-            
-            // 更新场景名称列表
-            AvailableSceneNames = ScenePropertiesView.SceneNames;
-            
+
+            // 更新场景名称列表, 排除默认场景
+            AvailableSceneNames = ScenePropertiesView.SceneNames.Where(s => s != ScenePropertiesView.ActiveSceneName)
+                .ToList();
+
             // 如果没有覆写场景，设置默认场景名称
             if (!OverrideScene && string.IsNullOrEmpty(SelectedSceneName))
             {
                 SelectedSceneName = ScenePropertiesView.ActiveSceneName;
             }
-            
+
             // 触发显示属性更新
             OnPropertyChanged(nameof(DisplayStartFrame));
             OnPropertyChanged(nameof(DisplayEndFrame));
@@ -609,7 +617,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             // 根据覆写设置决定是否传递帧范围和场景参数
             string? sceneName = OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) ? SelectedSceneName : null;
-            
+
             if (OverrideFrameRange)
             {
                 EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {renderTimeout}秒)");
@@ -617,6 +625,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 {
                     EnqueueLog($"使用场景覆写: {sceneName}");
                 }
+
                 await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, StartFrame, EndFrame, sceneName);
             }
             else
@@ -626,8 +635,10 @@ public partial class RenderTaskViewModel : ViewModelBase
                 {
                     EnqueueLog($"使用场景覆写: {sceneName}");
                 }
+
                 await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, null, null, sceneName);
             }
+
             EnqueueLog($"渲染指令已发送完成");
         }
         catch (TaskCanceledException ex)
@@ -732,7 +743,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private void HandleRawError(string line)
     {
         EnqueueLog($"[ERR] {line}");
-        
+
         // 检查是否是超时错误，如果是，不要立即设置为失败状态
         if (line.Contains("操作超时") && line.Contains("render"))
         {
@@ -740,7 +751,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             EnqueueLog("[INFO] 检测到渲染超时，但渲染进程可能仍在继续...");
             return;
         }
-        
+
         // 其他错误仍然会触发RenderError事件
     }
 
