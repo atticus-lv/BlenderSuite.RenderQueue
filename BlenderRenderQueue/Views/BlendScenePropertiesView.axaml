@@ -3,10 +3,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:BlenderRenderQueue.ViewModels"
+             xmlns:design="using:BlenderRenderQueue.ViewModels.DesignTime"
              xmlns:conv="using:Avalonia.Data.Converters"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Views.BlendScenePropertiesView"
              x:DataType="vm:BlendScenePropertiesViewModel">
+
+    <Design.DataContext>
+        <design:DesignTimeBlendScenePropertiesViewModel />
+    </Design.DataContext>
 
     <Grid RowDefinitions="Auto,*">
         <!-- 内容区域 -->

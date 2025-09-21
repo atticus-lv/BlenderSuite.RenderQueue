@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
+             xmlns:design="clr-namespace:BlenderRenderQueue.ViewModels.DesignTime"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
@@ -11,10 +12,14 @@
              xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
              xmlns:behaviors="clr-namespace:BlenderRenderQueue.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
-             mc:Ignorable="d"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
              x:DataType="viewModels:RenderQueueViewModel"
              services1:ToplevelService.Register="{Binding}">
+
+    <Design.DataContext>
+        <design:DesignTimeRenderQueueViewModel />
+    </Design.DataContext>
 
 
     <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">

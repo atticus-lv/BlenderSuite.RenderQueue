@@ -3,12 +3,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
+             xmlns:design="clr-namespace:BlenderRenderQueue.ViewModels.DesignTime"
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-             mc:Ignorable="d"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BlenderRenderQueue.Views.RenderTaskView"
              x:DataType="vm:RenderTaskViewModel">
+
+    <Design.DataContext>
+        <design:DesignTimeRenderTaskViewModel />
+    </Design.DataContext>
 
 
     <Grid>
