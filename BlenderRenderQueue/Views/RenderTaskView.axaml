@@ -68,43 +68,8 @@
 
             <Grid ColumnDefinitions="Auto,8,*">
                 <suki:GlassCard>
-                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
-                        <!-- 预览图区域 -->
-                        <views:RenderTaskProgressPreviewView Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" 
-                                                    Margin="0 8 16 8" />
-                        <!-- 任务进度 -->
-
-                        <TextBlock Grid.Row="0" Grid.Column="2"
-                                   VerticalAlignment="Center" FontWeight="Bold" MinWidth="80">
-                            <TextBlock.Text>
-                                <MultiBinding StringFormat="{}进度: {0}/{1} ">
-                                    <Binding Path="CompletedFrames" />
-                                    <Binding Path="RealTotalFrames" />
-                                </MultiBinding>
-                            </TextBlock.Text>
-                        </TextBlock>
-                        <ProgressBar Grid.Row="0" Grid.Column="3" Minimum="0" Maximum="1"
-                                     ShowProgressText="False"
-                                     Value="{Binding OverallProgress01}"
-                                     Height="20" Margin="0,0,8,0" />
-
-                        <!-- 当前帧进度 -->
-                        <TextBlock Grid.Row="1" Grid.Column="2"
-                                   Text="{Binding CurrentFrame, StringFormat='当前帧: {0}'}"
-                                   VerticalAlignment="Center" FontWeight="Bold" />
-                        <ProgressBar Grid.Row="1" Grid.Column="3" Minimum="0" Maximum="1"
-                                     Value="{Binding Progress01}" Height="20"
-                                     ShowProgressText="False" Margin="0,0,8,0" />
-
-                        <!-- 采样信息 -->
-                        <TextBlock Grid.Row="2" Grid.Column="2" Text="采样:"
-                                   VerticalAlignment="Center" FontWeight="Bold" />
-                        <TextBlock Grid.Row="2" Grid.Column="3"
-                                   Text="{Binding SampleText}"
-                                   VerticalAlignment="Center" Margin="0,0,8,0" />
-
-
-                    </Grid>
+                    <views:RenderTaskProgressPreviewView Margin="0 8 16 8" />
+                                                         
                 </suki:GlassCard>
                 <suki:GlassCard Grid.Column="2">
                     <StackPanel>

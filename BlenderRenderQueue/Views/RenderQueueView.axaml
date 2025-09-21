@@ -39,7 +39,6 @@
 
                         </Grid>
                     </Border>
-
                     <StackPanel Grid.Column="1" Margin="24 0 0 0" VerticalAlignment="Center">
                         <!-- 进度信息 -->
                         <StackPanel Spacing="4"
@@ -76,6 +75,9 @@
 
 
                     </StackPanel>
+                    <views:RenderTaskProgressPreviewView DataContext="{Binding CurrentRenderingTask}"
+                                                         IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                                         Margin="16  0 " />
                 </StackPanel>
             </suki:GlassCard>
             <!-- 队列统计信息 -->

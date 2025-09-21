@@ -23,6 +23,9 @@ public partial class RenderQueueViewModel : ViewModelBase
     private RenderTaskViewModel? _selectedTask;
 
     [ObservableProperty]
+    private RenderTaskViewModel? _currentRenderingTask;
+
+    [ObservableProperty]
     private QueueState _queueState = QueueState.Idle;
 
     [ObservableProperty]
@@ -516,6 +519,9 @@ public partial class RenderQueueViewModel : ViewModelBase
         QueueStatusText = "队列已停止";
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已停止"));
 
+        // 清除当前渲染任务
+        CurrentRenderingTask = null;
+
         // 停止剩余时间更新定时器
         _remainingTimeTimer?.Stop();
         
@@ -705,8 +711,13 @@ public partial class RenderQueueViewModel : ViewModelBase
             RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid);
         if (pendingTask == null)
         {
+            // 没有更多任务，清除当前渲染任务
+            CurrentRenderingTask = null;
             return;
         }
+
+        // 设置当前渲染任务
+        CurrentRenderingTask = pendingTask;
 
         var taskCopy = pendingTask; // 避免闭包问题
         var runningTask = Task.Run(async () =>
