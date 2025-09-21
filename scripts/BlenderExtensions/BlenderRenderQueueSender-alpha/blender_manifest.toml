@@ -1,11 +1,11 @@
 schema_version = "1.0.0"
 
-id = "BlenderRenderQueueSender-alpha"
+id = "BlenderRenderQueueSender"
 type = "add-on"
 version = "0.1.0"
 
 name = "Blender RenderQueue Sender"
-tagline = ""
+tagline = "Blender RenderQueue Sender"
 maintainer = "Atticus"
 copyright = ["2025 Atticus", ]
 
