@@ -57,6 +57,12 @@ public class FFmpegService : IFFmpegService
                 throw new InvalidOperationException($"在目录 {inputDirectory} 中未找到支持的图片文件 (PNG, JPG, JPEG, BMP, TIFF, TGA)");
             }
 
+            // 获取总帧数，用于计算百分比
+            var totalFrames = imageFiles.Length;
+            
+            // 计算视频总时长（秒）
+            var totalDuration = TimeSpan.FromSeconds(totalFrames / fps);
+
             // 确保输出目录存在
             var outputDir = Path.GetDirectoryName(outputVideoPath);
             if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
@@ -93,7 +99,12 @@ public class FFmpegService : IFFmpegService
                             .WithVideoCodec(VideoCodec.LibX265)
                             .WithVideoBitrate(20000))
                         .CancellableThrough(cancellationToken)
-                        .NotifyOnProgress(progress => progressCallback?.Invoke(progress), TimeSpan.FromSeconds(1))
+                        .NotifyOnProgress(progress => 
+                        {
+                            // 调试：输出原始进度值
+                            Console.WriteLine($"[FFmpegService] Progress: {progress:F2}%");
+                            progressCallback?.Invoke(progress);
+                        }, totalDuration)
                         .ProcessAsynchronously();
                 }
                 finally
@@ -118,7 +129,12 @@ public class FFmpegService : IFFmpegService
                         .WithVideoCodec(VideoCodec.LibX265)
                         .WithVideoBitrate(20000))
                     .CancellableThrough(cancellationToken)
-                    .NotifyOnProgress(progress => progressCallback?.Invoke(progress), TimeSpan.FromSeconds(1))
+                    .NotifyOnProgress(progress => 
+                    {
+                        // 调试：输出原始进度值
+                        Console.WriteLine($"[FFmpegService] Progress: {progress:F2}%");
+                        progressCallback?.Invoke(progress);
+                    }, totalDuration)
                     .ProcessAsynchronously();
             }
 

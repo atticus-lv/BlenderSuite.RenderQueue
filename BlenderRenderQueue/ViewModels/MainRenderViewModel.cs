@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
 using BlenderRenderQueue.Services;
@@ -62,6 +63,10 @@ public partial class MainRenderViewModel : ViewModelBase
     private BlenderExeService? _blenderService;
     private CancellationTokenSource? _versionCts;
     private SettingsViewModel? _settingsViewModel;
+    
+    // 视频生成进度 Toast 相关
+    private ISukiToast? _videoGenerationToast;
+    private ProgressBar? _videoGenerationProgressBar;
 
     public MainRenderViewModel()
     {
@@ -355,6 +360,86 @@ public partial class MainRenderViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// 显示视频生成进度 Toast
+    /// </summary>
+    private void ShowVideoGenerationProgressToast()
+    {
+        try
+        {
+            var toastManager = GetToastManager();
+            if (toastManager != null)
+            {
+                // 创建进度条
+                _videoGenerationProgressBar = new ProgressBar 
+                { 
+                    Value = 0, 
+                    ShowProgressText = true,
+                    Minimum = 0,
+                    Maximum = 100
+                };
+
+                // 创建进度 Toast
+                _videoGenerationToast = toastManager.CreateToast()
+                    .WithTitle("正在生成视频...")
+                    .WithContent(_videoGenerationProgressBar)
+                    .OfType(NotificationType.Information)
+                    .Queue();
+
+                // 订阅渲染队列的进度更新事件
+                RenderQueue.PropertyChanged += OnRenderQueueProgressChanged;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainRenderViewModel] Error showing video generation progress toast: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 监听渲染队列进度变化，更新 Toast 进度条
+    /// </summary>
+    private void OnRenderQueueProgressChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(RenderQueueViewModel.VideoGenerationProgress) && 
+            _videoGenerationProgressBar != null)
+        {
+            Dispatcher.UIThread.Invoke(() =>
+            {
+                // FFmpegService 已经将帧数转换为百分比 (0-100)，直接使用
+                _videoGenerationProgressBar.Value = RenderQueue.VideoGenerationProgress;
+            });
+        }
+    }
+
+    /// <summary>
+    /// 关闭视频生成进度 Toast
+    /// </summary>
+    private void DismissVideoGenerationToast()
+    {
+        try
+        {
+            if (_videoGenerationToast != null)
+            {
+                var toastManager = GetToastManager();
+                toastManager?.Dismiss(_videoGenerationToast);
+                _videoGenerationToast = null;
+            }
+
+            if (_videoGenerationProgressBar != null)
+            {
+                _videoGenerationProgressBar = null;
+            }
+
+            // 取消订阅进度更新事件
+            RenderQueue.PropertyChanged -= OnRenderQueueProgressChanged;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainRenderViewModel] Error dismissing video generation toast: {ex.Message}");
+        }
+    }
+
     private void OnConfirmDialogRequested(object? sender, ConfirmDialogRequestedEventArgs e)
     {
         // 使用 ToplevelService 获取顶层窗口的 DialogManager
@@ -427,14 +512,16 @@ public partial class MainRenderViewModel : ViewModelBase
         // 检查是否是视频生成相关的状态消息，显示 Toast 提示
         if (e.StatusMessage.Contains("开始生成视频"))
         {
-            ShowToast("开始生成视频", "正在处理图片序列，请稍候...", NotificationType.Information);
+            ShowVideoGenerationProgressToast();
         }
         else if (e.StatusMessage.Contains("视频生成完成"))
         {
+            DismissVideoGenerationToast();
             ShowToast("视频生成完成", "视频已成功生成！", NotificationType.Success);
         }
         else if (e.StatusMessage.Contains("视频生成失败") || e.StatusMessage.Contains("生成视频时出错"))
         {
+            DismissVideoGenerationToast();
             ShowToast("视频生成失败", e.StatusMessage, NotificationType.Error);
         }
     }
@@ -481,12 +568,16 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.TaskCompleted -= OnTaskCompleted;
         RenderQueue.StatusMessageChanged -= OnRenderQueueStatusMessageChanged;
         RenderQueue.ConfirmDialogRequested -= OnConfirmDialogRequested;
+        RenderQueue.PropertyChanged -= OnRenderQueueProgressChanged;
 
         if (_settingsViewModel != null)
         {
             _settingsViewModel.SettingsChanged -= OnSettingsChanged;
             _settingsViewModel.InitializationCompleted -= OnInitializationCompleted;
         }
+
+        // 关闭视频生成进度 Toast
+        DismissVideoGenerationToast();
 
         RenderQueue.Dispose();
         _blenderService?.Dispose();
