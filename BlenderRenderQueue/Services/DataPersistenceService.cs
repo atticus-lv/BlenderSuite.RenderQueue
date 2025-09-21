@@ -19,12 +19,14 @@ public class DataPersistenceService : IDataPersistenceService
         // 数据文件路径：运行目录下的 data.json
         _dataFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data.json");
         
-        // JSON 序列化选项
+        // JSON 序列化选项 - 配置为支持 AOT 编译
         _jsonOptions = new JsonSerializerOptions
         {
             WriteIndented = true, // 格式化输出，便于阅读
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            // 使用 DefaultJsonTypeInfoResolver 来支持反射序列化，同时保持 AOT 兼容性
+            TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
         };
     }
 
