@@ -28,6 +28,7 @@
         <PackageReference Include="Avalonia.Xaml.Interactions" Version="11.3.0.6" />
         <PackageReference Include="Avalonia.Xaml.Interactivity" Version="11.3.0.6" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1"/>
+        <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.4" />
         <PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
         <PackageReference Include="SukiUI" Version="6.0.3" />
         <PackageReference Include="FFMpegCore" Version="5.2.0" />
