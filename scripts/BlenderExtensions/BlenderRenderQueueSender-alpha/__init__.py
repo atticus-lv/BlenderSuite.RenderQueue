@@ -53,7 +53,7 @@ class RENDERQUEUE_OT_submit_scene(Operator):
     )
 
     @classmethod
-    def poll(cls,context):
+    def poll(cls, context):
         return bpy.data.filepath
 
     def execute(self, context):
@@ -141,8 +141,9 @@ class RENDERQUEUE_OT_submit_scene(Operator):
 
         # 显示当前场景信息
         scene = context.scene
-        layout.label(text=f"Scene: {scene.name}")
-        layout.label(text=f"File: {os.path.basename(bpy.data.filepath) if bpy.data.filepath else 'Unsaved'}")
+        layout.label(text=f"{scene.name}", icon='SCENE_DATA')
+        layout.label(text=f"{os.path.basename(bpy.data.filepath) if bpy.data.filepath else 'Unsaved'}",
+                     icon='FILE_BLEND')
 
         layout.separator()
 
@@ -159,14 +160,16 @@ class RENDERQUEUE_OT_submit_scene(Operator):
 
 class RENDERQUEUE_PT_panel(Panel):
     """渲染队列面板"""
-    bl_label = "RenderQueue Sender"
+    bl_label = "Sumit Render"
     bl_idname = "RENDERQUEUE_PT_panel"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'output'
     bl_category = "RenderQueue"
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
 
         # 检查偏好设置
         prefs = context.preferences.addons[__name__].preferences
@@ -181,7 +184,6 @@ class RENDERQUEUE_PT_panel(Panel):
             layout.operator("preferences.addon_show", text="Open Preferences").module = __name__
             return
 
-        # 显示当前场景信息
         scene = context.scene
         blend_file_path = bpy.data.filepath
 
@@ -189,16 +191,13 @@ class RENDERQUEUE_PT_panel(Panel):
             layout.label(text="Please save the blend file first", icon='ERROR')
             return
 
-        # 场景信息
         box = layout.box()
-        box.label(text="Current Scene Info", icon='SCENE_DATA')
-        box.label(text=f"Scene: {scene.name}")
-        box.label(text=f"File: {os.path.basename(blend_file_path)}")
-        box.label(text=f"Frames: {scene.frame_start}-{scene.frame_end}")
+        box.label(text=f"{scene.name}", icon='SCENE_DATA')
+        box.label(text=f"{os.path.basename(blend_file_path)}", icon='FILE_BLEND')
+        box.label(text=f"{scene.frame_start}-{scene.frame_end}", icon="PREVIEW_RANGE")
 
         layout.separator()
 
-        # 提交按钮
         layout.operator("renderqueue.submit_scene", text="Submit to Queue", icon='EXPORT')
 
 
