@@ -176,19 +176,59 @@
                                         <Border Background="{Binding $parent[ListBox].Background}" Margin="2"
                                                 CornerRadius="4"
                                                 Padding="4">
-                                            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                                                <StackPanel Grid.Column="0">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+
+                                                <Panel  Margin="0 0 8 0" VerticalAlignment="Center" >
+                                                    <material:MaterialIcon Kind="ErrorOutline"
+                                                                           Foreground="{DynamicResource SukiDangerColor}"
+                                                                           IsVisible="{Binding !IsValid}" />
+                                                    <Border Width="16" Height="16"
+                                                            VerticalAlignment="Top"
+                                                            Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
+                                                            CornerRadius="8">
+                                                        <Border.IsVisible>
+                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                <Binding Path="IsValid" />
+                                                                <Binding Path="Enable" />
+                                                            </MultiBinding>
+                                                        </Border.IsVisible>
+                                                    </Border>
+                                                    
+                                                    <Border Width="16" Height="16"
+                                                            VerticalAlignment="Top"
+                                                            IsVisible="{Binding IsValid}"
+                                                            Background="{DynamicResource SukiPrimaryColor10}"
+                                                            CornerRadius="8">
+                                                    </Border>
+                                                </Panel>
+
+
+                                                <StackPanel Grid.Column="1" Margin="8 0 0 0">
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
+
                                                         <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold"
                                                                    TextTrimming="CharacterEllipsis" />
-                                                        <TextBlock Text="⚠️" FontSize="12" Foreground="Orange"
-                                                                   IsVisible="{Binding IsValid, Converter={x:Static BoolConverters.Not}}"
-                                                                   ToolTip.Tip="文件不存在或无法访问" />
                                                     </StackPanel>
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock Text="{Binding StatusText}"
-                                                                   IsVisible="{Binding IsValid}"
-                                                                   FontSize="10" />
+                                                        <!-- 场景覆写信息 -->
+                                                        <TextBlock FontSize="12"
+                                                                   Foreground="{DynamicResource SukiAccentColor}"
+                                                                   Text="{Binding SelectedSceneName}"
+                                                                   IsVisible="{Binding OverrideScene}"
+                                                                   VerticalAlignment="Center">
+                                                        </TextBlock>
+                                                        <!-- 默认场景信息 -->
+                                                        <TextBlock FontSize="12" Text="{Binding SelectedSceneName}"
+                                                                   VerticalAlignment="Center">
+                                                            <TextBlock.IsVisible>
+                                                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                    <Binding Path="IsValid" />
+                                                                    <Binding Path="OverrideScene"
+                                                                             Converter="{x:Static BoolConverters.Not}" />
+                                                                </MultiBinding>
+                                                            </TextBlock.IsVisible>
+                                                        </TextBlock>
+
                                                         <TextBlock FontSize="12" IsVisible="{Binding IsValid}">
                                                             <TextBlock.Text>
                                                                 <MultiBinding StringFormat="{}{0}-{1}">
@@ -197,31 +237,10 @@
                                                                 </MultiBinding>
                                                             </TextBlock.Text>
                                                         </TextBlock>
-                                                        <!-- 场景覆写信息 -->
-                                                        <TextBlock FontSize="10" Foreground="Orange"
-                                                                   IsVisible="{Binding OverrideScene}">
-                                                            <TextBlock.Text>
-                                                                <MultiBinding StringFormat="场景: {0}">
-                                                                    <Binding Path="SelectedSceneName" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                        <!-- 默认场景信息 -->
-                                                        <TextBlock FontSize="10">
-                                                            <TextBlock.IsVisible>
-                                                                <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                                    <Binding Path="IsValid" />
-                                                                    <Binding Path="OverrideScene"
-                                                                             Converter="{x:Static BoolConverters.Not}" />
-                                                                </MultiBinding>
-                                                            </TextBlock.IsVisible>
-                                                            <TextBlock.Text>
-                                                                <MultiBinding StringFormat="场景: {0}">
-                                                                    <Binding Path="SelectedSceneName" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                        <TextBlock Text="文件无效" FontSize="10" Foreground="Red"
+
+                                                        <TextBlock Text="文件无效" FontSize="10"
+                                                                   Foreground="{DynamicResource SukiDangerColor}"
+                                                                   FontWeight="Bold"
                                                                    IsVisible="{Binding IsValid, Converter={x:Static BoolConverters.Not}}" />
                                                     </StackPanel>
                                                     <ProgressBar Minimum="0" Maximum="1"
@@ -231,16 +250,16 @@
                                                 </StackPanel>
 
                                                 <!-- Enable ToggleSwitch -->
-                                                <ToggleSwitch Grid.Column="1"
+                                                <ToggleSwitch Grid.Column="2"
                                                               IsEnabled="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks}"
                                                               IsChecked="{Binding Enable}"
-                                                              Margin="8,0"
+                                                              Margin="16,0, 0,0"
                                                               VerticalAlignment="Center"
                                                               IsVisible="{Binding IsValid}"
                                                               ToolTip.Tip="启用/禁用此任务" />
 
                                                 <!-- 删除按钮区域 -->
-                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="4,0,0,0"
+                                                <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="4,0,0,0"
                                                             IsEnabled="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks}">
                                                     <!-- 普通删除按钮 -->
                                                     <Button
@@ -268,7 +287,7 @@
                                                     </Button>
                                                 </StackPanel>
                                                 <!-- 拖拽手柄 -->
-                                                <Border Grid.Column="3"
+                                                <Border Grid.Column="4"
                                                         Width="32"
                                                         VerticalAlignment="Stretch"
                                                         Margin="8,0,0,0"
