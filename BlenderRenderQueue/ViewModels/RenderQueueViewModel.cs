@@ -53,10 +53,10 @@ public partial class RenderQueueViewModel : ViewModelBase
     public bool IsQueueRunning => QueueState == QueueState.Running;
     public bool HasRunningTasks => ActiveTaskCount > 0;
 
-    // 帧数相关的计算属性 - 只计算启用的任务，使用显示用的帧范围
-    public int TotalFrames => RenderTasks.Where(t => t.Enable).Sum(t => t.DisplayTotalFrames);
+    // 帧数相关的计算属性 - 只计算启用且有效的任务，使用显示用的帧范围
+    public int TotalFrames => RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t => t.DisplayTotalFrames);
 
-    public int CompletedFrames => RenderTasks.Where(t => t.Enable).Sum(t =>
+    public int CompletedFrames => RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t =>
     {
         var totalFrames = Math.Max(0, t.CompletedFrames);
         return (int)(totalFrames * t.OverallProgress01);
@@ -71,9 +71,9 @@ public partial class RenderQueueViewModel : ViewModelBase
         get
         {
             var canStart = (QueueState == QueueState.Idle || QueueState == QueueState.Completed) &&
-                           RenderTasks.Any(t => t.Enable);
+                           RenderTasks.Any(t => t.Enable && t.IsValid);
             // Console.WriteLine(
-            //     $"[DEBUG] CanStartQueue: {canStart} (QueueState: {QueueState}, EnabledTaskCount: {RenderTasks.Count(t => t.Enable)})");
+            //     $"[DEBUG] CanStartQueue: {canStart} (QueueState: {QueueState}, EnabledValidTaskCount: {RenderTasks.Count(t => t.Enable && t.IsValid)})");
             return canStart;
         }
     }
@@ -364,8 +364,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 开始队列时清空所有预备删除状态
         ClearPendingDeletionStates();
 
-        // 停止队列：重置所有启用的任务状态，从头开始
-        foreach (var task in RenderTasks.Where(t => t.Enable))
+        // 停止队列：重置所有启用且有效的任务状态，从头开始
+        foreach (var task in RenderTasks.Where(t => t.Enable && t.IsValid))
         {
             if (task.Status == RenderTaskStatus.Running)
             {
@@ -577,8 +577,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 等待一下确保任务停止
         await Task.Delay(100);
 
-        // 启动下一个待处理且启用的任务
-        var pendingTask = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable);
+        // 启动下一个待处理且启用且有效的任务
+        var pendingTask = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid);
         if (pendingTask == null)
         {
             return;
@@ -862,13 +862,13 @@ public partial class RenderQueueViewModel : ViewModelBase
                 {
                     QueueStatusText = $"运行中 ({ActiveTaskCount} 个任务)";
                 }
-                else if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending && t.Enable))
+                else if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid))
                 {
                     QueueStatusText = "等待中";
                 }
-                else if (RenderTasks.Where(t => t.Enable).All(t => t.Status == RenderTaskStatus.Completed ||
-                                                                   t.Status == RenderTaskStatus.Failed ||
-                                                                   t.Status == RenderTaskStatus.Cancelled))
+                else if (RenderTasks.Where(t => t.Enable && t.IsValid).All(t => t.Status == RenderTaskStatus.Completed ||
+                                                                               t.Status == RenderTaskStatus.Failed ||
+                                                                               t.Status == RenderTaskStatus.Cancelled))
                 {
                     // 只有当所有启用的任务都完成/失败/取消时，才设置为完成状态
                     QueueStatusText = "队列完成";
@@ -882,11 +882,11 @@ public partial class RenderQueueViewModel : ViewModelBase
                 break;
 
             case QueueState.Idle:
-                if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending && t.Enable))
+                if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid))
                 {
                     QueueStatusText = "队列空闲";
                 }
-                else if (RenderTasks.Where(t => t.Enable).Any(t =>
+                else if (RenderTasks.Where(t => t.Enable && t.IsValid).Any(t =>
                              t.Status == RenderTaskStatus.Completed || t.Status == RenderTaskStatus.Failed ||
                              t.Status == RenderTaskStatus.Cancelled))
                 {
@@ -1085,12 +1085,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             {
                 var taskInfo = taskData.RenderTask;
 
-                // 检查文件是否存在
-                if (!File.Exists(taskInfo.Filepath))
-                {
-                    Console.WriteLine($"[RenderQueueViewModel] ⚠️ File not found, skipping: {taskInfo.Filepath}");
-                    continue;
-                }
+                // 不再跳过文件不存在的任务，而是标记为无效
 
                 // 确定是否使用覆写帧范围
                 bool overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;

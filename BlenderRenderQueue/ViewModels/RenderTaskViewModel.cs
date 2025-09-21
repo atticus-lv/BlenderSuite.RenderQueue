@@ -41,6 +41,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     [ObservableProperty]
     private bool _enable = true;
 
+    [ObservableProperty]
+    private bool _isValid = true;
+
     partial void OnEnableChanged(bool value)
     {
         // 当 Enable 属性变化时，触发父级保存数据
@@ -262,7 +265,10 @@ public partial class RenderTaskViewModel : ViewModelBase
         Animation = animation;
         OverrideFrameRange = overrideFrameRange;
 
-        Console.WriteLine($"[RenderTaskViewModel] Constructor - File: {Path.GetFileName(blendFilePath)}");
+        // 检查文件有效性
+        IsValid = !string.IsNullOrEmpty(blendFilePath) && File.Exists(blendFilePath);
+
+        Console.WriteLine($"[RenderTaskViewModel] Constructor - File: {Path.GetFileName(blendFilePath)}, IsValid: {IsValid}");
         Console.WriteLine($"[RenderTaskViewModel] Initial ScenePropertiesView state - IsLoading: {ScenePropertiesView.IsLoading}, IsLoaded: {ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {ScenePropertiesView.ShowEmptyState}");
 
         // 加载文件信息
