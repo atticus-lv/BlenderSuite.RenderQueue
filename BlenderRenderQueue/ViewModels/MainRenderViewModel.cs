@@ -77,6 +77,7 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.TaskCompleted += OnTaskCompleted;
         RenderQueue.StatusMessageChanged += OnRenderQueueStatusMessageChanged;
         RenderQueue.ConfirmDialogRequested += OnConfirmDialogRequested;
+        RenderQueue.ToastRequested += OnToastRequested;
 
         // 初始化设置并检测路径
         InitializeSettings();
@@ -546,6 +547,11 @@ public partial class MainRenderViewModel : ViewModelBase
                 .TryShow();
     }
 
+    private void OnToastRequested(object? sender, ToastRequestedEventArgs e)
+    {
+        ShowToast(e.Title, e.Content, e.Type);
+    }
+
     /// <summary>
     ///     加载保存的数据
     /// </summary>
@@ -661,6 +667,7 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.TaskCompleted -= OnTaskCompleted;
         RenderQueue.StatusMessageChanged -= OnRenderQueueStatusMessageChanged;
         RenderQueue.ConfirmDialogRequested -= OnConfirmDialogRequested;
+        RenderQueue.ToastRequested -= OnToastRequested;
         RenderQueue.PropertyChanged -= OnRenderQueueProgressChanged;
 
         if (_settingsViewModel != null)

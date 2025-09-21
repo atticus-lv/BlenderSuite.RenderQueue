@@ -11,6 +11,7 @@ using BlenderRenderQueue.Models;
 using System.Collections.Generic;
 using System.IO;
 using Avalonia.Platform.Storage;
+using Avalonia.Controls.Notifications;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -197,6 +198,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     public event EventHandler<TaskCompletedEventArgs>? TaskCompleted;
     public event EventHandler<string>? StatusMessageChanged;
     public event EventHandler<ConfirmDialogRequestedEventArgs>? ConfirmDialogRequested;
+    public event EventHandler<ToastRequestedEventArgs>? ToastRequested;
 
     public RenderQueueViewModel()
     {
@@ -1542,12 +1544,24 @@ public partial class RenderQueueViewModel : ViewModelBase
                         Console.WriteLine($"[RenderQueueViewModel] ⚠️ Failed to delete source file: {ex.Message}");
                     }
 
-                    StatusMessageChanged?.Invoke(this, $"已从Blender插件添加 {appData.RenderQueue.Count} 个任务");
+                    StatusMessageChanged?.Invoke(this, $"检测到blender插件提交,添加到渲染队列");
+                    
+                    // 显示成功toast
+                    ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
+                        "任务添加成功",
+                        $"检测到blender插件提交,添加到渲染队列",
+                        NotificationType.Information));
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[RenderQueueViewModel] ❌ Error processing Blender data file: {ex.Message}");
                     StatusMessageChanged?.Invoke(this, $"处理Blender数据文件时出错: {ex.Message}");
+                    
+                    // 显示错误toast
+                    ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
+                        "任务添加失败",
+                        $"处理Blender数据文件时出错: {ex.Message}",
+                        NotificationType.Error));
                 }
             });
         }
@@ -1621,5 +1635,20 @@ public class ConfirmDialogRequestedEventArgs : EventArgs
         CancelButtonText = cancelButtonText;
         ConfirmButtonText = confirmButtonText;
         ConfirmAction = confirmAction;
+    }
+}
+
+// Toast请求事件参数
+public class ToastRequestedEventArgs : EventArgs
+{
+    public string Title { get; }
+    public string Content { get; }
+    public NotificationType Type { get; }
+
+    public ToastRequestedEventArgs(string title, string content, NotificationType type)
+    {
+        Title = title;
+        Content = content;
+        Type = type;
     }
 }
