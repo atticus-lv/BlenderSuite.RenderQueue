@@ -64,4 +64,28 @@ public class RenderTaskInfo
 
     [JsonPropertyName("Enable")]
     public bool Enable { get; set; } = true;
+
+    [JsonPropertyName("Override")]
+    public OverrideData? Override { get; set; }
+}
+
+/// <summary>
+/// 覆写数据
+/// </summary>
+public class OverrideData
+{
+    [JsonPropertyName("OverrideFrameRange")]
+    public OverrideFrameRangeData? OverrideFrameRange { get; set; }
+}
+
+/// <summary>
+/// 覆写帧范围数据
+/// </summary>
+public class OverrideFrameRangeData
+{
+    [JsonPropertyName("StartFrame")]
+    public int StartFrame { get; set; } = 1;
+
+    [JsonPropertyName("EndFrame")]
+    public int EndFrame { get; set; } = 1;
 }

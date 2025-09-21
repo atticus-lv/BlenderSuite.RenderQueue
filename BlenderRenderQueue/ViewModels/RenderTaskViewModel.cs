@@ -81,6 +81,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalFrames));
         OnPropertyChanged(nameof(DisplayStartFrame));
         OnPropertyChanged(nameof(DisplayTotalFrames));
+        // 当起始帧变化时，触发父级保存数据
+        FrameRangeChanged?.Invoke(this, EventArgs.Empty);
     }
 
     partial void OnEndFrameChanged(int value)
@@ -88,6 +90,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalFrames));
         OnPropertyChanged(nameof(DisplayEndFrame));
         OnPropertyChanged(nameof(DisplayTotalFrames));
+        // 当结束帧变化时，触发父级保存数据
+        FrameRangeChanged?.Invoke(this, EventArgs.Empty);
     }
 
     partial void OnOverrideFrameRangeChanged(bool value)
@@ -95,6 +99,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(DisplayStartFrame));
         OnPropertyChanged(nameof(DisplayEndFrame));
         OnPropertyChanged(nameof(DisplayTotalFrames));
+        // 当覆写帧范围状态变化时，触发父级保存数据
+        OverrideFrameRangeChanged?.Invoke(this, EventArgs.Empty);
     }
 
     [ObservableProperty]
@@ -176,6 +182,16 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// </summary>
     public event EventHandler<OpenInBlenderRequestedEventArgs>? OpenInBlenderRequested;
 
+    /// <summary>
+    /// 覆写帧范围状态变化事件
+    /// </summary>
+    public event EventHandler? OverrideFrameRangeChanged;
+
+    /// <summary>
+    /// 帧范围变化事件
+    /// </summary>
+    public event EventHandler? FrameRangeChanged;
+
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 
     [ObservableProperty]
@@ -238,12 +254,13 @@ public partial class RenderTaskViewModel : ViewModelBase
         _logTimer.Start();
     }
 
-    public RenderTaskViewModel(string blendFilePath, int startFrame, int endFrame, bool animation = true) : this()
+    public RenderTaskViewModel(string blendFilePath, int startFrame, int endFrame, bool animation = true, bool overrideFrameRange = false) : this()
     {
         BlendFilePath = blendFilePath;
         StartFrame = startFrame;
         EndFrame = endFrame;
         Animation = animation;
+        OverrideFrameRange = overrideFrameRange;
 
         Console.WriteLine($"[RenderTaskViewModel] Constructor - File: {Path.GetFileName(blendFilePath)}");
         Console.WriteLine($"[RenderTaskViewModel] Initial ScenePropertiesView state - IsLoading: {ScenePropertiesView.IsLoading}, IsLoaded: {ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {ScenePropertiesView.ShowEmptyState}");

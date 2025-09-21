@@ -173,7 +173,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         try
         {
-            var task = new RenderTaskViewModel(blendFilePath, 1, 1, true);
+            var task = new RenderTaskViewModel(blendFilePath, 1, 1, true, false);
 
             // 自动加载文件属性
             if (_blenderService != null)
@@ -618,6 +618,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.ProgressChanged += OnTaskProgressChanged;
         task.RefreshRequested += OnTaskRefreshRequested;
         task.EnableChanged += OnTaskEnableChanged;
+        task.OverrideFrameRangeChanged += OnTaskOverrideFrameRangeChanged;
+        task.FrameRangeChanged += OnTaskFrameRangeChanged;
         task.OpenInBlenderRequested += OnTaskOpenInBlenderRequested;
     }
 
@@ -627,6 +629,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.ProgressChanged -= OnTaskProgressChanged;
         task.RefreshRequested -= OnTaskRefreshRequested;
         task.EnableChanged -= OnTaskEnableChanged;
+        task.OverrideFrameRangeChanged -= OnTaskOverrideFrameRangeChanged;
+        task.FrameRangeChanged -= OnTaskFrameRangeChanged;
         task.OpenInBlenderRequested -= OnTaskOpenInBlenderRequested;
     }
 
@@ -672,7 +676,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             task.Dispose();
 
             // 创建新的任务实例
-            var newTask = new RenderTaskViewModel(filePath, 1, 1, true);
+            var newTask = new RenderTaskViewModel(filePath, 1, 1, true, false);
 
             // 重新加载文件属性
             await newTask.LoadFilePropertiesAsync(_blenderService);
@@ -706,6 +710,28 @@ public partial class RenderQueueViewModel : ViewModelBase
         UpdateQueueStatistics();
 
         Console.WriteLine($"[RenderQueueViewModel] Task enable state changed, auto-saving data");
+    }
+
+    private void OnTaskOverrideFrameRangeChanged(object? sender, EventArgs e)
+    {
+        // 当任务的覆写帧范围状态变化时，自动保存数据
+        AutoSaveQueueData();
+
+        // 更新队列统计信息
+        UpdateQueueStatistics();
+
+        Console.WriteLine($"[RenderQueueViewModel] Task override frame range state changed, auto-saving data");
+    }
+
+    private void OnTaskFrameRangeChanged(object? sender, EventArgs e)
+    {
+        // 当任务的帧范围变化时，自动保存数据
+        AutoSaveQueueData();
+
+        // 更新队列统计信息
+        UpdateQueueStatistics();
+
+        Console.WriteLine($"[RenderQueueViewModel] Task frame range changed, auto-saving data");
     }
 
     private void OnTaskOpenInBlenderRequested(object? sender, OpenInBlenderRequestedEventArgs e)
@@ -953,8 +979,8 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             Console.WriteLine($"[DEBUG] Blender 服务已就绪，添加测试任务: {testBlendPath}");
 
-            var task = new RenderTaskViewModel(testBlendPath, 1, 1, true);
-            var task2 = new RenderTaskViewModel(testBlendPath, 1, 1, true);
+            var task = new RenderTaskViewModel(testBlendPath, 1, 1, true, false);
+            var task2 = new RenderTaskViewModel(testBlendPath, 1, 1, true, false);
 
             // 自动加载文件属性
             await task.LoadFilePropertiesAsync(_blenderService);
@@ -999,7 +1025,15 @@ public partial class RenderQueueViewModel : ViewModelBase
                         StartFrame = task.StartFrame,
                         EndFrame = task.EndFrame,
                         LastRenderedFrame = task.CurrentFrame,
-                        Enable = task.Enable
+                        Enable = task.Enable,
+                        Override = task.OverrideFrameRange ? new OverrideData
+                        {
+                            OverrideFrameRange = new OverrideFrameRangeData
+                            {
+                                StartFrame = task.StartFrame,
+                                EndFrame = task.EndFrame
+                            }
+                        } : null
                     }
                 }).ToList()
             };
@@ -1057,11 +1091,17 @@ public partial class RenderQueueViewModel : ViewModelBase
                     continue;
                 }
 
+                // 确定是否使用覆写帧范围
+                bool overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;
+                int startFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.StartFrame : taskInfo.StartFrame;
+                int endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : taskInfo.EndFrame;
+
                 var task = new RenderTaskViewModel(
                     taskInfo.Filepath,
-                    taskInfo.StartFrame,
-                    taskInfo.EndFrame,
-                    true); // AutoStart 默认为 true
+                    startFrame,
+                    endFrame,
+                    true, // AutoStart 默认为 true
+                    overrideFrameRange);
 
                 // 设置 Enable 属性
                 task.Enable = taskInfo.Enable;
