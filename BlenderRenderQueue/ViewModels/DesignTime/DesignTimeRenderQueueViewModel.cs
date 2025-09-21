@@ -73,6 +73,9 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         // 设置选中任务
         SelectedTask = task1;
         
+        // 设置当前渲染任务
+        CurrentRenderingTask = task1;
+        
         // 设置队列状态
         QueueState = QueueState.Running;
         ActiveTaskCount = 1;

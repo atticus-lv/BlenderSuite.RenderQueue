@@ -3,9 +3,14 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
+             xmlns:design="clr-namespace:BlenderRenderQueue.ViewModels.DesignTime"
              mc:Ignorable="d" d:DesignWidth="200" d:DesignHeight="200"
              x:Class="BlenderRenderQueue.Views.RenderTaskProgressPreviewView"
              x:DataType="vm:RenderTaskViewModel">
+
+    <Design.DataContext>
+        <design:DesignTimeRenderTaskProgressPreviewViewModel />
+    </Design.DataContext>
 
     <Grid ColumnDefinitions="Auto,12,*" RowDefinitions="Auto" VerticalAlignment="Center">
         <!-- 预览图区域 -->
