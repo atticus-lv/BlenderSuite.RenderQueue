@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using BlenderRenderQueue.Models;
 
@@ -84,5 +85,20 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         IsGeneratingVideo = false;
         VideoGenerationProgress = 0.0;
         VideoGenerationStatus = string.Empty;
+        
+        // 模拟帧记录数据用于显示剩余时间
+        var now = DateTime.Now;
+        var frameTimes = new Queue<DateTime>();
+        var frameNumbers = new Queue<int>();
+        
+        frameTimes.Enqueue(now.AddSeconds(-30)); // 30秒前
+        frameTimes.Enqueue(now.AddSeconds(-15)); // 15秒前
+        frameTimes.Enqueue(now); // 现在
+        
+        frameNumbers.Enqueue(120);
+        frameNumbers.Enqueue(150);
+        frameNumbers.Enqueue(180);
+        
+        SetFrameRecordData(frameTimes, frameNumbers);
     }
 }
