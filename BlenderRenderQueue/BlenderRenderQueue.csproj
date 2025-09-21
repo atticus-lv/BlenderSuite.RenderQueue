@@ -2,6 +2,11 @@
     <PropertyGroup>
         <OutputType>WinExe</OutputType>
         <TargetFramework>net9.0</TargetFramework>
+        
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+        <PublishTrimmed>true</PublishTrimmed>
+        <PublishAot>true</PublishAot>
+        
         <Nullable>enable</Nullable>
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -49,6 +54,10 @@
       </Compile>
     </ItemGroup>
 
+    <ItemGroup>
+        <TrimmerRootDescriptor Include="TrimmerRoots.xml"/>
+    </ItemGroup>
+    
     <ItemGroup>
       <Folder Include="Converters\" />
     </ItemGroup>
