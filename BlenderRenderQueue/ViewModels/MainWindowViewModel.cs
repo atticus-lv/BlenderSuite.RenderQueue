@@ -17,6 +17,12 @@ public partial class MainWindowViewModel : ViewModelBase
 		// 使用新的渲染队列视图模型替代测试视图模型
 		Content = new MainRenderViewModel();
 		
+		// 订阅渲染队列的确认对话框事件
+		if (Content is MainRenderViewModel mainRender && mainRender.RenderQueue != null)
+		{
+			mainRender.RenderQueue.ConfirmDialogRequested += OnConfirmDialogRequested;
+		}
+		
 		// 初始化设置并检测路径
 		InitializeSettings();
 		
@@ -79,6 +85,16 @@ public partial class MainWindowViewModel : ViewModelBase
 	private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
 	{
 		ApplySettings(e.BlenderPath, e.FfmpegPath);
+	}
+
+	private void OnConfirmDialogRequested(object? sender, ConfirmDialogRequestedEventArgs e)
+	{
+		DialogManager.CreateDialog()
+			.WithTitle(e.Title)
+			.WithContent(e.Content)
+			.WithActionButton(e.CancelButtonText, _ => { }, true)
+			.WithActionButton(e.ConfirmButtonText, _ => e.ConfirmAction(), true, "Flat", "Danger")
+			.TryShow();
 	}
 
 	private void ApplySettings(string blenderPath, string ffmpegPath)

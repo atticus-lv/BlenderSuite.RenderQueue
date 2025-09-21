@@ -101,6 +101,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     public event EventHandler<QueueStatusChangedEventArgs>? QueueStatusChanged;
     public event EventHandler<TaskCompletedEventArgs>? TaskCompleted;
     public event EventHandler<string>? StatusMessageChanged;
+    public event EventHandler<ConfirmDialogRequestedEventArgs>? ConfirmDialogRequested;
 
     public RenderQueueViewModel()
     {
@@ -306,6 +307,17 @@ public partial class RenderQueueViewModel : ViewModelBase
     [RelayCommand]
     private void RemoveAllTasks()
     {
+        // 请求显示确认对话框
+        ConfirmDialogRequested?.Invoke(this, new ConfirmDialogRequestedEventArgs(
+            "确认清空",
+            $"确定要清空所有任务吗？\n\n这将删除队列中的 {RenderTasks.Count} 个任务，此操作无法撤销。",
+            "取消",
+            "清空",
+            ExecuteRemoveAllTasks));
+    }
+
+    private void ExecuteRemoveAllTasks()
+    {
         // 停止所有运行中的任务
         foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
         {
@@ -322,6 +334,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         RenderTasks.Clear();
         SelectedTask = null;
         UpdateQueueStatistics();
+        
+        StatusMessageChanged?.Invoke(this, "已清空所有任务");
     }
 
     [RelayCommand]
@@ -1222,5 +1236,24 @@ public class TaskCompletedEventArgs : EventArgs
     {
         Task = task;
         Status = status;
+    }
+}
+
+// 确认对话框请求事件参数
+public class ConfirmDialogRequestedEventArgs : EventArgs
+{
+    public string Title { get; }
+    public string Content { get; }
+    public string CancelButtonText { get; }
+    public string ConfirmButtonText { get; }
+    public Action ConfirmAction { get; }
+
+    public ConfirmDialogRequestedEventArgs(string title, string content, string cancelButtonText, string confirmButtonText, Action confirmAction)
+    {
+        Title = title;
+        Content = content;
+        CancelButtonText = cancelButtonText;
+        ConfirmButtonText = confirmButtonText;
+        ConfirmAction = confirmAction;
     }
 }
