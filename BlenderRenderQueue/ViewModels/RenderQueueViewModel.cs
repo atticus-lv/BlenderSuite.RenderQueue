@@ -50,9 +50,12 @@ public partial class RenderQueueViewModel : ViewModelBase
     private string _videoGenerationStatus = string.Empty; // 视频生成状态
 
     // 剩余时间计算相关
-    private readonly Queue<DateTime> _recentFrameTimes = new(); // 最近帧完成时间
-    private readonly Queue<int> _recentFrameNumbers = new(); // 最近帧号
+    private readonly Queue<TimeSpan> _recentFrameRenderTimes = new(); // 最近帧渲染时间队列
     private const int MaxRecentFrames = 3; // 最多记录3帧
+    private System.Timers.Timer? _remainingTimeTimer; // 剩余时间更新定时器
+    
+    [ObservableProperty]
+    private string _remainingTimeText = string.Empty; // 剩余时间文本
 
     // 计算属性 - 用于UI绑定
     public bool IsQueueRunning => QueueState == QueueState.Running;
@@ -73,103 +76,84 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     public int OverallQueueProgressInt => (int)(OverallQueueProgress * 100);
 
-    // 剩余时间计算属性
-    public string RemainingTimeText
-    {
-        get
-        {
-            if (!IsQueueRunning || _recentFrameTimes.Count < 2)
-            {
-                return string.Empty;
-            }
-
-            var remainingFrames = TotalFrames - CompletedFrames;
-            if (remainingFrames <= 0)
-            {
-                return "即将完成";
-            }
-
-            // 计算最近帧的平均渲染时间
-            var frameTimes = _recentFrameTimes.ToArray();
-            var frameNumbers = _recentFrameNumbers.ToArray();
-            
-            if (frameTimes.Length < 2)
-            {
-                return string.Empty;
-            }
-
-            // 计算最近帧的平均时间间隔
-            var totalTime = (frameTimes[frameTimes.Length - 1] - frameTimes[0]).TotalSeconds;
-            var frameCount = frameNumbers[frameNumbers.Length - 1] - frameNumbers[0];
-            
-            if (frameCount <= 0 || totalTime <= 0)
-            {
-                return string.Empty;
-            }
-
-            var averageTimePerFrame = totalTime / frameCount;
-            var estimatedRemainingSeconds = remainingFrames * averageTimePerFrame;
-
-            return FormatTimeSpan(TimeSpan.FromSeconds(estimatedRemainingSeconds));
-        }
-    }
 
     private static string FormatTimeSpan(TimeSpan timeSpan)
     {
-        if (timeSpan.TotalDays >= 1)
-        {
-            return $"{(int)timeSpan.TotalDays}天 {timeSpan.Hours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
-        }
-        else if (timeSpan.TotalHours >= 1)
-        {
-            return $"{timeSpan.Hours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
-        }
-        else
-        {
-            return $"{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
-        }
+        // 统一使用 hh:mm:ss 格式
+        return $"{(int)timeSpan.TotalHours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
     }
 
     /// <summary>
-    /// 记录帧完成时间，用于计算剩余时间
+    /// 记录帧渲染时间，用于计算剩余时间
     /// </summary>
     /// <param name="frameNumber">完成的帧号</param>
-    private void RecordFrameCompletion(int frameNumber)
+    /// <param name="frameRenderTime">帧渲染时间</param>
+    private void RecordFrameCompletion(int frameNumber, TimeSpan frameRenderTime)
     {
-        var now = DateTime.Now;
-        
-        // 添加当前帧的时间和帧号
-        _recentFrameTimes.Enqueue(now);
-        _recentFrameNumbers.Enqueue(frameNumber);
-        
-        // 保持队列大小不超过最大帧数
-        while (_recentFrameTimes.Count > MaxRecentFrames)
+        // 只记录有效的渲染时间
+        if (frameRenderTime.TotalSeconds > 0)
         {
-            _recentFrameTimes.Dequeue();
-            _recentFrameNumbers.Dequeue();
+            _recentFrameRenderTimes.Enqueue(frameRenderTime);
+            
+            // 保持队列大小不超过最大帧数
+            while (_recentFrameRenderTimes.Count > MaxRecentFrames)
+            {
+                _recentFrameRenderTimes.Dequeue();
+            }
+            
+            Console.WriteLine($"[RecordFrameCompletion] Frame {frameNumber} completed, render time: {frameRenderTime.TotalSeconds:F2}s");
         }
     }
 
     /// <summary>
-    /// 为设计时ViewModel设置模拟的帧记录数据
+    /// 定时器事件处理，更新剩余时间
     /// </summary>
-    /// <param name="frameTimes">帧完成时间</param>
-    /// <param name="frameNumbers">帧号</param>
-    protected void SetFrameRecordData(Queue<DateTime> frameTimes, Queue<int> frameNumbers)
+    private void OnRemainingTimeTimerElapsed(object? sender, System.Timers.ElapsedEventArgs e)
     {
-        _recentFrameTimes.Clear();
-        _recentFrameNumbers.Clear();
-        
-        foreach (var time in frameTimes)
+        // 在UI线程上更新
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            _recentFrameTimes.Enqueue(time);
-        }
-        
-        foreach (var frame in frameNumbers)
-        {
-            _recentFrameNumbers.Enqueue(frame);
-        }
+            UpdateRemainingTime();
+        });
     }
+
+    /// <summary>
+    /// 更新剩余时间文本
+    /// </summary>
+    private void UpdateRemainingTime()
+    {
+        if (!IsQueueRunning)
+        {
+            RemainingTimeText = string.Empty;
+            return;
+        }
+
+        // 计算整个队列的剩余帧数
+        var remainingFrames = TotalFrames - CompletedFrames;
+        if (remainingFrames <= 0)
+        {
+            RemainingTimeText = string.Empty;
+            return;
+        }
+
+        // 如果没有帧渲染时间数据，显示"计算中..."
+        if (_recentFrameRenderTimes.Count == 0)
+        {
+            RemainingTimeText = "计算中...";
+            return;
+        }
+
+        // 计算平均每帧渲染时间
+        var averageRenderTime = _recentFrameRenderTimes.Average(rt => rt.TotalSeconds);
+        var estimatedRemainingSeconds = remainingFrames * averageRenderTime;
+
+        // 显示计算出的剩余时间
+        var formattedTime = FormatTimeSpan(TimeSpan.FromSeconds(estimatedRemainingSeconds));
+        RemainingTimeText = formattedTime;
+        
+        Console.WriteLine($"[RemainingTime] RemainingFrames: {remainingFrames}, AvgRenderTime: {averageRenderTime:F2}s, Estimated: {estimatedRemainingSeconds:F2}s, Display: {formattedTime}");
+    }
+
 
     public bool CanStartQueue
     {
@@ -210,6 +194,11 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     public RenderQueueViewModel()
     {
+        // 初始化剩余时间更新定时器
+        _remainingTimeTimer = new System.Timers.Timer(1000); // 每秒更新一次
+        _remainingTimeTimer.Elapsed += OnRemainingTimeTimerElapsed;
+        _remainingTimeTimer.AutoReset = true;
+
         // 监听任务状态变化
         RenderTasks.CollectionChanged += (s, e) =>
         {
@@ -502,9 +491,11 @@ public partial class RenderQueueViewModel : ViewModelBase
         QueueStatusText = "队列运行中";
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已启动"));
 
-        // 清空帧记录，重新开始计算
-        _recentFrameTimes.Clear();
-        _recentFrameNumbers.Clear();
+        // 清空帧渲染时间记录，重新开始计算
+        _recentFrameRenderTimes.Clear();
+        
+        // 启动剩余时间更新定时器
+        _remainingTimeTimer?.Start();
 
         // 启动第一个任务
         await StartNextAvailableTasks();
@@ -525,9 +516,14 @@ public partial class RenderQueueViewModel : ViewModelBase
         QueueStatusText = "队列已停止";
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已停止"));
 
-        // 清空帧记录
-        _recentFrameTimes.Clear();
-        _recentFrameNumbers.Clear();
+        // 停止剩余时间更新定时器
+        _remainingTimeTimer?.Stop();
+        
+        // 清空帧渲染时间记录
+        _recentFrameRenderTimes.Clear();
+        
+        // 清空剩余时间显示
+        RemainingTimeText = string.Empty;
     }
 
     [RelayCommand]
@@ -783,14 +779,13 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 记录帧完成时间用于剩余时间计算
         if (e.CurrentFrame > 0)
         {
-            RecordFrameCompletion(e.CurrentFrame);
+            RecordFrameCompletion(e.CurrentFrame, e.FrameRenderTime);
         }
 
         // 进度变化时只需要通知UI更新计算属性
         OnPropertyChanged(nameof(OverallQueueProgress));
         OnPropertyChanged(nameof(OverallQueueProgressInt));
         OnPropertyChanged(nameof(CompletedFrames));
-        OnPropertyChanged(nameof(RemainingTimeText));
     }
 
     private async void OnTaskRefreshRequested(object? sender, EventArgs e)
@@ -1373,6 +1368,11 @@ public partial class RenderQueueViewModel : ViewModelBase
     public void Dispose()
     {
         StopQueue();
+
+        // 清理定时器
+        _remainingTimeTimer?.Stop();
+        _remainingTimeTimer?.Dispose();
+        _remainingTimeTimer = null;
 
         foreach (var task in RenderTasks)
         {

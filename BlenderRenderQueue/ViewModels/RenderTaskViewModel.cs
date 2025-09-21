@@ -787,7 +787,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
 
         // 触发进度变化事件
-        ProgressChanged?.Invoke(this, new RenderTaskProgressEventArgs(OverallProgress01, Progress01, p.CurrentFrame));
+        var frameRenderTime = p.Elapsed ?? TimeSpan.Zero;
+        ProgressChanged?.Invoke(this, new RenderTaskProgressEventArgs(OverallProgress01, Progress01, p.CurrentFrame, frameRenderTime));
     }
 
     private void OnEvent(RenderEvent e)
@@ -1050,12 +1051,14 @@ public class RenderTaskProgressEventArgs : EventArgs
     public double OverallProgress { get; }
     public double CurrentFrameProgress { get; }
     public int CurrentFrame { get; }
+    public TimeSpan FrameRenderTime { get; }
 
-    public RenderTaskProgressEventArgs(double overallProgress, double currentFrameProgress, int currentFrame)
+    public RenderTaskProgressEventArgs(double overallProgress, double currentFrameProgress, int currentFrame, TimeSpan frameRenderTime)
     {
         OverallProgress = overallProgress;
         CurrentFrameProgress = currentFrameProgress;
         CurrentFrame = currentFrame;
+        FrameRenderTime = frameRenderTime;
     }
 }
 
