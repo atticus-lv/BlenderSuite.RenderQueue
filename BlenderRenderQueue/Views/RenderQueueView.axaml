@@ -75,7 +75,7 @@
                         </Button>
 
                         <!-- 停止队列按钮：只在队列运行时显示 -->
-                        <Button Classes="Flat Danger" Command="{Binding StopQueueCommand}"
+                        <Button Classes="Flat Danger Small" Command="{Binding StopQueueCommand}"
                                 IsEnabled="{Binding CanStopQueue}">
                             <material:MaterialIcon Kind="Stop" Width="24" Height="24"></material:MaterialIcon>
                         </Button>
@@ -137,7 +137,7 @@
                                     </StackPanel>
                                 </Button>
                                 <Button Command="{Binding RemoveAllTasksCommand}"
-                                        Classes="Flat" ToolTip.Tip="清空">
+                                        Classes="Flat Danger Small">
                                     <Button.IsEnabled>
                                         <MultiBinding Converter="{x:Static BoolConverters.And}">
                                             <Binding Path="RenderTasks.Count"
@@ -147,7 +147,6 @@
                                     </Button.IsEnabled>
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <material:MaterialIcon Kind="Trash" />
-                                        <TextBlock Text="清空" />
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
