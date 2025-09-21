@@ -27,18 +27,19 @@
         <Grid Row="0" ColumnDefinitions="*,Auto,Auto">
             <suki:GlassCard Margin="8 4 4 4">
                 <StackPanel Orientation="Horizontal">
-                    <Border Width="100" Height="100">
-                        <Grid>
-                            <Viewbox Width="120"
-                                     Height="120" Margin="0"
-                                     HorizontalAlignment="Center"
-                                     VerticalAlignment="Center">
-                                <suki:WaveProgress
-                                    Value="{Binding OverallQueueProgressInt}" />
-                            </Viewbox>
-
-                        </Grid>
-                    </Border>
+                    <Viewbox Width="100"
+                             Height="100" Margin="0"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center">
+                        <suki:CircleProgressBar Value="{Binding OverallQueueProgressInt}">
+                            <TextBlock Margin="1,1,0,0"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="28"
+                                       FontWeight="Bold"
+                                       Text="{Binding OverallQueueProgressInt,StringFormat={}{0}%}" />
+                        </suki:CircleProgressBar>
+                    </Viewbox>
                     <StackPanel Grid.Column="1" Margin="24 0 0 0" VerticalAlignment="Center">
                         <!-- 进度信息 -->
                         <StackPanel Spacing="4"
@@ -56,8 +57,7 @@
                             <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
                             <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
                                 <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}{0:P1} ({1}/{2})">
-                                        <Binding Path="OverallQueueProgress" />
+                                    <MultiBinding StringFormat="{}帧: {0} | {1}">
                                         <Binding Path="CompletedFrames" />
                                         <Binding Path="TotalFrames" />
                                     </MultiBinding>
@@ -89,7 +89,7 @@
                             VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <!-- 开始队列按钮：只在队列停止时显示 -->
-                        <Button Classes="Flat" Command="{Binding StartQueueCommand}"
+                        <Button Classes="Flat Rounded" Command="{Binding StartQueueCommand}"
                                 IsEnabled="{Binding CanStartQueue}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <material:MaterialIcon Kind="BlenderSoftware" Width="24" Height="24" />
@@ -98,14 +98,14 @@
                         </Button>
 
                         <!-- 停止队列按钮：只在队列运行时显示 -->
-                        <Button Classes="Flat Danger Small" Command="{Binding StopQueueCommand}"
+                        <Button Classes="Danger Small Rounded" Command="{Binding StopQueueCommand}"
                                 IsEnabled="{Binding CanStopQueue}">
                             <material:MaterialIcon Kind="Stop" Width="24" Height="24" />
                         </Button>
                     </StackPanel>
 
                     <!-- 生成视频按钮：按下后隐藏，显示进度条 -->
-                    <Button Classes="Flat" Command="{Binding GenerateVideoFromSelectedTaskCommand}"
+                    <Button Classes="Rounded" Command="{Binding GenerateVideoFromSelectedTaskCommand}"
                             suki:ButtonExtensions.ShowProgress="{Binding IsGeneratingVideo}"
                             ToolTip.Tip="为选中的任务生成 H.265 视频（需要设置有效的 FFmpeg 路径和帧路径目录中有图片文件）">
                         <Button.IsEnabled>
