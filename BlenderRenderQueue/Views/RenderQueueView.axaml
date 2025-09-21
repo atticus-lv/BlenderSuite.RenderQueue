@@ -12,6 +12,7 @@
              xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
              xmlns:behaviors="clr-namespace:BlenderRenderQueue.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
              x:DataType="viewModels:RenderQueueViewModel"
@@ -24,7 +25,7 @@
 
     <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
 
-        <Grid Row="0" ColumnDefinitions="*,Auto,Auto">
+        <Grid Row="0" ColumnDefinitions="*,Auto,Auto,Auto">
             <suki:GlassCard Margin="8 4 4 4">
                 <StackPanel Orientation="Horizontal">
                     <Viewbox Width="100"
@@ -83,8 +84,15 @@
                                                      IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                                      Margin="16  0 " />
             </suki:GlassCard>
-            <!-- 队列统计信息 -->
-            <suki:GlassCard Grid.Column="2" Margin="4 4 8 4">
+            <suki:GlassCard Grid.Column="2" Margin="4">
+                <Expander ExpandDirection="Left">
+                    <Expander.Header>Devices</Expander.Header>
+                    <Expander.Content>
+                        <controls:HardwareMonitorControl></controls:HardwareMonitorControl>
+                    </Expander.Content>
+                </Expander>
+            </suki:GlassCard>
+            <suki:GlassCard Grid.Column="3" Margin="4 4 8 4">
                 <StackPanel Orientation="Vertical" Spacing="8"
                             VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="4">

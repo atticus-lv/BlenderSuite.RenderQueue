@@ -11,9 +11,11 @@
             <!-- <ProgressBar  -->
             <!--              Value="{Binding $parent[controls:HardwareMonitorControl].CpuLoad}" -->
             <!--              Maximum="100" /> -->
-            <Viewbox Width="100" Height="100">
-                <suki:WaveProgress Value="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad }"></suki:WaveProgress>
-            </Viewbox>
+            <Border Width="80" Height="80">
+                <Viewbox Width="80" Height="80">
+                    <suki:WaveProgress Value="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad }"></suki:WaveProgress>
+                </Viewbox>
+            </Border>
             <TextBlock Text="CPU" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold" />
             <!-- <TextBlock -->
             <!--     Text="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad, StringFormat={}{0:F1}%}" -->
@@ -35,10 +37,12 @@
             <!--              Maximum="100" /> -->
             <!-- <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].GpuLoad, StringFormat={}{0:F1}%}" -->
             <!--            VerticalAlignment="Center" /> -->
-
-            <Viewbox Width="100" Height="100">
-                <suki:WaveProgress Value="{Binding $parent[controls1:HardwareMonitorControl].GpuLoad }"></suki:WaveProgress>
-            </Viewbox>
+            <Border Width="80" Height="80">
+                <Viewbox Width="80" Height="80">
+                    <suki:WaveProgress Value="{Binding $parent[controls1:HardwareMonitorControl].GpuLoad }"></suki:WaveProgress>
+                </Viewbox>
+            </Border>
+            
             <TextBlock Text="GPU" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
 
             <!-- <TextBlock Text="温度:" Grid.Row="1" Grid.Column="0" Margin="0,0,10,0" /> -->
