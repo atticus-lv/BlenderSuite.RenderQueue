@@ -7,60 +7,86 @@
              x:Class="BlenderRenderQueue.Views.RenderTaskProgressPreviewView"
              x:DataType="vm:RenderTaskViewModel">
 
-    <Grid ColumnDefinitions="Auto,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
+    <Grid ColumnDefinitions="Auto,12,*" RowDefinitions="Auto" VerticalAlignment="Center">
         <!-- 预览图区域 -->
-        <!-- 渲染图片 (优先显示) -->
-        <Image Source="{Binding RenderedImage}"
-               Stretch="Uniform"
-               VerticalAlignment="Center"  HorizontalAlignment="Center"
-               IsVisible="{Binding HasRenderedImage}"
-               Name="RenderedImageControl"
-               Cursor="Hand"
-               DoubleTapped="OnRenderedImageDoubleTapped" />
+        <Border Grid.Row="0" Grid.Column="0" 
+                Width="80" Height="80" 
+                Background="{DynamicResource SukiPrimaryColor10}"
+                CornerRadius="8" 
+                VerticalAlignment="Center"
+                ClipToBounds="True">
+            <Grid>
+                <!-- 渲染图片 (优先显示) -->
+                <Border CornerRadius="8" ClipToBounds="True">
+                    <Image Source="{Binding RenderedImage}"
+                           Stretch="UniformToFill"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"
+                           IsVisible="{Binding HasRenderedImage}"
+                           Name="RenderedImageControl"
+                           Cursor="Hand"
+                           DoubleTapped="OnRenderedImageDoubleTapped" />
+                </Border>
 
-        <!-- 文件缩略图 (备选) -->
-        <Image Grid.Row="0" Grid.Column="0" Source="{Binding FileInfo.Thumbnail}"
-               Stretch="Uniform"
-               VerticalAlignment="Center"  HorizontalAlignment="Center"
-               IsVisible="{Binding HasRenderedImage, Converter={x:Static BoolConverters.Not}}" />
+                <!-- 文件缩略图 (备选) -->
+                <Border CornerRadius="8" ClipToBounds="True">
+                    <Image Source="{Binding FileInfo.Thumbnail}"
+                           Stretch="UniformToFill"
+                           VerticalAlignment="Center" HorizontalAlignment="Center"
+                           IsVisible="{Binding HasRenderedImage, Converter={x:Static BoolConverters.Not}}" />
+                </Border>
 
-        <!-- 占位符 -->
-        <StackPanel Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"
-                    IsVisible="{Binding HasRenderedImage, Converter={x:Static BoolConverters.Not}}">
-            <TextBlock Text="🖼️" FontSize="24" HorizontalAlignment="Center" />
-            <TextBlock Text="预览图" FontSize="10" HorizontalAlignment="Center"
-                       Foreground="#666" Margin="0,4,0,0" />
+                <!-- 占位符 -->
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                            IsVisible="{Binding HasRenderedImage, Converter={x:Static BoolConverters.Not}}">
+                    <TextBlock Text="🖼️" FontSize="20" HorizontalAlignment="Center" />
+                    <TextBlock Text="等待图像..." FontSize="8" HorizontalAlignment="Center"
+                               Foreground="#666" Margin="0,2,0,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 进度信息区域 -->
+        <StackPanel Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Spacing="4">
+            <!-- 总体进度 -->
+            <Grid ColumnDefinitions="Auto,8,*" RowDefinitions="Auto">
+                <TextBlock Grid.Row="0" Grid.Column="0" 
+                           VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
+                           MinWidth="60">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="{}进度: {0}/{1}">
+                            <Binding Path="CompletedFrames" />
+                            <Binding Path="RealTotalFrames" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                <ProgressBar Grid.Row="0" Grid.Column="2" 
+                             Minimum="0" Maximum="1"
+                             Value="{Binding OverallProgress01}"
+                             Height="16" VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- 当前帧进度 -->
+            <Grid ColumnDefinitions="Auto,8,*" RowDefinitions="Auto">
+                <TextBlock Grid.Row="0" Grid.Column="0" 
+                           Text="{Binding CurrentFrame, StringFormat='当前帧: {0}'}"
+                           VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
+                           MinWidth="60" />
+                <ProgressBar Grid.Row="0" Grid.Column="2" 
+                             Minimum="0" Maximum="1"
+                             Value="{Binding Progress01}" 
+                             Height="16" VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- 采样信息 -->
+            <Grid ColumnDefinitions="Auto,8,*" RowDefinitions="Auto">
+                <TextBlock Grid.Row="0" Grid.Column="0" 
+                           Text="采样:" 
+                           VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
+                           MinWidth="60" />
+                <TextBlock Grid.Row="0" Grid.Column="2"
+                           Text="{Binding SampleText}"
+                           VerticalAlignment="Center" FontSize="12" />
+            </Grid>
         </StackPanel>
-        <!-- 任务进度 -->
-        <TextBlock Grid.Row="0" Grid.Column="2"
-                   VerticalAlignment="Center" FontWeight="Bold" MinWidth="80">
-            <TextBlock.Text>
-                <MultiBinding StringFormat="{}进度: {0}/{1} ">
-                    <Binding Path="CompletedFrames" />
-                    <Binding Path="RealTotalFrames" />
-                </MultiBinding>
-            </TextBlock.Text>
-        </TextBlock>
-        <ProgressBar Grid.Row="0" Grid.Column="3" Minimum="0" Maximum="1"
-                     ShowProgressText="False"
-                     Value="{Binding OverallProgress01}"
-                     Height="20" Margin="0,0,8,0" />
-
-        <!-- 当前帧进度 -->
-        <TextBlock Grid.Row="1" Grid.Column="2"
-                   Text="{Binding CurrentFrame, StringFormat='当前帧: {0}'}"
-                   VerticalAlignment="Center" FontWeight="Bold" />
-        <ProgressBar Grid.Row="1" Grid.Column="3" Minimum="0" Maximum="1"
-                     Value="{Binding Progress01}" Height="20"
-                     ShowProgressText="False" Margin="0,0,8,0" />
-
-        <!-- 采样信息 -->
-        <TextBlock Grid.Row="2" Grid.Column="2" Text="采样:"
-                   VerticalAlignment="Center" FontWeight="Bold" />
-        <TextBlock Grid.Row="2" Grid.Column="3"
-                   Text="{Binding SampleText}"
-                   VerticalAlignment="Center" Margin="0,0,8,0" />
-
-
     </Grid>
 </UserControl>
