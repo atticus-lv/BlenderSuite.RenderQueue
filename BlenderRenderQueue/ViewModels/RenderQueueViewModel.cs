@@ -1046,6 +1046,14 @@ public partial class RenderQueueViewModel : ViewModelBase
                     // 只有当所有启用的任务都完成/失败/取消时，才设置为完成状态
                     QueueStatusText = "队列完成";
                     QueueState = QueueState.Completed;
+                    
+                    // 触发队列完成Toast
+                    var completedTasks = RenderTasks.Where(t => t.Enable && t.IsValid && t.Status == RenderTaskStatus.Completed).Count();
+                    var totalTasks = RenderTasks.Where(t => t.Enable && t.IsValid).Count();
+                    ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
+                        "渲染队列完成",
+                        $"所有任务已完成！成功渲染 {completedTasks}/{totalTasks} 个任务",
+                        NotificationType.Success));
                 }
                 else
                 {
