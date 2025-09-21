@@ -66,6 +66,8 @@ public partial class RenderQueueViewModel : ViewModelBase
     public double OverallQueueProgress =>
         RenderTasks.Any(t => t.Enable) && TotalFrames > 0 ? (double)CompletedFrames / TotalFrames : 0.0;
 
+    public int OverallQueueProgressInt => (int)(OverallQueueProgress * 100);
+
     public bool CanStartQueue
     {
         get
@@ -334,7 +336,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         RenderTasks.Clear();
         SelectedTask = null;
         UpdateQueueStatistics();
-        
+
         StatusMessageChanged?.Invoke(this, "已清空所有任务");
     }
 
@@ -592,7 +594,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         await Task.Delay(100);
 
         // 启动下一个待处理且启用且有效的任务
-        var pendingTask = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid);
+        var pendingTask =
+            RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid);
         if (pendingTask == null)
         {
             return;
@@ -668,6 +671,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         // 进度变化时只需要通知UI更新计算属性
         OnPropertyChanged(nameof(OverallQueueProgress));
+        OnPropertyChanged(nameof(OverallQueueProgressInt));
         OnPropertyChanged(nameof(CompletedFrames));
     }
 
@@ -899,9 +903,10 @@ public partial class RenderQueueViewModel : ViewModelBase
                 {
                     QueueStatusText = "等待中";
                 }
-                else if (RenderTasks.Where(t => t.Enable && t.IsValid).All(t => t.Status == RenderTaskStatus.Completed ||
-                                                                               t.Status == RenderTaskStatus.Failed ||
-                                                                               t.Status == RenderTaskStatus.Cancelled))
+                else if (RenderTasks.Where(t => t.Enable && t.IsValid).All(t =>
+                             t.Status == RenderTaskStatus.Completed ||
+                             t.Status == RenderTaskStatus.Failed ||
+                             t.Status == RenderTaskStatus.Cancelled))
                 {
                     // 只有当所有启用的任务都完成/失败/取消时，才设置为完成状态
                     QueueStatusText = "队列完成";
@@ -1057,21 +1062,27 @@ public partial class RenderQueueViewModel : ViewModelBase
                         Filename = Path.GetFileName(task.BlendFilePath),
                         Filepath = task.BlendFilePath,
                         StartFrame = 1, // 默认值，实际不使用
-                        EndFrame = 1,   // 默认值，实际不使用
+                        EndFrame = 1, // 默认值，实际不使用
                         LastRenderedFrame = task.CurrentFrame,
                         Enable = task.Enable,
-                         Override = (task.OverrideFrameRange || task.OverrideScene) ? new OverrideData
-                         {
-                             OverrideFrameRange = task.OverrideFrameRange ? new OverrideFrameRangeData
-                             {
-                                 StartFrame = task.StartFrame,
-                                 EndFrame = task.EndFrame
-                             } : null,
-                             OverrideScene = task.OverrideScene ? new OverrideSceneData
-                             {
-                                 SceneName = task.SelectedSceneName
-                             } : null
-                         } : null
+                        Override = (task.OverrideFrameRange || task.OverrideScene)
+                            ? new OverrideData
+                            {
+                                OverrideFrameRange = task.OverrideFrameRange
+                                    ? new OverrideFrameRangeData
+                                    {
+                                        StartFrame = task.StartFrame,
+                                        EndFrame = task.EndFrame
+                                    }
+                                    : null,
+                                OverrideScene = task.OverrideScene
+                                    ? new OverrideSceneData
+                                    {
+                                        SceneName = task.SelectedSceneName
+                                    }
+                                    : null
+                            }
+                            : null
                     }
                 }).ToList()
             };
@@ -1124,23 +1135,24 @@ public partial class RenderQueueViewModel : ViewModelBase
 
                 // 不再跳过文件不存在的任务，而是标记为无效
 
-                 // 确定是否使用覆写帧范围
-                 bool overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;
-                 int startFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.StartFrame : 1; // 默认值，将从文件读取
-                 int endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : 1;   // 默认值，将从文件读取
+                // 确定是否使用覆写帧范围
+                bool overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;
+                int startFrame =
+                    overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.StartFrame : 1; // 默认值，将从文件读取
+                int endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : 1; // 默认值，将从文件读取
 
-                 var task = new RenderTaskViewModel(
-                     taskInfo.Filepath,
-                     startFrame,
-                     endFrame,
-                     true, // AutoStart 默认为 true
-                     overrideFrameRange);
+                var task = new RenderTaskViewModel(
+                    taskInfo.Filepath,
+                    startFrame,
+                    endFrame,
+                    true, // AutoStart 默认为 true
+                    overrideFrameRange);
 
-                 // 设置 Enable 属性
-                 task.Enable = taskInfo.Enable;
+                // 设置 Enable 属性
+                task.Enable = taskInfo.Enable;
 
-                 // 保存场景覆写数据，稍后在文件属性加载完成后设置
-                 var savedOverrideScene = taskInfo.Override?.OverrideScene;
+                // 保存场景覆写数据，稍后在文件属性加载完成后设置
+                var savedOverrideScene = taskInfo.Override?.OverrideScene;
 
                 // 先添加到队列，不阻塞加载过程
                 Console.WriteLine(
@@ -1172,23 +1184,24 @@ public partial class RenderQueueViewModel : ViewModelBase
                                     $"[RenderQueueViewModel] After setting loading - IsLoading: {task.ScenePropertiesView.IsLoading}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
                             });
 
-                             await task.LoadFilePropertiesAsync(_blenderService);
-                             
-                             // 文件属性加载完成后，设置场景覆写属性
-                             if (savedOverrideScene != null)
-                             {
-                                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                                 {
-                                     task.OverrideScene = true;
-                                     task.SelectedSceneName = savedOverrideScene.SceneName;
-                                     Console.WriteLine($"[RenderQueueViewModel] ✅ Scene override restored: {savedOverrideScene.SceneName}");
-                                 });
-                             }
-                             
-                             Console.WriteLine(
-                                 $"[RenderQueueViewModel] ✅ File properties loaded: {Path.GetFileName(taskInfo.Filepath)}");
-                             Console.WriteLine(
-                                 $"[RenderQueueViewModel] Final state - IsLoading: {task.ScenePropertiesView.IsLoading}, IsLoaded: {task.ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
+                            await task.LoadFilePropertiesAsync(_blenderService);
+
+                            // 文件属性加载完成后，设置场景覆写属性
+                            if (savedOverrideScene != null)
+                            {
+                                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                                {
+                                    task.OverrideScene = true;
+                                    task.SelectedSceneName = savedOverrideScene.SceneName;
+                                    Console.WriteLine(
+                                        $"[RenderQueueViewModel] ✅ Scene override restored: {savedOverrideScene.SceneName}");
+                                });
+                            }
+
+                            Console.WriteLine(
+                                $"[RenderQueueViewModel] ✅ File properties loaded: {Path.GetFileName(taskInfo.Filepath)}");
+                            Console.WriteLine(
+                                $"[RenderQueueViewModel] Final state - IsLoading: {task.ScenePropertiesView.IsLoading}, IsLoaded: {task.ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
                         }
                         catch (Exception ex)
                         {
@@ -1285,7 +1298,8 @@ public class ConfirmDialogRequestedEventArgs : EventArgs
     public string ConfirmButtonText { get; }
     public Action ConfirmAction { get; }
 
-    public ConfirmDialogRequestedEventArgs(string title, string content, string cancelButtonText, string confirmButtonText, Action confirmAction)
+    public ConfirmDialogRequestedEventArgs(string title, string content, string cancelButtonText,
+        string confirmButtonText, Action confirmAction)
     {
         Title = title;
         Content = content;

@@ -26,24 +26,28 @@
 
 
         <!-- 队列统计信息 -->
-        <suki:GlassCard Grid.Row="1" Grid.ColumnSpan="2" Margin=" 8 8 8 4">
-            <Grid ColumnDefinitions="Auto,*">
+        <suki:GlassCard Grid.Row="1" Grid.ColumnSpan="2" Margin=" 8 8 4 4">
+            <Grid ColumnDefinitions="Auto,Auto,*">
+                <Border Width="100" Height="100">
+                    <Viewbox Width="120"
+                             Height="120" Margin="0"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center">
+                        <suki:WaveProgress
+                            Value="{Binding OverallQueueProgressInt}">
+                        </suki:WaveProgress>
+                    </Viewbox>
+                </Border>
 
-                <StackPanel>
+                <StackPanel Grid.Column="1" Margin="24 0 0 0" VerticalAlignment="Center">
                     <!-- 进度信息 -->
-                    <StackPanel Margin="0 0 " Orientation="Horizontal" Spacing="4"
+                    <StackPanel Spacing="4"
                                 VerticalAlignment="Center">
                         <TextBlock Text="{Binding QueueStatusText}" FontWeight="Bold" />
-                        <TextBlock Text="{Binding CompletedTaskCount, StringFormat='已完成: {0}'}" />
+                        <TextBlock Text="{Binding CompletedTaskCount, StringFormat='完成: {0}'}" />
                         <TextBlock Text="{Binding FailedTaskCount, StringFormat='失败: {0}'}" />
                         <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
-                                VerticalAlignment="Center">
-                        <ProgressBar Minimum="0" Maximum="1" Value="{Binding OverallQueueProgress}"
-                                     Width="200" Height="30" />
-                        <TextBlock VerticalAlignment="Center">
+                        <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
                             <TextBlock.Text>
                                 <MultiBinding StringFormat="{}{0:P1} ({1}/{2})">
                                     <Binding Path="OverallQueueProgress" />
@@ -56,34 +60,28 @@
 
 
                 </StackPanel>
-                <!-- 整体进度条 -->
-
-
-                <!-- 队列设置 -->
-                <!-- <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"> -->
-                <!--     <CheckBox Content="自动开始下一个任务" IsChecked="{Binding AutoStartNext}" -->
-                <!--               VerticalAlignment="Center" /> -->
-                <!-- </StackPanel> -->
-
+                
                 <Grid Grid.Column="2" ColumnDefinitions="*,Auto">
 
                     <!-- 队列控制按钮 -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                    <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="8"
                                 VerticalAlignment="Center">
-                        <!-- 开始队列按钮：只在队列停止时显示 -->
-                        <Button Classes="Flat" Command="{Binding StartQueueCommand}"
-                                IsEnabled="{Binding CanStartQueue}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <material:MaterialIcon Kind="BlenderSoftware" Width="24" Height="24" />
-                                <TextBlock Text="开始队列" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Button>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <!-- 开始队列按钮：只在队列停止时显示 -->
+                            <Button Classes="Flat" Command="{Binding StartQueueCommand}"
+                                    IsEnabled="{Binding CanStartQueue}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <material:MaterialIcon Kind="BlenderSoftware" Width="24" Height="24" />
+                                    <TextBlock Text="开始队列" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
 
-                        <!-- 停止队列按钮：只在队列运行时显示 -->
-                        <Button Classes="Flat Danger Small" Command="{Binding StopQueueCommand}"
-                                IsEnabled="{Binding CanStopQueue}">
-                            <material:MaterialIcon Kind="Stop" Width="24" Height="24" />
-                        </Button>
+                            <!-- 停止队列按钮：只在队列运行时显示 -->
+                            <Button Classes="Flat Danger Small" Command="{Binding StopQueueCommand}"
+                                    IsEnabled="{Binding CanStopQueue}">
+                                <material:MaterialIcon Kind="Stop" Width="24" Height="24" />
+                            </Button>
+                        </StackPanel>
 
                         <!-- 生成视频按钮：按下后隐藏，显示进度条 -->
                         <Button Classes="Flat" Command="{Binding GenerateVideoFromSelectedTaskCommand}"
@@ -97,7 +95,7 @@
                                 </MultiBinding>
                             </Button.IsEnabled>
                             <Button.Content>
-                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
                                     <TextBlock Text="🎬" VerticalAlignment="Center" />
                                     <TextBlock Text="生成视频" VerticalAlignment="Center" />
                                 </StackPanel>
