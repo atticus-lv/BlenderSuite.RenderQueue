@@ -14,10 +14,10 @@
 
     <Grid ColumnDefinitions="Auto,12,*" RowDefinitions="Auto" VerticalAlignment="Center">
         <!-- 预览图区域 -->
-        <Border Grid.Row="0" Grid.Column="0" 
-                Width="80" Height="80" 
+        <Border Grid.Row="0" Grid.Column="0"
+                Width="80" Height="80"
                 Background="{DynamicResource SukiPrimaryColor10}"
-                CornerRadius="8" 
+                CornerRadius="8"
                 VerticalAlignment="Center"
                 ClipToBounds="True">
             <Grid>
@@ -54,7 +54,7 @@
         <StackPanel Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Spacing="4">
             <!-- 总体进度 -->
             <Grid ColumnDefinitions="Auto,8,*" RowDefinitions="Auto">
-                <TextBlock Grid.Row="0" Grid.Column="0" 
+                <TextBlock Grid.Row="0" Grid.Column="0"
                            VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
                            MinWidth="60">
                     <TextBlock.Text>
@@ -64,34 +64,34 @@
                         </MultiBinding>
                     </TextBlock.Text>
                 </TextBlock>
-                <ProgressBar Grid.Row="0" Grid.Column="2" 
+                <ProgressBar Grid.Row="0" Grid.Column="2"
                              Minimum="0" Maximum="1"
                              Value="{Binding OverallProgress01}"
                              Height="16" VerticalAlignment="Center" />
             </Grid>
-
-            <!-- 当前帧进度 -->
+            <TextBlock
+                Text="{Binding CurrentFrame, StringFormat='当前帧: {0}'}"
+                VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
+                MinWidth="60" />
+            <!-- 当前帧 -->
             <Grid ColumnDefinitions="Auto,8,*" RowDefinitions="Auto">
-                <TextBlock Grid.Row="0" Grid.Column="0" 
-                           Text="{Binding CurrentFrame, StringFormat='当前帧: {0}'}"
-                           VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
-                           MinWidth="60" />
-                <ProgressBar Grid.Row="0" Grid.Column="2" 
+                <!-- 采样信息 -->
+                <Grid ColumnDefinitions="Auto,8,*" RowDefinitions="Auto">
+                    <TextBlock Grid.Row="0" Grid.Column="0"
+                               Text="采样:"
+                               VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
+                               MinWidth="60" />
+                    <TextBlock Grid.Row="0" Grid.Column="2"
+                               Text="{Binding SampleText}"
+                               VerticalAlignment="Center" FontSize="12" />
+                </Grid>
+                <ProgressBar Grid.Row="0" Grid.Column="2"
                              Minimum="0" Maximum="1"
-                             Value="{Binding Progress01}" 
+                             Value="{Binding Progress01}"
                              Height="16" VerticalAlignment="Center" />
             </Grid>
 
-            <!-- 采样信息 -->
-            <Grid ColumnDefinitions="Auto,8,*" RowDefinitions="Auto">
-                <TextBlock Grid.Row="0" Grid.Column="0" 
-                           Text="采样:" 
-                           VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
-                           MinWidth="60" />
-                <TextBlock Grid.Row="0" Grid.Column="2"
-                           Text="{Binding SampleText}"
-                           VerticalAlignment="Center" FontSize="12" />
-            </Grid>
+
         </StackPanel>
     </Grid>
 </UserControl>
