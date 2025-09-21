@@ -23,6 +23,7 @@
 
     <suki:SukiWindow.Hosts>
         <suki:SukiDialogHost Manager="{Binding DialogManager}"/>
+        <suki:SukiToastHost Manager="{Binding ToastManager}"/>
     </suki:SukiWindow.Hosts>
 
     <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />

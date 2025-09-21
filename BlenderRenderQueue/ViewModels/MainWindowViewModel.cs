@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.Input;
-using SukiUI.Controls;
 using SukiUI.Dialogs;
+using SukiUI.Toasts;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -8,6 +8,7 @@ public partial class MainWindowViewModel : ViewModelBase
 {
 	public ViewModelBase Content { get; }
 	public ISukiDialogManager DialogManager { get; } = new SukiDialogManager();
+	public ISukiToastManager ToastManager { get; } = new SukiToastManager();
 
 	public MainWindowViewModel()
 	{

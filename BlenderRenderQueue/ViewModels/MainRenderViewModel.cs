@@ -4,12 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SukiUI.Controls;
 using SukiUI.Dialogs;
+using SukiUI.Toasts;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -297,6 +300,61 @@ public partial class MainRenderViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    ///     通过 ToplevelService 获取顶层窗口的 ToastManager
+    /// </summary>
+    private ISukiToastManager? GetToastManager()
+    {
+        try
+        {
+            // 通过 ToplevelService 获取当前 ViewModel 对应的 Visual
+            var visual = ToplevelService.GetVisualForContext(this);
+            if (visual == null) return null;
+
+            // 获取顶层窗口
+            var topLevel = ToplevelService.GetTopLevelForContext(this);
+            if (topLevel == null) return null;
+
+            // 获取顶层窗口的 DataContext (应该是 MainWindowViewModel)
+            if (topLevel.DataContext is MainWindowViewModel mainWindowViewModel)
+                return mainWindowViewModel.ToastManager;
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainRenderViewModel] Error getting ToastManager: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 显示 Toast 提示
+    /// </summary>
+    /// <param name="title">标题</param>
+    /// <param name="content">内容</param>
+    /// <param name="type">通知类型</param>
+    private void ShowToast(string title, string content, NotificationType type)
+    {
+        try
+        {
+            var toastManager = GetToastManager();
+            if (toastManager != null)
+            {
+                toastManager.CreateToast()
+                    .WithTitle(title)
+                    .WithContent(content)
+                    .OfType(type)
+                    .Dismiss().After(TimeSpan.FromSeconds(3))
+                    .Queue();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainRenderViewModel] Error showing toast: {ex.Message}");
+        }
+    }
+
     private void OnConfirmDialogRequested(object? sender, ConfirmDialogRequestedEventArgs e)
     {
         // 使用 ToplevelService 获取顶层窗口的 DialogManager
@@ -365,6 +423,20 @@ public partial class MainRenderViewModel : ViewModelBase
     private void OnQueueStatusChanged(object? sender, QueueStatusChangedEventArgs e)
     {
         StatusMessage = e.StatusMessage;
+        
+        // 检查是否是视频生成相关的状态消息，显示 Toast 提示
+        if (e.StatusMessage.Contains("开始生成视频"))
+        {
+            ShowToast("开始生成视频", "正在处理图片序列，请稍候...", NotificationType.Information);
+        }
+        else if (e.StatusMessage.Contains("视频生成完成"))
+        {
+            ShowToast("视频生成完成", "视频已成功生成！", NotificationType.Success);
+        }
+        else if (e.StatusMessage.Contains("视频生成失败") || e.StatusMessage.Contains("生成视频时出错"))
+        {
+            ShowToast("视频生成失败", e.StatusMessage, NotificationType.Error);
+        }
     }
 
     private void OnRenderQueueStatusMessageChanged(object? sender, string message)
