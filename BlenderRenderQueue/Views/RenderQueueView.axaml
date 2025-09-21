@@ -211,13 +211,21 @@
                                                         <!-- 场景覆写信息 -->
                                                         <TextBlock FontSize="12"
                                                                    Foreground="{DynamicResource SukiAccentColor}"
-                                                                   Text="{Binding SelectedSceneName}"
                                                                    IsVisible="{Binding OverrideScene}"
                                                                    VerticalAlignment="Center">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding StringFormat="{}{0}">
+                                                                    <Binding Path="SelectedSceneName" />
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
                                                         </TextBlock>
                                                         <!-- 默认场景信息 -->
-                                                        <TextBlock FontSize="12" Text="{Binding SelectedSceneName}"
-                                                                   VerticalAlignment="Center">
+                                                        <TextBlock FontSize="12" VerticalAlignment="Center">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding StringFormat="{}{0}">
+                                                                    <Binding Path="SelectedSceneName" />
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
                                                             <TextBlock.IsVisible>
                                                                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                                                                     <Binding Path="IsValid" />
