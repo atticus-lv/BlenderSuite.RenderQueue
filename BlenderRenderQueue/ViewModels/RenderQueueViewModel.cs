@@ -58,7 +58,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     public int CompletedFrames => RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t =>
     {
-        var totalFrames = Math.Max(0, t.CompletedFrames);
+        var totalFrames = Math.Max(0, t.DisplayTotalFrames);
         return (int)(totalFrames * t.OverallProgress01);
     });
 
