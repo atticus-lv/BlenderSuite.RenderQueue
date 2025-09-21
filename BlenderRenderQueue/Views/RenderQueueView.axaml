@@ -24,7 +24,7 @@
 
     <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
 
-        <Grid Row="0" ColumnDefinitions="*,*,Auto">
+        <Grid Row="0" ColumnDefinitions="*,Auto,Auto">
             <suki:GlassCard Margin="8 4 4 4">
                 <StackPanel Orientation="Horizontal">
                     <Border Width="100" Height="100">
