@@ -68,12 +68,8 @@ class RENDERQUEUE_OT_submit_scene(Operator):
             self.report({'ERROR'}, f"App path does not exist: {prefs.app_dir}")
             return {'CANCELLED'}
 
-        # 获取data.json路径
-        data_json_path = app_dir.joinpath("data.json")
-
-        if not data_json_path.exists():
-            self.report({'ERROR'}, f"data.json not found at: {data_json_path}")
-            return {'CANCELLED'}
+        # 获取data_from_blender.json路径
+        data_json_path = app_dir.joinpath("data_from_blender.json")
 
         # 获取当前场景信息
         scene = context.scene
@@ -110,18 +106,18 @@ class RENDERQUEUE_OT_submit_scene(Operator):
             }
 
         try:
-            # 读取现有的data.json
-            with open(data_json_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
+            # 直接创建完整的JSON文件，不读取现有文件
+            data = {
+                "Software": "BlenderRenderQueue",
+                "Version": "0.0.1",
+                "Settings": {
+                    "BlenderPath": "",
+                    "FfmpegPath": ""
+                },
+                "RenderQueue": [new_task]
+            }
 
-            # 确保RenderQueue数组存在
-            if "RenderQueue" not in data:
-                data["RenderQueue"] = []
-
-            # 添加新任务
-            data["RenderQueue"].append(new_task)
-
-            # 写回文件
+            # 写入文件
             with open(data_json_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
