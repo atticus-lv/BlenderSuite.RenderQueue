@@ -102,10 +102,11 @@ class RENDERQUEUE_OT_submit_scene(Operator):
                 }
             }
         else:
-            # 添加场景覆写信息
+            # 添加场景覆写信息 - 使用正确的数据结构
             new_task["RenderTask"]["Override"] = {
-                "OverrideScene": True,
-                "SelectedSceneName": current_scene_name
+                "OverrideScene": {
+                    "SceneName": current_scene_name
+                }
             }
 
         try:
