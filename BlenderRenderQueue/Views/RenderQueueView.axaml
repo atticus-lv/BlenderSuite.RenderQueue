@@ -184,8 +184,8 @@
                                                         <TextBlock FontSize="12">
                                                             <TextBlock.Text>
                                                                 <MultiBinding StringFormat="{}{0}-{1}">
-                                                                    <Binding Path="StartFrame" />
-                                                                    <Binding Path="EndFrame" />
+                                                                    <Binding Path="DisplayStartFrame" />
+                                                                    <Binding Path="DisplayEndFrame" />
                                                                 </MultiBinding>
                                                             </TextBlock.Text>
                                                         </TextBlock>

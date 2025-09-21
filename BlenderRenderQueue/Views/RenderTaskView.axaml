@@ -84,7 +84,7 @@
                             <TextBlock.Text>
                                 <MultiBinding StringFormat="{}进度: {0}/{1} ">
                                     <Binding Path="CompletedFrames" />
-                                    <Binding Path="TotalFrames" />
+                                    <Binding Path="DisplayTotalFrames" />
                                 </MultiBinding>
                             </TextBlock.Text>
                         </TextBlock>

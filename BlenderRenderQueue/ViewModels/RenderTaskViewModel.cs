@@ -71,14 +71,30 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public int TotalFrames => Math.Max(0, EndFrame - StartFrame + 1);
 
+    // 显示用的帧范围属性
+    public int DisplayStartFrame => OverrideFrameRange ? StartFrame : ScenePropertiesView.SceneProperties.FrameStart;
+    public int DisplayEndFrame => OverrideFrameRange ? EndFrame : ScenePropertiesView.SceneProperties.FrameEnd;
+    public int DisplayTotalFrames => Math.Max(0, DisplayEndFrame - DisplayStartFrame + 1);
+
     partial void OnStartFrameChanged(int value)
     {
         OnPropertyChanged(nameof(TotalFrames));
+        OnPropertyChanged(nameof(DisplayStartFrame));
+        OnPropertyChanged(nameof(DisplayTotalFrames));
     }
 
     partial void OnEndFrameChanged(int value)
     {
         OnPropertyChanged(nameof(TotalFrames));
+        OnPropertyChanged(nameof(DisplayEndFrame));
+        OnPropertyChanged(nameof(DisplayTotalFrames));
+    }
+
+    partial void OnOverrideFrameRangeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(DisplayStartFrame));
+        OnPropertyChanged(nameof(DisplayEndFrame));
+        OnPropertyChanged(nameof(DisplayTotalFrames));
     }
 
     [ObservableProperty]
@@ -414,6 +430,11 @@ public partial class RenderTaskViewModel : ViewModelBase
             StartFrame = ScenePropertiesView.SceneProperties.FrameStart;
             EndFrame = ScenePropertiesView.SceneProperties.FrameEnd;
             EnqueueLog($"[QUERY] 文件属性加载完成: 帧范围 {StartFrame}..{EndFrame}");
+            
+            // 触发显示属性更新
+            OnPropertyChanged(nameof(DisplayStartFrame));
+            OnPropertyChanged(nameof(DisplayEndFrame));
+            OnPropertyChanged(nameof(DisplayTotalFrames));
         }
         catch (Exception ex)
         {
