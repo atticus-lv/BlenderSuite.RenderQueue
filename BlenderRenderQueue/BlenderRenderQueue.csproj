@@ -52,6 +52,9 @@
       <Compile Update="Views\ImagePreviewWindow.axaml.cs">
         <DependentUpon>ImagePreviewWindow.axaml</DependentUpon>
       </Compile>
+      <Compile Update="Views\RenderTaskProgressPreviewView.axaml.cs">
+        <DependentUpon>ImagePreviewCardView.axaml</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>

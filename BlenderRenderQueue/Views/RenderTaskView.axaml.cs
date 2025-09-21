@@ -17,11 +17,4 @@ public partial class RenderTaskView : UserControl
         AvaloniaXamlLoader.Load(this);
     }
 
-    private void OnRenderedImageDoubleTapped(object? sender, TappedEventArgs e)
-    {
-        if (DataContext is RenderTaskViewModel viewModel)
-        {
-            viewModel.OpenImagePreviewCommand.Execute(null);
-        }
-    }
 }
