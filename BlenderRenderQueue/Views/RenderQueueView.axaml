@@ -69,7 +69,7 @@
                         <Button Classes="Flat" Command="{Binding StartQueueCommand}"
                                 IsEnabled="{Binding CanStartQueue}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <material:MaterialIcon Kind="BlenderSoftware" Width="24" Height="24"></material:MaterialIcon>
+                                <material:MaterialIcon Kind="BlenderSoftware" Width="24" Height="24" />
                                 <TextBlock Text="开始队列" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
@@ -77,7 +77,7 @@
                         <!-- 停止队列按钮：只在队列运行时显示 -->
                         <Button Classes="Flat Danger Small" Command="{Binding StopQueueCommand}"
                                 IsEnabled="{Binding CanStopQueue}">
-                            <material:MaterialIcon Kind="Stop" Width="24" Height="24"></material:MaterialIcon>
+                            <material:MaterialIcon Kind="Stop" Width="24" Height="24" />
                         </Button>
 
                         <!-- 生成视频按钮：按下后隐藏，显示进度条 -->
@@ -158,8 +158,7 @@
                                     <behaviors:ListBoxDragDropBehavior />
                                 </i:Interaction.Behaviors>
                                 <ListBox.Styles>
-                                    <Style Selector="ListBoxItem /template/ Border">
-                                    </Style>
+                                    <Style Selector="ListBoxItem /template/ Border" />
                                     <Style Selector="ListBoxItem:pointerover /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
                                     </Style>
@@ -173,8 +172,6 @@
                                                 CornerRadius="4"
                                                 Padding="4">
                                             <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-
-
                                                 <StackPanel Grid.Column="0">
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                                         <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold"
@@ -184,7 +181,7 @@
                                                                    ToolTip.Tip="文件不存在或无法访问" />
                                                     </StackPanel>
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock Text="{Binding StatusText}" 
+                                                        <TextBlock Text="{Binding StatusText}"
                                                                    IsVisible="{Binding IsValid}"
                                                                    FontSize="10" />
                                                         <TextBlock FontSize="12" IsVisible="{Binding IsValid}">
@@ -196,7 +193,8 @@
                                                             </TextBlock.Text>
                                                         </TextBlock>
                                                         <!-- 场景覆写信息 -->
-                                                        <TextBlock FontSize="10" Foreground="Orange" IsVisible="{Binding OverrideScene}">
+                                                        <TextBlock FontSize="10" Foreground="Orange"
+                                                                   IsVisible="{Binding OverrideScene}">
                                                             <TextBlock.Text>
                                                                 <MultiBinding StringFormat="场景: {0}">
                                                                     <Binding Path="SelectedSceneName" />
@@ -208,7 +206,8 @@
                                                             <TextBlock.IsVisible>
                                                                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                                                                     <Binding Path="IsValid" />
-                                                                    <Binding Path="OverrideScene" Converter="{x:Static BoolConverters.Not}" />
+                                                                    <Binding Path="OverrideScene"
+                                                                             Converter="{x:Static BoolConverters.Not}" />
                                                                 </MultiBinding>
                                                             </TextBlock.IsVisible>
                                                             <TextBlock.Text>
