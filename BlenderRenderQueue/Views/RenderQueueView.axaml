@@ -239,8 +239,13 @@
 
                                                 <StackPanel Grid.Column="1" Margin="8 0 0 0">
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold"
-                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock FontWeight="Bold"
+                                                                   TextTrimming="CharacterEllipsis">
+                                                            <TextBlock.Text>
+                                                                <Binding Path="BlendFileName" 
+                                                                         Converter="{x:Static vm:RenderTaskViewModel.FileNameConverter}" />
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
                                                     </StackPanel>
 
                                                     <!-- 加载状态显示 -->

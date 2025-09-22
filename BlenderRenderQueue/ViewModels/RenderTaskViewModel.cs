@@ -17,6 +17,7 @@ using Avalonia.Media.Imaging;
 using System.IO;
 using System.Linq;
 using BlenderRenderQueue.Views;
+using BlenderRenderQueue.Converters;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -993,6 +994,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     // 转换器
     public static readonly IValueConverter StatusToColorConverter = new StatusToColorConverter();
+    public static readonly IValueConverter FileNameConverter = new Converters.FileNameConverter();
 }
 
 // 状态到颜色的转换器
