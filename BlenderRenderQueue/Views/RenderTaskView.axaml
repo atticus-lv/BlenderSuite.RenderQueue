@@ -101,7 +101,7 @@
                                     <TextBlock Grid.Row="3" Grid.Column="0" Text="路径:" FontWeight="Bold"
                                                VerticalAlignment="Center" />
                                     <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding FileInfo.FilePath}"
-                                               TextTrimming="PrefixCharacterEllipsis" VerticalAlignment="Center"
+                                               VerticalAlignment="Center"
                                                TextWrapping="NoWrap" />
                                 </Grid>
 
