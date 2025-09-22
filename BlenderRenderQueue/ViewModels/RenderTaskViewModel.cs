@@ -55,10 +55,10 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     // 场景覆写相关属性
     [ObservableProperty]
-    private List<string> _availableSceneNames = new();
+    private List<string> _availableSceneNames = [];
 
     public bool HasValidSceneSelection =>
-        !string.IsNullOrEmpty(SelectedSceneName) && AvailableSceneNames.Contains(SelectedSceneName);
+        !string.IsNullOrEmpty(SelectedSceneName) && ScenePropertiesView.SceneNames.Contains(SelectedSceneName);
 
     public bool ShowSceneOverrideWarning => OverrideScene && !HasValidSceneSelection;
 
