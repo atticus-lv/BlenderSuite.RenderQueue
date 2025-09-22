@@ -5,7 +5,6 @@
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:design="clr-namespace:BlenderRenderQueue.ViewModels.DesignTime"
              xmlns:conv="using:Avalonia.Data.Converters"
-             xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
@@ -186,25 +185,21 @@
                                     <behaviors:ListBoxDragDropBehavior />
                                 </i:Interaction.Behaviors>
                                 <ListBox.Styles>
-                                    <Style Selector="ListBoxItem /template/ Border" />
                                     <Style Selector="ListBoxItem:pointerover /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
                                     </Style>
                                     <Style Selector="ListBoxItem:selected /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
                                     </Style>
+                                    <Style Selector="ListBoxItem.isDropTarget /template/ Border">
+                                        <Setter Property="Background" Value="{DynamicResource SukiAccentColor75}" />
+                                    </Style>
                                 </ListBox.Styles>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Margin="2"
+                                        <Border Background="{Binding $parent[ListBox].Background}" Margin="2"
                                                 CornerRadius="4"
                                                 Padding="4">
-                                            <Border.Background>
-                                                <MultiBinding Converter="{x:Static converters:DropTargetBackgroundConverter.Instance}">
-                                                    <Binding Path="IsDropTarget" />
-                                                    <Binding Path="$parent[ListBox].Background" />
-                                                </MultiBinding>
-                                            </Border.Background>
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
 
                                                 <Panel Margin="0 0 8 0" VerticalAlignment="Center">

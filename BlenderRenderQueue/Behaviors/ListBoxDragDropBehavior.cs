@@ -64,9 +64,14 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         var dropItem = GetMouseOverItem(sender, e);
         if (dropItem != null && dropItem != _dragItem)
         {
-            if (_previousDropItem != null && _previousDropItem != dropItem) _previousDropItem.IsDropTarget = false;
+            if (_previousDropItem != null && _previousDropItem != dropItem) 
+            {
+                _previousDropItem.IsDropTarget = false;
+                SetDropTargetVisual(_previousDropItem, false);
+            }
 
             dropItem.IsDropTarget = true;
+            SetDropTargetVisual(dropItem, true);
             _previousDropItem = dropItem;
         }
         else
@@ -74,6 +79,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
             if (_previousDropItem != null)
             {
                 _previousDropItem.IsDropTarget = false;
+                SetDropTargetVisual(_previousDropItem, false);
                 _previousDropItem = null;
             }
         }
@@ -198,6 +204,21 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         return distance >= 10;
     }
 
+    private void SetDropTargetVisual(RenderTaskViewModel item, bool isDropTarget)
+    {
+        if (AssociatedObject == null) return;
+        
+        // 查找对应的 ListBoxItem
+        foreach (var listBoxItem in AssociatedObject.GetLogicalDescendants().OfType<ListBoxItem>())
+        {
+            if (listBoxItem.DataContext == item)
+            {
+                DropTargetBehavior.SetIsDropTarget(listBoxItem, isDropTarget);
+                break;
+            }
+        }
+    }
+
     private void ResetDragState()
     {
         _dragItem = null;
@@ -205,6 +226,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         AssociatedObject.Cursor = Cursor.Default;
         if (_previousDropItem == null) return;
         _previousDropItem.IsDropTarget = false;
+        SetDropTargetVisual(_previousDropItem, false);
         _previousDropItem = null;
     }
 }
