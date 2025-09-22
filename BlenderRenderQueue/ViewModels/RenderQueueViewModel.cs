@@ -63,6 +63,15 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     // 文件监控相关
     private FileSystemWatcher? _blenderDataWatcher; // 监控Blender插件写入的文件
+    
+    // AOT兼容的JSON序列化选项
+    private readonly System.Text.Json.JsonSerializerOptions _jsonOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+    };
 
     // 计算属性 - 用于UI绑定
     public bool IsQueueRunning => QueueState == QueueState.Running;
@@ -1461,11 +1470,8 @@ public partial class RenderQueueViewModel : ViewModelBase
                 return;
             }
 
-            // 解析JSON
-            var appData = System.Text.Json.JsonSerializer.Deserialize<AppData>(jsonContent, new System.Text.Json.JsonSerializerOptions
-            {
-                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
-            });
+            // 解析JSON - 使用AOT兼容的序列化选项
+            var appData = System.Text.Json.JsonSerializer.Deserialize<AppData>(jsonContent, _jsonOptions);
 
             if (appData?.RenderQueue == null || !appData.RenderQueue.Any())
             {
