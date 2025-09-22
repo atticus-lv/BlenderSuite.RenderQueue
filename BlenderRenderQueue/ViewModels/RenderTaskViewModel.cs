@@ -72,6 +72,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     private bool _isDropTarget = false;
 
     [ObservableProperty]
+    private bool _isDragTarget = false;
+
+    [ObservableProperty]
     private bool _isPendingDeletion = false;
 
 

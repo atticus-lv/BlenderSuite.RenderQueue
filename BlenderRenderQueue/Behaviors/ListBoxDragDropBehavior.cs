@@ -54,6 +54,10 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
             return;
         }
 
+        // 设置拖拽状态
+        _dragItem.IsDragTarget = true;
+        SetDragTargetVisual(_dragItem, true);
+
         _startPoint = e.GetPosition(AssociatedObject.GetVisualRoot() as Visual);
     }
 
@@ -219,8 +223,30 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         }
     }
 
+    private void SetDragTargetVisual(RenderTaskViewModel item, bool isDragTarget)
+    {
+        if (AssociatedObject == null) return;
+        
+        // 查找对应的 ListBoxItem
+        foreach (var listBoxItem in AssociatedObject.GetLogicalDescendants().OfType<ListBoxItem>())
+        {
+            if (listBoxItem.DataContext == item)
+            {
+                DropTargetBehavior.SetIsDragTarget(listBoxItem, isDragTarget);
+                break;
+            }
+        }
+    }
+
     private void ResetDragState()
     {
+        // 清除拖拽状态
+        if (_dragItem != null)
+        {
+            _dragItem.IsDragTarget = false;
+            SetDragTargetVisual(_dragItem, false);
+        }
+        
         _dragItem = null;
         _isDragging = false;
         AssociatedObject.Cursor = Cursor.Default;
