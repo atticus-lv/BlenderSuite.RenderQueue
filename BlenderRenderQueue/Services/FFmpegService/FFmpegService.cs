@@ -56,7 +56,7 @@ public class FFmpegService : IFFmpegService
             {
                 throw new InvalidOperationException($"在目录 {inputDirectory} 中未找到支持的图片文件 (PNG, JPG, JPEG, BMP, TIFF, TGA)");
             }
-
+            
             // 获取总帧数，用于计算百分比
             var totalFrames = imageFiles.Length;
             
@@ -88,16 +88,16 @@ public class FFmpegService : IFFmpegService
                     fileListContent.Add(""); // 添加空行
                     await File.WriteAllLinesAsync(tempFileList, fileListContent, cancellationToken);
                     
-                    // Console.WriteLine($"临时文件列表内容:\n{string.Join("\n", fileListContent)}");
-                    
-                    // 使用 concat demuxer 和正确的参数
+                    // 使用 concat demuxer，让 FFmpeg 自动处理色彩空间
                     await FFMpegArguments
                         .FromFileInput(tempFileList, false, options => options
                             .WithFramerate(fps)
                             .WithCustomArgument("-f concat -safe 0"))
                         .OutputToFile(outputVideoPath, true, options => options
                             .WithVideoCodec(VideoCodec.LibX265)
-                            .WithVideoBitrate(20000))
+                            .WithCustomArgument("-crf 0")  // 无损压缩
+                            .WithCustomArgument("-g 18")  // GOP大小
+                            .WithCustomArgument("-preset slow"))  // 高质量编码
                         .CancellableThrough(cancellationToken)
                         .NotifyOnProgress(progress => 
                         {
@@ -127,7 +127,9 @@ public class FFmpegService : IFFmpegService
                         .WithFramerate(fps))
                     .OutputToFile(outputVideoPath, true, options => options
                         .WithVideoCodec(VideoCodec.LibX265)
-                        .WithVideoBitrate(20000))
+                        .WithCustomArgument("-crf 0")  // 无损压缩
+                        .WithCustomArgument("-g 18")  // GOP大小
+                        .WithCustomArgument("-preset slow"))  // 高质量编码
                     .CancellableThrough(cancellationToken)
                     .NotifyOnProgress(progress => 
                     {
