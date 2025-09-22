@@ -91,10 +91,11 @@ public class FFmpegService : IFFmpegService
                     // 使用 concat demuxer，让 FFmpeg 自动处理色彩空间
                     await FFMpegArguments
                         .FromFileInput(tempFileList, false, options => options
-                            .WithFramerate(fps)
                             .WithCustomArgument("-f concat -safe 0"))
                         .OutputToFile(outputVideoPath, true, options => options
-                            .WithVideoCodec(VideoCodec.LibX265)
+                            .WithVideoCodec(VideoCodec.LibX264)
+                            .ForcePixelFormat("yuv420p")
+                            .WithFramerate(fps)
                             .WithCustomArgument("-crf 0")  // 无损压缩
                             .WithCustomArgument("-g 18")  // GOP大小
                             .WithCustomArgument("-preset slow"))  // 高质量编码
@@ -126,7 +127,8 @@ public class FFmpegService : IFFmpegService
                     .FromFileInput(inputPattern, false, options => options
                         .WithFramerate(fps))
                     .OutputToFile(outputVideoPath, true, options => options
-                        .WithVideoCodec(VideoCodec.LibX265)
+                        .WithVideoCodec(VideoCodec.LibX264)
+                        .ForcePixelFormat("yuv420p")
                         .WithCustomArgument("-crf 0")  // 无损压缩
                         .WithCustomArgument("-g 18")  // GOP大小
                         .WithCustomArgument("-preset slow"))  // 高质量编码
@@ -174,47 +176,45 @@ public class FFmpegService : IFFmpegService
                 .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            if (files.Length > 0)
-            {
-                // 检查文件命名格式
-                var firstFile = Path.GetFileNameWithoutExtension(files[0]);
-                var ext = extension.Substring(1); // 移除 "*"
+            if (files.Length <= 0) continue;
+            // 检查文件命名格式
+            var firstFile = Path.GetFileNameWithoutExtension(files[0]);
+            var ext = extension.Substring(1); // 移除 "*"
                 
-                // 如果文件名包含数字，分析数字格式
-                if (Regex.IsMatch(firstFile, @"\d+"))
+            // 如果文件名包含数字，分析数字格式
+            if (Regex.IsMatch(firstFile, @"\d+"))
+            {
+                // 检查数字的位数和格式
+                var match = Regex.Match(firstFile, @"(\D*)(\d+)(\D*)");
+                if (match.Success)
                 {
-                    // 检查数字的位数和格式
-                    var match = Regex.Match(firstFile, @"(\D*)(\d+)(\D*)");
-                    if (match.Success)
+                    var prefix = match.Groups[1].Value;
+                    var number = match.Groups[2].Value;
+                    var suffix = match.Groups[3].Value;
+                        
+                    // 根据数字位数生成模式
+                    var digitCount = number.Length;
+                    var pattern = $"{prefix}%0{digitCount}d{suffix}{ext}";
+                        
+                    // 检查文件编号是否连续从0开始
+                    var firstNumber = int.Parse(number);
+                    if (firstNumber == 0)
                     {
-                        var prefix = match.Groups[1].Value;
-                        var number = match.Groups[2].Value;
-                        var suffix = match.Groups[3].Value;
-                        
-                        // 根据数字位数生成模式
-                        var digitCount = number.Length;
-                        var pattern = $"{prefix}%0{digitCount}d{suffix}{ext}";
-                        
-                        // 检查文件编号是否连续从0开始
-                        var firstNumber = int.Parse(number);
-                        if (firstNumber == 0)
-                        {
-                            // 如果从0开始，直接使用模式
-                            return (files, pattern);
-                        }
-                        else
-                        {
-                            // 如果不从0开始，需要重命名文件或使用不同的方法
-                            // 这里我们使用文件列表的方式而不是模式匹配
-                            return (files, "FILE_LIST");
-                        }
+                        // 如果从0开始，直接使用模式
+                        return (files, pattern);
+                    }
+                    else
+                    {
+                        // 如果不从0开始，需要重命名文件或使用不同的方法
+                        // 这里我们使用文件列表的方式而不是模式匹配
+                        return (files, "FILE_LIST");
                     }
                 }
-                
-                // 默认使用简单的 %d 模式
-                var defaultPattern = $"%d{ext}";
-                return (files, defaultPattern);
             }
+                
+            // 默认使用简单的 %d 模式
+            var defaultPattern = $"%d{ext}";
+            return (files, defaultPattern);
         }
 
         return (Array.Empty<string>(), string.Empty);
