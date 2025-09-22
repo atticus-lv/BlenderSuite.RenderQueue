@@ -78,10 +78,10 @@ public class BlenderExeService : BasePythonProcessService
             var data = e.Data;
             // 检查是否是真正的Blender崩溃（显著特征：输出"Blender quit"）
             var isBlenderCrash = data.Contains("Blender quit", StringComparison.OrdinalIgnoreCase);
+            var isAccessViolationCrash = data.Contains("EXCEPTION_ACCESS_VIOLATION", StringComparison.OrdinalIgnoreCase);
             
-            if (isBlenderCrash)
+            if (isBlenderCrash || isAccessViolationCrash)
             {
-                // 这是真正的Blender崩溃，应该被当作错误处理
                 RaiseErrorReceived($"Error: {e.Data}");
                 return;
             }
