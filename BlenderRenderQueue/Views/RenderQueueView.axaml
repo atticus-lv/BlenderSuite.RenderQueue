@@ -168,10 +168,10 @@
 
 
         <!-- 主要内容区域 -->
-        <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="1*,0,2*" Margin="4">
+        <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="Auto,*" Margin="4">
 
-            <!-- 左侧任务列表 -->
-            <Border Grid.Column="0" Margin="4">
+            <!-- 任务列表 -->
+            <Border Grid.Column="1" Margin="4">
                 <Grid RowDefinitions="Auto,*,Auto">
 
 
@@ -474,13 +474,13 @@
 
 
             <!-- 右侧任务详情 -->
-            <Border Grid.Column="2" Margin="4">
+            <Border Grid.Column="0" Margin="4" IsVisible="{Binding !HasNoTasks}">
                 <Panel>
                     <!-- 空状态提示 -->
                     <suki:GlassCard>
                         <Panel>
                             <TextBlock Text="选择一个任务查看" FontSize="20" Foreground="Gray" VerticalAlignment="Center"
-                                       HorizontalAlignment="Center" FontWeight="SemiBold"
+                                       HorizontalAlignment="Center" FontWeight="SemiBold" Margin="50"
                                        IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNull}}" />
                             <ScrollViewer>
                                 <ContentControl Content="{Binding SelectedTask}">
