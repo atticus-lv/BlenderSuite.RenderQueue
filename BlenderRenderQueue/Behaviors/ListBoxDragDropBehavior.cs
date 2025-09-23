@@ -57,16 +57,32 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
             return;
         }
 
-        // 设置拖拽状态
-        SetDragTargetVisual(_dragItem, true);
-        Console.WriteLine($"[DragDrop Debug] Start dragging: {System.IO.Path.GetFileName(_dragItem.BlendFilePath)}");
-
+        // 记录起始点，但不立即设置拖拽状态
         _startPoint = e.GetPosition(AssociatedObject.GetVisualRoot() as Visual);
+        
+        Console.WriteLine($"[DragDrop Debug] Pointer pressed on drag handle: {System.IO.Path.GetFileName(_dragItem.BlendFilePath)}");
     }
 
     private void OnPointerMoved(object? sender, PointerEventArgs e)
     {
         if (_dragItem == null) return;
+
+        var currentPosition = e.GetPosition(AssociatedObject.GetVisualRoot() as Visual);
+        
+        // 检查是否超过拖拽阈值
+        if (!IsDragThresholdExceeded(currentPosition))
+        {
+            AssociatedObject.Cursor = Cursor.Default;
+            return;
+        }
+
+        // 只有在超过阈值时才设置拖拽状态
+        if (!_isDragging)
+        {
+            _isDragging = true;
+            SetDragTargetVisual(_dragItem, true);
+            Console.WriteLine($"[DragDrop Debug] Start dragging: {System.IO.Path.GetFileName(_dragItem.BlendFilePath)}");
+        }
 
         var dropItem = GetMouseOverItem(sender, e);
         if (dropItem != null && dropItem != _dragItem)
@@ -95,17 +111,6 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
             }
         }
 
-        var currentPosition = e.GetPosition(AssociatedObject.GetVisualRoot() as Visual);
-        
-        // 检查是否超过拖拽阈值
-        if (!IsDragThresholdExceeded(currentPosition))
-        {
-            AssociatedObject.Cursor = Cursor.Default;
-            return;
-        }
-
-        if (!_isDragging) _isDragging = true;
-
         // 检查是否在ListBox外部
         if (IsPointerOutsideListBox(e) || _dragItem == null)
         {
@@ -123,6 +128,14 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (_dragItem == null) return;
+
+        // 如果没有开始拖拽（只是单击），直接清理状态
+        if (!_isDragging)
+        {
+            Console.WriteLine($"[DragDrop Debug] Click without drag - cleaning up");
+            ResetDragState();
+            return;
+        }
 
         var dropItem = GetMouseOverItem(sender, e);
 
@@ -308,7 +321,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         
         Console.WriteLine("[DragDrop Debug] Clearing all drag states");
         
-        // 清理所有ListBoxItem的拖拽状态，防止状态残留
+        // 强制清理所有ListBoxItem的拖拽状态，防止状态残留
         foreach (var listBoxItem in AssociatedObject.GetLogicalDescendants().OfType<ListBoxItem>())
         {
             var hasDropTarget = listBoxItem.Classes.Contains("isDropTarget");
@@ -319,18 +332,13 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
                 var dataContext = listBoxItem.DataContext as RenderTaskViewModel;
                 var fileName = dataContext != null ? System.IO.Path.GetFileName(dataContext.BlendFilePath) : "Unknown";
                 
-                if (hasDropTarget)
-                {
-                    Console.WriteLine($"[DragDrop Debug] Clear drop target state: {fileName}");
-                    DropTargetBehavior.SetIsDropTarget(listBoxItem, false);
-                }
-                
-                if (hasDragTarget)
-                {
-                    Console.WriteLine($"[DragDrop Debug] Clear drag target state: {fileName}");
-                    DropTargetBehavior.SetIsDragTarget(listBoxItem, false);
-                }
+                Console.WriteLine($"[DragDrop Debug] Force clear all states: {fileName}");
+                DropTargetBehavior.ForceClearAllStates(listBoxItem);
             }
         }
+        
+        // 强制刷新整个 ListBox 的视觉状态
+        AssociatedObject.InvalidateVisual();
+        AssociatedObject.InvalidateArrange();
     }
 }
