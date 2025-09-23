@@ -17,8 +17,18 @@ public class DataPersistenceService : IDataPersistenceService
     public DataPersistenceService()
     {
         // 数据文件路径：运行目录下的 data.json
-        _dataFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data.json");
-        
+        // _dataFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data.json");
+        _dataFilePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "BlenderRenderQueue",
+            "data.json"
+        );
+        var directory = Path.GetDirectoryName(_dataFilePath);
+        if (!Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory!);
+        }
+
         // JSON 序列化选项 - 配置为支持 AOT 编译
         _jsonOptions = new JsonSerializerOptions
         {
@@ -35,13 +45,13 @@ public class DataPersistenceService : IDataPersistenceService
         try
         {
             Console.WriteLine($"[DataPersistenceService] Saving data to: {_dataFilePath}");
-            
+
             // 序列化为 JSON
             var json = JsonSerializer.Serialize(data, _jsonOptions);
-            
+
             // 异步写入文件
             await File.WriteAllTextAsync(_dataFilePath, json);
-            
+
             Console.WriteLine($"[DataPersistenceService] ✅ Data saved successfully");
             return true;
         }
@@ -63,20 +73,21 @@ public class DataPersistenceService : IDataPersistenceService
             }
 
             Console.WriteLine($"[DataPersistenceService] Loading data from: {_dataFilePath}");
-            
+
             // 异步读取文件
             var json = await File.ReadAllTextAsync(_dataFilePath);
-            
+
             // 反序列化 JSON
             var data = JsonSerializer.Deserialize<AppData>(json, _jsonOptions);
-            
+
             if (data == null)
             {
                 Console.WriteLine($"[DataPersistenceService] ❌ Failed to deserialize data, returning default");
                 return new AppData();
             }
-            
-            Console.WriteLine($"[DataPersistenceService] ✅ Data loaded successfully - Tasks: {data.RenderQueue.Count}, Blender: {data.Settings.BlenderPath}, FFmpeg: {data.Settings.FfmpegPath}");
+
+            Console.WriteLine(
+                $"[DataPersistenceService] ✅ Data loaded successfully - Tasks: {data.RenderQueue.Count}, Blender: {data.Settings.BlenderPath}, FFmpeg: {data.Settings.FfmpegPath}");
             return data;
         }
         catch (Exception ex)
@@ -101,6 +112,7 @@ public class DataPersistenceService : IDataPersistenceService
                 Console.WriteLine($"[DataPersistenceService] ✅ Data file deleted: {_dataFilePath}");
                 return true;
             }
+
             return true; // 文件不存在也算删除成功
         }
         catch (Exception ex)

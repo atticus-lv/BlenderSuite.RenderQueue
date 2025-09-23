@@ -1364,11 +1364,19 @@ public partial class RenderQueueViewModel : ViewModelBase
         try
         {
             // 获取应用程序目录
-            var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            var blenderDataPath = Path.Combine(appDirectory, "data_from_blender.json");
+            // var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            var appDataDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "BlenderRenderQueue"
+            );
+            var blenderDataPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "BlenderRenderQueue",
+                "data.json"
+            );
 
             // 创建文件监控器
-            _blenderDataWatcher = new FileSystemWatcher(appDirectory, "data_from_blender.json")
+            _blenderDataWatcher = new FileSystemWatcher(appDataDirectory, "data_from_blender.json")
             {
                 NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.CreationTime,
                 EnableRaisingEvents = true
