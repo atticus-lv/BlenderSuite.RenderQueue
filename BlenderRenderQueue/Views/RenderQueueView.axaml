@@ -185,15 +185,6 @@
                                     <behaviors:ListBoxDragDropBehavior />
                                 </i:Interaction.Behaviors>
                                 <ListBox.Styles>
-                                     <Style Selector="ListBoxItem /template/ Border">
-                                         <Setter Property="Background" Value="Transparent" />
-                                         <Setter Property="Transitions">
-                                             <Transitions>
-                                                 <BrushTransition Property="Background" Duration="0:0:0.15" />
-                                             </Transitions>
-                                         </Setter>
-                                     </Style>
-                                    
                                     <Style Selector="ListBoxItem:pointerover /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
                                     </Style>
@@ -201,7 +192,7 @@
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
                                     </Style>
                                     <Style Selector="ListBoxItem.isDropTarget /template/ Border">
-                                        <Setter Property="Background" Value="{DynamicResource SukiAccentColor50}" />
+                                        <Setter Property="Background" Value="{DynamicResource SukiAccentColor75}" />
                                     </Style>
                                     <Style Selector="ListBoxItem.isDragTarget /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor}" />
