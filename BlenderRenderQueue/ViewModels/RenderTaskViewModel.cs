@@ -68,11 +68,6 @@ public partial class RenderTaskViewModel : ViewModelBase
         EnableChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    [ObservableProperty]
-    private bool _isDropTarget = false;
-
-    [ObservableProperty]
-    private bool _isDragTarget = false;
 
     [ObservableProperty]
     private bool _isPendingDeletion = false;

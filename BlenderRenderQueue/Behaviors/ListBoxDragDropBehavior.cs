@@ -55,7 +55,6 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         }
 
         // 设置拖拽状态
-        _dragItem.IsDragTarget = true;
         SetDragTargetVisual(_dragItem, true);
 
         _startPoint = e.GetPosition(AssociatedObject.GetVisualRoot() as Visual);
@@ -70,11 +69,9 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         {
             if (_previousDropItem != null && _previousDropItem != dropItem) 
             {
-                _previousDropItem.IsDropTarget = false;
                 SetDropTargetVisual(_previousDropItem, false);
             }
 
-            dropItem.IsDropTarget = true;
             SetDropTargetVisual(dropItem, true);
             _previousDropItem = dropItem;
         }
@@ -82,31 +79,34 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         {
             if (_previousDropItem != null)
             {
-                _previousDropItem.IsDropTarget = false;
                 SetDropTargetVisual(_previousDropItem, false);
                 _previousDropItem = null;
             }
         }
 
+        var currentPosition = e.GetPosition(AssociatedObject.GetVisualRoot() as Visual);
+        
+        // 检查是否超过拖拽阈值
+        if (!IsDragThresholdExceeded(currentPosition))
+        {
+            AssociatedObject.Cursor = Cursor.Default;
+            return;
+        }
+
+        if (!_isDragging) _isDragging = true;
+
+        // 检查是否在ListBox外部
         if (IsPointerOutsideListBox(e) || _dragItem == null)
         {
             AssociatedObject.Cursor = new Cursor(StandardCursorType.No);
             return;
         }
 
-
-        var currentPosition = e.GetPosition(AssociatedObject.GetVisualRoot() as Visual);
-        if (!IsDragThresholdExceeded(currentPosition)) return;
-
-        if (!_isDragging) _isDragging = true;
-
-        if (_isDragging)
-        {
-            var viewModel = AssociatedObject.DataContext as RenderQueueViewModel;
-            AssociatedObject.Cursor = viewModel is { CanModifyTasks: false }
-                ? new Cursor(StandardCursorType.No)
-                : new Cursor(StandardCursorType.DragMove);
-        }
+        // 设置拖拽光标
+        var viewModel = AssociatedObject.DataContext as RenderQueueViewModel;
+        AssociatedObject.Cursor = viewModel is { CanModifyTasks: false }
+            ? new Cursor(StandardCursorType.No)
+            : new Cursor(StandardCursorType.DragMove);
     }
 
     private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
@@ -205,7 +205,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         var deltaX = currentPosition.X - _startPoint.X;
         var deltaY = currentPosition.Y - _startPoint.Y;
         var distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-        return distance >= 10;
+        return distance >= 5; // 降低阈值，提高响应性
     }
 
     private void SetDropTargetVisual(RenderTaskViewModel item, bool isDropTarget)
@@ -243,16 +243,28 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         // 清除拖拽状态
         if (_dragItem != null)
         {
-            _dragItem.IsDragTarget = false;
             SetDragTargetVisual(_dragItem, false);
         }
         
+        // 清除所有可能的拖拽目标状态
+        if (_previousDropItem != null)
+        {
+            SetDropTargetVisual(_previousDropItem, false);
+        }
+        
+        // 清理所有ListBoxItem的拖拽状态，防止状态残留
+        if (AssociatedObject != null)
+        {
+            foreach (var listBoxItem in AssociatedObject.GetLogicalDescendants().OfType<ListBoxItem>())
+            {
+                DropTargetBehavior.SetIsDropTarget(listBoxItem, false);
+                DropTargetBehavior.SetIsDragTarget(listBoxItem, false);
+            }
+        }
+        
         _dragItem = null;
+        _previousDropItem = null;
         _isDragging = false;
         AssociatedObject.Cursor = Cursor.Default;
-        if (_previousDropItem == null) return;
-        _previousDropItem.IsDropTarget = false;
-        SetDropTargetVisual(_previousDropItem, false);
-        _previousDropItem = null;
     }
 }
