@@ -185,24 +185,32 @@
                                     <behaviors:ListBoxDragDropBehavior />
                                 </i:Interaction.Behaviors>
                                 <ListBox.Styles>
-                                     <Style Selector="ListBoxItem /template/ Border">
-                                         <Setter Property="Background" Value="Transparent" />
-                                         <Setter Property="Transitions">
-                                             <Transitions>
-                                                 <BrushTransition Property="Background" Duration="0:0:0.15" />
-                                             </Transitions>
-                                         </Setter>
-                                     </Style>
+                                    <!-- 基础样式：设置透明背景和过渡动画 -->
+                                    <Style Selector="ListBoxItem /template/ Border">
+                                        <Setter Property="Background" Value="Transparent" />
+                                        <Setter Property="Transitions">
+                                            <Transitions>
+                                                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                                            </Transitions>
+                                        </Setter>
+                                    </Style>
                                     
+                                    <!-- 鼠标悬停样式 -->
                                     <Style Selector="ListBoxItem:pointerover /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
                                     </Style>
+                                    
+                                    <!-- 选中样式 -->
                                     <Style Selector="ListBoxItem:selected /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
                                     </Style>
+                                    
+                                    <!-- 拖拽目标样式 -->
                                     <Style Selector="ListBoxItem.isDropTarget /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiAccentColor50}" />
                                     </Style>
+                                    
+                                    <!-- 被拖拽项目样式 -->
                                     <Style Selector="ListBoxItem.isDragTarget /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor}" />
                                     </Style>
