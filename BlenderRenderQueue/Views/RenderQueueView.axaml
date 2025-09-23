@@ -161,7 +161,6 @@
                                     BackgroundDuringDrag="{DynamicResource SukiPrimaryColor}" />
                             </i:Interaction.Behaviors>
                             <Panel>
-
                                 <ListBox ItemsSource="{Binding RenderTasks}"
                                          Classes="WithoutCheck"
                                          SelectedItem="{Binding SelectedTask}" Margin="4">
@@ -403,11 +402,10 @@
                                     </ListBox.ItemTemplate>
                                 </ListBox>
                                 <TextBlock Text="拖拽 .blend 文件到这里添加任务"
-                                           IsVisible="{Binding RenderTasks.Count, Converter={x:Static conv:ObjectConverters.IsNull}}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
-                                           FontSize="14"
-                                           Foreground="{DynamicResource SukiPrimaryColor}" />
+                                           IsVisible="{Binding HasNoTasks}"
+                                           FontSize="14" />
                                 <!-- 叠加在ListBox上方的按钮 -->
                                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="20"
                                             HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.8"
@@ -423,8 +421,7 @@
                                             Classes="Flat Danger Small Rounded">
                                         <Button.IsEnabled>
                                             <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                <Binding Path="RenderTasks.Count"
-                                                         Converter="{x:Static conv:ObjectConverters.IsNotNull}" />
+                                                <Binding Path="HasNoTasks" />
                                                 <Binding Path="CanModifyTasks" />
                                             </MultiBinding>
                                         </Button.IsEnabled>
