@@ -30,8 +30,8 @@
             <suki:GlassCard Margin="8 4 4 4">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Orientation="Horizontal">
-                        <Viewbox Width="100"
-                                 Height="100" Margin="0"
+                        <Viewbox Width="80"
+                                 Height="80" Margin="0"
                                  HorizontalAlignment="Center"
                                  VerticalAlignment="Center">
                             <suki:CircleProgressBar Value="{Binding OverallQueueProgressInt}">
@@ -89,13 +89,10 @@
                             <Button Click="ToggleDeviceInfoPane" Classes="Basic" Padding="8 0 0 0 ">
                                 <Button.Content>
                                     <StackPanel>
-                                        <TextBlock FontWeight="Bold">C</TextBlock>
-                                        <TextBlock FontWeight="Bold">P</TextBlock>
-                                        <TextBlock FontWeight="Bold">U</TextBlock>
-                                        <TextBlock FontWeight="Bold" HorizontalAlignment="Center">-</TextBlock>
-                                        <TextBlock FontWeight="Bold">G</TextBlock>
-                                        <TextBlock FontWeight="Bold">P</TextBlock>
-                                        <TextBlock FontWeight="Bold">U</TextBlock>
+                                        <TextBlock>设</TextBlock>
+                                        <TextBlock>备</TextBlock>
+                                        <TextBlock>负</TextBlock>
+                                        <TextBlock>载</TextBlock>
                                     </StackPanel>
                                 </Button.Content>
                             </Button>
