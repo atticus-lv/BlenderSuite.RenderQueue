@@ -228,13 +228,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         {
             if (listBoxItem.DataContext == item)
             {
-                // 检查状态是否真的发生了变化
-                var currentState = listBoxItem.Classes.Contains("isDropTarget");
-                if (currentState != isDropTarget)
-                {
-                    Console.WriteLine($"[DragDrop Debug] SetDropTargetVisual: {System.IO.Path.GetFileName(item.BlendFilePath)} = {isDropTarget}");
-                    DropTargetBehavior.SetIsDropTarget(listBoxItem, isDropTarget);
-                }
+                DropTargetBehavior.SetIsDropTarget(listBoxItem, isDropTarget);
                 break;
             }
         }
@@ -249,13 +243,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         {
             if (listBoxItem.DataContext == item)
             {
-                // 检查状态是否真的发生了变化
-                var currentState = listBoxItem.Classes.Contains("isDragTarget");
-                if (currentState != isDragTarget)
-                {
-                    Console.WriteLine($"[DragDrop Debug] SetDragTargetVisual: {System.IO.Path.GetFileName(item.BlendFilePath)} = {isDragTarget}");
-                    DropTargetBehavior.SetIsDragTarget(listBoxItem, isDragTarget);
-                }
+                DropTargetBehavior.SetIsDragTarget(listBoxItem, isDragTarget);
                 break;
             }
         }
