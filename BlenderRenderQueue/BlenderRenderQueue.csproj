@@ -66,8 +66,4 @@
     <ItemGroup>
         <TrimmerRootDescriptor Include="TrimmerRoots.xml" />
     </ItemGroup>
-    
-    <ItemGroup>
-      <Folder Include="Converters\" />
-    </ItemGroup>
 </Project>
