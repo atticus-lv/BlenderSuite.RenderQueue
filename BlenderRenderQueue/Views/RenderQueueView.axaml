@@ -191,6 +191,13 @@
                                     <Style Selector="ListBoxItem:selected /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
                                     </Style>
+                                    <Style Selector="ListBoxItem /template/ Border">
+                                        <Setter Property="BorderThickness" Value="0" />
+                                    </Style>
+                                    <Style Selector="ListBoxItem:dragging /template/ Border">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}" />
+                                        <Setter Property="BorderThickness" Value="1" />
+                                    </Style>
                                     <Style Selector="ListBoxItem:not(:dragging)">
                                         <Setter Property="Transitions">
                                             <Setter.Value>
