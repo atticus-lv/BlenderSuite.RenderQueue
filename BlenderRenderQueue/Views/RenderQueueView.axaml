@@ -73,7 +73,7 @@
                                            FontFamily="Foran"
                                            FontWeight="Bold"
                                            IsVisible="{Binding IsQueueRunning}"
-                                           Foreground="{DynamicResource SukiSuccessDarkColor}"
+                                           Foreground="{DynamicResource SukiAccentColor}"
                                            VerticalAlignment="Center" />
                             </StackPanel>
                         </StackPanel>
