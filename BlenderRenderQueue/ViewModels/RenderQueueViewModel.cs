@@ -1,17 +1,24 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using System.Timers;
+using Avalonia.Controls.Notifications;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.FFmpegService;
-using BlenderRenderQueue.Services;
-using BlenderRenderQueue.Models;
-using System.Collections.Generic;
-using System.IO;
-using Avalonia.Platform.Storage;
-using Avalonia.Controls.Notifications;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -30,13 +37,13 @@ public partial class RenderQueueViewModel : ViewModelBase
     private QueueState _queueState = QueueState.Idle;
 
     [ObservableProperty]
-    private int _activeTaskCount = 0;
+    private int _activeTaskCount;
 
     [ObservableProperty]
-    private int _completedTaskCount = 0;
+    private int _completedTaskCount;
 
     [ObservableProperty]
-    private int _failedTaskCount = 0;
+    private int _failedTaskCount;
 
     [ObservableProperty]
     private string _queueStatusText = "队列空闲";
@@ -45,36 +52,38 @@ public partial class RenderQueueViewModel : ViewModelBase
     private bool _autoStartNext = true; // 自动开始下一个任务
 
     [ObservableProperty]
-    private bool _isGeneratingVideo = false; // 是否正在生成视频
+    private bool _isGeneratingVideo; // 是否正在生成视频
 
     [ObservableProperty]
-    private double _videoGenerationProgress = 0.0; // 视频生成进度
+    private double _videoGenerationProgress; // 视频生成进度
 
     [ObservableProperty]
     private string _videoGenerationStatus = string.Empty; // 视频生成状态
 
+
     // 剩余时间计算相关
     private readonly Queue<TimeSpan> _recentFrameRenderTimes = new(); // 最近帧渲染时间队列
     private const int MaxRecentFrames = 3; // 最多记录3帧
-    private System.Timers.Timer? _remainingTimeTimer; // 剩余时间更新定时器
-    
+    private Timer? _remainingTimeTimer; // 剩余时间更新定时器
+
     [ObservableProperty]
     private string _remainingTimeText = string.Empty; // 剩余时间文本
 
     // 文件监控相关
     private FileSystemWatcher? _blenderDataWatcher; // 监控Blender插件写入的文件
-    
+
     // AOT兼容的JSON序列化选项
-    private readonly System.Text.Json.JsonSerializerOptions _jsonOptions = new()
+    private readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = true,
-        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
     };
 
     // 计算属性 - 用于UI绑定
     public bool IsQueueRunning => QueueState == QueueState.Running;
+    public bool HasNoTasks => RenderTasks.Count == 0;
     public bool HasRunningTasks => ActiveTaskCount > 0;
 
     // 帧数相关的计算属性 - 只计算启用且有效的任务，使用实际渲染用的帧范围
@@ -100,7 +109,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 记录帧渲染时间，用于计算剩余时间
+    ///     记录帧渲染时间，用于计算剩余时间
     /// </summary>
     /// <param name="frameNumber">完成的帧号</param>
     /// <param name="frameRenderTime">帧渲染时间</param>
@@ -110,31 +119,26 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (frameRenderTime.TotalSeconds > 0)
         {
             _recentFrameRenderTimes.Enqueue(frameRenderTime);
-            
+
             // 保持队列大小不超过最大帧数
-            while (_recentFrameRenderTimes.Count > MaxRecentFrames)
-            {
-                _recentFrameRenderTimes.Dequeue();
-            }
-            
-            Console.WriteLine($"[RecordFrameCompletion] Frame {frameNumber} completed, render time: {frameRenderTime.TotalSeconds:F2}s");
+            while (_recentFrameRenderTimes.Count > MaxRecentFrames) _recentFrameRenderTimes.Dequeue();
+
+            Console.WriteLine(
+                $"[RecordFrameCompletion] Frame {frameNumber} completed, render time: {frameRenderTime.TotalSeconds:F2}s");
         }
     }
 
     /// <summary>
-    /// 定时器事件处理，更新剩余时间
+    ///     定时器事件处理，更新剩余时间
     /// </summary>
-    private void OnRemainingTimeTimerElapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    private void OnRemainingTimeTimerElapsed(object? sender, ElapsedEventArgs e)
     {
         // 在UI线程上更新
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-        {
-            UpdateRemainingTime();
-        });
+        Dispatcher.UIThread.Post(() => { UpdateRemainingTime(); });
     }
 
     /// <summary>
-    /// 更新剩余时间文本
+    ///     更新剩余时间文本
     /// </summary>
     private void UpdateRemainingTime()
     {
@@ -166,8 +170,9 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 显示计算出的剩余时间
         var formattedTime = FormatTimeSpan(TimeSpan.FromSeconds(estimatedRemainingSeconds));
         RemainingTimeText = formattedTime;
-        
-        Console.WriteLine($"[RemainingTime] RemainingFrames: {remainingFrames}, AvgRenderTime: {averageRenderTime:F2}s, Estimated: {estimatedRemainingSeconds:F2}s, Display: {formattedTime}");
+
+        Console.WriteLine(
+            $"[RemainingTime] RemainingFrames: {remainingFrames}, AvgRenderTime: {averageRenderTime:F2}s, Estimated: {estimatedRemainingSeconds:F2}s, Display: {formattedTime}");
     }
 
 
@@ -200,7 +205,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private BlenderExeService? _blenderService;
     private readonly IFFmpegService _ffmpegService = new FFmpegService();
     private readonly IDataPersistenceService _dataPersistenceService = new DataPersistenceService();
-    private readonly object _queueLock = new object();
+    private readonly object _queueLock = new();
 
     // 事件
     public event EventHandler<QueueStatusChangedEventArgs>? QueueStatusChanged;
@@ -212,7 +217,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     public RenderQueueViewModel()
     {
         // 初始化剩余时间更新定时器
-        _remainingTimeTimer = new System.Timers.Timer(1000); // 每秒更新一次
+        _remainingTimeTimer = new Timer(1000); // 每秒更新一次
         _remainingTimeTimer.Elapsed += OnRemainingTimeTimerElapsed;
         _remainingTimeTimer.AutoReset = true;
 
@@ -234,6 +239,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 e.PropertyName == nameof(RenderTasks))
             {
                 OnPropertyChanged(nameof(IsQueueRunning));
+                OnPropertyChanged(nameof(HasNoTasks));
                 OnPropertyChanged(nameof(HasRunningTasks));
                 OnPropertyChanged(nameof(TotalFrames));
                 OnPropertyChanged(nameof(CompletedFrames));
@@ -276,12 +282,38 @@ public partial class RenderQueueViewModel : ViewModelBase
         var blendFiles = await SelectMultipleBlendFiles();
         if (blendFiles == null || !blendFiles.Any()) return;
 
-        foreach (var blendFile in blendFiles)
-        {
-            await AddTaskToQueue(blendFile);
-        }
+        foreach (var blendFile in blendFiles) await AddTaskToQueue(blendFile);
 
         Console.WriteLine($"[DEBUG] AddMultipleTasks completed - Total tasks: {RenderTasks.Count}");
+    }
+
+    [RelayCommand]
+    private async Task AddDroppedFiles(IEnumerable<IStorageItem> files)
+    {
+        if (_blenderService == null)
+        {
+            StatusMessageChanged?.Invoke(this, "请先设置有效的Blender路径");
+            return;
+        }
+
+        var blendFiles = files
+            .OfType<IStorageFile>()
+            .Where(file => file.Name.EndsWith(".blend", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (!blendFiles.Any())
+        {
+            StatusMessageChanged?.Invoke(this, "请拖拽 .blend 文件");
+            return;
+        }
+
+        foreach (var file in blendFiles)
+        {
+            var filePath = file.Path.LocalPath;
+            await AddTaskToQueue(filePath);
+        }
+
+        StatusMessageChanged?.Invoke(this, $"成功添加 {blendFiles.Count} 个文件到渲染队列");
     }
 
     private async Task AddTaskToQueue(string blendFilePath)
@@ -289,13 +321,10 @@ public partial class RenderQueueViewModel : ViewModelBase
         try
         {
             // 新任务默认不覆写帧范围，使用场景默认值
-            var task = new RenderTaskViewModel(blendFilePath, 1, 1, true, false);
+            var task = new RenderTaskViewModel(blendFilePath, 1, 1);
 
             // 自动加载文件属性
-            if (_blenderService != null)
-            {
-                await task.LoadFilePropertiesAsync(_blenderService);
-            }
+            if (_blenderService != null) await task.LoadFilePropertiesAsync(_blenderService);
 
             RenderTasks.Add(task);
 
@@ -319,10 +348,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         var taskToRemove = SelectedTask;
 
         // 如果任务正在运行，先停止
-        if (taskToRemove.Status == RenderTaskStatus.Running)
-        {
-            taskToRemove.StopRender();
-        }
+        if (taskToRemove.Status == RenderTaskStatus.Running) taskToRemove.StopRender();
 
         // 取消订阅事件
         UnsubscribeFromTaskEvents(taskToRemove);
@@ -348,10 +374,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (taskToRemove.IsPendingDeletion)
         {
             // 如果任务正在运行，先停止
-            if (taskToRemove.Status == RenderTaskStatus.Running)
-            {
-                taskToRemove.StopRender();
-            }
+            if (taskToRemove.Status == RenderTaskStatus.Running) taskToRemove.StopRender();
 
             // 如果删除的是当前选中的任务，记录位置以便选择新任务
             var wasSelected = SelectedTask == taskToRemove;
@@ -372,20 +395,14 @@ public partial class RenderQueueViewModel : ViewModelBase
                 if (RenderTasks.Count > 0)
                 {
                     if (selectedIndex < RenderTasks.Count)
-                    {
                         // 选择原来位置的任务（现在是下一个任务）
                         SelectedTask = RenderTasks[selectedIndex];
-                    }
                     else if (selectedIndex > 0)
-                    {
                         // 选择上一个任务
                         SelectedTask = RenderTasks[selectedIndex - 1];
-                    }
                     else
-                    {
                         // 选择第一个任务
                         SelectedTask = RenderTasks[0];
-                    }
                 }
                 else
                 {
@@ -408,14 +425,11 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 清除所有任务的预备删除状态
+    ///     清除所有任务的预备删除状态
     /// </summary>
     private void ClearPendingDeletionStates()
     {
-        foreach (var task in RenderTasks)
-        {
-            task.IsPendingDeletion = false;
-        }
+        foreach (var task in RenderTasks) task.IsPendingDeletion = false;
     }
 
     [RelayCommand]
@@ -433,10 +447,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private void ExecuteRemoveAllTasks()
     {
         // 停止所有运行中的任务
-        foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
-        {
-            task.StopRender();
-        }
+        foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running)) task.StopRender();
 
         // 取消订阅所有事件并释放资源
         foreach (var task in RenderTasks)
@@ -477,10 +488,8 @@ public partial class RenderQueueViewModel : ViewModelBase
             $"[DEBUG] StartQueue called - CanStartQueue: {CanStartQueue}, QueueState: {QueueState}, TaskCount: {RenderTasks.Count}, BlenderService: {_blenderService != null}");
 
         if (!CanStartQueue)
-        {
             // Console.WriteLine("[DEBUG] StartQueue aborted - CanStartQueue is false");
             return;
-        }
 
         if (_blenderService == null)
         {
@@ -495,10 +504,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 停止队列：重置所有启用且有效的任务状态，从头开始
         foreach (var task in RenderTasks.Where(t => t.Enable && t.IsValid))
         {
-            if (task.Status == RenderTaskStatus.Running)
-            {
-                task.StopRender();
-            }
+            if (task.Status == RenderTaskStatus.Running) task.StopRender();
 
             // 重置启用的任务状态为等待中，从头开始
             task.Status = RenderTaskStatus.Pending;
@@ -513,7 +519,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         // 清空帧渲染时间记录，重新开始计算
         _recentFrameRenderTimes.Clear();
-        
+
         // 启动剩余时间更新定时器
         _remainingTimeTimer?.Start();
 
@@ -527,10 +533,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (!CanStopQueue) return;
 
         // 停止所有运行中的任务
-        foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
-        {
-            task.StopRender();
-        }
+        foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running)) task.StopRender();
 
         QueueState = QueueState.Idle;
         QueueStatusText = "队列已停止";
@@ -541,10 +544,10 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         // 停止剩余时间更新定时器
         _remainingTimeTimer?.Stop();
-        
+
         // 清空帧渲染时间记录
         _recentFrameRenderTimes.Clear();
-        
+
         // 清空剩余时间显示
         RemainingTimeText = string.Empty;
     }
@@ -555,10 +558,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (SelectedTask == null) return;
 
         var index = RenderTasks.IndexOf(SelectedTask);
-        if (index > 0)
-        {
-            RenderTasks.Move(index, index - 1);
-        }
+        if (index > 0) RenderTasks.Move(index, index - 1);
     }
 
     [RelayCommand]
@@ -567,10 +567,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (SelectedTask == null) return;
 
         var index = RenderTasks.IndexOf(SelectedTask);
-        if (index < RenderTasks.Count - 1)
-        {
-            RenderTasks.Move(index, index + 1);
-        }
+        if (index < RenderTasks.Count - 1) RenderTasks.Move(index, index + 1);
     }
 
     [RelayCommand]
@@ -579,10 +576,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (SelectedTask == null) return;
 
         var index = RenderTasks.IndexOf(SelectedTask);
-        if (index > 0)
-        {
-            RenderTasks.Move(index, 0);
-        }
+        if (index > 0) RenderTasks.Move(index, 0);
     }
 
     [RelayCommand]
@@ -591,10 +585,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (SelectedTask == null) return;
 
         var index = RenderTasks.IndexOf(SelectedTask);
-        if (index < RenderTasks.Count - 1)
-        {
-            RenderTasks.Move(index, RenderTasks.Count - 1);
-        }
+        if (index < RenderTasks.Count - 1) RenderTasks.Move(index, RenderTasks.Count - 1);
     }
 
 
@@ -661,7 +652,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 {
                     // 更新进度
                     VideoGenerationProgress = progress;
-                    VideoGenerationStatus = $"生成中:";
+                    VideoGenerationStatus = "生成中:";
                 });
 
             if (success)
@@ -690,13 +681,13 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         _blenderService = blenderService;
         // Console.WriteLine("[RenderQueueViewModel] BlenderService set successfully");
-        
+
         // 重新初始化文件监控，因为现在有了Blender路径
         InitializeBlenderDataWatcher();
     }
 
     /// <summary>
-    /// 检查BlenderService是否已准备就绪
+    ///     检查BlenderService是否已准备就绪
     /// </summary>
     public bool IsBlenderServiceReady()
     {
@@ -710,18 +701,12 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     private async Task StartNextAvailableTasks()
     {
-        if (QueueState != QueueState.Running)
-        {
-            return;
-        }
+        if (QueueState != QueueState.Running) return;
 
         // 单任务模式：先停止所有正在运行的任务，然后启动下一个
         var runningTasks = RenderTasks.Where(t => t.Status == RenderTaskStatus.Running).ToList();
 
-        foreach (var task in runningTasks)
-        {
-            task.StopRender();
-        }
+        foreach (var task in runningTasks) task.StopRender();
 
         // 等待一下确保任务停止
         await Task.Delay(100);
@@ -755,10 +740,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             finally
             {
                 // 任务完成后，尝试启动下一个任务
-                if (AutoStartNext && QueueState == QueueState.Running)
-                {
-                    await StartNextAvailableTasks();
-                }
+                if (AutoStartNext && QueueState == QueueState.Running) await StartNextAvailableTasks();
             }
         });
 
@@ -799,19 +781,13 @@ public partial class RenderQueueViewModel : ViewModelBase
         UpdateQueueStatistics();
 
         var task = sender as RenderTaskViewModel;
-        if (task != null)
-        {
-            TaskCompleted?.Invoke(this, new TaskCompletedEventArgs(task, e.Status));
-        }
+        if (task != null) TaskCompleted?.Invoke(this, new TaskCompletedEventArgs(task, e.Status));
     }
 
     private void OnTaskProgressChanged(object? sender, RenderTaskProgressEventArgs e)
     {
         // 记录帧完成时间用于剩余时间计算
-        if (e.CurrentFrame > 0)
-        {
-            RecordFrameCompletion(e.CurrentFrame, e.FrameRenderTime);
-        }
+        if (e.CurrentFrame > 0) RecordFrameCompletion(e.CurrentFrame, e.FrameRenderTime);
 
         // 进度变化时只需要通知UI更新计算属性
         OnPropertyChanged(nameof(OverallQueueProgress));
@@ -834,17 +810,14 @@ public partial class RenderQueueViewModel : ViewModelBase
             var wasSelected = SelectedTask == task; // 保存是否被选中的状态
 
             // 停止当前任务（如果正在运行）
-            if (task.Status == RenderTaskStatus.Running)
-            {
-                task.StopRender();
-            }
+            if (task.Status == RenderTaskStatus.Running) task.StopRender();
 
             // 取消订阅事件并释放资源
             UnsubscribeFromTaskEvents(task);
             task.Dispose();
 
             // 创建新的任务实例
-            var newTask = new RenderTaskViewModel(filePath, 1, 1, true, false);
+            var newTask = new RenderTaskViewModel(filePath, 1, 1);
 
             // 重新加载文件属性
             await newTask.LoadFilePropertiesAsync(_blenderService);
@@ -856,10 +829,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             SubscribeToTaskEvents(newTask);
 
             // 如果这是之前选中的任务，重新选中新任务
-            if (wasSelected)
-            {
-                SelectedTask = newTask;
-            }
+            if (wasSelected) SelectedTask = newTask;
 
             StatusMessageChanged?.Invoke(this, $"任务已重新加载: {Path.GetFileName(filePath)}");
         }
@@ -877,7 +847,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 更新队列统计信息
         UpdateQueueStatistics();
 
-        Console.WriteLine($"[RenderQueueViewModel] Task enable state changed, auto-saving data");
+        Console.WriteLine("[RenderQueueViewModel] Task enable state changed, auto-saving data");
     }
 
     private void OnTaskOverrideFrameRangeChanged(object? sender, EventArgs e)
@@ -888,21 +858,21 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 更新队列统计信息
         UpdateQueueStatistics();
 
-        Console.WriteLine($"[RenderQueueViewModel] Task override frame range state changed, auto-saving data");
+        Console.WriteLine("[RenderQueueViewModel] Task override frame range state changed, auto-saving data");
     }
 
     private void OnTaskOverrideSceneChanged(object? sender, EventArgs e)
     {
         // 当任务的覆写场景状态变化时，自动保存数据
         AutoSaveQueueData();
-        Console.WriteLine($"[RenderQueueViewModel] Task override scene state changed, auto-saving data");
+        Console.WriteLine("[RenderQueueViewModel] Task override scene state changed, auto-saving data");
     }
 
     private void OnTaskSceneSelectionChanged(object? sender, EventArgs e)
     {
         // 当任务的场景选择变化时，自动保存数据
         AutoSaveQueueData();
-        Console.WriteLine($"[RenderQueueViewModel] Task scene selection changed, auto-saving data");
+        Console.WriteLine("[RenderQueueViewModel] Task scene selection changed, auto-saving data");
     }
 
     private void OnTaskFrameRangeChanged(object? sender, EventArgs e)
@@ -913,7 +883,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 更新队列统计信息
         UpdateQueueStatistics();
 
-        Console.WriteLine($"[RenderQueueViewModel] Task frame range changed, auto-saving data");
+        Console.WriteLine("[RenderQueueViewModel] Task frame range changed, auto-saving data");
     }
 
     private void OnTaskOpenInBlenderRequested(object? sender, OpenInBlenderRequestedEventArgs e)
@@ -922,7 +892,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             if (_blenderService == null || string.IsNullOrEmpty(_blenderService.BlenderPath))
             {
-                Console.WriteLine($"[RenderQueueViewModel] ❌ BlenderService is null or BlenderPath is empty");
+                Console.WriteLine("[RenderQueueViewModel] ❌ BlenderService is null or BlenderPath is empty");
                 return;
             }
 
@@ -936,22 +906,20 @@ public partial class RenderQueueViewModel : ViewModelBase
             var blenderExecutable = GetBestBlenderExecutable(_blenderService.BlenderPath);
 
             // 启动Blender进程打开文件（独立进程，不关联到程序本体）
-            var startInfo = new System.Diagnostics.ProcessStartInfo
+            var startInfo = new ProcessStartInfo
             {
                 FileName = blenderExecutable,
                 Arguments = $"\"{e.FilePath}\"",
                 UseShellExecute = true,
-                WindowStyle = System.Diagnostics.ProcessWindowStyle.Normal,
+                WindowStyle = ProcessWindowStyle.Normal,
                 CreateNoWindow = false
             };
 
             // 启动独立进程，不等待其结束
-            var process = System.Diagnostics.Process.Start(startInfo);
+            var process = Process.Start(startInfo);
             if (process != null)
-            {
                 // 立即释放进程句柄，让进程完全独立运行
                 process.Dispose();
-            }
 
             Console.WriteLine(
                 $"[RenderQueueViewModel] ✅ Opened file in Blender: {e.FilePath} (using {Path.GetFileName(blenderExecutable)})");
@@ -963,7 +931,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 获取最佳的Blender可执行文件，优先选择blender-launcher.exe
+    ///     获取最佳的Blender可执行文件，优先选择blender-launcher.exe
     /// </summary>
     /// <param name="blenderPath">当前配置的Blender路径</param>
     /// <returns>最佳的Blender可执行文件路径</returns>
@@ -974,10 +942,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             var directory = Path.GetDirectoryName(blenderPath);
             var fileName = Path.GetFileName(blenderPath);
 
-            if (string.IsNullOrEmpty(directory))
-            {
-                return blenderPath;
-            }
+            if (string.IsNullOrEmpty(directory)) return blenderPath;
 
             // 优先检测 blender-launcher.exe
             var launcherPath = Path.Combine(directory, "blender-launcher.exe");
@@ -1017,7 +982,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 
-    private void OnTaskPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void OnTaskPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         // 当任务的 CompletedFrames 或 OverallProgress01 变化时，更新队列进度
         if (e.PropertyName == nameof(RenderTaskViewModel.CompletedFrames) ||
@@ -1055,9 +1020,10 @@ public partial class RenderQueueViewModel : ViewModelBase
                     // 只有当所有启用的任务都完成/失败/取消时，才设置为完成状态
                     QueueStatusText = "队列完成";
                     QueueState = QueueState.Completed;
-                    
+
                     // 触发队列完成Toast
-                    var completedTasks = RenderTasks.Where(t => t.Enable && t.IsValid && t.Status == RenderTaskStatus.Completed).Count();
+                    var completedTasks = RenderTasks
+                        .Where(t => t.Enable && t.IsValid && t.Status == RenderTaskStatus.Completed).Count();
                     var totalTasks = RenderTasks.Where(t => t.Enable && t.IsValid).Count();
                     ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
                         "渲染队列完成",
@@ -1073,20 +1039,14 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             case QueueState.Idle:
                 if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid))
-                {
                     QueueStatusText = "队列空闲";
-                }
                 else if (RenderTasks.Where(t => t.Enable && t.IsValid).Any(t =>
                              t.Status == RenderTaskStatus.Completed || t.Status == RenderTaskStatus.Failed ||
                              t.Status == RenderTaskStatus.Cancelled))
-                {
                     QueueStatusText = "队列完成";
-                    // 不自动改变状态，让用户手动决定是否重新开始
-                }
+                // 不自动改变状态，让用户手动决定是否重新开始
                 else
-                {
                     QueueStatusText = "队列为空";
-                }
 
                 break;
 
@@ -1105,6 +1065,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         // 通知计算属性更新
         OnPropertyChanged(nameof(IsQueueRunning));
+        OnPropertyChanged(nameof(HasNoTasks));
         OnPropertyChanged(nameof(HasRunningTasks));
         OnPropertyChanged(nameof(TotalFrames));
         OnPropertyChanged(nameof(CompletedFrames));
@@ -1152,27 +1113,24 @@ public partial class RenderQueueViewModel : ViewModelBase
                 return;
             }
 
-            Console.WriteLine($"[DEBUG] 开始等待 Blender 服务准备就绪...");
+            Console.WriteLine("[DEBUG] 开始等待 Blender 服务准备就绪...");
 
             // 等待 Blender 服务准备就绪，超时时间5秒
             var timeout = TimeSpan.FromSeconds(5);
             var startTime = DateTime.Now;
 
-            while (_blenderService == null && DateTime.Now - startTime < timeout)
-            {
-                await Task.Delay(100); // 每100ms检查一次
-            }
+            while (_blenderService == null && DateTime.Now - startTime < timeout) await Task.Delay(100); // 每100ms检查一次
 
             if (_blenderService == null)
             {
-                Console.WriteLine($"[DEBUG] 等待 Blender 服务超时，跳过添加测试任务");
+                Console.WriteLine("[DEBUG] 等待 Blender 服务超时，跳过添加测试任务");
                 return;
             }
 
             Console.WriteLine($"[DEBUG] Blender 服务已就绪，添加测试任务: {testBlendPath}");
 
-            var task = new RenderTaskViewModel(testBlendPath, 1, 1, true, false);
-            var task2 = new RenderTaskViewModel(testBlendPath, 1, 1, true, false);
+            var task = new RenderTaskViewModel(testBlendPath, 1, 1);
+            var task2 = new RenderTaskViewModel(testBlendPath, 1, 1);
 
             // 自动加载文件属性
             await task.LoadFilePropertiesAsync(_blenderService);
@@ -1195,7 +1153,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 #endif
 
     /// <summary>
-    /// 保存当前队列数据
+    ///     保存当前队列数据
     /// </summary>
     public async Task SaveQueueDataAsync()
     {
@@ -1218,7 +1176,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                         EndFrame = 1, // 默认值，实际不使用
                         LastRenderedFrame = task.CurrentFrame,
                         Enable = task.Enable,
-                        Override = (task.OverrideFrameRange || task.OverrideScene)
+                        Override = task.OverrideFrameRange || task.OverrideScene
                             ? new OverrideData
                             {
                                 OverrideFrameRange = task.OverrideFrameRange
@@ -1242,14 +1200,10 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             var success = await _dataPersistenceService.SaveDataAsync(appData);
             if (success)
-            {
                 Console.WriteLine(
                     $"[RenderQueueViewModel] ✅ Queue data saved successfully - {RenderTasks.Count} tasks");
-            }
             else
-            {
-                Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to save queue data");
-            }
+                Console.WriteLine("[RenderQueueViewModel] ❌ Failed to save queue data");
         }
         catch (Exception ex)
         {
@@ -1258,7 +1212,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 加载队列数据
+    ///     加载队列数据
     /// </summary>
     public async Task LoadQueueDataAsync()
     {
@@ -1268,18 +1222,12 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             // 加载设置
             if (!string.IsNullOrEmpty(appData.Settings.BlenderPath))
-            {
                 // 设置 Blender 路径（如果服务已初始化）
                 if (_blenderService != null)
-                {
                     _blenderService = new BlenderExeService(appData.Settings.BlenderPath);
-                }
-            }
 
             if (!string.IsNullOrEmpty(appData.Settings.FfmpegPath))
-            {
                 _ffmpegService.SetFFmpegPath(appData.Settings.FfmpegPath);
-            }
 
             // 加载渲染任务
             foreach (var taskData in appData.RenderQueue)
@@ -1289,10 +1237,10 @@ public partial class RenderQueueViewModel : ViewModelBase
                 // 不再跳过文件不存在的任务，而是标记为无效
 
                 // 确定是否使用覆写帧范围
-                bool overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;
-                int startFrame =
+                var overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;
+                var startFrame =
                     overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.StartFrame : 1; // 默认值，将从文件读取
-                int endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : 1; // 默认值，将从文件读取
+                var endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : 1; // 默认值，将从文件读取
 
                 var task = new RenderTaskViewModel(
                     taskInfo.Filepath,
@@ -1327,7 +1275,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                         try
                         {
                             // 设置加载状态
-                            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                            Dispatcher.UIThread.Post(() =>
                             {
                                 Console.WriteLine(
                                     $"[RenderQueueViewModel] Setting loading state for: {Path.GetFileName(taskInfo.Filepath)}");
@@ -1341,15 +1289,13 @@ public partial class RenderQueueViewModel : ViewModelBase
 
                             // 文件属性加载完成后，设置场景覆写属性
                             if (savedOverrideScene != null)
-                            {
-                                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                                Dispatcher.UIThread.Post(() =>
                                 {
                                     task.OverrideScene = true;
                                     task.SelectedSceneName = savedOverrideScene.SceneName;
                                     Console.WriteLine(
                                         $"[RenderQueueViewModel] ✅ Scene override restored: {savedOverrideScene.SceneName}");
                                 });
-                            }
 
                             Console.WriteLine(
                                 $"[RenderQueueViewModel] ✅ File properties loaded: {Path.GetFileName(taskInfo.Filepath)}");
@@ -1362,7 +1308,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                                 $"[RenderQueueViewModel] ❌ Failed to load file properties for {Path.GetFileName(taskInfo.Filepath)}: {ex.Message}");
 
                             // 设置错误状态
-                            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                            Dispatcher.UIThread.Post(() =>
                             {
                                 Console.WriteLine(
                                     $"[RenderQueueViewModel] Setting error state for: {Path.GetFileName(taskInfo.Filepath)}");
@@ -1390,7 +1336,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 自动保存队列数据（在任务变化时调用）
+    ///     自动保存队列数据（在任务变化时调用）
     /// </summary>
     private async void AutoSaveQueueData()
     {
@@ -1405,7 +1351,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 初始化Blender数据文件监控
+    ///     初始化Blender数据文件监控
     /// </summary>
     private void InitializeBlenderDataWatcher()
     {
@@ -1413,19 +1359,24 @@ public partial class RenderQueueViewModel : ViewModelBase
         _blenderDataWatcher?.Dispose();
         _blenderDataWatcher = null;
 
-        if (_blenderService == null || string.IsNullOrEmpty(_blenderService.BlenderPath))
-        {
-            return;
-        }
+        if (_blenderService == null || string.IsNullOrEmpty(_blenderService.BlenderPath)) return;
 
         try
         {
             // 获取应用程序目录
-            var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            var blenderDataPath = Path.Combine(appDirectory, "data_from_blender.json");
+            // var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            var appDataDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "BlenderRenderQueue"
+            );
+            var blenderDataPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "BlenderRenderQueue",
+                "data.json"
+            );
 
             // 创建文件监控器
-            _blenderDataWatcher = new FileSystemWatcher(appDirectory, "data_from_blender.json")
+            _blenderDataWatcher = new FileSystemWatcher(appDataDirectory, "data_from_blender.json")
             {
                 NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.CreationTime,
                 EnableRaisingEvents = true
@@ -1444,7 +1395,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 处理Blender数据文件变化事件
+    ///     处理Blender数据文件变化事件
     /// </summary>
     private async void OnBlenderDataFileChanged(object sender, FileSystemEventArgs e)
     {
@@ -1471,16 +1422,16 @@ public partial class RenderQueueViewModel : ViewModelBase
             }
 
             // 解析JSON - 使用AOT兼容的序列化选项
-            var appData = System.Text.Json.JsonSerializer.Deserialize<AppData>(jsonContent, _jsonOptions);
+            var appData = JsonSerializer.Deserialize<AppData>(jsonContent, _jsonOptions);
 
             if (appData?.RenderQueue == null || !appData.RenderQueue.Any())
             {
-                Console.WriteLine($"[RenderQueueViewModel] ⚠️ No render tasks found in file");
+                Console.WriteLine("[RenderQueueViewModel] ⚠️ No render tasks found in file");
                 return;
             }
 
             // 在UI线程上处理
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Post(() =>
             {
                 try
                 {
@@ -1488,7 +1439,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                     foreach (var taskData in appData.RenderQueue)
                     {
                         var taskInfo = taskData.RenderTask;
-                        
+
                         // 检查文件是否存在
                         if (!File.Exists(taskInfo.Filepath))
                         {
@@ -1497,9 +1448,9 @@ public partial class RenderQueueViewModel : ViewModelBase
                         }
 
                         // 确定是否使用覆写帧范围
-                        bool overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;
-                        int startFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.StartFrame : 1;
-                        int endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : 1;
+                        var overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;
+                        var startFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.StartFrame : 1;
+                        var endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : 1;
 
                         var task = new RenderTaskViewModel(
                             taskInfo.Filepath,
@@ -1520,7 +1471,6 @@ public partial class RenderQueueViewModel : ViewModelBase
 
                         // 异步加载文件属性
                         if (_blenderService != null)
-                        {
                             _ = Task.Run(async () =>
                             {
                                 try
@@ -1529,22 +1479,21 @@ public partial class RenderQueueViewModel : ViewModelBase
 
                                     // 设置场景覆写
                                     if (savedOverrideScene != null)
-                                    {
-                                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                                        Dispatcher.UIThread.Post(() =>
                                         {
                                             task.OverrideScene = true;
                                             task.SelectedSceneName = savedOverrideScene.SceneName;
                                         });
-                                    }
                                 }
                                 catch (Exception ex)
                                 {
-                                    Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to load file properties: {ex.Message}");
+                                    Console.WriteLine(
+                                        $"[RenderQueueViewModel] ❌ Failed to load file properties: {ex.Message}");
                                 }
                             });
-                        }
 
-                        Console.WriteLine($"[RenderQueueViewModel] ✅ Added task from Blender: {Path.GetFileName(taskInfo.Filepath)}");
+                        Console.WriteLine(
+                            $"[RenderQueueViewModel] ✅ Added task from Blender: {Path.GetFileName(taskInfo.Filepath)}");
                     }
 
                     // 删除源文件，避免重复处理
@@ -1558,19 +1507,19 @@ public partial class RenderQueueViewModel : ViewModelBase
                         Console.WriteLine($"[RenderQueueViewModel] ⚠️ Failed to delete source file: {ex.Message}");
                     }
 
-                    StatusMessageChanged?.Invoke(this, $"检测到blender插件提交,添加到渲染队列");
-                    
+                    StatusMessageChanged?.Invoke(this, "检测到blender插件提交,添加到渲染队列");
+
                     // 显示成功toast
                     ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
                         "任务添加成功",
-                        $"检测到blender插件提交,添加到渲染队列",
+                        "检测到blender插件提交,添加到渲染队列",
                         NotificationType.Information));
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[RenderQueueViewModel] ❌ Error processing Blender data file: {ex.Message}");
                     StatusMessageChanged?.Invoke(this, $"处理Blender数据文件时出错: {ex.Message}");
-                    
+
                     // 显示错误toast
                     ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
                         "任务添加失败",

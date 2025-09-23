@@ -123,8 +123,6 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
         get
         {
             var result = !ActiveSceneProperties.IsLoaded && !IsLoading;
-            Console.WriteLine(
-                $"[BlendScenePropertiesViewModel] ShowEmptyState calculated: {result} (IsLoaded: {ActiveSceneProperties.IsLoaded}, IsLoading: {IsLoading})");
             return result;
         }
     }

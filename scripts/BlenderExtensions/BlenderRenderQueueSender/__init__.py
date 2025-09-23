@@ -12,17 +12,8 @@ class RenderQueuePreferences(AddonPreferences):
     """偏好设置面板"""
     bl_idname = __name__
 
-    app_dir: StringProperty(
-        name="RenderQueue App Path",
-        description="Path to BlenderRenderQueue.exe",
-        subtype='DIR_PATH',
-        default=""
-    )
-
     def draw(self, context):
         layout = self.layout
-        layout.label(text="BlenderRenderQueue Sender Settings")
-        layout.prop(self, "app_dir")
 
 
 class RENDERQUEUE_OT_submit_scene(Operator):
@@ -58,15 +49,9 @@ class RENDERQUEUE_OT_submit_scene(Operator):
 
     def execute(self, context):
         # 获取偏好设置
-        prefs = context.preferences.addons[__name__].preferences
 
-        if not prefs.app_dir:
-            self.report({'ERROR'}, "Please set RenderQueue App Path in preferences")
-            return {'CANCELLED'}
-        app_dir = Path(prefs.app_dir)
-        if not app_dir.exists():
-            self.report({'ERROR'}, f"App path does not exist: {prefs.app_dir}")
-            return {'CANCELLED'}
+        app_dir = Path.home().joinpath("AppData", "Roaming", "BlenderRenderQueue")
+        app_dir.mkdir(parents=True, exist_ok=True)
 
         # 获取data_from_blender.json路径
         data_json_path = app_dir.joinpath("data_from_blender.json")
@@ -128,34 +113,36 @@ class RENDERQUEUE_OT_submit_scene(Operator):
             self.report({'ERROR'}, f"Failed to submit scene: {str(e)}")
             return {'CANCELLED'}
 
-    def invoke(self, context, event):
-        # 设置默认帧范围
-        scene = context.scene
-        self.start_frame = scene.frame_start
-        self.end_frame = scene.frame_end
 
-        return context.window_manager.invoke_props_dialog(self, width=400)
+def invoke(self, context, event):
+    # 设置默认帧范围
+    scene = context.scene
+    self.start_frame = scene.frame_start
+    self.end_frame = scene.frame_end
 
-    def draw(self, context):
-        layout = self.layout
+    return context.window_manager.invoke_props_dialog(self, width=400)
 
-        # 显示当前场景信息
-        scene = context.scene
-        layout.label(text=f"{scene.name}", icon='SCENE_DATA')
-        layout.label(text=f"{os.path.basename(bpy.data.filepath) if bpy.data.filepath else 'Unsaved'}",
-                     icon='FILE_BLEND')
 
-        layout.separator()
+def draw(self, context):
+    layout = self.layout
 
-        # 帧范围覆写选项
-        layout.prop(self, "override_frame_range")
+    # 显示当前场景信息
+    scene = context.scene
+    layout.label(text=f"{scene.name}", icon='SCENE_DATA')
+    layout.label(text=f"{os.path.basename(bpy.data.filepath) if bpy.data.filepath else 'Unsaved'}",
+                 icon='FILE_BLEND')
 
-        if self.override_frame_range:
-            col = layout.column()
-            col.prop(self, "start_frame")
-            col.prop(self, "end_frame")
-        else:
-            layout.label(text="Will use current scene with frame range override")
+    layout.separator()
+
+    # 帧范围覆写选项
+    layout.prop(self, "override_frame_range")
+
+    if self.override_frame_range:
+        col = layout.column()
+        col.prop(self, "start_frame")
+        col.prop(self, "end_frame")
+    else:
+        layout.label(text="Will use current scene with frame range override")
 
 
 class RENDERQUEUE_PT_panel(Panel):
@@ -170,19 +157,6 @@ class RENDERQUEUE_PT_panel(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-
-        # 检查偏好设置
-        prefs = context.preferences.addons[__name__].preferences
-
-        if not prefs.app_dir:
-            layout.label(text="Please set app path in preferences", icon='ERROR')
-            layout.operator("preferences.addon_show", text="Open Preferences").module = __name__
-            return
-
-        if not os.path.exists(prefs.app_dir):
-            layout.label(text="App path does not exist", icon='ERROR')
-            layout.operator("preferences.addon_show", text="Open Preferences").module = __name__
-            return
 
         scene = context.scene
         blend_file_path = bpy.data.filepath

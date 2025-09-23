@@ -28,7 +28,7 @@
 
     <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
     <suki:SukiWindow.RightWindowTitleBarControls>
-        <Button Classes="Flat Icon" HorizontalContentAlignment="Center"
+        <Button Classes="Flat Rounded" HorizontalContentAlignment="Center"
                 Command="{Binding OpenSettingsCommand}">
             <avalonia:MaterialIcon Kind="Settings"  HorizontalAlignment="Center" />
         </Button>
