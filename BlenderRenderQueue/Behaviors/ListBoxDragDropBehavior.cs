@@ -48,9 +48,6 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
             return;
         }
         
-        // 清空所有拖拽状态，确保开始新的拖拽时状态干净
-        ClearAllDragStates();
-        
         _dragItem = GetMouseOverItem(sender, e);
         if (_dragItem == null)
         {
@@ -164,9 +161,6 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         }
 
         ResetDragState();
-        
-        // 拖拽结束后清空所有状态
-        ClearAllDragStates();
     }
 
     private bool IsClickOnDragHandle(PointerEventArgs e)
@@ -201,11 +195,6 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
                 var dataContext = listBoxItem.DataContext as RenderTaskViewModel;
                 if (dataContext != null)
                 {
-                    // 排除当前正在拖拽的项目
-                    if (dataContext == _dragItem)
-                    {
-                        continue;
-                    }
                     return dataContext;
                 }
             }
@@ -300,37 +289,5 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         _previousDropItem = null;
         _isDragging = false;
         AssociatedObject.Cursor = Cursor.Default;
-    }
-
-    private void ClearAllDragStates()
-    {
-        if (AssociatedObject == null) return;
-        
-        Console.WriteLine("[DragDrop Debug] Clearing all drag states");
-        
-        // 清理所有ListBoxItem的拖拽状态，防止状态残留
-        foreach (var listBoxItem in AssociatedObject.GetLogicalDescendants().OfType<ListBoxItem>())
-        {
-            var hasDropTarget = listBoxItem.Classes.Contains("isDropTarget");
-            var hasDragTarget = listBoxItem.Classes.Contains("isDragTarget");
-            
-            if (hasDropTarget || hasDragTarget)
-            {
-                var dataContext = listBoxItem.DataContext as RenderTaskViewModel;
-                var fileName = dataContext != null ? System.IO.Path.GetFileName(dataContext.BlendFilePath) : "Unknown";
-                
-                if (hasDropTarget)
-                {
-                    Console.WriteLine($"[DragDrop Debug] Clear drop target state: {fileName}");
-                    DropTargetBehavior.SetIsDropTarget(listBoxItem, false);
-                }
-                
-                if (hasDragTarget)
-                {
-                    Console.WriteLine($"[DragDrop Debug] Clear drag target state: {fileName}");
-                    DropTargetBehavior.SetIsDragTarget(listBoxItem, false);
-                }
-            }
-        }
     }
 }
