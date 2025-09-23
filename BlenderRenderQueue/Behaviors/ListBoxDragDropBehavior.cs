@@ -56,6 +56,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
 
         // 设置拖拽状态
         SetDragTargetVisual(_dragItem, true);
+        Console.WriteLine($"[DragDrop Debug] Start dragging: {System.IO.Path.GetFileName(_dragItem.BlendFilePath)}");
 
         _startPoint = e.GetPosition(AssociatedObject.GetVisualRoot() as Visual);
     }
@@ -69,7 +70,13 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         {
             if (_previousDropItem != null && _previousDropItem != dropItem) 
             {
+                Console.WriteLine($"[DragDrop Debug] Clear previous drop target: {System.IO.Path.GetFileName(_previousDropItem.BlendFilePath)}");
                 SetDropTargetVisual(_previousDropItem, false);
+            }
+
+            if (_previousDropItem != dropItem)
+            {
+                Console.WriteLine($"[DragDrop Debug] New drop target: {System.IO.Path.GetFileName(dropItem.BlendFilePath)}");
             }
 
             SetDropTargetVisual(dropItem, true);
@@ -79,6 +86,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
         {
             if (_previousDropItem != null)
             {
+                Console.WriteLine($"[DragDrop Debug] Clear drop target (mouse outside valid area): {System.IO.Path.GetFileName(_previousDropItem.BlendFilePath)}");
                 SetDropTargetVisual(_previousDropItem, false);
                 _previousDropItem = null;
             }
@@ -117,6 +125,7 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
 
         if (dropItem == null || dropItem == _dragItem)
         {
+            Console.WriteLine($"[DragDrop Debug] Drag cancelled - invalid drop target");
             ResetDragState();
             return;
         }
@@ -135,6 +144,8 @@ public class ListBoxDragDropBehavior : Behavior<ListBox>
 
             if (dragIndex >= 0 && dropIndex >= 0)
             {
+                Console.WriteLine($"[DragDrop Debug] Execute drag operation: {System.IO.Path.GetFileName(_dragItem.BlendFilePath)} from position {dragIndex} to position {dropIndex}");
+                
                 // 记录当前选中的任务
                 var currentlySelected = viewModel.SelectedTask;
                 
