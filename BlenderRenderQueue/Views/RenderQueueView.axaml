@@ -10,7 +10,6 @@
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              xmlns:viewModels="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
-             xmlns:i="using:Xaml.Behaviors.Interactivity"
              xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
              xmlns:animations="clr-namespace:SukiUI.Animations;assembly=SukiUI"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
