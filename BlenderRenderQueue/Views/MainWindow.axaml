@@ -13,7 +13,7 @@
     x:Class="BlenderRenderQueue.Views.MainWindow"
     x:DataType="vm:MainWindowViewModel"
     Icon="/Assets/avalonia-logo.ico"
-    Title="BlenderRenderQueue">
+    Title="">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -21,9 +21,16 @@
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
+    <suki:SukiWindow.LogoContent>
+        <StackPanel Orientation="Horizontal" Spacing="4">
+            <TextBlock Text="BlenderRenderQueue"></TextBlock>
+            <TextBlock Text="{Binding AppVersion, StringFormat=v{0}}" Opacity="0.5"></TextBlock>
+        </StackPanel>
+    </suki:SukiWindow.LogoContent>
+
     <suki:SukiWindow.Hosts>
-        <suki:SukiDialogHost Manager="{Binding DialogManager}"/>
-        <suki:SukiToastHost Manager="{Binding ToastManager}"/>
+        <suki:SukiDialogHost Manager="{Binding DialogManager}" />
+        <suki:SukiToastHost Manager="{Binding ToastManager}" />
     </suki:SukiWindow.Hosts>
 
     <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />

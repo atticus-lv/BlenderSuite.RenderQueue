@@ -14,6 +14,9 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Version>0.1.0</Version>
         <Authors>Atticus</Authors>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(DefineConstants);WINDOWS</DefineConstants>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(DefineConstants);OSX</DefineConstants>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(DefineConstants);LINUX</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
