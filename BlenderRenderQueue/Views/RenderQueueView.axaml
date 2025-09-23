@@ -151,284 +151,291 @@
 
                     <!-- 任务列表 -->
                     <suki:GlassCard Grid.Row="1" Padding="0">
-                        <Grid RowDefinitions="Auto,*">
-                            <!-- 文件拖放区域 -->
-                            <Border Grid.Row="0" 
-                                    Background="{DynamicResource SukiPrimaryColor10}" 
-                                    BorderBrush="{DynamicResource SukiPrimaryColor}" 
-                                    BorderThickness="1" 
-                                    CornerRadius="4" 
-                                    Margin="8" 
-                                    Padding="20"
-                                    MinHeight="60"
-                                    DragDrop.AllowDrop="True">
-                                <i:Interaction.Behaviors>
-                                    <behaviors:ContentControlFilesDropBehavior
-                                        Command="{Binding AddDroppedFilesCommand}"
-                                        ContentDuringDrag="释放文件添加任务"
-                                        BackgroundDuringDrag="{DynamicResource SukiPrimaryColor}" />
-                                </i:Interaction.Behaviors>
-                                <TextBlock Text="拖拽 .blend 文件到这里添加任务" 
-                                           HorizontalAlignment="Center" 
+                        <Border
+                            MinHeight="60"
+                            DragDrop.AllowDrop="True">
+                            <i:Interaction.Behaviors>
+                                <behaviors:ContentControlFilesDropBehavior
+                                    Command="{Binding AddDroppedFilesCommand}"
+                                    ContentDuringDrag="释放文件添加任务"
+                                    BackgroundDuringDrag="{DynamicResource SukiPrimaryColor}" />
+                            </i:Interaction.Behaviors>
+                            <Panel>
+
+                                <ListBox ItemsSource="{Binding RenderTasks}"
+                                         Classes="WithoutCheck"
+                                         SelectedItem="{Binding SelectedTask}" Margin="4">
+                                    <ListBox.Styles>
+                                        <Style Selector="ListBoxItem:pointerover /template/ Border">
+                                            <Setter Property="Background"
+                                                    Value="{DynamicResource SukiPrimaryColor10}" />
+                                        </Style>
+                                        <Style Selector="ListBoxItem:selected /template/ Border">
+                                            <Setter Property="Background"
+                                                    Value="{DynamicResource SukiPrimaryColor25}" />
+                                        </Style>
+                                        <Style Selector="ListBoxItem:dragging /template/ Border">
+                                            <Setter Property="BorderBrush"
+                                                    Value="{DynamicResource SukiPrimaryColor}" />
+                                            <Setter Property="BorderThickness" Value="1" />
+                                        </Style>
+                                        <Style Selector="ListBoxItem">
+                                            <Setter Property="(Interaction.Behaviors)">
+                                                <BehaviorCollectionTemplate>
+                                                    <BehaviorCollection>
+                                                        <behaviors:HandleDragBehavior HorizontalDragThreshold="3"
+                                                            VerticalDragThreshold="3" Orientation="Vertical" />
+                                                    </BehaviorCollection>
+                                                </BehaviorCollectionTemplate>
+                                            </Setter>
+                                        </Style>
+                                        <Style Selector="ListBoxItem:not(:dragging)">
+                                            <Setter Property="Transitions">
+                                                <Setter.Value>
+                                                    <Transitions>
+                                                        <TransformOperationsTransition Property="RenderTransform"
+                                                            Duration="0:0:0.1" />
+                                                    </Transitions>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </ListBox.Styles>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{Binding $parent[ListBox].Background}"
+                                                    CornerRadius="4">
+                                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+
+                                                    <Panel Margin="0 0 8 0" VerticalAlignment="Center">
+                                                        <!-- error icon -->
+                                                        <material:MaterialIcon Kind="ErrorOutline"
+                                                                               Foreground="{DynamicResource SukiDangerColor}"
+                                                                               IsVisible="{Binding !IsValid}" />
+                                                        <!-- loading icon -->
+                                                        <suki:Loading Width="16" Height="16" LoadingStyle="Simple"
+                                                                      IsVisible="{Binding ScenePropertiesView.IsLoading}" />
+                                                        <!--render status icon -->
+                                                        <Border Width="16" Height="16"
+                                                                VerticalAlignment="Top"
+                                                                Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
+                                                                CornerRadius="8">
+                                                            <Border.IsVisible>
+                                                                <MultiBinding
+                                                                    Converter="{x:Static BoolConverters.And}">
+                                                                    <Binding Path="IsValid" />
+                                                                    <Binding Path="Enable" />
+                                                                    <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                                </MultiBinding>
+                                                            </Border.IsVisible>
+                                                        </Border>
+                                                        <!--not render icon -->
+                                                        <Border Width="16" Height="16"
+                                                                VerticalAlignment="Top"
+                                                                Background="{DynamicResource SukiPrimaryColor10}"
+                                                                CornerRadius="8">
+                                                            <Border.IsVisible>
+                                                                <MultiBinding
+                                                                    Converter="{x:Static BoolConverters.And}">
+                                                                    <Binding Path="IsValid" />
+                                                                    <Binding Path="!Enable" />
+                                                                    <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                                </MultiBinding>
+                                                            </Border.IsVisible>
+                                                        </Border>
+                                                    </Panel>
+
+
+                                                    <StackPanel Grid.Column="1" Margin="8 0 0 0">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <TextBlock FontWeight="Bold"
+                                                                       TextTrimming="CharacterEllipsis">
+                                                                <TextBlock.Text>
+                                                                    <Binding Path="BlendFileName"
+                                                                             Converter="{x:Static vm:RenderTaskViewModel.FileNameConverter}" />
+                                                                </TextBlock.Text>
+                                                            </TextBlock>
+                                                        </StackPanel>
+
+                                                        <!-- 加载状态显示 -->
+                                                        <StackPanel Orientation="Horizontal" Spacing="8"
+                                                                    IsVisible="{Binding ScenePropertiesView.IsLoading}">
+                                                            <TextBlock Text="正在加载..." FontSize="10"
+                                                                       Foreground="Gray" />
+                                                        </StackPanel>
+
+                                                        <!-- 正常状态显示 -->
+                                                        <StackPanel Orientation="Horizontal" Spacing="8"
+                                                                    IsVisible="{Binding !ScenePropertiesView.IsLoading}">
+                                                            <!-- 场景覆写信息 -->
+                                                            <TextBlock FontSize="12"
+                                                                       Foreground="{DynamicResource SukiAccentColor}"
+                                                                       IsVisible="{Binding OverrideScene}"
+                                                                       VerticalAlignment="Center">
+                                                                <TextBlock.Text>
+                                                                    <MultiBinding StringFormat="{}{0}">
+                                                                        <Binding Path="SelectedSceneName" />
+                                                                    </MultiBinding>
+                                                                </TextBlock.Text>
+                                                            </TextBlock>
+                                                            <!-- 默认场景信息 -->
+                                                            <TextBlock FontSize="12" VerticalAlignment="Center">
+                                                                <TextBlock.Text>
+                                                                    <MultiBinding StringFormat="{}{0}">
+                                                                        <Binding Path="SelectedSceneName" />
+                                                                    </MultiBinding>
+                                                                </TextBlock.Text>
+                                                                <TextBlock.IsVisible>
+                                                                    <MultiBinding
+                                                                        Converter="{x:Static BoolConverters.And}">
+                                                                        <Binding Path="IsValid" />
+                                                                        <Binding Path="OverrideScene"
+                                                                            Converter="{x:Static BoolConverters.Not}" />
+                                                                    </MultiBinding>
+                                                                </TextBlock.IsVisible>
+                                                            </TextBlock>
+
+                                                            <TextBlock FontSize="12" IsVisible="{Binding IsValid}">
+                                                                <TextBlock.Text>
+                                                                    <MultiBinding StringFormat="{}{0}-{1}">
+                                                                        <Binding Path="RealStartFrame" />
+                                                                        <Binding Path="RealEndFrame" />
+                                                                    </MultiBinding>
+                                                                </TextBlock.Text>
+                                                            </TextBlock>
+
+                                                            <TextBlock Text="文件无效" FontSize="10"
+                                                                       Foreground="{DynamicResource SukiDangerColor}"
+                                                                       FontWeight="Bold"
+                                                                       IsVisible="{Binding IsValid, Converter={x:Static BoolConverters.Not}}" />
+                                                        </StackPanel>
+
+                                                        <ProgressBar Minimum="0" Maximum="1"
+                                                                     Value="{Binding OverallProgress01}"
+                                                                     Height="4" Margin="0,2,0,0">
+                                                            <ProgressBar.IsVisible>
+                                                                <MultiBinding
+                                                                    Converter="{x:Static BoolConverters.And}">
+                                                                    <Binding Path="IsValid" />
+                                                                    <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                                </MultiBinding>
+                                                            </ProgressBar.IsVisible>
+                                                        </ProgressBar>
+                                                    </StackPanel>
+
+                                                    <!-- Enable ToggleSwitch -->
+                                                    <ToggleSwitch Grid.Column="2"
+                                                                  IsEnabled="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks}"
+                                                                  IsChecked="{Binding Enable}"
+                                                                  Margin="16,0, 0,0"
+                                                                  VerticalAlignment="Center"
+                                                                  ToolTip.Tip="启用/禁用此任务">
+                                                        <ToggleSwitch.IsVisible>
+                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                <Binding Path="IsValid" />
+                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                            </MultiBinding>
+                                                        </ToggleSwitch.IsVisible>
+                                                    </ToggleSwitch>
+
+
+                                                    <!-- 删除按钮区域 -->
+                                                    <StackPanel Grid.Column="3" Orientation="Horizontal"
+                                                                Margin="4,0,0,0"
+                                                                IsEnabled="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks}">
+                                                        <!-- 普通删除按钮 -->
+                                                        <Button
+                                                            Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Width="30" Height="30"
+                                                            Padding="0"
+                                                            VerticalAlignment="Center"
+                                                            Classes="Basic Icon"
+                                                            ToolTip.Tip="删除此任务">
+                                                            <material:MaterialIcon Kind="Delete" Width="24"
+                                                                Height="24" />
+                                                            <Button.IsVisible>
+                                                                <MultiBinding
+                                                                    Converter="{x:Static BoolConverters.And}">
+                                                                    <Binding Path="IsValid" />
+                                                                    <Binding Path="!IsPendingDeletion" />
+                                                                    <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                                </MultiBinding>
+                                                            </Button.IsVisible>
+
+                                                        </Button>
+
+                                                        <!-- 确认删除按钮 -->
+                                                        <Button
+                                                            Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Width="30" Height="30"
+                                                            Padding="0"
+                                                            VerticalAlignment="Center"
+                                                            Classes="Danger Icon">
+                                                            <material:MaterialIcon Kind="Delete" Width="24"
+                                                                Height="24" />
+                                                            <Button.IsVisible>
+                                                                <MultiBinding
+                                                                    Converter="{x:Static BoolConverters.And}">
+                                                                    <Binding Path="IsValid" />
+                                                                    <Binding Path="IsPendingDeletion" />
+                                                                    <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                                </MultiBinding>
+                                                            </Button.IsVisible>
+                                                        </Button>
+                                                    </StackPanel>
+                                                    <!-- 拖拽手柄 -->
+                                                    <Border Grid.Column="4"
+                                                            Width="32"
+                                                            VerticalAlignment="Stretch"
+                                                            Margin="8,0,0,0"
+                                                            Background="Transparent"
+                                                            Tag="DragHandle">
+                                                        <material:MaterialIcon Kind="Drag"
+                                                                               Width="20" Height="20"
+                                                                               VerticalAlignment="Center"
+                                                                               HorizontalAlignment="Center"
+                                                                               Foreground="Gray" />
+                                                    </Border>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                                <TextBlock Text="拖拽 .blend 文件到这里添加任务"
+                                           IsVisible="{Binding RenderTasks.Count, Converter={x:Static conv:ObjectConverters.IsNull}}"
+                                           HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            FontSize="14"
                                            Foreground="{DynamicResource SukiPrimaryColor}" />
-                            </Border>
+                                <!-- 叠加在ListBox上方的按钮 -->
+                                <StackPanel Orientation="Horizontal" Spacing="8" Margin="20"
+                                            HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.8"
+                                            ZIndex="1">
+                                    <Button Command="{Binding AddMultipleTasksCommand}"
+                                            Classes="Flat Rounded">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <material:MaterialIcon Kind="Add" />
+                                            <TextBlock Text="添加" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding RemoveAllTasksCommand}"
+                                            Classes="Flat Danger Small Rounded">
+                                        <Button.IsEnabled>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding Path="RenderTasks.Count"
+                                                         Converter="{x:Static conv:ObjectConverters.IsNotNull}" />
+                                                <Binding Path="CanModifyTasks" />
+                                            </MultiBinding>
+                                        </Button.IsEnabled>
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <material:MaterialIcon Kind="Trash" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Panel>
 
-                            <!-- 叠加在ListBox上方的按钮 -->
-                            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="20"
-                                        HorizontalAlignment="Center" VerticalAlignment="Bottom" Opacity="0.8"
-                                        ZIndex="1">
-                                <Button Command="{Binding AddMultipleTasksCommand}"
-                                        Classes="Flat Rounded">
-                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <material:MaterialIcon Kind="Add" />
-                                        <TextBlock Text="添加" />
-                                    </StackPanel>
-                                </Button>
-                                <Button Command="{Binding RemoveAllTasksCommand}"
-                                        Classes="Flat Danger Small Rounded">
-                                    <Button.IsEnabled>
-                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                            <Binding Path="RenderTasks.Count"
-                                                     Converter="{x:Static conv:ObjectConverters.IsNotNull}" />
-                                            <Binding Path="CanModifyTasks" />
-                                        </MultiBinding>
-                                    </Button.IsEnabled>
-                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <material:MaterialIcon Kind="Trash" />
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
-
-                             <ListBox Grid.Row="1" ItemsSource="{Binding RenderTasks}"
-                                      Classes="WithoutCheck"
-                                      SelectedItem="{Binding SelectedTask}" Margin="4">
-                                <ListBox.Styles>
-                                    <Style Selector="ListBoxItem:pointerover /template/ Border">
-                                        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
-                                    </Style>
-                                    <Style Selector="ListBoxItem:selected /template/ Border">
-                                        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
-                                    </Style>
-                                    <Style Selector="ListBoxItem:dragging /template/ Border">
-                                        <Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}" />
-                                        <Setter Property="BorderThickness" Value="1" />
-                                    </Style>
-                                    <Style Selector="ListBoxItem">
-                                        <Setter Property="(Interaction.Behaviors)">
-                                            <BehaviorCollectionTemplate>
-                                                <BehaviorCollection>
-                                                    <behaviors:HandleDragBehavior HorizontalDragThreshold="3" VerticalDragThreshold="3" Orientation="Vertical" />
-                                                </BehaviorCollection>
-                                            </BehaviorCollectionTemplate>
-                                        </Setter>
-                                    </Style>
-                                    <Style Selector="ListBoxItem:not(:dragging)">
-                                        <Setter Property="Transitions">
-                                            <Setter.Value>
-                                                <Transitions>
-                                                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
-                                                </Transitions>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </ListBox.Styles>
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="{Binding $parent[ListBox].Background}" Margin="2"
-                                                CornerRadius="4"
-                                                Padding="4">
-                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-
-                                                <Panel Margin="0 0 8 0" VerticalAlignment="Center">
-                                                    <!-- error icon -->
-                                                    <material:MaterialIcon Kind="ErrorOutline"
-                                                                           Foreground="{DynamicResource SukiDangerColor}"
-                                                                           IsVisible="{Binding !IsValid}" />
-                                                    <!-- loading icon -->
-                                                    <suki:Loading Width="16" Height="16" LoadingStyle="Simple"
-                                                                  IsVisible="{Binding ScenePropertiesView.IsLoading}" />
-                                                    <!--render status icon -->
-                                                    <Border Width="16" Height="16"
-                                                            VerticalAlignment="Top"
-                                                            Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
-                                                            CornerRadius="8">
-                                                        <Border.IsVisible>
-                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                                <Binding Path="IsValid" />
-                                                                <Binding Path="Enable" />
-                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
-                                                            </MultiBinding>
-                                                        </Border.IsVisible>
-                                                    </Border>
-                                                    <!--not render icon -->
-                                                    <Border Width="16" Height="16"
-                                                            VerticalAlignment="Top"
-                                                            Background="{DynamicResource SukiPrimaryColor10}"
-                                                            CornerRadius="8">
-                                                        <Border.IsVisible>
-                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                                <Binding Path="IsValid" />
-                                                                <Binding Path="!Enable" />
-                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
-                                                            </MultiBinding>
-                                                        </Border.IsVisible>
-                                                    </Border>
-                                                </Panel>
-
-
-                                                <StackPanel Grid.Column="1" Margin="8 0 0 0">
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock FontWeight="Bold"
-                                                                   TextTrimming="CharacterEllipsis">
-                                                            <TextBlock.Text>
-                                                                <Binding Path="BlendFileName" 
-                                                                         Converter="{x:Static vm:RenderTaskViewModel.FileNameConverter}" />
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                    </StackPanel>
-
-                                                    <!-- 加载状态显示 -->
-                                                    <StackPanel Orientation="Horizontal" Spacing="8"
-                                                                IsVisible="{Binding ScenePropertiesView.IsLoading}">
-                                                        <TextBlock Text="正在加载..." FontSize="10" Foreground="Gray" />
-                                                    </StackPanel>
-
-                                                    <!-- 正常状态显示 -->
-                                                    <StackPanel Orientation="Horizontal" Spacing="8"
-                                                                IsVisible="{Binding !ScenePropertiesView.IsLoading}">
-                                                        <!-- 场景覆写信息 -->
-                                                        <TextBlock FontSize="12"
-                                                                   Foreground="{DynamicResource SukiAccentColor}"
-                                                                   IsVisible="{Binding OverrideScene}"
-                                                                   VerticalAlignment="Center">
-                                                            <TextBlock.Text>
-                                                                <MultiBinding StringFormat="{}{0}">
-                                                                    <Binding Path="SelectedSceneName" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                        <!-- 默认场景信息 -->
-                                                        <TextBlock FontSize="12" VerticalAlignment="Center">
-                                                            <TextBlock.Text>
-                                                                <MultiBinding StringFormat="{}{0}">
-                                                                    <Binding Path="SelectedSceneName" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                            <TextBlock.IsVisible>
-                                                                <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                                    <Binding Path="IsValid" />
-                                                                    <Binding Path="OverrideScene"
-                                                                             Converter="{x:Static BoolConverters.Not}" />
-                                                                </MultiBinding>
-                                                            </TextBlock.IsVisible>
-                                                        </TextBlock>
-
-                                                        <TextBlock FontSize="12" IsVisible="{Binding IsValid}">
-                                                            <TextBlock.Text>
-                                                                <MultiBinding StringFormat="{}{0}-{1}">
-                                                                    <Binding Path="RealStartFrame" />
-                                                                    <Binding Path="RealEndFrame" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-
-                                                        <TextBlock Text="文件无效" FontSize="10"
-                                                                   Foreground="{DynamicResource SukiDangerColor}"
-                                                                   FontWeight="Bold"
-                                                                   IsVisible="{Binding IsValid, Converter={x:Static BoolConverters.Not}}" />
-                                                    </StackPanel>
-
-                                                    <ProgressBar Minimum="0" Maximum="1"
-                                                                 Value="{Binding OverallProgress01}"
-                                                                 Height="4" Margin="0,2,0,0">
-                                                        <ProgressBar.IsVisible>
-                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                                <Binding Path="IsValid" />
-                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
-                                                            </MultiBinding>
-                                                        </ProgressBar.IsVisible>
-                                                    </ProgressBar>
-                                                </StackPanel>
-
-                                                <!-- Enable ToggleSwitch -->
-                                                <ToggleSwitch Grid.Column="2"
-                                                              IsEnabled="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks}"
-                                                              IsChecked="{Binding Enable}"
-                                                              Margin="16,0, 0,0"
-                                                              VerticalAlignment="Center"
-                                                              ToolTip.Tip="启用/禁用此任务">
-                                                    <ToggleSwitch.IsVisible>
-                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                            <Binding Path="IsValid" />
-                                                            <Binding Path="!ScenePropertiesView.IsLoading" />
-                                                        </MultiBinding>
-                                                    </ToggleSwitch.IsVisible>
-                                                </ToggleSwitch>
-
-
-                                                <!-- 删除按钮区域 -->
-                                                <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="4,0,0,0"
-                                                            IsEnabled="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks}">
-                                                    <!-- 普通删除按钮 -->
-                                                    <Button
-                                                        Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
-                                                        CommandParameter="{Binding}"
-                                                        Width="30" Height="30"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        Classes="Basic Icon"
-                                                        ToolTip.Tip="删除此任务">
-                                                        <material:MaterialIcon Kind="Delete" Width="24" Height="24" />
-                                                        <Button.IsVisible>
-                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                                <Binding Path="IsValid" />
-                                                                <Binding Path="!IsPendingDeletion" />
-                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
-                                                            </MultiBinding>
-                                                        </Button.IsVisible>
-
-                                                    </Button>
-
-                                                    <!-- 确认删除按钮 -->
-                                                    <Button
-                                                        Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveTaskCommand}"
-                                                        CommandParameter="{Binding}"
-                                                        Width="30" Height="30"
-                                                        Padding="0"
-                                                        VerticalAlignment="Center"
-                                                        Classes="Danger Icon">
-                                                        <material:MaterialIcon Kind="Delete" Width="24" Height="24" />
-                                                        <Button.IsVisible>
-                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                                <Binding Path="IsValid" />
-                                                                <Binding Path="IsPendingDeletion" />
-                                                                <Binding Path="!ScenePropertiesView.IsLoading" />
-                                                            </MultiBinding>
-                                                        </Button.IsVisible>
-                                                    </Button>
-                                                </StackPanel>
-                                                <!-- 拖拽手柄 -->
-                                                <Border Grid.Column="4"
-                                                        Width="32"
-                                                        VerticalAlignment="Stretch"
-                                                        Margin="8,0,0,0"
-                                                        Background="Transparent"
-                                                        Tag="DragHandle">
-                                                    <material:MaterialIcon Kind="Drag"
-                                                                           Width="20" Height="20"
-                                                                           VerticalAlignment="Center"
-                                                                           HorizontalAlignment="Center"
-                                                                           Foreground="Gray" />
-                                                </Border>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                        </Grid>
-
+                        </Border>
 
                     </suki:GlassCard>
 
@@ -441,8 +448,7 @@
             <Border Grid.Column="2" Margin="4">
                 <Panel>
                     <!-- 空状态提示 -->
-                    <suki:GlassCard
-                        >
+                    <suki:GlassCard>
                         <Panel>
                             <TextBlock Text="选择一个任务查看" FontSize="20" Foreground="Gray" VerticalAlignment="Center"
                                        HorizontalAlignment="Center" FontWeight="SemiBold"
