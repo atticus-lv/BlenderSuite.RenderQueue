@@ -477,8 +477,7 @@
 
 
             <!-- 右侧任务详情 -->
-            <Border Grid.Column="0" Margin="4"
-                    Width="{Binding $parent[Grid].Width, Converter={x:Static converters:WidthToScaleConverter.Instance}, ConverterParameter=0.6}">
+            <Border Grid.Column="0" Margin="4" Name="RightPanelBorder">
                 <Border.IsVisible>
                     <MultiBinding Converter="{x:Static BoolConverters.And}">
                         <Binding Path="SelectedTask"
