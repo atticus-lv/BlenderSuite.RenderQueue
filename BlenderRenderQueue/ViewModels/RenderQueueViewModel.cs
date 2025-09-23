@@ -284,6 +284,35 @@ public partial class RenderQueueViewModel : ViewModelBase
         Console.WriteLine($"[DEBUG] AddMultipleTasks completed - Total tasks: {RenderTasks.Count}");
     }
 
+    [RelayCommand]
+    private async Task AddDroppedFiles(IEnumerable<IStorageItem> files)
+    {
+        if (_blenderService == null)
+        {
+            StatusMessageChanged?.Invoke(this, "请先设置有效的Blender路径");
+            return;
+        }
+
+        var blendFiles = files
+            .OfType<IStorageFile>()
+            .Where(file => file.Name.EndsWith(".blend", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (!blendFiles.Any())
+        {
+            StatusMessageChanged?.Invoke(this, "请拖拽 .blend 文件");
+            return;
+        }
+
+        foreach (var file in blendFiles)
+        {
+            var filePath = file.Path.LocalPath;
+            await AddTaskToQueue(filePath);
+        }
+
+        StatusMessageChanged?.Invoke(this, $"成功添加 {blendFiles.Count} 个文件到渲染队列");
+    }
+
     private async Task AddTaskToQueue(string blendFilePath)
     {
         try
