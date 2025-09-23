@@ -15,23 +15,23 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <AvaloniaResource Include="Assets\**"/>
+        <AvaloniaResource Include="Assets\**" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.6"/>
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.6"/>
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.6"/>
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.6"/>
+        <PackageReference Include="Avalonia" Version="11.3.6" />
+        <PackageReference Include="Avalonia.Desktop" Version="11.3.6" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.6" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.6" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.6"/>
-        <PackageReference Include="Avalonia.Xaml.Interactions" Version="11.3.0.6" />
-        <PackageReference Include="Avalonia.Xaml.Interactivity" Version="11.3.0.6" />
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1"/>
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.6" />
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
         <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.4" />
         <PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
         <PackageReference Include="SukiUI" Version="6.0.3" />
         <PackageReference Include="FFMpegCore" Version="5.2.0" />
+        <PackageReference Include="Xaml.Behaviors.Interactions.Draggable" Version="11.3.6.1" />
+        <PackageReference Include="Xaml.Behaviors.Interactivity" Version="11.3.6.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -59,7 +59,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <TrimmerRootDescriptor Include="TrimmerRoots.xml"/>
+        <TrimmerRootDescriptor Include="TrimmerRoots.xml" />
     </ItemGroup>
     
     <ItemGroup>

@@ -10,8 +10,7 @@
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              xmlns:viewModels="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
-             xmlns:behaviors="clr-namespace:BlenderRenderQueue.Behaviors"
-             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:i="using:Xaml.Behaviors.Interactivity"
              xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
              xmlns:animations="clr-namespace:SukiUI.Animations;assembly=SukiUI"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
@@ -22,6 +21,10 @@
     <Design.DataContext>
         <design:DesignTimeRenderQueueViewModel />
     </Design.DataContext>
+
+    <UserControl.Styles>
+        <StyleInclude Source="avares://Xaml.Behaviors.Interactions.Draggable/Styles.axaml" />
+    </UserControl.Styles>
 
 
     <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
@@ -179,11 +182,8 @@
                             </StackPanel>
 
                             <ListBox ItemsSource="{Binding RenderTasks}"
-                                     Classes="WithoutCheck"
+                                     Classes="WithoutCheck draggableVirtualizing"
                                      SelectedItem="{Binding SelectedTask}" Margin="4">
-                                <i:Interaction.Behaviors>
-                                    <behaviors:ListBoxDragDropBehavior />
-                                </i:Interaction.Behaviors>
                                 <ListBox.Styles>
                                     <Style Selector="ListBoxItem:pointerover /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
@@ -191,11 +191,14 @@
                                     <Style Selector="ListBoxItem:selected /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
                                     </Style>
-                                    <Style Selector="ListBoxItem.isDropTarget /template/ Border">
-                                        <Setter Property="Background" Value="{DynamicResource SukiAccentColor75}" />
-                                    </Style>
-                                    <Style Selector="ListBoxItem.isDragTarget /template/ Border">
-                                        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor}" />
+                                    <Style Selector="ListBoxItem:not(:dragging)">
+                                        <Setter Property="Transitions">
+                                            <Setter.Value>
+                                                <Transitions>
+                                                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
+                                                </Transitions>
+                                            </Setter.Value>
+                                        </Setter>
                                     </Style>
                                 </ListBox.Styles>
                                 <ListBox.ItemTemplate>
@@ -203,7 +206,7 @@
                                         <Border Background="{Binding $parent[ListBox].Background}" Margin="2"
                                                 CornerRadius="4"
                                                 Padding="4">
-                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
 
                                                 <Panel Margin="0 0 8 0" VerticalAlignment="Center">
                                                     <!-- error icon -->
@@ -373,19 +376,6 @@
                                                         </Button.IsVisible>
                                                     </Button>
                                                 </StackPanel>
-                                                <!-- 拖拽手柄 -->
-                                                <Border Grid.Column="4"
-                                                        Width="32"
-                                                        VerticalAlignment="Stretch"
-                                                        Margin="8,0,0,0"
-                                                        Background="Transparent"
-                                                        Tag="DragHandle">
-                                                    <material:MaterialIcon Kind="Drag"
-                                                                           Width="20" Height="20"
-                                                                           VerticalAlignment="Center"
-                                                                           HorizontalAlignment="Center"
-                                                                           Foreground="Gray" />
-                                                </Border>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
