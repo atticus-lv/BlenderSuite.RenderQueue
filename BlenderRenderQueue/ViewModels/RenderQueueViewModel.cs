@@ -1136,6 +1136,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         // 通知计算属性更新
         OnPropertyChanged(nameof(IsQueueRunning));
+        OnPropertyChanged(nameof(HasNoTasks));
         OnPropertyChanged(nameof(HasRunningTasks));
         OnPropertyChanged(nameof(TotalFrames));
         OnPropertyChanged(nameof(CompletedFrames));
