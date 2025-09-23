@@ -19,10 +19,13 @@
                                HorizontalAlignment="Stretch" />
 
         <!-- 底部日志区域 -->
-        <suki:GlassCard Grid.Row="1" Margin="4">
+        <Border Grid.Row="1" Margin="4 0 4 8" 
+                Background="{DynamicResource SukiBackgroundColor}" >
             <TextBox Text="{Binding StatusMessage}" IsReadOnly="True"
-                     AcceptsReturn="True" TextWrapping="Wrap" />
-        </suki:GlassCard>
+                     AcceptsReturn="True" TextWrapping="Wrap" 
+                     Background="Transparent" 
+                     BorderThickness="0" />
+        </Border>
 
     </Grid>
 

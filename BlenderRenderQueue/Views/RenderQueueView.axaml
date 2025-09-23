@@ -28,71 +28,88 @@
 
         <Grid Row="0" ColumnDefinitions="*,Auto,Auto,Auto">
             <suki:GlassCard Margin="8 4 4 4">
-                <StackPanel Orientation="Horizontal">
-                    <Viewbox Width="100"
-                             Height="100" Margin="0"
-                             HorizontalAlignment="Center"
-                             VerticalAlignment="Center">
-                        <suki:CircleProgressBar Value="{Binding OverallQueueProgressInt}">
-                            <TextBlock Margin="1,1,0,0"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       FontSize="28"
-                                       FontWeight="Bold"
-                                       Text="{Binding OverallQueueProgressInt,StringFormat={}{0}%}" />
-                        </suki:CircleProgressBar>
-                    </Viewbox>
-                    <StackPanel Margin="24 0 0 0" VerticalAlignment="Center">
-                        <!-- 进度信息 -->
-                        <StackPanel Spacing="4"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="{Binding QueueStatusText}" FontWeight="Bold" />
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Orientation="Horizontal">
+                        <Viewbox Width="100"
+                                 Height="100" Margin="0"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center">
+                            <suki:CircleProgressBar Value="{Binding OverallQueueProgressInt}">
+                                <TextBlock Margin="1,1,0,0"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontSize="28"
+                                           FontWeight="Bold"
+                                           Text="{Binding OverallQueueProgressInt,StringFormat={}{0}%}" />
+                            </suki:CircleProgressBar>
+                        </Viewbox>
+                        <StackPanel Margin="24 0 0 0" VerticalAlignment="Center">
+                            <!-- 进度信息 -->
+                            <StackPanel Spacing="4"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="{Binding QueueStatusText}" FontWeight="Bold" />
 
-                            <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}成功: {0} | 失败: {1}">
-                                        <Binding Path="CompletedTaskCount" />
-                                        <Binding Path="FailedTaskCount" />
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
-                            <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
-                            <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}帧: {0} | {1}">
-                                        <Binding Path="CompletedFrames" />
-                                        <Binding Path="TotalFrames" />
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
-                            <!-- 剩余时间显示 -->
-                            <TextBlock Text="{Binding RemainingTimeText,StringFormat=剩余时间: {0}}"
-                                       FontSize="16"
-                                       FontFamily="Foran"
-                                       FontWeight="Bold"
-                                       IsVisible="{Binding IsQueueRunning}"
-                                       Foreground="{DynamicResource SukiSuccessDarkColor}"
-                                       VerticalAlignment="Center" />
+                                <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}成功: {0} | 失败: {1}">
+                                            <Binding Path="CompletedTaskCount" />
+                                            <Binding Path="FailedTaskCount" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
+                                <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}帧: {0} | {1}">
+                                            <Binding Path="CompletedFrames" />
+                                            <Binding Path="TotalFrames" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                                <!-- 剩余时间显示 -->
+                                <TextBlock Text="{Binding RemainingTimeText,StringFormat=剩余时间: {0}}"
+                                           FontSize="16"
+                                           FontFamily="Foran"
+                                           FontWeight="Bold"
+                                           IsVisible="{Binding IsQueueRunning}"
+                                           Foreground="{DynamicResource SukiSuccessDarkColor}"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
                         </StackPanel>
-
-
                     </StackPanel>
+                    <SplitView Grid.Column="1" PanePlacement="Left" OpenPaneLength="170" Name="DeviceInfoSplitView"
+                               CompactPaneLength="0" DisplayMode="Inline"
+                               VerticalAlignment="Center"
+                               Margin="0 0 0 0"
+                               IsPaneOpen="False">
+                        <SplitView.Pane>
+                            <controls:HardwareMonitorControl />
+                        </SplitView.Pane>
+                        <SplitView.Content>
+                            <Button Click="ToggleDeviceInfoPane" Classes="Basic" Padding="8 0 0 0 ">
+                                <Button.Content>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold">C</TextBlock>
+                                        <TextBlock FontWeight="Bold">P</TextBlock>
+                                        <TextBlock FontWeight="Bold">U</TextBlock>
+                                        <TextBlock FontWeight="Bold" HorizontalAlignment="Center">-</TextBlock>
+                                        <TextBlock FontWeight="Bold">G</TextBlock>
+                                        <TextBlock FontWeight="Bold">P</TextBlock>
+                                        <TextBlock FontWeight="Bold">U</TextBlock>
+                                    </StackPanel>
+                                </Button.Content>
+                            </Button>
+                        </SplitView.Content>
+                    </SplitView>
+                </Grid>
 
-                </StackPanel>
             </suki:GlassCard>
             <suki:GlassCard Grid.Column="1" Margin="4" IsVisible="{Binding IsQueueRunning}">
                 <views:RenderTaskProgressPreviewView DataContext="{Binding CurrentRenderingTask}"
                                                      IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                                      Margin="16  0 " />
             </suki:GlassCard>
-            <suki:GlassCard Grid.Column="2" Margin="4">
-                <Expander ExpandDirection="Left">
-                    <Expander.Header>Devices</Expander.Header>
-                    <Expander.Content>
-                        <controls:HardwareMonitorControl />
-                    </Expander.Content>
-                </Expander>
-            </suki:GlassCard>
+
             <suki:GlassCard Grid.Column="3" Margin="4 4 8 4"
                             animations:SquishyOverExtensions.Enable="True"
                             animations:SquishyOverExtensions.Intensity="0.2"
