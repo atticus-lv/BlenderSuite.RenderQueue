@@ -194,13 +194,17 @@
                                          </Setter>
                                      </Style>
                                     
-                                    <!-- 选中状态样式 -->
+                                    <Style Selector="ListBoxItem:pointerover /template/ Border">
+                                        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
+                                    </Style>
                                     <Style Selector="ListBoxItem:selected /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
                                     </Style>
-                                    <!-- 悬停状态样式 -->
-                                    <Style Selector="ListBoxItem:pointerover /template/ Border">
-                                        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
+                                    <Style Selector="ListBoxItem.isDropTarget /template/ Border">
+                                        <Setter Property="Background" Value="{DynamicResource SukiAccentColor50}" />
+                                    </Style>
+                                    <Style Selector="ListBoxItem.isDragTarget /template/ Border">
+                                        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor}" />
                                     </Style>
                                 </ListBox.Styles>
                                 <ListBox.ItemTemplate>
