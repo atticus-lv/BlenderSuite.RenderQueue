@@ -342,6 +342,8 @@
                                                                     Converter="{x:Static BoolConverters.And}">
                                                                     <Binding Path="IsValid" />
                                                                     <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                                    <Binding
+                                                                        Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).IsQueueRunning" />
                                                                 </MultiBinding>
                                                             </ProgressBar.IsVisible>
                                                         </ProgressBar>
