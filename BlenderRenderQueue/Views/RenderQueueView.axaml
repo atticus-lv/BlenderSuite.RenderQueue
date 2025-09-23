@@ -194,22 +194,22 @@
                                             </Transitions>
                                         </Setter>
                                     </Style>
-                                    
+
                                     <!-- 鼠标悬停样式 -->
                                     <Style Selector="ListBoxItem:pointerover /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
                                     </Style>
-                                    
+
                                     <!-- 选中样式 -->
                                     <Style Selector="ListBoxItem:selected /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
                                     </Style>
-                                    
+
                                     <!-- 拖拽目标样式 -->
                                     <Style Selector="ListBoxItem.isDropTarget /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiAccentColor50}" />
                                     </Style>
-                                    
+
                                     <!-- 被拖拽项目样式 -->
                                     <Style Selector="ListBoxItem.isDragTarget /template/ Border">
                                         <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor}" />
@@ -264,7 +264,7 @@
                                                         <TextBlock FontWeight="Bold"
                                                                    TextTrimming="CharacterEllipsis">
                                                             <TextBlock.Text>
-                                                                <Binding Path="BlendFileName" 
+                                                                <Binding Path="BlendFileName"
                                                                          Converter="{x:Static vm:RenderTaskViewModel.FileNameConverter}" />
                                                             </TextBlock.Text>
                                                         </TextBlock>
@@ -397,6 +397,11 @@
                                                         Margin="8,0,0,0"
                                                         Background="Transparent"
                                                         Tag="DragHandle">
+                                                    <Border.IsVisible>
+                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                            <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                        </MultiBinding>
+                                                    </Border.IsVisible>
                                                     <material:MaterialIcon Kind="Drag"
                                                                            Width="20" Height="20"
                                                                            VerticalAlignment="Center"
@@ -422,8 +427,7 @@
             <Border Grid.Column="2" Margin="4">
                 <Panel>
                     <!-- 空状态提示 -->
-                    <suki:GlassCard
-                        >
+                    <suki:GlassCard>
                         <Panel>
                             <TextBlock Text="选择一个任务查看" FontSize="20" Foreground="Gray" VerticalAlignment="Center"
                                        HorizontalAlignment="Center" FontWeight="SemiBold"
