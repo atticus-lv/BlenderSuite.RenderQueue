@@ -118,14 +118,14 @@
             <suki:GlassCard>
                 <TabControl IsVisible="{Binding IsValid}">
                     <TabItem Header="场景信息">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8 16">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8 4">
                             <!-- 场景信息 -->
                             <views:BlendScenePropertiesView DataContext="{Binding ScenePropertiesView}" />
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="渲染设置">
                         <!-- 渲染设置 -->
-                        <StackPanel Spacing="12" Margin="8 16">
+                        <StackPanel Spacing="12" Margin="8 4">
                             <!-- 动画渲染设置 -->
                             <StackPanel Spacing="8">
                                 <CheckBox Content="渲染动画" IsChecked="{Binding Animation}" />
@@ -222,14 +222,14 @@
                         </StackPanel>
                     </TabItem>
                     <TabItem Header="日志">
-                        <Grid RowDefinitions="Auto,300" Margin="8 16">
+                        <Grid RowDefinitions="Auto,300" Margin="8 4">
                             <!-- 日志控制按钮 -->
-                            <StackPanel Orientation="Horizontal" Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="8 0">
                                 <Button Content="清空日志" Command="{Binding ClearLogCommand}"
-                                        Classes="Flat" />
+                                        Classes="Flat Outlined" />
                                 <Button Content="{Binding LogPauseButtonText}"
                                         Command="{Binding ToggleLogPauseCommand}"
-                                        Classes="Flat" />
+                                        Classes="Flat Outlined" />
                             </StackPanel>
 
                             <!-- 日志内容 -->

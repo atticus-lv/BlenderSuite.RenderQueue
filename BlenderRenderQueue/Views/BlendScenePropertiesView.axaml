@@ -19,7 +19,7 @@
         <ScrollViewer Grid.Row="1">
             <StackPanel Spacing="10">
                 <!-- 加载状态 -->
-                <Border CornerRadius="4" Padding="10" IsVisible="{Binding IsLoading}" VerticalAlignment="Center"
+                <Border CornerRadius="4" IsVisible="{Binding IsLoading}" VerticalAlignment="Center"
                         HorizontalAlignment="Center">
                     <StackPanel Orientation="Vertical" Spacing="8">
                         <!-- <ProgressBar IsIndeterminate="True" /> -->
@@ -30,7 +30,7 @@
                 </Border>
 
                 <!-- 错误信息 -->
-                <Border CornerRadius="4" Padding="10" IsVisible="{Binding HasErrorMessage}"
+                <Border CornerRadius="4" IsVisible="{Binding HasErrorMessage}"
                         HorizontalAlignment="Center" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="❌" FontSize="16" />
@@ -40,7 +40,7 @@
                 </Border>
 
                 <!-- 文件信息 -->
-                <Border CornerRadius="4" Padding="10" IsVisible="{Binding ActiveSceneProperties.IsLoaded}">
+                <Border CornerRadius="4" Padding="0" IsVisible="{Binding ActiveSceneProperties.IsLoaded}">
                     <StackPanel Spacing="4">
 
                         <!-- 场景选择器 -->
@@ -200,7 +200,7 @@
                 </Border>
 
                 <!-- 空状态 -->
-                <Border CornerRadius="4" Padding="10" IsVisible="{Binding ShowEmptyState}">
+                <Border CornerRadius="4" IsVisible="{Binding ShowEmptyState}">
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                         <TextBlock Text="📄" FontSize="24" HorizontalAlignment="Center" />
                         <TextBlock Text="文件未加载" HorizontalAlignment="Center"
