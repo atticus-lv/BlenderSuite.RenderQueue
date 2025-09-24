@@ -503,7 +503,7 @@
 
                                         <Button.IsEnabled>
                                             <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                <Binding Path="CanModifyTasks" />
+                                                <Binding Path="CanModifyTasks" Converter="{x:Static BoolConverters.Not}" />
                                             </MultiBinding>
                                         </Button.IsEnabled>
                                         <StackPanel Orientation="Horizontal" Spacing="4">
