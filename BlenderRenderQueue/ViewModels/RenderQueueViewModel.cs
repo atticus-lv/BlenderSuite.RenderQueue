@@ -187,11 +187,27 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         get
         {
-            var canStart = (QueueState == QueueState.Idle || QueueState == QueueState.Completed) &&
-                           RenderTasks.Any(t => t.Enable && t.IsValid);
-            // Console.WriteLine(
-            //     $"[DEBUG] CanStartQueue: {canStart} (QueueState: {QueueState}, EnabledValidTaskCount: {RenderTasks.Count(t => t.Enable && t.IsValid)})");
+            // 没有任务时不可见（通过HasNoTasks控制）
+            if (HasNoTasks) return false;
+            
+            // 有任务时，根据队列状态和可用任务数量决定是否可用
+            var hasAvailableTasks = RenderTasks.Any(t => t.Enable && t.IsValid);
+            var canStart = (QueueState == QueueState.Idle || QueueState == QueueState.Completed) && hasAvailableTasks;
+            
             return canStart;
+        }
+    }
+
+    public bool CanShowStartQueue
+    {
+        get
+        {
+            // 没有任务时不可见
+            if (HasNoTasks) return false;
+            
+            // 有任务时，只有在队列空闲或完成时才显示开始按钮
+            // 队列运行/暂停时显示其他控制按钮（暂停、恢复、停止）
+            return QueueState == QueueState.Idle || QueueState == QueueState.Completed;
         }
     }
 
@@ -287,6 +303,10 @@ public partial class RenderQueueViewModel : ViewModelBase
             UpdateQueueStatistics();
             // 任务集合变化时自动保存
             AutoSaveQueueData();
+            
+            // 通知按钮状态属性变更
+            OnPropertyChanged(nameof(CanStartQueue));
+            OnPropertyChanged(nameof(CanShowStartQueue));
         };
 
         // 监听队列状态变化，通知计算属性更新
@@ -302,6 +322,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 OnPropertyChanged(nameof(TotalFrames));
                 OnPropertyChanged(nameof(CompletedFrames));
                 OnPropertyChanged(nameof(CanStartQueue));
+                OnPropertyChanged(nameof(CanShowStartQueue));
                 OnPropertyChanged(nameof(CanStopQueue));
                 OnPropertyChanged(nameof(CanPauseQueue));
                 OnPropertyChanged(nameof(CanResumeQueue));
@@ -987,6 +1008,10 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 更新队列统计信息
         UpdateQueueStatistics();
 
+        // 通知按钮状态属性变更
+        OnPropertyChanged(nameof(CanStartQueue));
+        OnPropertyChanged(nameof(CanShowStartQueue));
+
         Console.WriteLine("[RenderQueueViewModel] Task enable state changed, auto-saving data");
     }
 
@@ -1459,6 +1484,10 @@ public partial class RenderQueueViewModel : ViewModelBase
             }
 
             Console.WriteLine($"[RenderQueueViewModel] ✅ Queue data loaded successfully - {RenderTasks.Count} tasks");
+            
+            // 数据加载完成后，通知按钮状态属性变更
+            OnPropertyChanged(nameof(CanStartQueue));
+            OnPropertyChanged(nameof(CanShowStartQueue));
         }
         catch (Exception ex)
         {
