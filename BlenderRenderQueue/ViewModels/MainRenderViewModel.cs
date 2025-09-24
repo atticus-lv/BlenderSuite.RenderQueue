@@ -24,8 +24,6 @@ public partial class MainRenderViewModel : ViewModelBase
     [ObservableProperty]
     private string _blenderPath = string.Empty;
 
-    [ObservableProperty]
-    private string _ffmpegPath = string.Empty;
 
     [ObservableProperty]
     private RenderQueueViewModel _renderQueue = new();
@@ -33,8 +31,6 @@ public partial class MainRenderViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isBlenderPathValid;
 
-    [ObservableProperty]
-    private bool _isFFmpegPathValid;
 
     [ObservableProperty]
     private string _blenderVersion = string.Empty;
@@ -48,8 +44,6 @@ public partial class MainRenderViewModel : ViewModelBase
     [ObservableProperty]
     private string _blenderHash = string.Empty;
 
-    [ObservableProperty]
-    private string _ffmpegVersion = string.Empty;
 
     [ObservableProperty]
     private string _statusMessage = "就绪";
@@ -57,8 +51,6 @@ public partial class MainRenderViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLoadingBlenderInfo;
 
-    [ObservableProperty]
-    private bool _isLoadingFFmpegInfo;
 
 
     // 内部状态
@@ -107,23 +99,6 @@ public partial class MainRenderViewModel : ViewModelBase
         _ = Task.Run(async () => await LoadBlenderInfoAsync(value, ct));
     }
 
-    partial void OnFfmpegPathChanged(string value)
-    {
-        IsFFmpegPathValid = !string.IsNullOrWhiteSpace(value) && File.Exists(value);
-
-        if (!IsFFmpegPathValid)
-        {
-            FfmpegVersion = string.Empty;
-            StatusMessage = "FFmpeg路径无效";
-            return;
-        }
-
-        // 异步获取FFmpeg版本信息
-        _ = Task.Run(async () => await LoadFFmpegInfoAsync(value));
-        
-        // 设置FFmpeg路径到渲染队列
-        RenderQueue.SetFFmpegPath(value);
-    }
 
     private async Task LoadBlenderInfoAsync(string blenderPath, CancellationToken cancellationToken)
     {
@@ -164,57 +139,6 @@ public partial class MainRenderViewModel : ViewModelBase
         }
     }
 
-    private async Task LoadFFmpegInfoAsync(string ffmpegPath)
-    {
-        try
-        {
-            IsLoadingFFmpegInfo = true;
-            StatusMessage = "正在加载FFmpeg信息...";
-
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = ffmpegPath,
-                    Arguments = "-version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            if (process.ExitCode == 0)
-            {
-                // 解析版本信息
-                var lines = output.Split('\n');
-                var versionLine = lines.FirstOrDefault(l => l.Contains("ffmpeg version"));
-                if (!string.IsNullOrEmpty(versionLine))
-                {
-                    var version = versionLine.Split(' ')[2]; // 提取版本号
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        FfmpegVersion = version;
-                        IsLoadingFFmpegInfo = false;
-                        StatusMessage = $"FFmpeg {version} 已就绪";
-                    });
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Dispatcher.UIThread.Post(() =>
-            {
-                IsLoadingFFmpegInfo = false;
-                StatusMessage = $"加载FFmpeg信息失败: {ex.Message}";
-                FfmpegVersion = string.Empty;
-            });
-        }
-    }
 
     private void ClearBlenderInfo()
     {
@@ -239,11 +163,11 @@ public partial class MainRenderViewModel : ViewModelBase
     private void OnInitializationCompleted(object? sender, InitializationCompletedEventArgs e)
     {
         // 如果检测失败，自动弹出设置对话框
-        if (!e.IsBlenderDetected || !e.IsFFmpegDetected)
+        if (!e.IsBlenderDetected)
             ShowSettingsDialog();
         else
             // 检测成功，直接应用设置
-            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.FfmpegPath, _settingsViewModel.DefaultRenderTimeoutSeconds, _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoGenerationMethod, _settingsViewModel.VideoCodec);
+            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.DefaultRenderTimeoutSeconds, _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoGenerationMethod, _settingsViewModel.VideoCodec);
     }
 
     [RelayCommand]
@@ -271,13 +195,12 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        ApplySettings(e.BlenderPath, e.FfmpegPath, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts, e.VideoGenerationMethod, e.VideoCodec);
+        ApplySettings(e.BlenderPath, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts, e.VideoGenerationMethod, e.VideoCodec);
     }
 
-    private void ApplySettings(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoGenerationMethod, string videoCodec)
+    private void ApplySettings(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoGenerationMethod, string videoCodec)
     {
         BlenderPath = blenderPath;
-        FfmpegPath = ffmpegPath;
         
         // 更新全局超时设置和重试次数
         _renderQueue.SetGlobalRenderTimeout(defaultRenderTimeoutSeconds);
@@ -448,7 +371,7 @@ public partial class MainRenderViewModel : ViewModelBase
         {
             Dispatcher.UIThread.Invoke(() =>
             {
-                // FFmpegService 已经将帧数转换为百分比 (0-100)，直接使用
+                // BlenderVideoService 已经将帧数转换为百分比 (0-100)，直接使用
                 _videoGenerationProgressBar.Value = RenderQueue.VideoGenerationProgress;
             });
         }

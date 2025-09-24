@@ -17,7 +17,6 @@ using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.BlenderVideoService;
-using BlenderRenderQueue.Services.FFmpegService;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -257,7 +256,6 @@ public partial class RenderQueueViewModel : ViewModelBase
     // 内部状态
     private readonly List<Task> _runningTasks = new();
     private BlenderExeService? _blenderService;
-    private readonly IFFmpegService _ffmpegService = new FFmpegService();
     private BlenderVideoService? _blenderVideoService;
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
     private int _globalMaxRetryAttempts = 3; // 默认最大重试3次
@@ -717,26 +715,11 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         try
         {
-            // 根据设置选择视频生成方法
-            bool useBlender = _videoGenerationMethod == "Blender" && _blenderVideoService != null;
-            
-            if (useBlender)
+            // 检查 Blender 是否可用
+            if (_blenderVideoService == null || !await _blenderVideoService.IsBlenderAvailableAsync())
             {
-                // 检查 Blender 是否可用
-                if (_blenderVideoService == null || !await _blenderVideoService.IsBlenderAvailableAsync())
-                {
-                    QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Blender 不可用，请先设置有效的 Blender 路径"));
-                    return;
-                }
-            }
-            else
-            {
-                // 检查 FFmpeg 是否可用
-                if (!await _ffmpegService.IsFFmpegAvailableAsync())
-                {
-                    QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("FFmpeg 不可用，请先设置有效的 FFmpeg 路径"));
-                    return;
-                }
+                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Blender 不可用，请先设置有效的 Blender 路径"));
+                return;
             }
 
             // 获取帧路径目录
@@ -779,37 +762,18 @@ public partial class RenderQueueViewModel : ViewModelBase
             VideoGenerationStatus = "正在生成视频...";
             QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"开始生成视频: {outputVideoPath}"));
 
-            // 生成视频
-            bool success;
-            if (useBlender && _blenderVideoService != null)
-            {
-                // 使用Blender生成视频
-                success = await _blenderVideoService.GenerateVideoFromImagesAsync(
-                    frameDirectory,
-                    outputVideoPath,
-                    fps,
-                    _videoCodec,
-                    progress =>
-                    {
-                        // 更新进度
-                        VideoGenerationProgress = progress;
-                        VideoGenerationStatus = "生成中:";
-                    });
-            }
-            else
-            {
-                // 使用FFmpeg生成视频
-                success = await _ffmpegService.GenerateVideoFromImagesAsync(
-                    frameDirectory,
-                    outputVideoPath,
-                    fps,
-                    progress =>
-                    {
-                        // 更新进度
-                        VideoGenerationProgress = progress;
-                        VideoGenerationStatus = "生成中:";
-                    });
-            }
+            // 使用Blender生成视频
+            var success = await _blenderVideoService.GenerateVideoFromImagesAsync(
+                frameDirectory,
+                outputVideoPath,
+                fps,
+                _videoCodec,
+                progress =>
+                {
+                    // 更新进度
+                    VideoGenerationProgress = progress;
+                    VideoGenerationStatus = "生成中:";
+                });
 
             if (success)
             {
@@ -851,10 +815,6 @@ public partial class RenderQueueViewModel : ViewModelBase
         return _blenderService != null;
     }
 
-    public void SetFFmpegPath(string? ffmpegPath)
-    {
-        _ffmpegService.SetFFmpegPath(ffmpegPath);
-    }
 
     private async Task StartNextAvailableTasks()
     {

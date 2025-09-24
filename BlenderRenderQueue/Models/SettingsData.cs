@@ -16,9 +16,6 @@ public class SettingsData
     [JsonPropertyName("BlenderPath")]
     public string BlenderPath { get; set; } = string.Empty;
 
-    [JsonPropertyName("FfmpegPath")]
-    public string FfmpegPath { get; set; } = string.Empty;
-
     [JsonPropertyName("DefaultRenderTimeoutSeconds")]
     public int DefaultRenderTimeoutSeconds { get; set; } = 300; // 默认五分钟
 

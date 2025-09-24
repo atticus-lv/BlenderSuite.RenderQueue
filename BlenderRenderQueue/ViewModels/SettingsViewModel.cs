@@ -19,13 +19,7 @@ public partial class SettingsViewModel : ViewModelBase
     private string _blenderPath = string.Empty;
 
     [ObservableProperty]
-    private string _ffmpegPath = string.Empty;
-
-    [ObservableProperty]
     private bool _isBlenderPathValid = false;
-
-    [ObservableProperty]
-    private bool _isFFmpegPathValid = false;
 
     [ObservableProperty]
     private string _blenderVersion = string.Empty;
@@ -40,13 +34,7 @@ public partial class SettingsViewModel : ViewModelBase
     private string _blenderHash = string.Empty;
 
     [ObservableProperty]
-    private string _ffmpegVersion = string.Empty;
-
-    [ObservableProperty]
     private bool _isLoadingBlenderInfo = false;
-
-    [ObservableProperty]
-    private bool _isLoadingFFmpegInfo = false;
 
     [ObservableProperty]
     private int _defaultRenderTimeoutSeconds = 300; // 默认5分钟
@@ -84,15 +72,11 @@ public partial class SettingsViewModel : ViewModelBase
     private async Task InitializeAsync()
     {
         var blenderDetected = false;
-        var ffmpegDetected = false;
 
         try
         {
             // 尝试自动检测 Blender
             blenderDetected = await TryAutoDetectBlenderAsync();
-
-            // 尝试自动检测 FFmpeg
-            ffmpegDetected = await TryAutoDetectFFmpegAsync();
         }
         catch (Exception)
         {
@@ -102,7 +86,7 @@ public partial class SettingsViewModel : ViewModelBase
         // 通知初始化完成
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            InitializationCompleted?.Invoke(this, new InitializationCompletedEventArgs(blenderDetected, ffmpegDetected));
+            InitializationCompleted?.Invoke(this, new InitializationCompletedEventArgs(blenderDetected));
         });
     }
 
@@ -124,19 +108,6 @@ public partial class SettingsViewModel : ViewModelBase
         _ = Task.Run(async () => await LoadBlenderInfoAsync(value, ct));
     }
 
-    partial void OnFfmpegPathChanged(string value)
-    {
-        IsFFmpegPathValid = !string.IsNullOrWhiteSpace(value) && File.Exists(value);
-
-        if (!IsFFmpegPathValid)
-        {
-            FfmpegVersion = string.Empty;
-            return;
-        }
-
-        // 异步获取FFmpeg版本信息
-        _ = Task.Run(async () => await LoadFFmpegInfoAsync(value));
-    }
 
     private async Task LoadBlenderInfoAsync(string blenderPath, CancellationToken cancellationToken)
     {
@@ -172,54 +143,6 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
-    private async Task LoadFFmpegInfoAsync(string ffmpegPath)
-    {
-        try
-        {
-            IsLoadingFFmpegInfo = true;
-
-            var process = new System.Diagnostics.Process
-            {
-                StartInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = ffmpegPath,
-                    Arguments = "-version",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            if (process.ExitCode == 0)
-            {
-                // 解析版本信息
-                var lines = output.Split('\n');
-                var versionLine = lines.FirstOrDefault(l => l.Contains("ffmpeg version"));
-                if (!string.IsNullOrEmpty(versionLine))
-                {
-                    var version = versionLine.Split(' ')[2]; // 提取版本号
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                    {
-                        FfmpegVersion = version;
-                        IsLoadingFFmpegInfo = false;
-                    });
-                }
-            }
-        }
-        catch (Exception)
-        {
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                IsLoadingFFmpegInfo = false;
-                FfmpegVersion = string.Empty;
-            });
-        }
-    }
 
     private void ClearBlenderInfo()
     {
@@ -259,70 +182,6 @@ public partial class SettingsViewModel : ViewModelBase
         return false;
     }
 
-    private Task<bool> TryAutoDetectFFmpegAsync()
-    {
-        try
-        {
-            if (OperatingSystem.IsWindows())
-            {
-                // 尝试在 PATH 中查找 ffmpeg.exe
-                var ffmpegExe = FindFFmpegInPath();
-                if (!string.IsNullOrEmpty(ffmpegExe))
-                {
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { FfmpegPath = ffmpegExe; });
-                    return Task.FromResult(true);
-                }
-
-                // 尝试在常见位置查找
-                var commonPaths = new[]
-                {
-                    @"C:\ffmpeg\bin\ffmpeg.exe",
-                    @"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
-                    @"C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe",
-                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "ffmpeg", "bin",
-                        "ffmpeg.exe")
-                };
-
-                foreach (var path in commonPaths)
-                {
-                    if (!File.Exists(path)) continue;
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { FfmpegPath = path; });
-                    return Task.FromResult(true);
-                }
-            }
-        }
-        catch
-        {
-            // 忽略错误
-        }
-        
-        return Task.FromResult(false);
-    }
-
-    private string? FindFFmpegInPath()
-    {
-        try
-        {
-            var pathEnv = Environment.GetEnvironmentVariable("PATH");
-            if (string.IsNullOrEmpty(pathEnv)) return null;
-
-            var paths = pathEnv.Split(Path.PathSeparator);
-            foreach (var path in paths)
-            {
-                var ffmpegPath = Path.Combine(path, "ffmpeg.exe");
-                if (File.Exists(ffmpegPath))
-                {
-                    return ffmpegPath;
-                }
-            }
-        }
-        catch
-        {
-            // 忽略错误
-        }
-
-        return null;
-    }
 
     [RelayCommand]
     private async Task BrowseBlender()
@@ -334,21 +193,12 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
-    private async Task BrowseFFmpeg()
-    {
-        var path = await this.SelectFile("选择 FFmpeg 可执行文件", GetFFmpegExecutableFileTypes());
-        if (!string.IsNullOrWhiteSpace(path))
-        {
-            FfmpegPath = path;
-        }
-    }
 
     [RelayCommand]
     private async Task SaveSettings()
     {
         // 触发设置变化事件
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, FfmpegPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoGenerationMethod, VideoCodec));
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoGenerationMethod, VideoCodec));
         
         // 保存设置到文件
         await SaveSettingsToFileAsync();
@@ -364,7 +214,6 @@ public partial class SettingsViewModel : ViewModelBase
             var settings = new SettingsData
             {
                 BlenderPath = BlenderPath,
-                FfmpegPath = FfmpegPath,
                 DefaultRenderTimeoutSeconds = DefaultRenderTimeoutSeconds,
                 MaxRetryAttempts = MaxRetryAttempts,
                 VideoGenerationMethod = VideoGenerationMethod,
@@ -374,7 +223,7 @@ public partial class SettingsViewModel : ViewModelBase
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
             if (success)
             {
-                Console.WriteLine($"[SettingsViewModel] ✅ Settings saved successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
+                Console.WriteLine($"[SettingsViewModel] ✅ Settings saved successfully - Blender: {BlenderPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
             }
             else
             {
@@ -400,11 +249,6 @@ public partial class SettingsViewModel : ViewModelBase
             {
                 BlenderPath = settings.BlenderPath;
             }
-            
-            if (!string.IsNullOrEmpty(settings.FfmpegPath))
-            {
-                FfmpegPath = settings.FfmpegPath;
-            }
 
             if (settings.DefaultRenderTimeoutSeconds > 0)
             {
@@ -426,7 +270,7 @@ public partial class SettingsViewModel : ViewModelBase
                 VideoCodec = settings.VideoCodec;
             }
 
-            Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
+            Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
         }
         catch (Exception ex)
         {
@@ -443,14 +287,6 @@ public partial class SettingsViewModel : ViewModelBase
 #endif
     }
 
-    private static IEnumerable<FilePickerFileType> GetFFmpegExecutableFileTypes()
-    {
-#if WINDOWS
-        return new[] { new FilePickerFileType("FFmpeg Executable") { Patterns = new[] { "ffmpeg.exe" } } };
-#else
-        return new[] { new FilePickerFileType("FFmpeg") { Patterns = new[] { "ffmpeg", "*ffmpeg*" } } };
-#endif
-    }
 
     public void Dispose()
     {
@@ -463,16 +299,14 @@ public partial class SettingsViewModel : ViewModelBase
 public class SettingsChangedEventArgs : EventArgs
 {
     public string BlenderPath { get; }
-    public string FfmpegPath { get; }
     public int DefaultRenderTimeoutSeconds { get; }
     public int MaxRetryAttempts { get; }
     public string VideoGenerationMethod { get; }
     public string VideoCodec { get; }
 
-    public SettingsChangedEventArgs(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoGenerationMethod, string videoCodec)
+    public SettingsChangedEventArgs(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoGenerationMethod, string videoCodec)
     {
         BlenderPath = blenderPath;
-        FfmpegPath = ffmpegPath;
         DefaultRenderTimeoutSeconds = defaultRenderTimeoutSeconds;
         MaxRetryAttempts = maxRetryAttempts;
         VideoGenerationMethod = videoGenerationMethod;
@@ -484,11 +318,9 @@ public class SettingsChangedEventArgs : EventArgs
 public class InitializationCompletedEventArgs : EventArgs
 {
     public bool IsBlenderDetected { get; }
-    public bool IsFFmpegDetected { get; }
 
-    public InitializationCompletedEventArgs(bool isBlenderDetected, bool isFFmpegDetected)
+    public InitializationCompletedEventArgs(bool isBlenderDetected)
     {
         IsBlenderDetected = isBlenderDetected;
-        IsFFmpegDetected = isFFmpegDetected;
     }
 }
