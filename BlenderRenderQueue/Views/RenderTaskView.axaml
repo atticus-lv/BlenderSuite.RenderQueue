@@ -106,9 +106,10 @@
 
                                 <TextBlock Grid.Row="3" Grid.Column="0" Text="路径:" FontWeight="Bold"
                                            VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding FileInfo.FilePath}"
-                                           VerticalAlignment="Center"
-                                           TextWrapping="NoWrap" />
+                                <SelectableTextBlock Grid.Row="3" Grid.Column="2" Text="{Binding FileInfo.FilePath}"
+                                                     VerticalAlignment="Center"
+                                                     TextWrapping="NoWrap">
+                                </SelectableTextBlock>
                             </Grid>
 
                         </StackPanel>

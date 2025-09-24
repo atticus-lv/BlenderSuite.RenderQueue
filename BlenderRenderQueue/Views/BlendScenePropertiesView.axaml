@@ -6,6 +6,7 @@
              xmlns:design="using:BlenderRenderQueue.ViewModels.DesignTime"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Views.BlendScenePropertiesView"
              x:DataType="vm:BlendScenePropertiesViewModel">
@@ -165,9 +166,9 @@
                         <!-- 输出路径 -->
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock Grid.Column="0" Text="输出路径:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.RenderOutputPath}"
-                                       TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
-                                       IsVisible="{Binding ActiveSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                            <SelectableTextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.RenderOutputPath}"
+                                                 TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
+                                                 IsVisible="{Binding ActiveSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
@@ -175,16 +176,20 @@
                         <!-- Frame Path -->
                         <Grid ColumnDefinitions="Auto,*,Auto">
                             <TextBlock Grid.Column="0" Text="真实帧路径:" FontWeight="SemiBold" MinWidth="80"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.FramePath}"
-                                       TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
-                                       IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                                                 VerticalAlignment="Center" />
+                            <SelectableTextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.FramePath}"
+                                                 TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
+                                                 IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
-                            <Button Grid.Column="2" Content="📁" ToolTip.Tip="打开文件夹"
+                            <Button Grid.Column="2" Classes="Flat Outlined"
                                     Command="{Binding OpenFramePathDirectoryCommand}"
                                     IsEnabled="{Binding CanOpenFramePathDirectory}"
-                                    Padding="4" Margin="4,0,0,0" />
+                                    Padding="4" Margin="4,0,0,0">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <avalonia:MaterialIcon Kind="FolderOpen" />
+                                </StackPanel>
+                            </Button>
                         </Grid>
 
                         <!-- 输出格式 -->
