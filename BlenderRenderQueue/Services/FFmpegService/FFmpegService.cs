@@ -1,5 +1,5 @@
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -84,9 +84,21 @@ public class FFmpegService : IFFmpegService
                 try
                 {
                     // 写入文件列表到临时文件，使用正确的 concat demuxer 格式
-                    var fileListContent = imageFiles.Select(f => $"file '{f.Replace("\\", "/")}'").ToList();
+                    // 使用UTF-8编码确保中文字符正确处理
+                    var fileListContent = imageFiles.Select(f => 
+                    {
+                        // 将Windows路径转换为Unix格式，并确保路径被正确引用
+                        var unixPath = f.Replace("\\", "/");
+                        // 转义单引号
+                        var escapedPath = unixPath.Replace("'", "'\"'\"'");
+                        return $"file '{escapedPath}'";
+                    }).ToList();
                     fileListContent.Add(""); // 添加空行
-                    await File.WriteAllLinesAsync(tempFileList, fileListContent, cancellationToken);
+                    
+                    Console.WriteLine($"[FFmpegService] 写入文件列表到: {tempFileList}");
+                    Console.WriteLine($"[FFmpegService] 文件列表内容示例: {string.Join("\n", fileListContent.Take(3))}");
+                    
+                    await File.WriteAllLinesAsync(tempFileList, fileListContent, System.Text.Encoding.UTF8, cancellationToken);
                     
                     // 使用 concat demuxer，让 FFmpeg 自动处理色彩空间
                     await FFMpegArguments
@@ -123,8 +135,12 @@ public class FFmpegService : IFFmpegService
                 var inputPattern = Path.Combine(inputDirectory, imagePattern);
                 Console.WriteLine($"使用模式: {inputPattern}");
                 
+                // 确保输入模式路径使用正确的格式
+                var normalizedPattern = inputPattern.Replace("\\", "/");
+                Console.WriteLine($"标准化模式路径: {normalizedPattern}");
+                
                 await FFMpegArguments
-                    .FromFileInput(inputPattern, false, options => options
+                    .FromFileInput(normalizedPattern, false, options => options
                         .WithFramerate(fps))
                     .OutputToFile(outputVideoPath, true, options => options
                         .WithVideoCodec(VideoCodec.LibX264)
@@ -170,53 +186,109 @@ public class FFmpegService : IFFmpegService
     /// <returns>图片文件列表和模式</returns>
     private static (string[] files, string pattern) DetectImageFiles(string directory)
     {
+        Console.WriteLine($"[FFmpegService] 检测目录: {directory}");
+        
+        // 首先尝试检测所有支持的图片文件
+        var allImageFiles = new List<string>();
         foreach (var extension in SupportedImageExtensions)
         {
-            var files = Directory.GetFiles(directory, extension, SearchOption.TopDirectoryOnly)
-                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            if (files.Length <= 0) continue;
-            // 检查文件命名格式
-            var firstFile = Path.GetFileNameWithoutExtension(files[0]);
-            var ext = extension.Substring(1); // 移除 "*"
-                
-            // 如果文件名包含数字，分析数字格式
-            if (Regex.IsMatch(firstFile, @"\d+"))
-            {
-                // 检查数字的位数和格式
-                var match = Regex.Match(firstFile, @"(\D*)(\d+)(\D*)");
-                if (match.Success)
-                {
-                    var prefix = match.Groups[1].Value;
-                    var number = match.Groups[2].Value;
-                    var suffix = match.Groups[3].Value;
-                        
-                    // 根据数字位数生成模式
-                    var digitCount = number.Length;
-                    var pattern = $"{prefix}%0{digitCount}d{suffix}{ext}";
-                        
-                    // 检查文件编号是否连续从0开始
-                    var firstNumber = int.Parse(number);
-                    if (firstNumber == 0)
-                    {
-                        // 如果从0开始，直接使用模式
-                        return (files, pattern);
-                    }
-                    else
-                    {
-                        // 如果不从0开始，需要重命名文件或使用不同的方法
-                        // 这里我们使用文件列表的方式而不是模式匹配
-                        return (files, "FILE_LIST");
-                    }
-                }
-            }
-                
-            // 默认使用简单的 %d 模式
-            var defaultPattern = $"%d{ext}";
-            return (files, defaultPattern);
+            var files = Directory.GetFiles(directory, extension, SearchOption.TopDirectoryOnly);
+            allImageFiles.AddRange(files);
+            Console.WriteLine($"[FFmpegService] 找到 {extension} 文件: {files.Length} 个");
         }
-
-        return (Array.Empty<string>(), string.Empty);
+        
+        if (allImageFiles.Count == 0)
+        {
+            Console.WriteLine("[FFmpegService] 未找到任何图片文件");
+            return (Array.Empty<string>(), string.Empty);
+        }
+        
+        // 按文件名排序
+        var sortedFiles = allImageFiles
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+            
+        Console.WriteLine($"[FFmpegService] 总共找到 {sortedFiles.Length} 个图片文件");
+        Console.WriteLine($"[FFmpegService] 前几个文件: {string.Join(", ", sortedFiles.Take(3).Select(Path.GetFileName))}");
+        
+        // 获取第一个文件的扩展名
+        var firstFile = sortedFiles[0];
+        var firstFileName = Path.GetFileNameWithoutExtension(firstFile);
+        var fileExtension = Path.GetExtension(firstFile).ToLowerInvariant();
+        
+        Console.WriteLine($"[FFmpegService] 第一个文件: {firstFileName}, 扩展名: {fileExtension}");
+        
+        // 检查文件编号是否连续
+        if (IsSequentialNumbering(sortedFiles))
+        {
+            // 如果编号连续，尝试生成模式
+            var pattern = GeneratePattern(firstFileName, fileExtension);
+            if (!string.IsNullOrEmpty(pattern))
+            {
+                Console.WriteLine($"[FFmpegService] 使用模式匹配: {pattern}");
+                return (sortedFiles, pattern);
+            }
+        }
+        
+        // 如果无法使用模式匹配，使用文件列表方式
+        Console.WriteLine("[FFmpegService] 使用文件列表方式");
+        return (sortedFiles, "FILE_LIST");
+    }
+    
+    /// <summary>
+    /// 检查文件编号是否连续
+    /// </summary>
+    private static bool IsSequentialNumbering(string[] files)
+    {
+        if (files.Length <= 1) return true;
+        
+        var numbers = new List<int>();
+        foreach (var file in files)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(file);
+            var match = Regex.Match(fileName, @"(\d+)");
+            if (match.Success && int.TryParse(match.Groups[1].Value, out var number))
+            {
+                numbers.Add(number);
+            }
+        }
+        
+        if (numbers.Count != files.Length) return false;
+        
+        // 检查是否连续
+        numbers.Sort();
+        for (var i = 1; i < numbers.Count; i++)
+        {
+            if (numbers[i] != numbers[i - 1] + 1)
+            {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /// <summary>
+    /// 生成FFmpeg模式
+    /// </summary>
+    private static string GeneratePattern(string fileName, string extension)
+    {
+        // 查找文件名中的数字部分
+        var match = Regex.Match(fileName, @"(\D*)(\d+)(\D*)");
+        if (match.Success)
+        {
+            var prefix = match.Groups[1].Value;
+            var number = match.Groups[2].Value;
+            var suffix = match.Groups[3].Value;
+            
+            // 根据数字位数生成模式
+            var digitCount = number.Length;
+            var pattern = $"{prefix}%0{digitCount}d{suffix}{extension}";
+            
+            Console.WriteLine($"[FFmpegService] 生成模式: 前缀='{prefix}', 数字位数={digitCount}, 后缀='{suffix}', 扩展名='{extension}'");
+            return pattern;
+        }
+        
+        return string.Empty;
     }
 }
