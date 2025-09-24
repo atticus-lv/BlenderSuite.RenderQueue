@@ -204,7 +204,9 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         get
         {
-            var result = QueueState == QueueState.Idle || QueueState == QueueState.Completed;
+            // 队列空闲或完成时，可以修改所有任务（不需要任务级别权限控制）
+            // 队列运行时，需要任务级别权限控制
+            var result = QueueState == QueueState.Running || QueueState == QueueState.Paused;
             // Console.WriteLine($"[RenderQueueViewModel] CanModifyTasks: {result} (QueueState: {QueueState})");
             return result;
         }

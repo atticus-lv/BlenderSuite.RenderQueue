@@ -127,21 +127,49 @@
                             <StackPanel Spacing="8">
                                 <CheckBox Content="渲染动画" IsChecked="{Binding Animation}" />
                                 <StackPanel IsVisible="{Binding Animation}" Spacing="8" Margin="16,0,0,0">
-                                    <CheckBox Content="覆写帧范围" IsChecked="{Binding OverrideFrameRange}" />
+                                    <CheckBox Content="覆写帧范围" IsChecked="{Binding OverrideFrameRange}">
+                                        <CheckBox.IsEnabled>
+                                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                <Binding Path="$parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanModifyTasks" Converter="{x:Static BoolConverters.Not}" />
+                                                <Binding Path="CanModifyOverride" />
+                                            </MultiBinding>
+                                        </CheckBox.IsEnabled>
+                                    </CheckBox>
                                     <StackPanel IsVisible="{Binding OverrideFrameRange}" Spacing="8" Margin="16,0,0,0">
                                         <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto">
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="起始帧:"
                                                        VerticalAlignment="Center" />
                                             <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding StartFrame}"
-                                                           Minimum="1" Maximum="100000" Width="120" />
+                                                           Minimum="1" Maximum="100000" Width="120">
+                                                <NumericUpDown.IsEnabled>
+                                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                        <Binding Path="$parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanModifyTasks" Converter="{x:Static BoolConverters.Not}" />
+                                                        <Binding Path="CanModifyOverride" />
+                                                    </MultiBinding>
+                                                </NumericUpDown.IsEnabled>
+                                            </NumericUpDown>
                                             <TextBlock Grid.Row="0" Grid.Column="2" Text="结束帧:"
                                                        VerticalAlignment="Center" />
                                             <NumericUpDown Grid.Row="0" Grid.Column="3" Value="{Binding EndFrame}"
-                                                           Minimum="1" Maximum="100000" Width="120" />
+                                                           Minimum="1" Maximum="100000" Width="120">
+                                                <NumericUpDown.IsEnabled>
+                                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                        <Binding Path="$parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanModifyTasks" Converter="{x:Static BoolConverters.Not}" />
+                                                        <Binding Path="CanModifyOverride" />
+                                                    </MultiBinding>
+                                                </NumericUpDown.IsEnabled>
+                                            </NumericUpDown>
                                         </Grid>
                                     </StackPanel>
 
-                                    <CheckBox Content="覆写场景" IsChecked="{Binding OverrideScene}" />
+                                    <CheckBox Content="覆写场景" IsChecked="{Binding OverrideScene}">
+                                        <CheckBox.IsEnabled>
+                                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                <Binding Path="$parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanModifyTasks" Converter="{x:Static BoolConverters.Not}" />
+                                                <Binding Path="CanModifyOverride" />
+                                            </MultiBinding>
+                                        </CheckBox.IsEnabled>
+                                    </CheckBox>
                                     <StackPanel IsVisible="{Binding OverrideScene}" Spacing="8" Margin="16,0,0,0">
                                         <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="场景:"
@@ -149,7 +177,14 @@
                                             <ComboBox Grid.Row="0" Grid.Column="1"
                                                       ItemsSource="{Binding AvailableSceneNames}"
                                                       SelectedItem="{Binding SelectedSceneName}"
-                                                      Width="200" HorizontalAlignment="Left" />
+                                                      Width="200" HorizontalAlignment="Left">
+                                                <ComboBox.IsEnabled>
+                                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                        <Binding Path="$parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanModifyTasks" Converter="{x:Static BoolConverters.Not}" />
+                                                        <Binding Path="CanModifyOverride" />
+                                                    </MultiBinding>
+                                                </ComboBox.IsEnabled>
+                                            </ComboBox>
                                         </Grid>
 
                                         <!-- 场景选择警告 -->

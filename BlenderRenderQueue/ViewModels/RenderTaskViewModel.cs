@@ -143,6 +143,22 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public int RealTotalFrames => Math.Max(0, RealEndFrame - RealStartFrame + 1);
 
+    // 任务操作权限相关属性
+    /// <summary>
+    /// 是否可以修改任务的Enable属性
+    /// </summary>
+    public bool CanModifyEnable => Status == RenderTaskStatus.Pending;
+
+    /// <summary>
+    /// 是否可以修改任务的覆写属性（帧范围、场景等）
+    /// </summary>
+    public bool CanModifyOverride => Status == RenderTaskStatus.Pending;
+
+    /// <summary>
+    /// 是否可以删除任务
+    /// </summary>
+    public bool CanDelete => Status == RenderTaskStatus.Pending;
+
     partial void OnStartFrameChanged(int value)
     {
         OnPropertyChanged(nameof(TotalFrames));
@@ -717,7 +733,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 _exe.OnErrorReceived -= HandleRawError;
             }
 
-            SetStatus(RenderTaskStatus.Pending, "已暂停");
+            SetStatus(RenderTaskStatus.Paused, "已暂停");
             EnqueueLog($"渲染已暂停，当前帧: {CurrentFrame}");
         }
         catch (Exception ex)
@@ -964,6 +980,11 @@ public partial class RenderTaskViewModel : ViewModelBase
             CurrentFrame = StartFrame;
         }
 
+        // 通知操作权限相关属性更新
+        OnPropertyChanged(nameof(CanModifyEnable));
+        OnPropertyChanged(nameof(CanModifyOverride));
+        OnPropertyChanged(nameof(CanDelete));
+
         StatusChanged?.Invoke(this, new RenderTaskStatusChangedEventArgs(status, statusText));
     }
 
@@ -1104,11 +1125,12 @@ public class StatusToColorConverter : IValueConverter
         {
             return status switch
             {
-                RenderTaskStatus.Pending => "#FFA500", // 橙色
-                RenderTaskStatus.Running => "#00C000", // 绿色
-                RenderTaskStatus.Completed => "#008000", // 深绿色
-                RenderTaskStatus.Failed => "#FF0000", // 红色
-                RenderTaskStatus.Cancelled => "#808080", // 灰色
+                RenderTaskStatus.Pending => "#808080", // 灰色 - 等待中
+                RenderTaskStatus.Running => "#00C000", // 绿色 - 运行中
+                RenderTaskStatus.Paused => "#FFA500", // 橙色 - 已暂停
+                RenderTaskStatus.Completed => "#008000", // 深绿色 - 已完成
+                RenderTaskStatus.Failed => "#FF0000", // 红色 - 失败
+                RenderTaskStatus.Cancelled => "#CCCCCC", // 浅灰色 - 已取消
                 _ => "#CCCCCC" // 默认灰色
             };
         }
@@ -1127,6 +1149,7 @@ public enum RenderTaskStatus
 {
     Pending, // 等待中
     Running, // 运行中
+    Paused, // 已暂停
     Completed, // 已完成
     Failed, // 失败
     Cancelled // 已取消
