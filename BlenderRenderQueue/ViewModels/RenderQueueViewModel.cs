@@ -216,6 +216,21 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// 设置全局最大重试次数
+    /// </summary>
+    /// <param name="maxRetryAttempts">最大重试次数</param>
+    public void SetGlobalMaxRetryAttempts(int maxRetryAttempts)
+    {
+        _globalMaxRetryAttempts = maxRetryAttempts;
+        
+        // 更新所有现有任务的重试次数设置
+        foreach (var task in RenderTasks)
+        {
+            task.SetGlobalMaxRetryAttempts(maxRetryAttempts);
+        }
+    }
+
     public bool CanModifyTasks
     {
         get
@@ -232,7 +247,8 @@ public partial class RenderQueueViewModel : ViewModelBase
     private readonly List<Task> _runningTasks = new();
     private BlenderExeService? _blenderService;
     private readonly IFFmpegService _ffmpegService = new FFmpegService();
-    private int _globalRenderTimeoutSeconds = 3600; // 默认1小时
+    private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
+    private int _globalMaxRetryAttempts = 3; // 默认最大重试3次
     private readonly IDataPersistenceService _dataPersistenceService = new DataPersistenceService();
     private readonly object _queueLock = new();
 
@@ -355,8 +371,9 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 新任务默认不覆写帧范围，使用场景默认值
             var task = new RenderTaskViewModel(blendFilePath, 1, 1);
             
-            // 设置全局超时
+            // 设置全局超时和重试次数
             task.SetGlobalRenderTimeout(_globalRenderTimeoutSeconds);
+            task.SetGlobalMaxRetryAttempts(_globalMaxRetryAttempts);
 
             // 自动加载文件属性
             if (_blenderService != null) await task.LoadFilePropertiesAsync(_blenderService);

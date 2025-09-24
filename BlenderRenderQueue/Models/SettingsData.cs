@@ -21,4 +21,7 @@ public class SettingsData
 
     [JsonPropertyName("DefaultRenderTimeoutSeconds")]
     public int DefaultRenderTimeoutSeconds { get; set; } = 300; // 默认五分钟
+
+    [JsonPropertyName("MaxRetryAttempts")]
+    public int MaxRetryAttempts { get; set; } = 3; // 默认最大重试3次
 }

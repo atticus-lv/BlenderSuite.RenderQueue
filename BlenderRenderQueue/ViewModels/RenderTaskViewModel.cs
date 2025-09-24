@@ -173,6 +173,54 @@ public partial class RenderTaskViewModel : ViewModelBase
         _globalRenderTimeoutSeconds = timeoutSeconds;
     }
 
+    /// <summary>
+    /// 设置全局最大重试次数
+    /// </summary>
+    /// <param name="maxRetryAttempts">最大重试次数</param>
+    public void SetGlobalMaxRetryAttempts(int maxRetryAttempts)
+    {
+        _globalMaxRetryAttempts = maxRetryAttempts;
+    }
+
+    /// <summary>
+    /// 尝试重试渲染
+    /// </summary>
+    /// <param name="exeService">Blender服务</param>
+    /// <returns>是否成功重试</returns>
+    private async Task<bool> TryRetryRenderAsync(BlenderExeService exeService)
+    {
+        _currentRetryAttempts++;
+        
+        if (_currentRetryAttempts > _globalMaxRetryAttempts)
+        {
+            EnqueueLog($"已达到最大重试次数 ({_globalMaxRetryAttempts})，任务失败");
+            SetStatus(RenderTaskStatus.Failed, $"重试失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
+            return false;
+        }
+
+        EnqueueLog($"开始第 {_currentRetryAttempts} 次重试 (最大 {_globalMaxRetryAttempts} 次)");
+        
+        try
+        {
+            // 暂停当前渲染
+            await PauseRenderAsync();
+            
+            // 等待一小段时间再重试
+            await Task.Delay(2000);
+            
+            // 从当前帧重新开始渲染
+            await ResumeRenderAsync(exeService, CurrentFrame);
+            
+            EnqueueLog($"第 {_currentRetryAttempts} 次重试开始成功");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"第 {_currentRetryAttempts} 次重试失败: {ex.Message}");
+            return false;
+        }
+    }
+
     partial void OnStartFrameChanged(int value)
     {
         OnPropertyChanged(nameof(TotalFrames));
@@ -337,7 +385,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     private string _logPauseButtonText = "暂停日志";
 
     // 全局超时设置（从SettingsViewModel获取）
-    private int _globalRenderTimeoutSeconds = 3600; // 默认1小时
+    private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
+    private int _globalMaxRetryAttempts = 3; // 默认最大重试3次
+    private int _currentRetryAttempts = 0; // 当前重试次数
 
     [ObservableProperty]
     private RenderTaskStatus _status = RenderTaskStatus.Pending;
@@ -685,7 +735,20 @@ public partial class RenderTaskViewModel : ViewModelBase
             else
             {
                 EnqueueLog($"渲染任务超时: {ex.Message}");
-                SetStatus(RenderTaskStatus.Failed, "超时");
+                
+                // 尝试重试
+                if (_exe != null && _currentRetryAttempts < _globalMaxRetryAttempts)
+                {
+                    EnqueueLog($"检测到渲染超时，尝试重试...");
+                    var retrySuccess = await TryRetryRenderAsync(_exe);
+                    if (retrySuccess)
+                    {
+                        return; // 重试成功，继续渲染
+                    }
+                }
+                
+                // 重试失败或达到最大重试次数
+                SetStatus(RenderTaskStatus.Failed, $"超时失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
             }
         }
         catch (OperationCanceledException ex)
@@ -810,7 +873,20 @@ public partial class RenderTaskViewModel : ViewModelBase
             else
             {
                 EnqueueLog($"恢复渲染任务超时: {ex.Message}");
-                SetStatus(RenderTaskStatus.Failed, "超时");
+                
+                // 尝试重试
+                if (_exe != null && _currentRetryAttempts < _globalMaxRetryAttempts)
+                {
+                    EnqueueLog($"检测到恢复渲染超时，尝试重试...");
+                    var retrySuccess = await TryRetryRenderAsync(_exe);
+                    if (retrySuccess)
+                    {
+                        return; // 重试成功，继续渲染
+                    }
+                }
+                
+                // 重试失败或达到最大重试次数
+                SetStatus(RenderTaskStatus.Failed, $"恢复超时失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
             }
         }
         catch (OperationCanceledException ex)
@@ -920,7 +996,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         ProgressChanged?.Invoke(this, new RenderTaskProgressEventArgs(OverallProgress01, Progress01, p.CurrentFrame, frameRenderTime));
     }
 
-    private void OnEvent(RenderEvent e)
+    private async void OnEvent(RenderEvent e)
     {
         switch (e)
         {
@@ -971,8 +1047,21 @@ public partial class RenderTaskViewModel : ViewModelBase
 
                 break;
             case RenderError err:
-                EnqueueLog($"错误: {err.Message}");
-                SetStatus(RenderTaskStatus.Failed, "渲染失败");
+                EnqueueLog($"渲染错误: {err.Message}");
+                
+                // 尝试重试
+                if (_exe != null && _currentRetryAttempts < _globalMaxRetryAttempts)
+                {
+                    EnqueueLog($"检测到渲染错误，尝试重试...");
+                    var retrySuccess = await TryRetryRenderAsync(_exe);
+                    if (retrySuccess)
+                    {
+                        return; // 重试成功，继续渲染
+                    }
+                }
+                
+                // 重试失败或达到最大重试次数
+                SetStatus(RenderTaskStatus.Failed, $"渲染失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
                 EndTime = DateTime.Now;
                 if (StartTime.HasValue)
                 {
@@ -992,6 +1081,12 @@ public partial class RenderTaskViewModel : ViewModelBase
         if (status == RenderTaskStatus.Running && CurrentFrame == 0)
         {
             CurrentFrame = StartFrame;
+        }
+
+        // 当任务完成时，重置重试计数器
+        if (status == RenderTaskStatus.Completed)
+        {
+            _currentRetryAttempts = 0;
         }
 
         // 通知操作权限相关属性更新

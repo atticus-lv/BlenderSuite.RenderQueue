@@ -49,7 +49,10 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _isLoadingFFmpegInfo = false;
 
     [ObservableProperty]
-    private int _defaultRenderTimeoutSeconds = 3600; // 默认1小时
+    private int _defaultRenderTimeoutSeconds = 300; // 默认5分钟
+
+    [ObservableProperty]
+    private int _maxRetryAttempts = 3; // 默认最大重试3次
 
     // 内部状态
     private CancellationTokenSource? _versionCts;
@@ -339,7 +342,7 @@ public partial class SettingsViewModel : ViewModelBase
     private async Task SaveSettings()
     {
         // 触发设置变化事件
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, FfmpegPath, DefaultRenderTimeoutSeconds));
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, FfmpegPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts));
         
         // 保存设置到文件
         await SaveSettingsToFileAsync();
@@ -356,13 +359,14 @@ public partial class SettingsViewModel : ViewModelBase
             {
                 BlenderPath = BlenderPath,
                 FfmpegPath = FfmpegPath,
-                DefaultRenderTimeoutSeconds = DefaultRenderTimeoutSeconds
+                DefaultRenderTimeoutSeconds = DefaultRenderTimeoutSeconds,
+                MaxRetryAttempts = MaxRetryAttempts
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
             if (success)
             {
-                Console.WriteLine($"[SettingsViewModel] ✅ Settings saved successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}, Timeout: {DefaultRenderTimeoutSeconds}s");
+                Console.WriteLine($"[SettingsViewModel] ✅ Settings saved successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
             }
             else
             {
@@ -399,7 +403,12 @@ public partial class SettingsViewModel : ViewModelBase
                 DefaultRenderTimeoutSeconds = settings.DefaultRenderTimeoutSeconds;
             }
 
-            Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}, Timeout: {DefaultRenderTimeoutSeconds}s");
+            if (settings.MaxRetryAttempts > 0)
+            {
+                MaxRetryAttempts = settings.MaxRetryAttempts;
+            }
+
+            Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
         }
         catch (Exception ex)
         {
@@ -438,12 +447,14 @@ public class SettingsChangedEventArgs : EventArgs
     public string BlenderPath { get; }
     public string FfmpegPath { get; }
     public int DefaultRenderTimeoutSeconds { get; }
+    public int MaxRetryAttempts { get; }
 
-    public SettingsChangedEventArgs(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds)
+    public SettingsChangedEventArgs(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts)
     {
         BlenderPath = blenderPath;
         FfmpegPath = ffmpegPath;
         DefaultRenderTimeoutSeconds = defaultRenderTimeoutSeconds;
+        MaxRetryAttempts = maxRetryAttempts;
     }
 }
 

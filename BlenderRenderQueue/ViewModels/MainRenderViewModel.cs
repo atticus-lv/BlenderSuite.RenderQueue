@@ -243,7 +243,7 @@ public partial class MainRenderViewModel : ViewModelBase
             ShowSettingsDialog();
         else
             // 检测成功，直接应用设置
-            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.FfmpegPath, _settingsViewModel.DefaultRenderTimeoutSeconds);
+            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.FfmpegPath, _settingsViewModel.DefaultRenderTimeoutSeconds, _settingsViewModel.MaxRetryAttempts);
     }
 
     [RelayCommand]
@@ -271,16 +271,17 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        ApplySettings(e.BlenderPath, e.FfmpegPath, e.DefaultRenderTimeoutSeconds);
+        ApplySettings(e.BlenderPath, e.FfmpegPath, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts);
     }
 
-    private void ApplySettings(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds)
+    private void ApplySettings(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts)
     {
         BlenderPath = blenderPath;
         FfmpegPath = ffmpegPath;
         
-        // 更新全局超时设置
+        // 更新全局超时设置和重试次数
         _renderQueue.SetGlobalRenderTimeout(defaultRenderTimeoutSeconds);
+        _renderQueue.SetGlobalMaxRetryAttempts(maxRetryAttempts);
     }
 
     /// <summary>
