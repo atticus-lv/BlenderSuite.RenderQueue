@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Media.Imaging;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
 using BlenderRenderQueue.Models;
@@ -352,238 +353,29 @@ public class BlenderVideoService : IBlenderVideoService
     }
 
     /// <summary>
-    /// 获取图片的分辨率（直接从图片文件读取）
+    /// 获取图片的分辨率（使用Avalonia Bitmap）
     /// </summary>
     private static (int width, int height) GetImageDimensions(string imagePath)
     {
         try
         {
-            var extension = Path.GetExtension(imagePath).ToLowerInvariant();
+            using var fileStream = File.OpenRead(imagePath);
+            using var bitmap = new Bitmap(fileStream);
             
-            switch (extension)
-            {
-                case ".png":
-                    return GetPngDimensions(imagePath);
-                case ".jpg":
-                case ".jpeg":
-                    return GetJpegDimensions(imagePath);
-                case ".bmp":
-                    return GetBmpDimensions(imagePath);
-                case ".tiff":
-                case ".tif":
-                    return GetTiffDimensions(imagePath);
-                case ".tga":
-                    return GetTgaDimensions(imagePath);
-                default:
-                    Console.WriteLine($"[BlenderVideoService] 不支持的图片格式: {extension}");
-                    return (1920, 1080);
-            }
+            var width = bitmap.PixelSize.Width;
+            var height = bitmap.PixelSize.Height;
+            
+            Console.WriteLine($"[BlenderVideoService] 成功获取图片分辨率: {width}x{height} ({Path.GetFileName(imagePath)})");
+            return (width, height);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[BlenderVideoService] 获取图片分辨率失败: {ex.Message}");
+            Console.WriteLine($"[BlenderVideoService] 使用默认分辨率: 1920x1080");
             return (1920, 1080); // 默认分辨率
         }
     }
 
-    /// <summary>
-    /// 读取PNG图片的分辨率
-    /// </summary>
-    private static (int width, int height) GetPngDimensions(string imagePath)
-    {
-        using var stream = File.OpenRead(imagePath);
-        using var reader = new BinaryReader(stream);
-        
-        // PNG文件头
-        var pngHeader = reader.ReadBytes(8);
-        if (pngHeader[0] != 0x89 || pngHeader[1] != 0x50 || pngHeader[2] != 0x4E || pngHeader[3] != 0x47)
-        {
-            throw new InvalidDataException("不是有效的PNG文件");
-        }
-        
-        // 读取IHDR块
-        var ihdrLength = ReadBigEndianInt32(reader);
-        var ihdrType = reader.ReadBytes(4);
-        if (ihdrType[0] != 0x49 || ihdrType[1] != 0x48 || ihdrType[2] != 0x44 || ihdrType[3] != 0x52)
-        {
-            throw new InvalidDataException("PNG文件缺少IHDR块");
-        }
-        
-        var width = ReadBigEndianInt32(reader);
-        var height = ReadBigEndianInt32(reader);
-        
-        return (width, height);
-    }
-
-    /// <summary>
-    /// 读取JPEG图片的分辨率
-    /// </summary>
-    private static (int width, int height) GetJpegDimensions(string imagePath)
-    {
-        using var stream = File.OpenRead(imagePath);
-        using var reader = new BinaryReader(stream);
-        
-        // JPEG文件头
-        var jpegHeader = reader.ReadBytes(2);
-        if (jpegHeader[0] != 0xFF || jpegHeader[1] != 0xD8)
-        {
-            throw new InvalidDataException("不是有效的JPEG文件");
-        }
-        
-        // 查找SOF0标记 (0xFFC0)
-        while (stream.Position < stream.Length)
-        {
-            var marker = reader.ReadUInt16();
-            if (marker == 0xFFC0) // SOF0
-            {
-                var length = ReadBigEndianInt16(reader);
-                var precision = reader.ReadByte();
-                var height = ReadBigEndianInt16(reader);
-                var width = ReadBigEndianInt16(reader);
-                
-                return (width, height);
-            }
-            else if ((marker & 0xFF00) == 0xFF00)
-            {
-                var length = ReadBigEndianInt16(reader);
-                stream.Seek(length - 2, SeekOrigin.Current);
-            }
-            else
-            {
-                break;
-            }
-        }
-        
-        throw new InvalidDataException("JPEG文件中未找到SOF0标记");
-    }
-
-    /// <summary>
-    /// 读取BMP图片的分辨率
-    /// </summary>
-    private static (int width, int height) GetBmpDimensions(string imagePath)
-    {
-        using var stream = File.OpenRead(imagePath);
-        using var reader = new BinaryReader(stream);
-        
-        // BMP文件头
-        var bmpHeader = reader.ReadBytes(2);
-        if (bmpHeader[0] != 0x42 || bmpHeader[1] != 0x4D)
-        {
-            throw new InvalidDataException("不是有效的BMP文件");
-        }
-        
-        // 跳过文件大小字段
-        reader.ReadInt32();
-        
-        // 读取宽度和高度
-        var width = reader.ReadInt32();
-        var height = reader.ReadInt32();
-        
-        return (width, height);
-    }
-
-    /// <summary>
-    /// 读取TIFF图片的分辨率
-    /// </summary>
-    private static (int width, int height) GetTiffDimensions(string imagePath)
-    {
-        using var stream = File.OpenRead(imagePath);
-        using var reader = new BinaryReader(stream);
-        
-        // TIFF文件头
-        var tiffHeader = reader.ReadBytes(4);
-        bool isLittleEndian = tiffHeader[0] == 0x49 && tiffHeader[1] == 0x49; // "II"
-        bool isBigEndian = tiffHeader[0] == 0x4D && tiffHeader[1] == 0x4D; // "MM"
-        
-        if (!isLittleEndian && !isBigEndian)
-        {
-            throw new InvalidDataException("不是有效的TIFF文件");
-        }
-        
-        // 读取IFD偏移
-        var ifdOffset = isLittleEndian ? reader.ReadUInt32() : ReadBigEndianUInt32(reader);
-        stream.Seek(ifdOffset, SeekOrigin.Begin);
-        
-        // 读取IFD条目数量
-        var entryCount = isLittleEndian ? reader.ReadUInt16() : ReadBigEndianUInt16(reader);
-        
-        int width = 0, height = 0;
-        
-        // 读取IFD条目
-        for (int i = 0; i < entryCount; i++)
-        {
-            var tag = isLittleEndian ? reader.ReadUInt16() : ReadBigEndianUInt16(reader);
-            var type = isLittleEndian ? reader.ReadUInt16() : ReadBigEndianUInt16(reader);
-            var count = isLittleEndian ? reader.ReadUInt32() : ReadBigEndianUInt32(reader);
-            var value = isLittleEndian ? reader.ReadUInt32() : ReadBigEndianUInt32(reader);
-            
-            if (tag == 256) width = (int)value; // ImageWidth
-            else if (tag == 257) height = (int)value; // ImageLength
-            
-            if (width > 0 && height > 0) break;
-        }
-        
-        if (width == 0 || height == 0)
-        {
-            throw new InvalidDataException("TIFF文件中未找到宽度或高度信息");
-        }
-        
-        return (width, height);
-    }
-
-    /// <summary>
-    /// 读取TGA图片的分辨率
-    /// </summary>
-    private static (int width, int height) GetTgaDimensions(string imagePath)
-    {
-        using var stream = File.OpenRead(imagePath);
-        using var reader = new BinaryReader(stream);
-        
-        // 跳过TGA头部的前12个字节
-        stream.Seek(12, SeekOrigin.Begin);
-        
-        // 读取宽度和高度
-        var width = reader.ReadUInt16();
-        var height = reader.ReadUInt16();
-        
-        return (width, height);
-    }
-
-    /// <summary>
-    /// 读取大端序32位整数
-    /// </summary>
-    private static int ReadBigEndianInt32(BinaryReader reader)
-    {
-        var bytes = reader.ReadBytes(4);
-        return (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
-    }
-
-    /// <summary>
-    /// 读取大端序16位整数
-    /// </summary>
-    private static int ReadBigEndianInt16(BinaryReader reader)
-    {
-        var bytes = reader.ReadBytes(2);
-        return (bytes[0] << 8) | bytes[1];
-    }
-
-    /// <summary>
-    /// 读取大端序32位无符号整数
-    /// </summary>
-    private static uint ReadBigEndianUInt32(BinaryReader reader)
-    {
-        var bytes = reader.ReadBytes(4);
-        return (uint)((bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3]);
-    }
-
-    /// <summary>
-    /// 读取大端序16位无符号整数
-    /// </summary>
-    private static ushort ReadBigEndianUInt16(BinaryReader reader)
-    {
-        var bytes = reader.ReadBytes(2);
-        return (ushort)((bytes[0] << 8) | bytes[1]);
-    }
 
     /// <summary>
     /// 生成Blender视频脚本
