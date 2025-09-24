@@ -226,6 +226,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalFrames));
         OnPropertyChanged(nameof(DisplayStartFrame));
         OnPropertyChanged(nameof(DisplayTotalFrames));
+        OnPropertyChanged(nameof(RealStartFrame));
+        OnPropertyChanged(nameof(RealTotalFrames));
         // 当起始帧变化时，触发父级保存数据
         FrameRangeChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -235,6 +237,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(TotalFrames));
         OnPropertyChanged(nameof(DisplayEndFrame));
         OnPropertyChanged(nameof(DisplayTotalFrames));
+        OnPropertyChanged(nameof(RealEndFrame));
+        OnPropertyChanged(nameof(RealTotalFrames));
         // 当结束帧变化时，触发父级保存数据
         FrameRangeChanged?.Invoke(this, EventArgs.Empty);
     }
