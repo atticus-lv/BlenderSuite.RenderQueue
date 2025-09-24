@@ -368,27 +368,30 @@ public partial class MainRenderViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 显示视频生成成功 Toast，包含操作按钮
+    /// 显示视频生成成功 Toast，并自动打开视频所在位置
     /// </summary>
     /// <param name="statusMessage">状态消息，包含视频路径信息</param>
     private void ShowVideoGenerationSuccessToast(string statusMessage)
     {
         try
         {
-            var toastManager = GetToastManager();
-            if (toastManager != null)
-            {
-                // 从状态消息中提取视频路径
-                var videoPath = ExtractVideoPathFromStatusMessage(statusMessage);
+            // 从状态消息中提取视频路径
+            var videoPath = ExtractVideoPathFromStatusMessage(statusMessage);
 
-                toastManager.CreateToast()
-                    .WithTitle("视频生成完成")
-                    .WithContent("视频已成功生成！")
-                    .OfType(NotificationType.Success)
-                    .WithActionButton("关闭", _ => { }, true, SukiButtonStyles.Basic)
-                    .WithActionButton("播放", _ => PlayVideo(videoPath), true, SukiButtonStyles.Standard)
-                    .WithActionButton("打开位置", _ => OpenVideoLocation(videoPath), true)
-                    .Queue();
+            // 显示简单的成功通知
+            ShowToast("视频生成完成", "视频已成功生成，正在打开所在位置...", NotificationType.Success);
+
+            // 自动打开视频所在位置
+            if (!string.IsNullOrEmpty(videoPath))
+            {
+                // 延迟一点时间再打开，让用户看到toast通知
+                Task.Delay(1000).ContinueWith(_ =>
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        OpenVideoLocation(videoPath);
+                    });
+                });
             }
         }
         catch (Exception ex)
