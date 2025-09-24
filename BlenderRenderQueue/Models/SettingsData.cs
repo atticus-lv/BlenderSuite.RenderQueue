@@ -24,4 +24,10 @@ public class SettingsData
 
     [JsonPropertyName("MaxRetryAttempts")]
     public int MaxRetryAttempts { get; set; } = 3; // 默认最大重试3次
+
+    [JsonPropertyName("VideoGenerationMethod")]
+    public string VideoGenerationMethod { get; set; } = "Blender"; // 默认使用Blender生成视频
+
+    [JsonPropertyName("VideoCodec")]
+    public string VideoCodec { get; set; } = "H264"; // 默认使用H264编码
 }

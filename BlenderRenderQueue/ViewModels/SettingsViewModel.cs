@@ -54,6 +54,12 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private int _maxRetryAttempts = 3; // 默认最大重试3次
 
+    [ObservableProperty]
+    private string _videoGenerationMethod = "Blender"; // 默认使用Blender生成视频
+
+    [ObservableProperty]
+    private string _videoCodec = "H264"; // 默认使用H264编码
+
     // 内部状态
     private CancellationTokenSource? _versionCts;
     private readonly ISettingsPersistenceService _settingsPersistenceService = new SettingsPersistenceService();
@@ -342,7 +348,7 @@ public partial class SettingsViewModel : ViewModelBase
     private async Task SaveSettings()
     {
         // 触发设置变化事件
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, FfmpegPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts));
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, FfmpegPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoGenerationMethod, VideoCodec));
         
         // 保存设置到文件
         await SaveSettingsToFileAsync();
@@ -360,7 +366,9 @@ public partial class SettingsViewModel : ViewModelBase
                 BlenderPath = BlenderPath,
                 FfmpegPath = FfmpegPath,
                 DefaultRenderTimeoutSeconds = DefaultRenderTimeoutSeconds,
-                MaxRetryAttempts = MaxRetryAttempts
+                MaxRetryAttempts = MaxRetryAttempts,
+                VideoGenerationMethod = VideoGenerationMethod,
+                VideoCodec = VideoCodec
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
@@ -408,6 +416,16 @@ public partial class SettingsViewModel : ViewModelBase
                 MaxRetryAttempts = settings.MaxRetryAttempts;
             }
 
+            if (!string.IsNullOrEmpty(settings.VideoGenerationMethod))
+            {
+                VideoGenerationMethod = settings.VideoGenerationMethod;
+            }
+
+            if (!string.IsNullOrEmpty(settings.VideoCodec))
+            {
+                VideoCodec = settings.VideoCodec;
+            }
+
             Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
         }
         catch (Exception ex)
@@ -448,13 +466,17 @@ public class SettingsChangedEventArgs : EventArgs
     public string FfmpegPath { get; }
     public int DefaultRenderTimeoutSeconds { get; }
     public int MaxRetryAttempts { get; }
+    public string VideoGenerationMethod { get; }
+    public string VideoCodec { get; }
 
-    public SettingsChangedEventArgs(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts)
+    public SettingsChangedEventArgs(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoGenerationMethod, string videoCodec)
     {
         BlenderPath = blenderPath;
         FfmpegPath = ffmpegPath;
         DefaultRenderTimeoutSeconds = defaultRenderTimeoutSeconds;
         MaxRetryAttempts = maxRetryAttempts;
+        VideoGenerationMethod = videoGenerationMethod;
+        VideoCodec = videoCodec;
     }
 }
 

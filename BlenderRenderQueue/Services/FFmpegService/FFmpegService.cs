@@ -179,6 +179,53 @@ public class FFmpegService : IFFmpegService
         }
     }
 
+    public async Task<string?> GetFFmpegVersionAsync()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(_ffmpegPath) || !File.Exists(_ffmpegPath))
+            {
+                return null;
+            }
+
+            var processInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = _ffmpegPath,
+                Arguments = "-version",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new System.Diagnostics.Process { StartInfo = processInfo };
+            process.Start();
+            
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            // 解析版本信息
+            var lines = output.Split('\n');
+            if (lines.Length > 0)
+            {
+                var versionLine = lines[0];
+                // 提取版本号，例如：ffmpeg version 5.0.1-essentials_build-www.gyan.dev
+                var match = Regex.Match(versionLine, @"ffmpeg version ([^\s]+)");
+                if (match.Success)
+                {
+                    return match.Groups[1].Value;
+                }
+            }
+
+            return "Unknown";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FFmpegService] 获取版本信息失败: {ex.Message}");
+            return null;
+        }
+    }
+
     /// <summary>
     /// 自动检测目录中的图片文件
     /// </summary>

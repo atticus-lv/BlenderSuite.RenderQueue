@@ -16,6 +16,7 @@ using Avalonia.Threading;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
+using BlenderRenderQueue.Services.BlenderVideoService;
 using BlenderRenderQueue.Services.FFmpegService;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -231,6 +232,16 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 
+    public void SetVideoGenerationMethod(string method)
+    {
+        _videoGenerationMethod = method;
+    }
+
+    public void SetVideoCodec(string codec)
+    {
+        _videoCodec = codec;
+    }
+
     public bool CanModifyTasks
     {
         get
@@ -247,8 +258,11 @@ public partial class RenderQueueViewModel : ViewModelBase
     private readonly List<Task> _runningTasks = new();
     private BlenderExeService? _blenderService;
     private readonly IFFmpegService _ffmpegService = new FFmpegService();
+    private BlenderVideoService? _blenderVideoService;
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
     private int _globalMaxRetryAttempts = 3; // 默认最大重试3次
+    private string _videoGenerationMethod = "Blender"; // 默认使用Blender生成视频
+    private string _videoCodec = "H264"; // 默认使用H264编码
     private readonly IDataPersistenceService _dataPersistenceService = new DataPersistenceService();
     private readonly object _queueLock = new();
 
@@ -703,11 +717,26 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         try
         {
-            // 检查 FFmpeg 是否可用
-            if (!await _ffmpegService.IsFFmpegAvailableAsync())
+            // 根据设置选择视频生成方法
+            bool useBlender = _videoGenerationMethod == "Blender" && _blenderVideoService != null;
+            
+            if (useBlender)
             {
-                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("FFmpeg 不可用，请先设置有效的 FFmpeg 路径"));
-                return;
+                // 检查 Blender 是否可用
+                if (_blenderVideoService == null || !await _blenderVideoService.IsBlenderAvailableAsync())
+                {
+                    QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Blender 不可用，请先设置有效的 Blender 路径"));
+                    return;
+                }
+            }
+            else
+            {
+                // 检查 FFmpeg 是否可用
+                if (!await _ffmpegService.IsFFmpegAvailableAsync())
+                {
+                    QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("FFmpeg 不可用，请先设置有效的 FFmpeg 路径"));
+                    return;
+                }
             }
 
             // 获取帧路径目录
@@ -751,16 +780,36 @@ public partial class RenderQueueViewModel : ViewModelBase
             QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"开始生成视频: {outputVideoPath}"));
 
             // 生成视频
-            var success = await _ffmpegService.GenerateVideoFromImagesAsync(
-                frameDirectory,
-                outputVideoPath,
-                fps,
-                progress =>
-                {
-                    // 更新进度
-                    VideoGenerationProgress = progress;
-                    VideoGenerationStatus = "生成中:";
-                });
+            bool success;
+            if (useBlender && _blenderVideoService != null)
+            {
+                // 使用Blender生成视频
+                success = await _blenderVideoService.GenerateVideoFromImagesAsync(
+                    frameDirectory,
+                    outputVideoPath,
+                    fps,
+                    _videoCodec,
+                    progress =>
+                    {
+                        // 更新进度
+                        VideoGenerationProgress = progress;
+                        VideoGenerationStatus = "生成中:";
+                    });
+            }
+            else
+            {
+                // 使用FFmpeg生成视频
+                success = await _ffmpegService.GenerateVideoFromImagesAsync(
+                    frameDirectory,
+                    outputVideoPath,
+                    fps,
+                    progress =>
+                    {
+                        // 更新进度
+                        VideoGenerationProgress = progress;
+                        VideoGenerationStatus = "生成中:";
+                    });
+            }
 
             if (success)
             {
@@ -787,6 +836,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     public void SetBlenderService(BlenderExeService blenderService)
     {
         _blenderService = blenderService;
+        _blenderVideoService = new BlenderVideoService(blenderService);
         // Console.WriteLine("[RenderQueueViewModel] BlenderService set successfully");
 
         // 重新初始化文件监控，因为现在有了Blender路径

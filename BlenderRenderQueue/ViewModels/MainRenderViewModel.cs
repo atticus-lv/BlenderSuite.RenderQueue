@@ -243,7 +243,7 @@ public partial class MainRenderViewModel : ViewModelBase
             ShowSettingsDialog();
         else
             // 检测成功，直接应用设置
-            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.FfmpegPath, _settingsViewModel.DefaultRenderTimeoutSeconds, _settingsViewModel.MaxRetryAttempts);
+            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.FfmpegPath, _settingsViewModel.DefaultRenderTimeoutSeconds, _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoGenerationMethod, _settingsViewModel.VideoCodec);
     }
 
     [RelayCommand]
@@ -271,10 +271,10 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        ApplySettings(e.BlenderPath, e.FfmpegPath, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts);
+        ApplySettings(e.BlenderPath, e.FfmpegPath, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts, e.VideoGenerationMethod, e.VideoCodec);
     }
 
-    private void ApplySettings(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts)
+    private void ApplySettings(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoGenerationMethod, string videoCodec)
     {
         BlenderPath = blenderPath;
         FfmpegPath = ffmpegPath;
@@ -282,6 +282,10 @@ public partial class MainRenderViewModel : ViewModelBase
         // 更新全局超时设置和重试次数
         _renderQueue.SetGlobalRenderTimeout(defaultRenderTimeoutSeconds);
         _renderQueue.SetGlobalMaxRetryAttempts(maxRetryAttempts);
+        
+        // 更新视频生成设置
+        _renderQueue.SetVideoGenerationMethod(videoGenerationMethod);
+        _renderQueue.SetVideoCodec(videoCodec);
     }
 
     /// <summary>
