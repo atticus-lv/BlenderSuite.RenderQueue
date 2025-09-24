@@ -5,6 +5,7 @@
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:design="clr-namespace:BlenderRenderQueue.ViewModels.DesignTime"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
 
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
              x:Class="BlenderRenderQueue.Views.RenderTaskProgressPreviewView"
@@ -46,14 +47,12 @@
                 <!-- 占位符 -->
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
                             IsVisible="{Binding HasRenderedImage, Converter={x:Static BoolConverters.Not}}">
-                    <TextBlock Text="🖼️" FontSize="20" HorizontalAlignment="Center" />
-                    <TextBlock Text="等待图像..." FontSize="8" HorizontalAlignment="Center"
+                    <avalonia:MaterialIcon Kind="HourglassEmpty" Width="32" Height="32" />
+                    <TextBlock Text="..." FontSize="8" HorizontalAlignment="Center"
                                Foreground="#666" Margin="0,2,0,0" />
                 </StackPanel>
                 
-                <TextBlock
-                    Text="{Binding CurrentFrame, StringFormat='帧: {0}'}" Margin="2"
-                    FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
+                
             </Grid>
         </Border>
 
@@ -80,6 +79,9 @@
                 <TextBlock Grid.Row="0" Grid.Column="0" FontWeight="Bold"
                            Text="{Binding SampleText,StringFormat=采样: {0}}"
                            FontSize="12" />
+                <TextBlock
+                    Grid.Column="2" Text="{Binding CurrentFrame, StringFormat='帧: {0}'}"
+                    FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
             <ProgressBar MaxWidth="200"
                          Minimum="0" Maximum="1"
