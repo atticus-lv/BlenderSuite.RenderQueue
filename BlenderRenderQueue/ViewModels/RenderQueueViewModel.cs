@@ -89,6 +89,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     // 计算属性 - 用于UI绑定
     public bool IsQueueRunning => QueueState == QueueState.Running;
+    public bool IsQueueActive => QueueState == QueueState.Running || QueueState == QueueState.Paused;
     public bool HasNoTasks => RenderTasks.Count == 0;
     public bool HasRunningTasks => ActiveTaskCount > 0;
 
@@ -251,6 +252,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 e.PropertyName == nameof(RenderTasks))
             {
                 OnPropertyChanged(nameof(IsQueueRunning));
+                OnPropertyChanged(nameof(IsQueueActive));
                 OnPropertyChanged(nameof(HasNoTasks));
                 OnPropertyChanged(nameof(HasRunningTasks));
                 OnPropertyChanged(nameof(TotalFrames));
@@ -1157,6 +1159,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         // 通知计算属性更新
         OnPropertyChanged(nameof(IsQueueRunning));
+        OnPropertyChanged(nameof(IsQueueActive));
         OnPropertyChanged(nameof(HasNoTasks));
         OnPropertyChanged(nameof(HasRunningTasks));
         OnPropertyChanged(nameof(TotalFrames));

@@ -159,6 +159,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// </summary>
     public bool CanDelete => Status == RenderTaskStatus.Pending;
 
+    /// <summary>
+    /// 是否应该显示进度条
+    /// </summary>
+    public bool ShouldShowProgress => Status == RenderTaskStatus.Running || Status == RenderTaskStatus.Paused;
+
     partial void OnStartFrameChanged(int value)
     {
         OnPropertyChanged(nameof(TotalFrames));
@@ -984,6 +989,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanModifyEnable));
         OnPropertyChanged(nameof(CanModifyOverride));
         OnPropertyChanged(nameof(CanDelete));
+        OnPropertyChanged(nameof(ShouldShowProgress));
 
         StatusChanged?.Invoke(this, new RenderTaskStatusChangedEventArgs(status, statusText));
     }
