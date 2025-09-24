@@ -9,7 +9,7 @@
              x:Class="BlenderRenderQueue.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" Margin="16">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" Margin="16">
 
         <!-- 标题 -->
 
@@ -48,6 +48,18 @@
             <TextBlock Text="{Binding FfmpegVersion}" />
             <ProgressBar IsIndeterminate="True" Width="16" Height="16"
                          IsVisible="{Binding IsLoadingFFmpegInfo}" />
+        </StackPanel>
+
+        <!-- 渲染超时设置 -->
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="渲染超时:" VerticalAlignment="Center"
+                   Margin="0,16,8,0" />
+        <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                    Margin="0,16,0,0" VerticalAlignment="Center">
+            <NumericUpDown Value="{Binding DefaultRenderTimeoutSeconds, Mode=TwoWay}"
+                          Minimum="300" Maximum="7200" Width="120"
+                          suki:NumericUpDownExtensions.Unit="秒" />
+            <TextBlock Text="(5分钟 - 2小时)" VerticalAlignment="Center" 
+                       Foreground="{DynamicResource SukiTextColorSecondary}" />
         </StackPanel>
     </Grid>
 

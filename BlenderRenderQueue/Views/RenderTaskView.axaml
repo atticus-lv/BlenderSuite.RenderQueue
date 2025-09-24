@@ -203,14 +203,6 @@
                                 </StackPanel>
                             </StackPanel>
 
-                            <!-- 超时设置 -->
-                            <Grid ColumnDefinitions="Auto,*">
-                                <TextBlock Text="超时:" VerticalAlignment="Center" />
-                                <NumericUpDown Grid.Column="1" Value="{Binding RenderTimeoutSeconds}"
-                                               Minimum="300" Maximum="7200" Width="120"
-                                               HorizontalAlignment="Left"
-                                               suki:NumericUpDownExtensions.Unit="秒" />
-                            </Grid>
                         </StackPanel>
                     </TabItem>
                     <TabItem Header="日志">

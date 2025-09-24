@@ -48,9 +48,12 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLoadingFFmpegInfo = false;
 
+    [ObservableProperty]
+    private int _defaultRenderTimeoutSeconds = 3600; // 默认1小时
+
     // 内部状态
     private CancellationTokenSource? _versionCts;
-    private readonly IDataPersistenceService _dataPersistenceService = new DataPersistenceService();
+    private readonly ISettingsPersistenceService _settingsPersistenceService = new SettingsPersistenceService();
 
     // 事件：当设置发生变化时通知
     public event EventHandler<SettingsChangedEventArgs>? SettingsChanged;
@@ -336,7 +339,7 @@ public partial class SettingsViewModel : ViewModelBase
     private async Task SaveSettings()
     {
         // 触发设置变化事件
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, FfmpegPath));
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, FfmpegPath, DefaultRenderTimeoutSeconds));
         
         // 保存设置到文件
         await SaveSettingsToFileAsync();
@@ -349,19 +352,17 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
-            var appData = new AppData
+            var settings = new SettingsData
             {
-                Settings = new SettingsData
-                {
-                    BlenderPath = BlenderPath,
-                    FfmpegPath = FfmpegPath
-                }
+                BlenderPath = BlenderPath,
+                FfmpegPath = FfmpegPath,
+                DefaultRenderTimeoutSeconds = DefaultRenderTimeoutSeconds
             };
 
-            var success = await _dataPersistenceService.SaveDataAsync(appData);
+            var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
             if (success)
             {
-                Console.WriteLine($"[SettingsViewModel] ✅ Settings saved successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}");
+                Console.WriteLine($"[SettingsViewModel] ✅ Settings saved successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}, Timeout: {DefaultRenderTimeoutSeconds}s");
             }
             else
             {
@@ -381,19 +382,24 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
-            var appData = await _dataPersistenceService.LoadDataAsync();
+            var settings = await _settingsPersistenceService.LoadSettingsAsync();
             
-            if (!string.IsNullOrEmpty(appData.Settings.BlenderPath))
+            if (!string.IsNullOrEmpty(settings.BlenderPath))
             {
-                BlenderPath = appData.Settings.BlenderPath;
+                BlenderPath = settings.BlenderPath;
             }
             
-            if (!string.IsNullOrEmpty(appData.Settings.FfmpegPath))
+            if (!string.IsNullOrEmpty(settings.FfmpegPath))
             {
-                FfmpegPath = appData.Settings.FfmpegPath;
+                FfmpegPath = settings.FfmpegPath;
             }
 
-            Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}");
+            if (settings.DefaultRenderTimeoutSeconds > 0)
+            {
+                DefaultRenderTimeoutSeconds = settings.DefaultRenderTimeoutSeconds;
+            }
+
+            Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, FFmpeg: {FfmpegPath}, Timeout: {DefaultRenderTimeoutSeconds}s");
         }
         catch (Exception ex)
         {
@@ -431,11 +437,13 @@ public class SettingsChangedEventArgs : EventArgs
 {
     public string BlenderPath { get; }
     public string FfmpegPath { get; }
+    public int DefaultRenderTimeoutSeconds { get; }
 
-    public SettingsChangedEventArgs(string blenderPath, string ffmpegPath)
+    public SettingsChangedEventArgs(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds)
     {
         BlenderPath = blenderPath;
         FfmpegPath = ffmpegPath;
+        DefaultRenderTimeoutSeconds = defaultRenderTimeoutSeconds;
     }
 }
 

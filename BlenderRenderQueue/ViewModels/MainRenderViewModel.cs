@@ -243,7 +243,7 @@ public partial class MainRenderViewModel : ViewModelBase
             ShowSettingsDialog();
         else
             // 检测成功，直接应用设置
-            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.FfmpegPath);
+            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.FfmpegPath, _settingsViewModel.DefaultRenderTimeoutSeconds);
     }
 
     [RelayCommand]
@@ -271,13 +271,16 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        ApplySettings(e.BlenderPath, e.FfmpegPath);
+        ApplySettings(e.BlenderPath, e.FfmpegPath, e.DefaultRenderTimeoutSeconds);
     }
 
-    private void ApplySettings(string blenderPath, string ffmpegPath)
+    private void ApplySettings(string blenderPath, string ffmpegPath, int defaultRenderTimeoutSeconds)
     {
         BlenderPath = blenderPath;
         FfmpegPath = ffmpegPath;
+        
+        // 更新全局超时设置
+        _renderQueue.SetGlobalRenderTimeout(defaultRenderTimeoutSeconds);
     }
 
     /// <summary>

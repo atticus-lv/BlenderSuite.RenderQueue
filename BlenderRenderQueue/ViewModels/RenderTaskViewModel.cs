@@ -164,6 +164,15 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// </summary>
     public bool ShouldShowProgress => Status == RenderTaskStatus.Running || Status == RenderTaskStatus.Paused;
 
+    /// <summary>
+    /// 设置全局渲染超时时间
+    /// </summary>
+    /// <param name="timeoutSeconds">超时时间（秒）</param>
+    public void SetGlobalRenderTimeout(int timeoutSeconds)
+    {
+        _globalRenderTimeoutSeconds = timeoutSeconds;
+    }
+
     partial void OnStartFrameChanged(int value)
     {
         OnPropertyChanged(nameof(TotalFrames));
@@ -327,8 +336,8 @@ public partial class RenderTaskViewModel : ViewModelBase
     [ObservableProperty]
     private string _logPauseButtonText = "暂停日志";
 
-    [ObservableProperty]
-    private int _renderTimeoutSeconds = 20; // 默认60分钟无活动超时
+    // 全局超时设置（从SettingsViewModel获取）
+    private int _globalRenderTimeoutSeconds = 3600; // 默认1小时
 
     [ObservableProperty]
     private RenderTaskStatus _status = RenderTaskStatus.Pending;
@@ -637,7 +646,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             // 为渲染任务设置可配置的超时时间
             // 对于长时间渲染任务，使用更长的超时时间（至少30分钟）
-            var renderTimeout = Math.Max(RenderTimeoutSeconds, 3600); // 最少60分钟
+            var renderTimeout = Math.Max(_globalRenderTimeoutSeconds, 3600); // 最少60分钟
             _exe.Timeout = renderTimeout;
 
             // 根据覆写设置决定是否传递帧范围和场景参数
@@ -771,7 +780,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             var cmd = new BlenderCommandService();
 
             // 为渲染任务设置可配置的超时时间
-            var renderTimeout = Math.Max(RenderTimeoutSeconds, 3600); // 最少60分钟
+            var renderTimeout = Math.Max(_globalRenderTimeoutSeconds, 3600); // 最少60分钟
             _exe.Timeout = renderTimeout;
 
             // 根据覆写设置决定是否传递帧范围和场景参数

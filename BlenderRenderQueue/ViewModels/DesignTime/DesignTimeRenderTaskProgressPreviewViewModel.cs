@@ -53,6 +53,7 @@ public class DesignTimeRenderTaskProgressPreviewViewModel : RenderTaskViewModel
         Animation = true;
         StartFrame = 1;
         EndFrame = 100;
-        RenderTimeoutSeconds = 1800;
+        // 设置全局超时（设计时使用默认值）
+        SetGlobalRenderTimeout(1800);
     }
 }

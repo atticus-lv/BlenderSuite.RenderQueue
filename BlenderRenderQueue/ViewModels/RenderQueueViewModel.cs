@@ -201,6 +201,21 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     public bool CanResumeQueue => QueueState == QueueState.Paused;
 
+    /// <summary>
+    /// 设置全局渲染超时时间
+    /// </summary>
+    /// <param name="timeoutSeconds">超时时间（秒）</param>
+    public void SetGlobalRenderTimeout(int timeoutSeconds)
+    {
+        _globalRenderTimeoutSeconds = timeoutSeconds;
+        
+        // 更新所有现有任务的超时设置
+        foreach (var task in RenderTasks)
+        {
+            task.SetGlobalRenderTimeout(timeoutSeconds);
+        }
+    }
+
     public bool CanModifyTasks
     {
         get
@@ -217,6 +232,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private readonly List<Task> _runningTasks = new();
     private BlenderExeService? _blenderService;
     private readonly IFFmpegService _ffmpegService = new FFmpegService();
+    private int _globalRenderTimeoutSeconds = 3600; // 默认1小时
     private readonly IDataPersistenceService _dataPersistenceService = new DataPersistenceService();
     private readonly object _queueLock = new();
 
@@ -338,6 +354,9 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             // 新任务默认不覆写帧范围，使用场景默认值
             var task = new RenderTaskViewModel(blendFilePath, 1, 1);
+            
+            // 设置全局超时
+            task.SetGlobalRenderTimeout(_globalRenderTimeoutSeconds);
 
             // 自动加载文件属性
             if (_blenderService != null) await task.LoadFilePropertiesAsync(_blenderService);
@@ -1258,11 +1277,6 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             var appData = new AppData
             {
-                Settings = new SettingsData
-                {
-                    BlenderPath = _blenderService?.BlenderPath ?? string.Empty,
-                    FfmpegPath = _ffmpegService.FFmpegPath ?? string.Empty
-                },
                 RenderQueue = RenderTasks.Select(task => new RenderTaskData
                 {
                     RenderTask = new RenderTaskInfo
@@ -1317,14 +1331,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             var appData = await _dataPersistenceService.LoadDataAsync();
 
-            // 加载设置
-            if (!string.IsNullOrEmpty(appData.Settings.BlenderPath))
-                // 设置 Blender 路径（如果服务已初始化）
-                if (_blenderService != null)
-                    _blenderService = new BlenderExeService(appData.Settings.BlenderPath);
-
-            if (!string.IsNullOrEmpty(appData.Settings.FfmpegPath))
-                _ffmpegService.SetFFmpegPath(appData.Settings.FfmpegPath);
+            // 注意：设置现在由SettingsViewModel独立管理，不再从AppData加载
 
             // 加载渲染任务
             foreach (var taskData in appData.RenderQueue)

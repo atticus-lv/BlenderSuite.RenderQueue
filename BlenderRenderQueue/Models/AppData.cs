@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace BlenderRenderQueue.Models;
 
 /// <summary>
-/// 应用程序数据模型
+/// 应用程序数据模型 - 只包含渲染队列数据
 /// </summary>
 public class AppData
 {
@@ -14,24 +14,10 @@ public class AppData
     [JsonPropertyName("Version")]
     public string Version { get; set; } = "0.0.1";
 
-    [JsonPropertyName("Settings")]
-    public SettingsData Settings { get; set; } = new();
-
     [JsonPropertyName("RenderQueue")]
     public List<RenderTaskData> RenderQueue { get; set; } = new();
 }
 
-/// <summary>
-/// 设置数据模型
-/// </summary>
-public class SettingsData
-{
-    [JsonPropertyName("BlenderPath")]
-    public string BlenderPath { get; set; } = string.Empty;
-
-    [JsonPropertyName("FfmpegPath")]
-    public string FfmpegPath { get; set; } = string.Empty;
-}
 
 /// <summary>
 /// 渲染任务数据模型

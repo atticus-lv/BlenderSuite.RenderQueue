@@ -34,8 +34,8 @@ public class DesignTimeRenderTaskViewModel : RenderTaskViewModel
         CurrentFrame = 125;
         CompletedFrames = 112;
         
-        // 设置超时
-        RenderTimeoutSeconds = 1800; // 30分钟
+        // 设置全局超时（设计时使用默认值）
+        SetGlobalRenderTimeout(1800); // 30分钟
         
         // 设置场景属性视图
         ScenePropertiesView = new DesignTimeBlendScenePropertiesViewModel();

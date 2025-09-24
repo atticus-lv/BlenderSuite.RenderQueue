@@ -87,7 +87,7 @@ public class DataPersistenceService : IDataPersistenceService
             }
 
             Console.WriteLine(
-                $"[DataPersistenceService] ✅ Data loaded successfully - Tasks: {data.RenderQueue.Count}, Blender: {data.Settings.BlenderPath}, FFmpeg: {data.Settings.FfmpegPath}");
+                $"[DataPersistenceService] ✅ Data loaded successfully - Tasks: {data.RenderQueue.Count}");
             return data;
         }
         catch (Exception ex)
