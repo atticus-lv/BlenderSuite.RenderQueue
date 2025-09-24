@@ -20,5 +20,5 @@ public class SettingsData
     public string FfmpegPath { get; set; } = string.Empty;
 
     [JsonPropertyName("DefaultRenderTimeoutSeconds")]
-    public int DefaultRenderTimeoutSeconds { get; set; } = 3600; // 默认1小时
+    public int DefaultRenderTimeoutSeconds { get; set; } = 300; // 默认五分钟
 }
