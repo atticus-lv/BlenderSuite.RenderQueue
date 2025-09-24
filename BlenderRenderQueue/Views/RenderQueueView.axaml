@@ -124,6 +124,24 @@
                             </StackPanel>
                         </Button>
 
+                        <!-- 暂停队列按钮：只在队列运行时显示 -->
+                        <Button Classes="Warning Rounded" Command="{Binding PauseQueueCommand}"
+                                IsVisible="{Binding CanPauseQueue}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <material:MaterialIcon Kind="Pause" Width="24" Height="24" />
+                                <TextBlock Text="暂停队列" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 恢复队列按钮：只在队列暂停时显示 -->
+                        <Button Classes="Success Rounded" Command="{Binding ResumeQueueCommand}"
+                                IsVisible="{Binding CanResumeQueue}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <material:MaterialIcon Kind="Play" Width="24" Height="24" />
+                                <TextBlock Text="恢复队列" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
                         <!-- 停止队列按钮：只在队列运行时显示 -->
                         <Button Classes="Danger Rounded" Command="{Binding StopQueueCommand}"
                                 IsVisible="{Binding CanStopQueue}">

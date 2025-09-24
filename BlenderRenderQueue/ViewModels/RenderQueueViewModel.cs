@@ -60,6 +60,12 @@ public partial class RenderQueueViewModel : ViewModelBase
     [ObservableProperty]
     private string _videoGenerationStatus = string.Empty; // 视频生成状态
 
+    // 暂停/恢复相关
+
+    // 暂停状态记录
+    private RenderTaskViewModel? _pausedTask; // 暂停时的任务
+    private int _pausedFrame; // 暂停时的帧号
+
 
     // 剩余时间计算相关
     private readonly Queue<TimeSpan> _recentFrameRenderTimes = new(); // 最近帧渲染时间队列
@@ -190,6 +196,10 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     public bool CanStopQueue => QueueState == QueueState.Running;
 
+    public bool CanPauseQueue => QueueState == QueueState.Running && ActiveTaskCount > 0;
+
+    public bool CanResumeQueue => QueueState == QueueState.Paused;
+
     public bool CanModifyTasks
     {
         get
@@ -245,6 +255,8 @@ public partial class RenderQueueViewModel : ViewModelBase
                 OnPropertyChanged(nameof(CompletedFrames));
                 OnPropertyChanged(nameof(CanStartQueue));
                 OnPropertyChanged(nameof(CanStopQueue));
+                OnPropertyChanged(nameof(CanPauseQueue));
+                OnPropertyChanged(nameof(CanResumeQueue));
                 OnPropertyChanged(nameof(CanModifyTasks));
             }
         };
@@ -550,6 +562,61 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         // 清空剩余时间显示
         RemainingTimeText = string.Empty;
+
+        // 清除暂停状态记录
+        _pausedTask = null;
+        _pausedFrame = 0;
+    }
+
+    [RelayCommand]
+    private async Task PauseQueue()
+    {
+        if (!CanPauseQueue) return;
+
+        Console.WriteLine("[RenderQueueViewModel] Pausing queue...");
+
+        // 记录当前渲染状态
+        if (CurrentRenderingTask != null && CurrentRenderingTask.Status == RenderTaskStatus.Running)
+        {
+            _pausedTask = CurrentRenderingTask;
+            _pausedFrame = CurrentRenderingTask.CurrentFrame;
+            Console.WriteLine($"[RenderQueueViewModel] Paused at task: {Path.GetFileName(_pausedTask.BlendFilePath)}, frame: {_pausedFrame}");
+        }
+
+        // 停止所有运行中的任务
+        foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
+        {
+            await task.PauseRenderAsync();
+        }
+
+        QueueState = QueueState.Paused;
+        QueueStatusText = "队列已暂停";
+        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已暂停"));
+
+        // 停止剩余时间更新定时器
+        _remainingTimeTimer?.Stop();
+
+        Console.WriteLine("[RenderQueueViewModel] Queue paused successfully");
+    }
+
+    [RelayCommand]
+    private async Task ResumeQueue()
+    {
+        if (!CanResumeQueue) return;
+
+        Console.WriteLine("[RenderQueueViewModel] Resuming queue...");
+
+        QueueState = QueueState.Running;
+        QueueStatusText = "队列运行中";
+        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已恢复"));
+
+        // 启动剩余时间更新定时器
+        _remainingTimeTimer?.Start();
+
+        // 从暂停的状态继续
+        await StartNextAvailableTasks();
+
+        Console.WriteLine("[RenderQueueViewModel] Queue resumed successfully");
     }
 
     [RelayCommand]
@@ -711,10 +778,21 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 等待一下确保任务停止
         await Task.Delay(100);
 
-        // 启动下一个待处理且启用且有效的任务
-        var pendingTask =
-            RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid);
-        if (pendingTask == null)
+        RenderTaskViewModel? taskToStart = null;
+
+        // 如果有暂停的任务，优先恢复暂停的任务
+        if (_pausedTask != null && _pausedTask.Enable && _pausedTask.IsValid)
+        {
+            taskToStart = _pausedTask;
+            Console.WriteLine($"[RenderQueueViewModel] Resuming paused task: {Path.GetFileName(_pausedTask.BlendFilePath)} from frame {_pausedFrame}");
+        }
+        else
+        {
+            // 启动下一个待处理且启用且有效的任务
+            taskToStart = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid);
+        }
+
+        if (taskToStart == null)
         {
             // 没有更多任务，清除当前渲染任务
             CurrentRenderingTask = null;
@@ -722,16 +800,28 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
 
         // 设置当前渲染任务
-        CurrentRenderingTask = pendingTask;
+        CurrentRenderingTask = taskToStart;
 
-        var taskCopy = pendingTask; // 避免闭包问题
+        var taskCopy = taskToStart; // 避免闭包问题
         var runningTask = Task.Run(async () =>
         {
             try
             {
                 // 为每个任务创建独立的BlenderExeService实例
                 using var blenderService = new BlenderExeService(_blenderService!.BlenderPath);
-                await taskCopy.StartRenderAsync(blenderService);
+                
+                // 如果是恢复暂停的任务，从指定帧开始
+                if (_pausedTask == taskCopy && _pausedFrame > 0)
+                {
+                    await taskCopy.ResumeRenderAsync(blenderService, _pausedFrame);
+                    // 清除暂停状态记录
+                    _pausedTask = null;
+                    _pausedFrame = 0;
+                }
+                else
+                {
+                    await taskCopy.StartRenderAsync(blenderService);
+                }
             }
             catch (Exception)
             {
@@ -1073,6 +1163,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         OnPropertyChanged(nameof(RemainingTimeText));
         OnPropertyChanged(nameof(CanStartQueue));
         OnPropertyChanged(nameof(CanStopQueue));
+        OnPropertyChanged(nameof(CanPauseQueue));
+        OnPropertyChanged(nameof(CanResumeQueue));
         OnPropertyChanged(nameof(CanModifyTasks));
     }
 

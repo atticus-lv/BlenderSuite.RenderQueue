@@ -700,6 +700,101 @@ public partial class RenderTaskViewModel : ViewModelBase
         EnqueueLog("渲染已停止");
     }
 
+    public async Task PauseRenderAsync()
+    {
+        try
+        {
+            EnqueueLog("正在暂停渲染...");
+            
+            // 停止渲染会话
+            _session?.Dispose();
+            _session = null;
+
+            // 取消事件订阅，但不释放_exe服务
+            if (_exe is not null)
+            {
+                _exe.OnOutputReceived -= HandleRawOutput;
+                _exe.OnErrorReceived -= HandleRawError;
+            }
+
+            SetStatus(RenderTaskStatus.Pending, "已暂停");
+            EnqueueLog($"渲染已暂停，当前帧: {CurrentFrame}");
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"暂停渲染失败: {ex.Message}");
+            SetStatus(RenderTaskStatus.Failed, "暂停失败");
+        }
+    }
+
+    public async Task ResumeRenderAsync(BlenderExeService exeService, int resumeFromFrame)
+    {
+        if (string.IsNullOrWhiteSpace(BlendFilePath))
+        {
+            EnqueueLog("请先选择 .blend 文件");
+            return;
+        }
+
+        try
+        {
+            SetStatus(RenderTaskStatus.Running, "正在恢复渲染...");
+
+            _exe = exeService;
+            _exe.OnOutputReceived += HandleRawOutput;
+            _exe.OnErrorReceived += HandleRawError;
+
+            _session = new RenderSession(_exe, new RenderOutputParser());
+            _session.OnProgress += s => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnProgress(s));
+            _session.OnEvent += e => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(e));
+
+            var cmd = new BlenderCommandService();
+
+            // 为渲染任务设置可配置的超时时间
+            var renderTimeout = Math.Max(RenderTimeoutSeconds, 3600); // 最少60分钟
+            _exe.Timeout = renderTimeout;
+
+            // 根据覆写设置决定是否传递帧范围和场景参数
+            string? sceneName = OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) ? SelectedSceneName : null;
+
+            // 从指定帧开始渲染
+            var startFrame = OverrideFrameRange ? Math.Max(StartFrame, resumeFromFrame) : resumeFromFrame;
+            var endFrame = OverrideFrameRange ? EndFrame : ScenePropertiesView.SceneProperties.FrameEnd;
+
+            EnqueueLog($"恢复渲染: 从帧 {startFrame} 开始到 {endFrame}, animation={Animation} (无活动超时: {renderTimeout}秒)");
+            if (sceneName != null)
+            {
+                EnqueueLog($"使用场景覆写: {sceneName}");
+            }
+
+            await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, startFrame, endFrame, sceneName);
+
+            EnqueueLog($"恢复渲染指令已发送完成");
+        }
+        catch (TaskCanceledException ex)
+        {
+            if (ex.CancellationToken.IsCancellationRequested)
+            {
+                EnqueueLog("恢复渲染任务被用户取消");
+                SetStatus(RenderTaskStatus.Cancelled, "已取消");
+            }
+            else
+            {
+                EnqueueLog($"恢复渲染任务超时: {ex.Message}");
+                SetStatus(RenderTaskStatus.Failed, "超时");
+            }
+        }
+        catch (OperationCanceledException ex)
+        {
+            EnqueueLog($"恢复渲染操作被取消: {ex.Message}");
+            SetStatus(RenderTaskStatus.Cancelled, "已取消");
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"恢复渲染启动失败: {ex.Message}");
+            SetStatus(RenderTaskStatus.Failed, "恢复失败");
+        }
+    }
+
     [RelayCommand]
     private void ClearLog()
     {
