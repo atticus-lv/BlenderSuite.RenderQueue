@@ -1,0 +1,59 @@
+name: Windows Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+#  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Download Inno Setup
+      run: |
+        Invoke-WebRequest "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup-6.2.2.exe"
+      
+    - name: Install Inno Setup (Silent)
+      run: |
+        Start-Process -FilePath "innosetup-6.2.2.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+        
+    - name: Download Chinese Language Pack
+      run: |
+        $languagesPath = "C:\Program Files (x86)\Inno Setup 6\Languages"
+        Invoke-WebRequest "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Unofficial/ChineseSimplified.isl" -OutFile "$languagesPath\ChineseSimplified.isl"
+        
+    - name: Prepare Build
+      run: |
+        # 启用长路径支持
+        New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" `
+                        -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+        
+    - name: Build Installer
+      working-directory: BlenderRenderQueue
+      run: |
+        ./make_aot_installer.bat
+      
+    - name: Get Version
+      id: get_version
+      run: |
+        if ("${{ github.ref_type }}" -eq "tag") {
+          echo "version=${{ github.ref_name }}" >> $env:GITHUB_OUTPUT
+        } else {
+          echo "version=latest" >> $env:GITHUB_OUTPUT
+        }
+      
+    - name: Upload Installer as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: BlenderDisplaceSuite-${{ steps.get_version.outputs.version }}
+        path: BlenderRenderQueue/Install/Windows/Output/*.exe
+        if-no-files-found: error
