@@ -338,14 +338,26 @@
                                                                 </TextBlock.IsVisible>
                                                             </TextBlock>
 
-                                                            <TextBlock FontSize="12" IsVisible="{Binding IsValid}">
-                                                                <TextBlock.Text>
-                                                                    <MultiBinding StringFormat="{}{0}-{1}">
-                                                                        <Binding Path="RealStartFrame" />
-                                                                        <Binding Path="RealEndFrame" />
-                                                                    </MultiBinding>
-                                                                </TextBlock.Text>
-                                                            </TextBlock>
+                                                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsValid}">
+                                                                <TextBlock FontSize="12">
+                                                                    <TextBlock.Text>
+                                                                        <MultiBinding StringFormat="{}{0}-{1}">
+                                                                            <Binding Path="RealStartFrame" />
+                                                                            <Binding Path="RealEndFrame" />
+                                                                        </MultiBinding>
+                                                                    </TextBlock.Text>
+                                                                </TextBlock>
+                                                                <!-- 显示覆写模式提示 -->
+                                                                <TextBlock Text="*" FontSize="10" Foreground="#FF9800" FontWeight="Bold"
+                                                                           ToolTip.Tip="使用覆写的帧范围或场景">
+                                                                    <TextBlock.IsVisible>
+                                                                        <MultiBinding Converter="{x:Static conv:BoolConverters.Or}">
+                                                                            <Binding Path="OverrideFrameRange" />
+                                                                            <Binding Path="OverrideScene" />
+                                                                        </MultiBinding>
+                                                                    </TextBlock.IsVisible>
+                                                                </TextBlock>
+                                                            </StackPanel>
 
                                                             <TextBlock Text="文件无效" FontSize="10"
                                                                        Foreground="{DynamicResource SukiDangerColor}"
