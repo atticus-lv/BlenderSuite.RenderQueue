@@ -43,10 +43,10 @@ public partial class SettingsViewModel : ViewModelBase
     private int _maxRetryAttempts = 3; // 默认最大重试3次
 
     [ObservableProperty]
-    private string _videoCodec = "H264"; // 默认使用H264编码
+    private VideoCodecOption _videoCodec = VideoCodecOption.H264; // 默认使用H264编码
 
     [ObservableProperty]
-    private string _videoQuality = "LOSSLESS"; // 默认无损质量
+    private VideoQualityOption _videoQuality = VideoQualityOption.PerceptualLossless; // 默认感知无损质量
 
     // 内部状态
     private CancellationTokenSource? _versionCts;
@@ -107,6 +107,7 @@ public partial class SettingsViewModel : ViewModelBase
         // 异步获取Blender版本信息
         _ = Task.Run(async () => await LoadBlenderInfoAsync(value, ct));
     }
+
 
 
     private async Task LoadBlenderInfoAsync(string blenderPath, CancellationToken cancellationToken)
@@ -198,7 +199,7 @@ public partial class SettingsViewModel : ViewModelBase
     private async Task SaveSettings()
     {
         // 触发设置变化事件
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoCodec, VideoQuality));
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoCodec.Value, VideoQuality.Value));
         
         // 保存设置到文件
         await SaveSettingsToFileAsync();
@@ -216,8 +217,8 @@ public partial class SettingsViewModel : ViewModelBase
                 BlenderPath = BlenderPath,
                 DefaultRenderTimeoutSeconds = DefaultRenderTimeoutSeconds,
                 MaxRetryAttempts = MaxRetryAttempts,
-                VideoCodec = VideoCodec,
-                VideoQuality = VideoQuality
+                VideoCodec = VideoCodec.Value,
+                VideoQuality = VideoQuality.Value
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
@@ -262,12 +263,26 @@ public partial class SettingsViewModel : ViewModelBase
 
             if (!string.IsNullOrEmpty(settings.VideoCodec))
             {
-                VideoCodec = settings.VideoCodec;
+                VideoCodec = settings.VideoCodec switch
+                {
+                    "H264" => VideoCodecOption.H264,
+                    "H265" => VideoCodecOption.H265,
+                    "AV1" => VideoCodecOption.AV1,
+                    _ => VideoCodecOption.H264
+                };
             }
 
             if (!string.IsNullOrEmpty(settings.VideoQuality))
             {
-                VideoQuality = settings.VideoQuality;
+                VideoQuality = settings.VideoQuality switch
+                {
+                    "LOSSLESS" => VideoQualityOption.Lossless,
+                    "PERC_LOSSLESS" => VideoQualityOption.PerceptualLossless,
+                    "HIGH" => VideoQualityOption.High,
+                    "MEDIUM" => VideoQualityOption.Medium,
+                    "LOW" => VideoQualityOption.Low,
+                    _ => VideoQualityOption.PerceptualLossless
+                };
             }
 
             Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");

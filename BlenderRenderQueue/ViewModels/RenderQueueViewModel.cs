@@ -277,7 +277,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
     private int _globalMaxRetryAttempts = 3; // 默认最大重试3次
     private string _videoCodec = "H264"; // 默认使用H264编码
-    private string _videoQuality = "LOSSLESS"; // 默认无损质量
+    private string _videoQuality = "PERC_LOSSLESS"; // 默认感知无损质量
     private readonly IDataPersistenceService _dataPersistenceService = new DataPersistenceService();
     private readonly object _queueLock = new();
 

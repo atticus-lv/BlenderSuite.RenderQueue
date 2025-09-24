@@ -170,7 +170,7 @@ public partial class MainRenderViewModel : ViewModelBase
             ShowSettingsDialog();
         else
             // 检测成功，直接应用设置
-            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.DefaultRenderTimeoutSeconds, _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoCodec, _settingsViewModel.VideoQuality);
+            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.DefaultRenderTimeoutSeconds, _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoCodec.Value, _settingsViewModel.VideoQuality.Value);
     }
 
     [RelayCommand]

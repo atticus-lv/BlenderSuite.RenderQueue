@@ -26,5 +26,5 @@ public class SettingsData
     public string VideoCodec { get; set; } = "H264"; // 默认使用H264编码
 
     [JsonPropertyName("VideoQuality")]
-    public string VideoQuality { get; set; } = "LOSSLESS"; // 默认无损质量
+    public string VideoQuality { get; set; } = "PERC_LOSSLESS"; // 默认感知无损质量
 }
