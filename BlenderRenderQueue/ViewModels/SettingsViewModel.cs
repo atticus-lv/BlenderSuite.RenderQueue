@@ -43,10 +43,10 @@ public partial class SettingsViewModel : ViewModelBase
     private int _maxRetryAttempts = 3; // 默认最大重试3次
 
     [ObservableProperty]
-    private string _videoGenerationMethod = "Blender"; // 默认使用Blender生成视频
+    private string _videoCodec = "H264"; // 默认使用H264编码
 
     [ObservableProperty]
-    private string _videoCodec = "H264"; // 默认使用H264编码
+    private string _videoQuality = "LOSSLESS"; // 默认无损质量
 
     // 内部状态
     private CancellationTokenSource? _versionCts;
@@ -198,7 +198,7 @@ public partial class SettingsViewModel : ViewModelBase
     private async Task SaveSettings()
     {
         // 触发设置变化事件
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoGenerationMethod, VideoCodec));
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoCodec, VideoQuality));
         
         // 保存设置到文件
         await SaveSettingsToFileAsync();
@@ -216,8 +216,8 @@ public partial class SettingsViewModel : ViewModelBase
                 BlenderPath = BlenderPath,
                 DefaultRenderTimeoutSeconds = DefaultRenderTimeoutSeconds,
                 MaxRetryAttempts = MaxRetryAttempts,
-                VideoGenerationMethod = VideoGenerationMethod,
-                VideoCodec = VideoCodec
+                VideoCodec = VideoCodec,
+                VideoQuality = VideoQuality
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
@@ -260,14 +260,14 @@ public partial class SettingsViewModel : ViewModelBase
                 MaxRetryAttempts = settings.MaxRetryAttempts;
             }
 
-            if (!string.IsNullOrEmpty(settings.VideoGenerationMethod))
-            {
-                VideoGenerationMethod = settings.VideoGenerationMethod;
-            }
-
             if (!string.IsNullOrEmpty(settings.VideoCodec))
             {
                 VideoCodec = settings.VideoCodec;
+            }
+
+            if (!string.IsNullOrEmpty(settings.VideoQuality))
+            {
+                VideoQuality = settings.VideoQuality;
             }
 
             Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
@@ -301,16 +301,16 @@ public class SettingsChangedEventArgs : EventArgs
     public string BlenderPath { get; }
     public int DefaultRenderTimeoutSeconds { get; }
     public int MaxRetryAttempts { get; }
-    public string VideoGenerationMethod { get; }
     public string VideoCodec { get; }
+    public string VideoQuality { get; }
 
-    public SettingsChangedEventArgs(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoGenerationMethod, string videoCodec)
+    public SettingsChangedEventArgs(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoCodec, string videoQuality)
     {
         BlenderPath = blenderPath;
         DefaultRenderTimeoutSeconds = defaultRenderTimeoutSeconds;
         MaxRetryAttempts = maxRetryAttempts;
-        VideoGenerationMethod = videoGenerationMethod;
         VideoCodec = videoCodec;
+        VideoQuality = videoQuality;
     }
 }
 

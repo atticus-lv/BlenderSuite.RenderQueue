@@ -5,59 +5,109 @@
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:objectModel="using:System.Collections.ObjectModel"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" Margin="16">
+    <suki:SettingsLayout>
+        <suki:SettingsLayout.Items>
+            <objectModel:ObservableCollection x:TypeArguments="suki:SettingsLayoutItem">
+                
+                <!-- Blender 设置部分 -->
+                <suki:SettingsLayoutItem Header="Blender 设置">
+                    <suki:SettingsLayoutItem.Content>
+                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" Margin="16">
+                            
+                            <!-- Blender路径设置 -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Blender路径:" VerticalAlignment="Center"
+                                       Margin="0,0,8,0" />
+                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BlenderPath, Mode=TwoWay}"
+                                     IsReadOnly="True" Margin="0,0,0,0" />
+                            <Button Grid.Row="0" Grid.Column="2" Content="📁" Command="{Binding BrowseBlenderCommand}"
+                                    IsEnabled="{Binding IsBlenderPathValid, Converter={x:Static conv:BoolConverters.Not}}"
+                                    Margin="4,0,0,0" />
 
-        <!-- 标题 -->
+                            <!-- Blender信息 -->
+                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                        Margin="0,8,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding BlenderVersion}" />
+                                <TextBlock Text="{Binding BlenderPlatform}" />
+                                <TextBlock Text="{Binding BlenderBranch}" />
+                                <ProgressBar IsIndeterminate="True" Width="16" Height="16"
+                                             IsVisible="{Binding IsLoadingBlenderInfo}" />
+                            </StackPanel>
+                            
+                        </Grid>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
 
+                <!-- 渲染超时设置部分 -->
+                <suki:SettingsLayoutItem Header="渲染超时设置">
+                    <suki:SettingsLayoutItem.Content>
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" Margin="16">
+                            
+                            <!-- 渲染超时设置 -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="渲染超时:" VerticalAlignment="Center"
+                                       Margin="0,0,8,0" />
+                            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                        VerticalAlignment="Center">
+                                <NumericUpDown Value="{Binding DefaultRenderTimeoutSeconds, Mode=TwoWay}"
+                                              Minimum="300" Maximum="7200" Width="120"
+                                              suki:NumericUpDownExtensions.Unit="秒" />
+                                <TextBlock Text="(5分钟 - 2小时)" VerticalAlignment="Center" 
+                                           Foreground="{DynamicResource SukiTextColorSecondary}" />
+                            </StackPanel>
 
-        <!-- Blender路径设置 -->
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="Blender:" VerticalAlignment="Center"
-                   Margin="0,0,8,0" />
-        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding BlenderPath, Mode=TwoWay}"
-                 IsReadOnly="True" Margin="0,0,0,0" />
-        <Button Grid.Row="1" Grid.Column="2" Content="📁" Command="{Binding BrowseBlenderCommand}"
-                IsEnabled="{Binding IsBlenderPathValid, Converter={x:Static conv:BoolConverters.Not}}"
-                Margin="4,0,0,0" />
+                            <!-- 最大重试次数设置 -->
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="最大重试:" VerticalAlignment="Center"
+                                       Margin="0,16,8,0" />
+                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                        Margin="0,16,0,0" VerticalAlignment="Center">
+                                <NumericUpDown Value="{Binding MaxRetryAttempts, Mode=TwoWay}"
+                                              Minimum="1" Maximum="10" Width="120"
+                                              suki:NumericUpDownExtensions.Unit="次" />
+                                <TextBlock Text="(1-10次)" VerticalAlignment="Center" 
+                                           Foreground="{DynamicResource SukiTextColorSecondary}" />
+                            </StackPanel>
+                            
+                        </Grid>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
 
-        <!-- Blender信息 -->
-        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8"
-                    Margin="0,4,0,0" VerticalAlignment="Center">
-            <TextBlock Text="{Binding BlenderVersion}" />
-            <TextBlock Text="{Binding BlenderPlatform}" />
-            <TextBlock Text="{Binding BlenderBranch}" />
-            <ProgressBar IsIndeterminate="True" Width="16" Height="16"
-                         IsVisible="{Binding IsLoadingBlenderInfo}" />
-        </StackPanel>
-        
+                <!-- 视频合成设置部分 -->
+                <suki:SettingsLayoutItem Header="视频合成设置">
+                    <suki:SettingsLayoutItem.Content>
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" Margin="16">
+                            
+                            <!-- 视频编码 -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="视频编码:" VerticalAlignment="Center"
+                                       Margin="0,0,8,0" />
+                            <ComboBox Grid.Row="0" Grid.Column="1" SelectedValue="{Binding VideoCodec, Mode=TwoWay}"
+                                      Width="200" HorizontalAlignment="Left">
+                                <ComboBoxItem Content="H.264" Tag="H264" />
+                                <ComboBoxItem Content="H.265" Tag="H265" />
+                                <ComboBoxItem Content="AV1" Tag="AV1" />
+                            </ComboBox>
 
-        <!-- 渲染超时设置 -->
-        <TextBlock Grid.Row="5" Grid.Column="0" Text="渲染超时:" VerticalAlignment="Center"
-                   Margin="0,16,8,0" />
-        <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Spacing="8"
-                    Margin="0,16,0,0" VerticalAlignment="Center">
-            <NumericUpDown Value="{Binding DefaultRenderTimeoutSeconds, Mode=TwoWay}"
-                          Minimum="300" Maximum="7200" Width="120"
-                          suki:NumericUpDownExtensions.Unit="秒" />
-            <TextBlock Text="(5分钟 - 2小时)" VerticalAlignment="Center" 
-                       Foreground="{DynamicResource SukiTextColorSecondary}" />
-        </StackPanel>
-
-        <!-- 最大重试次数设置 -->
-        <TextBlock Grid.Row="6" Grid.Column="0" Text="最大重试:" VerticalAlignment="Center"
-                   Margin="0,16,8,0" />
-        <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" Spacing="8"
-                    Margin="0,16,0,0" VerticalAlignment="Center">
-            <NumericUpDown Value="{Binding MaxRetryAttempts, Mode=TwoWay}"
-                          Minimum="1" Maximum="10" Width="120"
-                          suki:NumericUpDownExtensions.Unit="次" />
-            <TextBlock Text="(1-10次)" VerticalAlignment="Center" 
-                       Foreground="{DynamicResource SukiTextColorSecondary}" />
-        </StackPanel>
-    </Grid>
-
+                            <!-- 视频质量 -->
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="视频质量:" VerticalAlignment="Center"
+                                       Margin="0,16,8,0" />
+                            <ComboBox Grid.Row="1" Grid.Column="1" SelectedValue="{Binding VideoQuality, Mode=TwoWay}"
+                                      Width="200" HorizontalAlignment="Left" Margin="0,16,0,0">
+                                <ComboBoxItem Content="无损" Tag="LOSSLESS" />
+                                <ComboBoxItem Content="感知无损" Tag="LOSSLESS" />
+                                <ComboBoxItem Content="高质量" Tag="HIGH" />
+                                <ComboBoxItem Content="中等质量" Tag="MEDIUM" />
+                                <ComboBoxItem Content="低质量" Tag="LOW" />
+                            </ComboBox>
+                            
+                        </Grid>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
+                
+            </objectModel:ObservableCollection>
+        </suki:SettingsLayout.Items>
+    </suki:SettingsLayout>
 
 </UserControl>

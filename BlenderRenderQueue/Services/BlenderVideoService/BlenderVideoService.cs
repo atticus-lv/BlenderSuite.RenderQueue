@@ -98,6 +98,7 @@ public class BlenderVideoService : IBlenderVideoService
         string outputVideoPath,
         double fps,
         string videoCodec = "H264",
+        string videoQuality = "LOSSLESS",
         Action<double>? progressCallback = null,
         CancellationToken cancellationToken = default)
     {
@@ -128,7 +129,7 @@ public class BlenderVideoService : IBlenderVideoService
             }
 
             // 生成Python脚本
-            var pythonScript = GenerateVideoScript(imageFiles, outputVideoPath, fps, videoCodec, width, height);
+            var pythonScript = GenerateVideoScript(imageFiles, outputVideoPath, fps, videoCodec, videoQuality, width, height);
             
             // 创建临时脚本文件
             var tempScriptPath = Path.GetTempFileName() + ".py";
@@ -380,7 +381,7 @@ public class BlenderVideoService : IBlenderVideoService
     /// <summary>
     /// 生成Blender视频脚本
     /// </summary>
-    private static string GenerateVideoScript(string[] imageFiles, string outputVideoPath, double fps, string videoCodec, int width, int height)
+    private static string GenerateVideoScript(string[] imageFiles, string outputVideoPath, double fps, string videoCodec, string videoQuality, int width, int height)
     {
         var script = new StringBuilder();
         
@@ -451,7 +452,7 @@ public class BlenderVideoService : IBlenderVideoService
         script.AppendLine("# 设置FFmpeg编码");
         script.AppendLine($"bpy.context.scene.render.ffmpeg.format = 'MPEG4'");
         script.AppendLine($"bpy.context.scene.render.ffmpeg.codec = '{videoCodec}'");
-        script.AppendLine("bpy.context.scene.render.ffmpeg.constant_rate_factor = 'PERC_LOSSLESS'");
+        script.AppendLine($"bpy.context.scene.render.ffmpeg.constant_rate_factor = '{videoQuality}'");
         script.AppendLine("bpy.context.scene.render.image_settings.color_mode = 'RGB'");
         script.AppendLine();
 

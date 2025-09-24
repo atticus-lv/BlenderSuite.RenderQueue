@@ -156,6 +156,9 @@ public partial class MainRenderViewModel : ViewModelBase
         _settingsViewModel.SettingsChanged += OnSettingsChanged;
         _settingsViewModel.InitializationCompleted += OnInitializationCompleted;
 
+        // 异步加载设置
+        _ = Task.Run(async () => await _settingsViewModel.LoadSettingsFromFileAsync());
+
         // 开始初始化检测
         _settingsViewModel.StartInitialization();
     }
@@ -167,7 +170,7 @@ public partial class MainRenderViewModel : ViewModelBase
             ShowSettingsDialog();
         else
             // 检测成功，直接应用设置
-            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.DefaultRenderTimeoutSeconds, _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoGenerationMethod, _settingsViewModel.VideoCodec);
+            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.DefaultRenderTimeoutSeconds, _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoCodec, _settingsViewModel.VideoQuality);
     }
 
     [RelayCommand]
@@ -195,10 +198,10 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        ApplySettings(e.BlenderPath, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts, e.VideoGenerationMethod, e.VideoCodec);
+        ApplySettings(e.BlenderPath, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts, e.VideoCodec, e.VideoQuality);
     }
 
-    private void ApplySettings(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoGenerationMethod, string videoCodec)
+    private void ApplySettings(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoCodec, string videoQuality)
     {
         BlenderPath = blenderPath;
         
@@ -207,8 +210,8 @@ public partial class MainRenderViewModel : ViewModelBase
         _renderQueue.SetGlobalMaxRetryAttempts(maxRetryAttempts);
         
         // 更新视频生成设置
-        _renderQueue.SetVideoGenerationMethod(videoGenerationMethod);
         _renderQueue.SetVideoCodec(videoCodec);
+        _renderQueue.SetVideoQuality(videoQuality);
     }
 
     /// <summary>
