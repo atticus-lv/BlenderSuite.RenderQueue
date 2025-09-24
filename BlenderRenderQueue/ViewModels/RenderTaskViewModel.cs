@@ -361,6 +361,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     public event EventHandler<OpenInBlenderRequestedEventArgs>? OpenInBlenderRequested;
 
     /// <summary>
+    /// 请求打开文件所在文件夹事件
+    /// </summary>
+    public event EventHandler<OpenFileDirectoryRequestedEventArgs>? OpenFileDirectoryRequested;
+
+    /// <summary>
     /// 覆写帧范围状态变化事件
     /// </summary>
     public event EventHandler? OverrideFrameRangeChanged;
@@ -816,6 +821,9 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             SetStatus(RenderTaskStatus.Paused, "已暂停");
             EnqueueLog($"渲染已暂停，当前帧: {CurrentFrame}");
+            
+            // 添加一个小的延迟以确保状态更新完成
+            await Task.Delay(1);
         }
         catch (Exception ex)
         {
@@ -941,6 +949,26 @@ public partial class RenderTaskViewModel : ViewModelBase
         catch (Exception ex)
         {
             EnqueueLog($"[ERROR] 打开Blender失败: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void OpenFileDirectory()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(BlendFilePath))
+            {
+                EnqueueLog("[ERROR] 文件路径为空，无法打开所在文件夹");
+                return;
+            }
+
+            // 触发事件，请求父级打开文件所在文件夹
+            OpenFileDirectoryRequested?.Invoke(this, new OpenFileDirectoryRequestedEventArgs(BlendFilePath));
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"[ERROR] 打开文件夹失败: {ex.Message}");
         }
     }
 
@@ -1305,6 +1333,17 @@ public class OpenInBlenderRequestedEventArgs : EventArgs
     public string FilePath { get; }
 
     public OpenInBlenderRequestedEventArgs(string filePath)
+    {
+        FilePath = filePath;
+    }
+}
+
+// 请求打开文件所在文件夹事件参数
+public class OpenFileDirectoryRequestedEventArgs : EventArgs
+{
+    public string FilePath { get; }
+
+    public OpenFileDirectoryRequestedEventArgs(string filePath)
     {
         FilePath = filePath;
     }

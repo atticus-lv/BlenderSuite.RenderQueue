@@ -233,6 +233,23 @@
                                                     </BehaviorCollection>
                                                 </BehaviorCollectionTemplate>
                                             </Setter>
+                                            <Setter Property="ContextMenu">
+                                                <ContextMenu>
+                                                    <MenuItem Header="在Blender中打开" 
+                                                              Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).OpenInBlenderCommand}"
+                                                              IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).IsValid}">
+                                                        <MenuItem.Icon>
+                                                            <material:MaterialIcon Kind="BlenderSoftware" Width="16" Height="16" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="打开所在文件夹" 
+                                                              Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).OpenFileDirectoryCommand}">
+                                                        <MenuItem.Icon>
+                                                            <material:MaterialIcon Kind="FolderOpen" Width="16" Height="16" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                </ContextMenu>
+                                            </Setter>
                                         </Style>
                                         <Style Selector="ListBoxItem:not(:dragging)">
                                             <Setter Property="Transitions">

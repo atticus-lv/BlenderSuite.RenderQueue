@@ -17,6 +17,7 @@ using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.BlenderVideoService;
+using BlenderRenderQueue.Helpers;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -924,6 +925,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.SceneSelectionChanged += OnTaskSceneSelectionChanged;
         task.FrameRangeChanged += OnTaskFrameRangeChanged;
         task.OpenInBlenderRequested += OnTaskOpenInBlenderRequested;
+        task.OpenFileDirectoryRequested += OnTaskOpenFileDirectoryRequested;
     }
 
     private void UnsubscribeFromTaskEvents(RenderTaskViewModel task)
@@ -937,6 +939,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.SceneSelectionChanged -= OnTaskSceneSelectionChanged;
         task.FrameRangeChanged -= OnTaskFrameRangeChanged;
         task.OpenInBlenderRequested -= OnTaskOpenInBlenderRequested;
+        task.OpenFileDirectoryRequested -= OnTaskOpenFileDirectoryRequested;
     }
 
     private void OnTaskStatusChanged(object? sender, RenderTaskStatusChangedEventArgs e)
@@ -1094,6 +1097,33 @@ public partial class RenderQueueViewModel : ViewModelBase
         catch (Exception ex)
         {
             Console.WriteLine($"[RenderQueueViewModel] ❌ Error opening file in Blender: {ex.Message}");
+        }
+    }
+
+    private void OnTaskOpenFileDirectoryRequested(object? sender, OpenFileDirectoryRequestedEventArgs e)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(e.FilePath))
+            {
+                Console.WriteLine("[RenderQueueViewModel] ❌ File path is null or empty");
+                return;
+            }
+
+            // 使用FileSystemHelper打开文件所在文件夹
+            var success = FileSystemHelper.OpenFileDirectory(e.FilePath);
+            if (success)
+            {
+                Console.WriteLine($"[RenderQueueViewModel] ✅ Opened file directory: {e.FilePath}");
+            }
+            else
+            {
+                Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to open file directory: {e.FilePath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Error opening file directory: {ex.Message}");
         }
     }
 
