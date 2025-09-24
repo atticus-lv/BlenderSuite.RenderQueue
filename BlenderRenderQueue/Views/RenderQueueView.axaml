@@ -235,23 +235,26 @@
                                             </Setter>
                                             <Setter Property="ContextMenu">
                                                 <ContextMenu>
-                                                    <MenuItem Header="在Blender中打开" 
+                                                    <MenuItem Header="在Blender中打开"
                                                               Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).OpenInBlenderCommand}"
                                                               IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).IsValid}">
                                                         <MenuItem.Icon>
-                                                            <material:MaterialIcon Kind="BlenderSoftware" Width="16" Height="16" />
+                                                            <material:MaterialIcon Kind="BlenderSoftware" Width="16"
+                                                                Height="16" />
                                                         </MenuItem.Icon>
                                                     </MenuItem>
-                                                    <MenuItem Header="打开所在文件夹" 
+                                                    <MenuItem Header="打开所在文件夹"
                                                               Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).OpenFileDirectoryCommand}">
                                                         <MenuItem.Icon>
-                                                            <material:MaterialIcon Kind="FolderOpen" Width="16" Height="16" />
+                                                            <material:MaterialIcon Kind="FolderOpen" Width="16"
+                                                                Height="16" />
                                                         </MenuItem.Icon>
-                                                    </MenuItem> 
-                                                    <MenuItem Header="刷新" 
+                                                    </MenuItem>
+                                                    <MenuItem Header="刷新"
                                                               Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).RefreshFileInfoCommand}">
                                                         <MenuItem.Icon>
-                                                            <material:MaterialIcon Kind="Refresh" Width="16" Height="16" />
+                                                            <material:MaterialIcon Kind="Refresh" Width="16"
+                                                                Height="16" />
                                                         </MenuItem.Icon>
                                                     </MenuItem>
                                                 </ContextMenu>
@@ -362,7 +365,8 @@
                                                                 </TextBlock.IsVisible>
                                                             </TextBlock>
 
-                                                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding IsValid}">
+                                                            <StackPanel Orientation="Horizontal" Spacing="4"
+                                                                        IsVisible="{Binding IsValid}">
                                                                 <TextBlock FontSize="12">
                                                                     <TextBlock.Text>
                                                                         <MultiBinding StringFormat="{}{0}-{1}">
@@ -372,10 +376,12 @@
                                                                     </TextBlock.Text>
                                                                 </TextBlock>
                                                                 <!-- 显示覆写模式提示 -->
-                                                                <TextBlock Text="*" FontSize="10" Foreground="#FF9800" FontWeight="Bold"
+                                                                <TextBlock Text="*" FontSize="10" Foreground="#FF9800"
+                                                                           FontWeight="Bold"
                                                                            ToolTip.Tip="使用覆写的帧范围或场景">
                                                                     <TextBlock.IsVisible>
-                                                                        <MultiBinding Converter="{x:Static conv:BoolConverters.Or}">
+                                                                        <MultiBinding
+                                                                            Converter="{x:Static conv:BoolConverters.Or}">
                                                                             <Binding Path="OverrideFrameRange" />
                                                                             <Binding Path="OverrideScene" />
                                                                         </MultiBinding>
@@ -411,9 +417,12 @@
                                                                   ToolTip.Tip="启用/禁用此任务">
                                                         <ToggleSwitch.IsEnabled>
                                                             <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                                                <Binding Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks" Converter="{x:Static BoolConverters.Not}" />
+                                                                <Binding
+                                                                    Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks"
+                                                                    Converter="{x:Static BoolConverters.Not}" />
                                                                 <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                                    <Binding Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks" />
+                                                                    <Binding
+                                                                        Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks" />
                                                                     <Binding Path="CanModifyEnable" />
                                                                 </MultiBinding>
                                                             </MultiBinding>
@@ -432,9 +441,12 @@
                                                                 Margin="4,0,0,0">
                                                         <StackPanel.IsEnabled>
                                                             <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                                                <Binding Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks" Converter="{x:Static BoolConverters.Not}" />
+                                                                <Binding
+                                                                    Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks"
+                                                                    Converter="{x:Static BoolConverters.Not}" />
                                                                 <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                                    <Binding Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks" />
+                                                                    <Binding
+                                                                        Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks" />
                                                                     <Binding Path="CanDelete" />
                                                                 </MultiBinding>
                                                             </MultiBinding>
@@ -526,7 +538,8 @@
 
                                         <Button.IsEnabled>
                                             <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                <Binding Path="CanModifyTasks" Converter="{x:Static BoolConverters.Not}" />
+                                                <Binding Path="CanModifyTasks"
+                                                         Converter="{x:Static BoolConverters.Not}" />
                                             </MultiBinding>
                                         </Button.IsEnabled>
                                         <StackPanel Orientation="Horizontal" Spacing="4">
