@@ -247,6 +247,12 @@
                                                         <MenuItem.Icon>
                                                             <material:MaterialIcon Kind="FolderOpen" Width="16" Height="16" />
                                                         </MenuItem.Icon>
+                                                    </MenuItem> 
+                                                    <MenuItem Header="刷新" 
+                                                              Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).RefreshFileInfoCommand}">
+                                                        <MenuItem.Icon>
+                                                            <material:MaterialIcon Kind="FileRefresh" Width="16" Height="16" />
+                                                        </MenuItem.Icon>
                                                     </MenuItem>
                                                 </ContextMenu>
                                             </Setter>
