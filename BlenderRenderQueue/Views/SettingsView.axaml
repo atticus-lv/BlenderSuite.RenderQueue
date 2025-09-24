@@ -16,7 +16,7 @@
             <objectModel:ObservableCollection x:TypeArguments="suki:SettingsLayoutItem">
                 
                 <!-- Blender 设置部分 -->
-                <suki:SettingsLayoutItem Header="Blender 设置">
+                <suki:SettingsLayoutItem Header="Blender">
                     <suki:SettingsLayoutItem.Content>
                         <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto" Margin="16">
                             
@@ -44,7 +44,7 @@
                 </suki:SettingsLayoutItem>
 
                 <!-- 渲染超时设置部分 -->
-                <suki:SettingsLayoutItem Header="渲染超时设置">
+                <suki:SettingsLayoutItem Header="渲染超时">
                     <suki:SettingsLayoutItem.Content>
                         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" Margin="16">
                             
@@ -77,7 +77,7 @@
                 </suki:SettingsLayoutItem>
 
                 <!-- 视频合成设置部分 -->
-                <suki:SettingsLayoutItem Header="视频合成设置">
+                <suki:SettingsLayoutItem Header="视频合成">
                     <suki:SettingsLayoutItem.Content>
                         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" Margin="16">
                             
