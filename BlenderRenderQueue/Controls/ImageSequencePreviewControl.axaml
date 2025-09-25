@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Controls.ImageSequencePreviewControl">
 
@@ -46,11 +47,24 @@
                 FontSize="16"
                 TextWrapping="Wrap"
                 IsVisible="{Binding $parent[controls:ImageSequencePreviewControl].HasError}" />
-            <TextBlock
-                IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
-                Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
-                FontSize="10"
-                TextTrimming="CharacterEllipsis" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock
+                    IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
+                    Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
+                    FontSize="16"
+                    VerticalAlignment="Center"
+                    TextTrimming="CharacterEllipsis" />
+                <Button Classes="Outlined Small"
+                        Click="Button_OnClick" VerticalAlignment="Center"
+                        IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
+                        Padding="4" Margin="4,0,0,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <avalonia:MaterialIcon Kind="FolderOpen" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
 
         </StackPanel>
         <!-- 图片预览区域 -->

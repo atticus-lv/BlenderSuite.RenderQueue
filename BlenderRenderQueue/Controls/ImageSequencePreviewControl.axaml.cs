@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Avalonia.Interactivity;
 using System.Threading;
 using Avalonia.Threading;
+using BlenderRenderQueue.Helpers;
 
 namespace BlenderRenderQueue.Controls;
 
@@ -23,8 +24,12 @@ public class Observer<T> : IObserver<T>
     }
 
     public void OnNext(T value) => _onNext(value);
-    public void OnError(Exception error) { }
-    public void OnCompleted() { }
+
+    public void OnError(Exception error)
+    { }
+
+    public void OnCompleted()
+    { }
 }
 
 public partial class ImageSequencePreviewControl : UserControl, IDisposable
@@ -178,7 +183,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     public ImageSequencePreviewControl()
     {
         InitializeComponent();
-        
+
         // 监听文件夹路径变化
         this.GetObservable(FolderPathProperty).Subscribe(new Observer<string?>(OnFolderPathChanged));
     }
@@ -186,7 +191,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        
+
         // 如果路径已经设置但没有触发变化事件，手动触发一次
         if (!string.IsNullOrEmpty(FolderPath))
         {
@@ -240,7 +245,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
         Console.WriteLine($"[ImageSequencePreviewControl] Loading image sequence from: '{directoryPath}'");
         LoadImageSequence(directoryPath);
-        
+
         // 启动文件监控
         StartFileWatcher(directoryPath);
     }
@@ -253,12 +258,12 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         try
         {
             Console.WriteLine($"[ImageSequencePreviewControl] LoadImageSequence: '{folderPath}'");
-            
+
             // 获取所有jpg和png文件，按文件名排序
             var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
             var allFiles = Directory.GetFiles(folderPath);
             Console.WriteLine($"[ImageSequencePreviewControl] Found {allFiles.Length} total files in directory");
-            
+
             var files = allFiles
                 .Where(file => imageExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
                 .OrderBy(file => file)
@@ -281,12 +286,12 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
                 HasImages = true;
                 MaxFrame = _imageFiles.Count - 1;
                 CurrentFrame = 0;
-                
+
                 // 初始化图片缓存
                 _imageCache = new Bitmap?[_imageFiles.Count];
-                
+
                 Console.WriteLine($"[ImageSequencePreviewControl] Successfully loaded {_imageFiles.Count} images");
-                
+
                 // 预加载第一张图片
                 await LoadImageAsync(0);
             }
@@ -380,6 +385,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             {
                 bitmap?.Dispose();
             }
+
             _imageCache = null;
         }
 
@@ -453,7 +459,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         // 检查是否是图片文件
         var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
         var extension = Path.GetExtension(e.FullPath).ToLowerInvariant();
-        
+
         if (!imageExtensions.Contains(extension))
             return;
 
@@ -479,7 +485,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
         var oldExtension = Path.GetExtension(e.OldFullPath).ToLowerInvariant();
         var newExtension = Path.GetExtension(e.FullPath).ToLowerInvariant();
-        
+
         if (!imageExtensions.Contains(oldExtension) && !imageExtensions.Contains(newExtension))
             return;
 
@@ -513,7 +519,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         try
         {
             Console.WriteLine("[ImageSequencePreviewControl] Refreshing image sequence due to file changes");
-            
+
             // 重新加载图片序列
             var directoryPath = File.Exists(_folderPath) ? Path.GetDirectoryName(_folderPath) : _folderPath;
             if (!string.IsNullOrEmpty(directoryPath) && Directory.Exists(directoryPath))
@@ -531,5 +537,10 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     {
         StopFileWatcher();
         ClearImages();
+    }
+
+    private void Button_OnClick(object? sender, RoutedEventArgs e)
+    {
+        var success = FileSystemHelper.OpenFileDirectory(FolderPath);
     }
 }

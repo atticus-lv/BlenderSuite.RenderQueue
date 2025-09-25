@@ -191,7 +191,7 @@
 
                         </StackPanel>
                     </TabItem>
-                    <TabItem Header="渲染预览">
+                    <TabItem Header="输出预览">
                         <controls:ImageSequencePreviewControl Margin="8"
                                                               FolderPath="{Binding FramePathDirectory}" />
                     </TabItem>
