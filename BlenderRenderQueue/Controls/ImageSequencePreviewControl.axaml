@@ -6,7 +6,7 @@
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Controls.ImageSequencePreviewControl">
 
-    <Grid RowDefinitions="Auto,Auto,*">
+    <Grid RowDefinitions="Auto,Auto,Auto">
         <!-- Slider 控制区域 -->
         <Grid Grid.Row="1" Margin="10,5" IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
               ColumnDefinitions="Auto,*,Auto">
@@ -56,9 +56,8 @@
         <!-- 图片预览区域 -->
 
         <Border Grid.Row="2"
-                Margin="5"
-                IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
-                >
+                Margin="5" MaxHeight="400"
+                IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}">
 
             <Panel>
                 <controls:ImagePreviewControl x:Name="ImagePreviewControl" Margin="8"
