@@ -30,7 +30,6 @@ public class BlendSceneProperties
     public string? SceneName { get; set; }
     public double? Fps { get; set; }
     public string? FramePath { get; set; }
-    public string? FramePathDirectory { get; set; }
     public double? CyclesTimeLimit { get; set; }
     public List<string>? ReferencedScenes { get; set; }
     public List<string>? TimelineCameras { get; set; }
@@ -104,7 +103,6 @@ public class BlendSceneProperties
         SceneName = source.SceneName;
         Fps = source.Fps;
         FramePath = source.FramePath;
-        FramePathDirectory = Path.GetDirectoryName(FramePath)?.Replace("\\", "/");
         CyclesTimeLimit = source.CyclesTimeLimit;
         ReferencedScenes = source.ReferencedScenes;
         TimelineCameras = source.TimelineCameras;

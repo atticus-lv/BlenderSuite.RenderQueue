@@ -293,6 +293,27 @@ public partial class RenderTaskViewModel : ViewModelBase
     [ObservableProperty]
     private BlendScenePropertiesViewModel _scenePropertiesView = new();
 
+    partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel value)
+    {
+        Console.WriteLine($"[RenderTaskViewModel] OnScenePropertiesViewChanged called");
+        
+        // 当ScenePropertiesView变化时，触发FramePathDirectory属性通知
+        OnPropertyChanged(nameof(FramePathDirectory));
+        
+        // 订阅ScenePropertiesView的属性变化事件
+        if (value == null) return;
+        value.PropertyChanged += (sender, args) =>
+        {
+            Console.WriteLine($"[RenderTaskViewModel] ScenePropertiesView PropertyChanged: {args.PropertyName}");
+            if (args.PropertyName == nameof(value.ActiveSceneProperties) || 
+                args.PropertyName == nameof(value.SceneProperties))
+            {
+                Console.WriteLine($"[RenderTaskViewModel] Triggering FramePathDirectory property notification");
+                OnPropertyChanged(nameof(FramePathDirectory));
+            }
+        };
+    }
+
     [ObservableProperty]
     private BlendFileInfo _fileInfo = new();
 
@@ -416,6 +437,20 @@ public partial class RenderTaskViewModel : ViewModelBase
     [ObservableProperty]
     private BlendScenePropertiesViewModel _scenePropertiesViewModel = new();
 
+    /// <summary>
+    /// 获取当前帧路径目录，用于绑定到ImageSequencePreviewControl
+    /// </summary>
+    public string? FramePathDirectory 
+    {
+        get
+        {
+            var framePath = ScenePropertiesView.ActiveSceneProperties.FramePath;
+            var result = !string.IsNullOrEmpty(framePath) ? Path.GetDirectoryName(framePath)?.Replace("\\", "/") : null;
+            Console.WriteLine($"[RenderTaskViewModel] FramePathDirectory getter - FramePath: '{framePath}', Result: '{result}'");
+            return result;
+        }
+    }
+
     // 保存停止时的进度状态
     private int _lastCompletedFrame = 0;
     private bool _wasStopped = false;
@@ -447,6 +482,9 @@ public partial class RenderTaskViewModel : ViewModelBase
         _logTimer.Elapsed += (_, __) => FlushLogQueue();
         _logTimer.AutoReset = true;
         _logTimer.Start();
+        
+        // 手动触发ScenePropertiesView的初始化
+        OnScenePropertiesViewChanged(ScenePropertiesView);
     }
 
     public RenderTaskViewModel(string blendFilePath, int startFrame, int endFrame, bool animation = true,
@@ -673,6 +711,9 @@ public partial class RenderTaskViewModel : ViewModelBase
             OnPropertyChanged(nameof(DisplayTotalFrames));
             OnPropertyChanged(nameof(HasValidSceneSelection));
             OnPropertyChanged(nameof(ShowSceneOverrideWarning));
+            
+            // 触发FramePathDirectory属性更新
+            OnPropertyChanged(nameof(FramePathDirectory));
         }
         catch (Exception ex)
         {

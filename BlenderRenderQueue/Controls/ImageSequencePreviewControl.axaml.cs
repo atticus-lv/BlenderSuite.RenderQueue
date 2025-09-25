@@ -107,8 +107,11 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         get => _folderPath;
         set 
         {
-            Console.WriteLine($"[ImageSequencePreviewControl] FolderPath setter called with: '{value}'");
-            SetAndRaise(FolderPathProperty, ref _folderPath, value);
+            Console.WriteLine($"[ImageSequencePreviewControl] FolderPath setter called with: '{value}' (previous: '{_folderPath}')");
+            if (SetAndRaise(FolderPathProperty, ref _folderPath, value))
+            {
+                Console.WriteLine($"[ImageSequencePreviewControl] FolderPath property changed, triggering OnFolderPathChanged");
+            }
         }
     }
 
@@ -182,7 +185,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     public ImageSequencePreviewControl()
     {
         InitializeComponent();
-        DataContext = this;
+        // 不要设置 DataContext = this，这会覆盖父级传递的 DataContext
         
         Console.WriteLine("[ImageSequencePreviewControl] Constructor called");
         
@@ -200,12 +203,17 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         base.OnLoaded(e);
         Console.WriteLine("[ImageSequencePreviewControl] OnLoaded called");
         Console.WriteLine($"[ImageSequencePreviewControl] Current FolderPath: '{FolderPath}'");
+        Console.WriteLine($"[ImageSequencePreviewControl] DataContext: {DataContext?.GetType().Name}");
         
         // 如果路径已经设置但没有触发变化事件，手动触发一次
         if (!string.IsNullOrEmpty(FolderPath))
         {
             Console.WriteLine("[ImageSequencePreviewControl] Manually triggering OnFolderPathChanged");
             OnFolderPathChanged(FolderPath);
+        }
+        else
+        {
+            Console.WriteLine("[ImageSequencePreviewControl] FolderPath is empty, waiting for binding update");
         }
     }
 
