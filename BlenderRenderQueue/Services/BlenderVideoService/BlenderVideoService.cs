@@ -37,9 +37,15 @@ public class VideoRenderOutputParser
         var writeMatch = VideoWriteFrameRegex.Match(line);
         if (writeMatch.Success)
         {
-            CurrentFrame = int.Parse(writeMatch.Groups[1].Value);
-            Width = int.Parse(writeMatch.Groups[2].Value);
-            Height = int.Parse(writeMatch.Groups[3].Value);
+            var newFrame = int.Parse(writeMatch.Groups[1].Value);
+            var newWidth = int.Parse(writeMatch.Groups[2].Value);
+            var newHeight = int.Parse(writeMatch.Groups[3].Value);
+            
+            Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 解析到写入帧: {newFrame} ({newWidth}x{newHeight})");
+            
+            CurrentFrame = newFrame;
+            Width = newWidth;
+            Height = newHeight;
             return;
         }
 
@@ -47,30 +53,41 @@ public class VideoRenderOutputParser
         var appendMatch = VideoAppendFrameRegex.Match(line);
         if (appendMatch.Success)
         {
-            CurrentFrame = int.Parse(appendMatch.Groups[1].Value);
+            var newFrame = int.Parse(appendMatch.Groups[1].Value);
+            Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 解析到追加帧: {newFrame}");
+            CurrentFrame = newFrame;
             return;
         }
 
         // 检测FFmpeg关闭
         if (FFmpegClosingRegex.IsMatch(line) || FFmpegFlushRegex.IsMatch(line))
         {
+            Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 检测到FFmpeg关闭信号");
             IsCompleted = true;
         }
     }
 
     public double GetProgress()
     {
-        if (TotalFrames == 0) return 0;
-        return Math.Min(100, (double)CurrentFrame / TotalFrames * 100);
+        if (TotalFrames == 0) 
+        {
+            Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 获取进度: 0% (总帧数为0)");
+            return 0;
+        }
+        var progress = Math.Min(100, (double)CurrentFrame / TotalFrames * 100);
+        Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 获取进度: {progress:F1}% (当前帧: {CurrentFrame}/{TotalFrames})");
+        return progress;
     }
 
     public void SetTotalFrames(int totalFrames)
     {
+        Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 设置总帧数: {totalFrames}");
         TotalFrames = totalFrames;
     }
 
     public void Reset()
     {
+        Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 重置解析器状态");
         CurrentFrame = 0;
         TotalFrames = 0;
         Width = 0;
@@ -148,6 +165,21 @@ public class BlenderVideoService : IBlenderVideoService
                 videoParser.SetTotalFrames(totalFrames);
                 var currentFrame = 0;
                 var startTime = DateTime.Now;
+                var lastReportedProgress = 0.0; // 跟踪上次报告的进度，用于检测异常跳动
+                
+                // 创建进度更新辅助方法
+                void UpdateProgress(double newProgress, string source)
+                {
+                    // 检测异常进度跳动（进度突然大幅下降）
+                    if (newProgress < lastReportedProgress - 10 && lastReportedProgress > 50)
+                    {
+                        Console.WriteLine($"[BlenderVideoService] [WARNING] 检测到异常进度跳动: {lastReportedProgress:F1}% -> {newProgress:F1}% (来源: {source})");
+                    }
+                    
+                    Console.WriteLine($"[BlenderVideoService] [DEBUG] 进度更新: {newProgress:F1}% (来源: {source}, 上次: {lastReportedProgress:F1}%)");
+                    lastReportedProgress = newProgress;
+                    progressCallback?.Invoke(newProgress);
+                }
                 
                 // 启动进度跟踪任务
                 var progressTask = Task.Run(async () =>
@@ -160,13 +192,15 @@ public class BlenderVideoService : IBlenderVideoService
                         // 基于时间的进度估算（假设视频生成需要30-60秒）
                         var elapsed = DateTime.Now - startTime;
                         progress = Math.Min(95, (elapsed.TotalSeconds / 45) * 100); // 假设45秒完成
-                        progressCallback?.Invoke(progress);
+                        UpdateProgress(progress, "时间基础进度");
                     }
                 });
                 
                 // 订阅Blender服务的输出事件
                 _blenderService.OnOutputReceived += (line) =>
                 {
+                    Console.WriteLine($"[BlenderVideoService] [DEBUG] 收到输出: {line.Trim()}");
+                    
                     // 使用视频解析器解析输出
                     videoParser.ParseLine(line);
                     
@@ -174,25 +208,25 @@ public class BlenderVideoService : IBlenderVideoService
                     if (videoParser.CurrentFrame > 0)
                     {
                         var progress = videoParser.GetProgress();
-                        progressCallback?.Invoke(progress);
+                        UpdateProgress(progress, "视频解析器");
                     }
                     
                     // 基于输出内容更新进度
                     if (line.Contains("开始渲染视频"))
                     {
-                        progressCallback?.Invoke(5);
+                        UpdateProgress(5, "开始渲染视频");
                     }
                     else if (line.Contains("Rendering animation"))
                     {
-                        progressCallback?.Invoke(10);
+                        UpdateProgress(10, "Rendering animation");
                     }
                     else if (line.Contains("视频渲染完成"))
                     {
-                        progressCallback?.Invoke(95);
+                        UpdateProgress(95, "视频渲染完成");
                     }
                     else if (line.Contains("输出文件已生成"))
                     {
-                        progressCallback?.Invoke(100);
+                        UpdateProgress(100, "输出文件已生成");
                     }
                     else if (line.Contains("渲染失败") || line.Contains("错误"))
                     {
@@ -212,20 +246,20 @@ public class BlenderVideoService : IBlenderVideoService
                                     var frameProgress = (double)progressEvent.Progress.SampleCurrent.Value / progressEvent.Progress.SampleTotal.Value;
                                     // 计算总体进度
                                     var overallProgress = (currentFrame + frameProgress) / totalFrames;
-                                    progressCallback?.Invoke(overallProgress * 100);
+                                    UpdateProgress(overallProgress * 100, $"渲染进度事件(帧:{currentFrame}/{totalFrames})");
                                 }
                                 break;
                             case RenderCompletedFrame completedFrame:
                                 currentFrame++;
                                 // 更新进度
                                 var progress = (double)currentFrame / totalFrames;
-                                progressCallback?.Invoke(progress * 100);
+                                UpdateProgress(progress * 100, $"完成帧事件(帧:{currentFrame}/{totalFrames})");
                                 break;
                             case RenderCompletedAll:
-                                progressCallback?.Invoke(100);
+                                UpdateProgress(100, "渲染全部完成事件");
                                 break;
                             case RenderError error:
-                                Console.WriteLine($"[BlenderVideoService] [ERROR] {error.Message}");
+                                Console.WriteLine($"[BlenderVideoService] [ERROR] 渲染错误: {error.Message}");
                                 break;
                         }
                     }
@@ -233,17 +267,20 @@ public class BlenderVideoService : IBlenderVideoService
                 
                 _blenderService.OnErrorReceived += (line) =>
                 {
-                    Console.WriteLine($"[BlenderVideoService] [ERROR] {line}");
+                    Console.WriteLine($"[BlenderVideoService] [ERROR] 收到错误输出: {line}");
                 };
                 
                 // 使用Blender执行脚本
+                Console.WriteLine($"[BlenderVideoService] [DEBUG] 开始执行Blender脚本");
                 var result = await _blenderService.ExecuteScript(
                     scriptContent,
                     "generate_video",
                     cancellationToken);
 
+                Console.WriteLine($"[BlenderVideoService] [DEBUG] Blender脚本执行完成，退出码: {result.ExitCode}");
+                
                 // 确保进度达到100%
-                progressCallback?.Invoke(100);
+                UpdateProgress(100, "脚本执行完成");
                 
                 if (result.ExitCode == 0)
                 {
@@ -385,9 +422,14 @@ public class BlenderVideoService : IBlenderVideoService
         script.AppendLine("import traceback");
         script.AppendLine();
 
-        // 清理场景
-        script.AppendLine("bpy.ops.object.select_all(action='SELECT')");
-        script.AppendLine("bpy.ops.object.delete(use_global=False)");
+        // 创建全新的空场景
+        script.AppendLine("# 创建全新的空场景");
+        script.AppendLine("bpy.ops.wm.read_homefile(app_template='', use_empty=True)");
+        script.AppendLine("print('已创建全新的空场景')");
+        script.AppendLine();
+        
+        // 空场景已经创建，无需额外清理
+        script.AppendLine("# 空场景已创建，无需额外清理");
         script.AppendLine();
 
         // 设置场景属性（在添加strip之前设置）
@@ -408,6 +450,7 @@ public class BlenderVideoService : IBlenderVideoService
         script.AppendLine();
 
         // 添加图片序列到时间轴（在设置分辨率之后）
+        script.AppendLine("# 添加图片序列到VSE");
         for (var i = 0; i < imageFiles.Length; i++)
         {
             var imagePath = imageFiles[i].Replace("\\", "/");
@@ -420,6 +463,7 @@ public class BlenderVideoService : IBlenderVideoService
             script.AppendLine($"    frame_start={i}");
             script.AppendLine(")");
         }
+        script.AppendLine();
 
         // 设置色彩空间
         script.AppendLine("bpy.context.scene.view_settings.view_transform = 'Standard'");
@@ -440,7 +484,25 @@ public class BlenderVideoService : IBlenderVideoService
         script.AppendLine("bpy.context.scene.render.image_settings.color_mode = 'RGB'");
         script.AppendLine();
 
-        // 设置渲染引擎
+        // 强制设置渲染引擎为Workbench - 多次设置确保生效
+        script.AppendLine("# 强制设置渲染引擎为BLENDER_WORKBENCH");
+        script.AppendLine("bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'");
+        script.AppendLine();
+        
+        // 设置Workbench引擎的特定参数
+        script.AppendLine("# 设置Workbench引擎参数");
+        script.AppendLine("if hasattr(bpy.context.scene, 'display'):");
+        script.AppendLine("    bpy.context.scene.display.shading.light = 'FLAT'");
+        script.AppendLine("    bpy.context.scene.display.shading.color_type = 'TEXTURE'");
+        script.AppendLine("    bpy.context.scene.display.shading.show_xray = False");
+        script.AppendLine();
+        
+        // 确保视图设置正确
+        script.AppendLine("bpy.context.scene.view_settings.view_transform = 'Standard'");
+        script.AppendLine("bpy.context.scene.view_settings.look = 'None'");
+        script.AppendLine();
+        
+        // 再次确认引擎设置
         script.AppendLine("bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'");
         script.AppendLine();
 
@@ -448,18 +510,35 @@ public class BlenderVideoService : IBlenderVideoService
         script.AppendLine($"bpy.context.scene.render.filepath = '{outputVideoPath.Replace("\\", "/")}'");
         script.AppendLine();
 
-        // make sure you have a camera
-        script.AppendLine("if not any(obj.type == 'CAMERA' for obj in bpy.context.scene.objects):");
-        script.AppendLine("    bpy.ops.object.camera_add()");
-        script.AppendLine("    camera = bpy.context.active_object");
-        script.AppendLine("    bpy.context.scene.camera = camera");
+        // VSE渲染不需要3D相机
+        script.AppendLine("# VSE渲染不需要3D相机");
         script.AppendLine();
 
         script.AppendLine($"print('开始渲染视频: {outputVideoPath.Replace("\\", "/")}')");
-        script.AppendLine("print('Engine: BLENDER_WORKBENCH')");
+        script.AppendLine("print(f'Engine: {bpy.context.scene.render.engine}')");
         script.AppendLine($"print('Rendering animation (frames 0..{imageFiles.Length - 1})')");
         script.AppendLine("print('Start rendering: Scene, ViewLayer')");
         script.AppendLine();
+        
+        // 验证场景状态
+        script.AppendLine("print(f'场景对象数量: {len(bpy.context.scene.objects)}')");
+        script.AppendLine("print(f'场景材质数量: {len(bpy.data.materials)}')");
+        script.AppendLine("print(f'场景纹理数量: {len(bpy.data.textures)}')");
+        script.AppendLine("print(f'场景网格数量: {len(bpy.data.meshes)}')");
+        script.AppendLine("print(f'场景灯光数量: {len(bpy.data.lights)}')");
+        script.AppendLine();
+        
+        // 验证渲染引擎设置
+        script.AppendLine("if bpy.context.scene.render.engine != 'BLENDER_WORKBENCH':");
+        script.AppendLine("    print(f'警告: 渲染引擎不是BLENDER_WORKBENCH，当前是: {bpy.context.scene.render.engine}')");
+        script.AppendLine("    bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'");
+        script.AppendLine("    print('已强制设置为BLENDER_WORKBENCH')");
+        script.AppendLine();
+        
+        // 渲染前最后一次确认引擎设置
+        script.AppendLine("print(f'最终渲染引擎: {bpy.context.scene.render.engine}')");
+        script.AppendLine();
+        
         script.AppendLine("try:");
         script.AppendLine("    bpy.ops.render.render('INVOKE_DEFAULT', animation=True, use_viewport=True)");
         script.AppendLine("    print('视频渲染完成')");
