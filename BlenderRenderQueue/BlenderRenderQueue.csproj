@@ -19,6 +19,7 @@
         <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(DefineConstants);LINUX</DefineConstants>
         <Copyright>Atticus 2025</Copyright>
         <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+        <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -36,9 +37,8 @@
         <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.5-pre474" />
         <PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
         <PackageReference Include="SukiUI" Version="6.0.3" />
-        <PackageReference Include="FFMpegCore" Version="5.2.0" />
-        <PackageReference Include="Xaml.Behaviors.Interactions.Draggable" Version="11.3.6.1" />
-        <PackageReference Include="Xaml.Behaviors.Interactivity" Version="11.3.6.1" />
+        <PackageReference Include="Xaml.Behaviors.Interactions.Draggable" Version="11.3.6.2" />
+        <PackageReference Include="Xaml.Behaviors.Interactivity" Version="11.3.6.2" />
     </ItemGroup>
 
     <ItemGroup>

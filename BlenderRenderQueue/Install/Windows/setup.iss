@@ -26,7 +26,7 @@ OutputDir=Output
 OutputBaseFilename={#MyAppName}-{#MyAppVersion}.Setup
 
 ; 图标和压缩设置
-SetupIconFile=..\..\Assets\avalonia-logo.ico
+SetupIconFile=..\..\Assets\logo.ico
 Compression=lzma
 SolidCompression=yes
 
