@@ -57,12 +57,12 @@
 
         <Border Grid.Row="2"
                 Margin="5"
-                IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
-                >
+                IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}">
 
             <Panel>
-                <controls:ImagePreviewControl x:Name="ImagePreviewControl" Margin="8"
-                                              Image="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}" />
+                <Image
+                    Source="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}">
+                </Image>
 
                 <!-- 加载指示器 -->
                 <ProgressBar IsIndeterminate="True"
