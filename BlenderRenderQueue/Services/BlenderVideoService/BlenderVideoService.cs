@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -81,7 +80,7 @@ public class VideoRenderOutputParser
 }
 
 /// <summary>
-/// Blender视频生成服务实现
+/// Blender video generation service implementation
 /// </summary>
 public class BlenderVideoService : IBlenderVideoService
 {
@@ -268,7 +267,6 @@ public class BlenderVideoService : IBlenderVideoService
             }
             finally
             {
-                // 清理临时脚本文件
                 if (File.Exists(tempScriptPath))
                 {
                     File.Delete(tempScriptPath);
@@ -285,13 +283,11 @@ public class BlenderVideoService : IBlenderVideoService
     {
         try
         {
-            // 检查Blender路径是否存在
             if (string.IsNullOrEmpty(_blenderService.BlenderPath) || !File.Exists(_blenderService.BlenderPath))
             {
                 return false;
             }
 
-            // 尝试执行一个简单的Blender命令来验证可用性
             var result = await _blenderService.ExecuteScript(
                 "print('Blender is available')",
                 "check_availability",
@@ -314,16 +310,13 @@ public class BlenderVideoService : IBlenderVideoService
                 "get_version",
                 CancellationToken.None);
 
-            if (result.ExitCode == 0 && !string.IsNullOrEmpty(result.Output))
+            if (result.ExitCode != 0 || string.IsNullOrEmpty(result.Output)) return "Unknown";
+            var lines = result.Output.Split('\n');
+            foreach (var line in lines)
             {
-                // 提取版本信息
-                var lines = result.Output.Split('\n');
-                foreach (var line in lines)
+                if (line.Contains(".") && !line.Contains("Blender"))
                 {
-                    if (line.Contains(".") && !line.Contains("Blender"))
-                    {
-                        return line.Trim();
-                    }
+                    return line.Trim();
                 }
             }
 
@@ -393,55 +386,47 @@ public class BlenderVideoService : IBlenderVideoService
         script.AppendLine();
 
         // 清理场景
-        script.AppendLine("# 清理场景");
         script.AppendLine("bpy.ops.object.select_all(action='SELECT')");
         script.AppendLine("bpy.ops.object.delete(use_global=False)");
         script.AppendLine();
 
         // 设置场景属性（在添加strip之前设置）
-        script.AppendLine("# 设置场景属性");
         script.AppendLine($"bpy.context.scene.frame_start = 0");
         script.AppendLine($"bpy.context.scene.frame_end = {imageFiles.Length - 1}");
         script.AppendLine($"bpy.context.scene.render.fps = {fps}");
         script.AppendLine();
         
         // 设置渲染分辨率（在添加strip之前设置）
-        script.AppendLine("# 设置渲染分辨率");
         script.AppendLine($"bpy.context.scene.render.resolution_x = {width}");
         script.AppendLine($"bpy.context.scene.render.resolution_y = {height}");
         script.AppendLine($"bpy.context.scene.render.resolution_percentage = 100");
         script.AppendLine();
 
         // 确保有序列编辑器
-        script.AppendLine("# 确保有序列编辑器");
         script.AppendLine("if not bpy.context.scene.sequence_editor:");
         script.AppendLine("    bpy.context.scene.sequence_editor_create()");
         script.AppendLine();
 
         // 添加图片序列到时间轴（在设置分辨率之后）
-        script.AppendLine("# 添加图片序列到时间轴");
-        for (int i = 0; i < imageFiles.Length; i++)
+        for (var i = 0; i < imageFiles.Length; i++)
         {
             var imagePath = imageFiles[i].Replace("\\", "/");
-            var frameStart = i;
-            var channel = 1;
+            const int channel = 1;
             
             script.AppendLine($"bpy.context.scene.sequence_editor.strips.new_image(");
             script.AppendLine($"    name='{Path.GetFileNameWithoutExtension(imagePath)}',");
             script.AppendLine($"    filepath='{imagePath}',");
             script.AppendLine($"    channel={channel},");
-            script.AppendLine($"    frame_start={frameStart}");
+            script.AppendLine($"    frame_start={i}");
             script.AppendLine(")");
         }
 
         // 设置色彩空间
-        script.AppendLine("# 设置色彩空间");
         script.AppendLine("bpy.context.scene.view_settings.view_transform = 'Standard'");
         script.AppendLine("bpy.context.scene.view_settings.look = 'None'");
         script.AppendLine();
 
         // 设置输出格式
-        script.AppendLine("# 设置输出格式");
         script.AppendLine("if bpy.app.version >= (5, 0, 0):");
         script.AppendLine("    bpy.context.scene.render.image_settings.media_type = 'VIDEO'");
         script.AppendLine("else:");
@@ -449,7 +434,6 @@ public class BlenderVideoService : IBlenderVideoService
         script.AppendLine();
 
         // 设置FFmpeg编码
-        script.AppendLine("# 设置FFmpeg编码");
         script.AppendLine($"bpy.context.scene.render.ffmpeg.format = 'MPEG4'");
         script.AppendLine($"bpy.context.scene.render.ffmpeg.codec = '{videoCodec}'");
         script.AppendLine($"bpy.context.scene.render.ffmpeg.constant_rate_factor = '{videoQuality}'");
@@ -457,33 +441,26 @@ public class BlenderVideoService : IBlenderVideoService
         script.AppendLine();
 
         // 设置渲染引擎
-        script.AppendLine("# 设置渲染引擎");
         script.AppendLine("bpy.context.scene.render.engine = 'BLENDER_WORKBENCH'");
         script.AppendLine();
 
         // 设置输出路径
-        script.AppendLine("# 设置输出路径");
         script.AppendLine($"bpy.context.scene.render.filepath = '{outputVideoPath.Replace("\\", "/")}'");
         script.AppendLine();
 
-        // 确保有相机
-        script.AppendLine("# 确保有相机");
+        // make sure you have a camera
         script.AppendLine("if not any(obj.type == 'CAMERA' for obj in bpy.context.scene.objects):");
         script.AppendLine("    bpy.ops.object.camera_add()");
         script.AppendLine("    camera = bpy.context.active_object");
         script.AppendLine("    bpy.context.scene.camera = camera");
         script.AppendLine();
 
-        // 开始渲染
-        script.AppendLine("# 开始渲染");
         script.AppendLine($"print('开始渲染视频: {outputVideoPath.Replace("\\", "/")}')");
         script.AppendLine("print('Engine: BLENDER_WORKBENCH')");
         script.AppendLine($"print('Rendering animation (frames 0..{imageFiles.Length - 1})')");
         script.AppendLine("print('Start rendering: Scene, ViewLayer')");
         script.AppendLine();
-        script.AppendLine("# 使用序列编辑器渲染视频");
         script.AppendLine("try:");
-        script.AppendLine("    # 渲染动画");
         script.AppendLine("    bpy.ops.render.render('INVOKE_DEFAULT', animation=True, use_viewport=True)");
         script.AppendLine("    print('视频渲染完成')");
         script.AppendLine($"    if os.path.exists('{outputVideoPath.Replace("\\", "/")}'):");
