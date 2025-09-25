@@ -196,15 +196,14 @@
 
 
                     <!-- 任务列表 -->
-                    <suki:GlassCard Grid.Row="1" Padding="0">
-                        <Border
+                    <suki:GlassCard Grid.Row="1" Padding="2">
+                        <Border BorderThickness="2" CornerRadius="8"
                             MinHeight="60"
                             DragDrop.AllowDrop="True">
                             <i:Interaction.Behaviors>
-                                <behaviors:ContentControlFilesDropBehavior
+                                <behaviors:BorderFilesDropBehavior
                                     Command="{Binding AddDroppedFilesCommand}"
-                                    ContentDuringDrag="释放文件添加任务"
-                                    BackgroundDuringDrag="{DynamicResource SukiPrimaryColor}" />
+                                    BorderBrushDuringDrag="{DynamicResource SukiPrimaryColor}" />
                             </i:Interaction.Behaviors>
                             <Panel>
                                 <ListBox ItemsSource="{Binding RenderTasks}"
