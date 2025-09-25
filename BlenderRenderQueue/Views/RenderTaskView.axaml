@@ -192,24 +192,8 @@
                         </StackPanel>
                     </TabItem>
                     <TabItem Header="渲染预览">
-                        <Grid RowDefinitions="Auto,*" Margin="8 4">
-                            <!-- 预览控制按钮 -->
-                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="8 0">
-                                <TextBlock Text="渲染序列预览" FontWeight="Bold" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding FramePathDirectory}" 
-                                           FontSize="10" 
-                                           Foreground="#666" 
-                                           VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTip.Tip="{Binding FramePathDirectory}" />
-                            </StackPanel>
-
-                            <!-- 图片序列预览控件 -->
-                            <Grid Grid.Row="1" Margin="8">
-                                <controls:ImageSequencePreviewControl 
-                                    FolderPath="{Binding FramePathDirectory}" />
-                            </Grid>
-                        </Grid>
+                        <controls:ImageSequencePreviewControl Margin="8"
+                                                              FolderPath="{Binding FramePathDirectory}" />
                     </TabItem>
                     <TabItem Header="日志">
                         <Grid RowDefinitions="Auto,300" Margin="8 4">

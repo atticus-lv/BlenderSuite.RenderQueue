@@ -20,38 +20,39 @@
                         <VisualBrush.Visual>
                             <Grid Width="20" Height="20">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <Rectangle Grid.Row="0" Grid.Column="0" Fill="#FFF0F0F0"/>
-                                <Rectangle Grid.Row="1" Grid.Column="1" Fill="#FFF0F0F0"/>
-                                <Rectangle Grid.Row="0" Grid.Column="1" Fill="#FFFAFAFA"/>
-                                <Rectangle Grid.Row="1" Grid.Column="0" Fill="#FFFAFAFA"/>
+                                <Rectangle Grid.Row="0" Grid.Column="0" Fill="{DynamicResource SukiPrimaryColor0}" />
+                                <Rectangle Grid.Row="1" Grid.Column="1" Fill="{DynamicResource SukiPrimaryColor0}" />
+                                <Rectangle Grid.Row="0" Grid.Column="1" Fill="{DynamicResource SukiPrimaryColor15}" />
+                                <Rectangle Grid.Row="1" Grid.Column="0" Fill="{DynamicResource SukiPrimaryColor15}" />
                             </Grid>
                         </VisualBrush.Visual>
                     </VisualBrush>
                 </Border.Background>
-                <Image Source="{Binding Image, RelativeSource={RelativeSource AncestorType=controls1:ImagePreviewControl}}"
-                       Stretch="Uniform"
-                       RenderOptions.BitmapInterpolationMode="HighQuality"
-                       ClipToBounds="True"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center" />
+                <Image
+                    Source="{Binding Image, RelativeSource={RelativeSource AncestorType=controls1:ImagePreviewControl}}"
+                    Stretch="Uniform"
+                    RenderOptions.BitmapInterpolationMode="HighQuality"
+                    ClipToBounds="True"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center" />
             </Border>
             <ProgressBar IsIndeterminate="True"
                          IsVisible="{Binding IsLoading, RelativeSource={RelativeSource AncestorType=controls1:ImagePreviewControl}}"
                          HorizontalAlignment="Center"
                          VerticalAlignment="Center" />
         </Panel>
-        
+
         <TextBlock Text="未选择图像"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    Opacity="0.5"
                    IsVisible="{Binding Image, RelativeSource={RelativeSource AncestorType=controls1:ImagePreviewControl}, Converter={x:Static ObjectConverters.IsNull}}" />
     </Panel>
-</UserControl> 
+</UserControl>
