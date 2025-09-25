@@ -57,6 +57,7 @@ public abstract class DropBehaviorBase : Behavior<Control>
         {
             AssociatedObject.AddHandler(DragDrop.DragOverEvent, OnDragOver, RoutingStrategies.Bubble);
             AssociatedObject.AddHandler(DragDrop.DropEvent, OnDrop, RoutingStrategies.Bubble);
+            AssociatedObject.AddHandler(DragDrop.DragLeaveEvent, OnDragLeave, RoutingStrategies.Bubble);
         }
     }
 
@@ -67,6 +68,7 @@ public abstract class DropBehaviorBase : Behavior<Control>
         {
             AssociatedObject.RemoveHandler(DragDrop.DragOverEvent, OnDragOver);
             AssociatedObject.RemoveHandler(DragDrop.DropEvent, OnDrop);
+            AssociatedObject.RemoveHandler(DragDrop.DragLeaveEvent, OnDragLeave);
         }
         
         base.OnDetaching();
@@ -113,6 +115,19 @@ public abstract class DropBehaviorBase : Behavior<Control>
                 ExecuteCommand(e);
             }
         }
+
+        Handler.Leave(AssociatedObject, e, sourceContext, targetContext);
+    }
+
+    private void OnDragLeave(object? sender, DragEventArgs e)
+    {
+        if (AssociatedObject is null)
+        {
+            return;
+        }
+
+        var sourceContext = GetDataContext(sender);
+        var targetContext = GetDataContext(AssociatedObject);
 
         Handler.Leave(AssociatedObject, e, sourceContext, targetContext);
     }
