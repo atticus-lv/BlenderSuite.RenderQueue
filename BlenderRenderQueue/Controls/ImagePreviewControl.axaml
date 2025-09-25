@@ -6,11 +6,12 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:controls1="clr-namespace:BlenderRenderQueue.Controls"
              xmlns:behaviors="clr-namespace:BlenderRenderQueue.Behaviors"
+             xmlns:conv="using:Avalonia.Data.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="BlenderRenderQueue.Controls.ImagePreviewControl">
     <Panel>
         <Panel x:Name="ImageViewPanel" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
-               IsVisible="{Binding Image, RelativeSource={RelativeSource AncestorType=controls1:ImagePreviewControl}, Converter={x:Static ObjectConverters.IsNotNull}}">
+               IsVisible="{Binding Image, RelativeSource={RelativeSource AncestorType=controls1:ImagePreviewControl}, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
             <i:Interaction.Behaviors>
                 <behaviors:ImagePanZoomBehavior EnableZoom="True" EnablePan="True" />
             </i:Interaction.Behaviors>
@@ -53,6 +54,6 @@
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    Opacity="0.5"
-                   IsVisible="{Binding Image, RelativeSource={RelativeSource AncestorType=controls1:ImagePreviewControl}, Converter={x:Static ObjectConverters.IsNull}}" />
+                   IsVisible="{Binding Image, RelativeSource={RelativeSource AncestorType=controls1:ImagePreviewControl}, Converter={x:Static conv:ObjectConverters.IsNull}}" />
     </Panel>
 </UserControl>

@@ -12,6 +12,11 @@ public partial class ImagePreviewWindowViewModel : ViewModelBase
     [ObservableProperty]
     private Bitmap? _image;
 
+    partial void OnImageChanged(Bitmap? value)
+    {
+        Console.WriteLine($"[ImagePreviewWindowViewModel] Image property changed: {(value != null ? "Image set" : "Image cleared")}");
+    }
+
     [ObservableProperty]
     private bool _isLoading = false;
 
@@ -33,18 +38,24 @@ public partial class ImagePreviewWindowViewModel : ViewModelBase
 
     public ImagePreviewWindowViewModel(string imagePath, int frameNumber = 0)
     {
+        Console.WriteLine($"[ImagePreviewWindowViewModel] Constructor called with path: '{imagePath}', frame: {frameNumber}");
         ImagePath = imagePath;
         FrameInfo = frameNumber > 0 ? $"帧 {frameNumber}" : "单帧";
+        Console.WriteLine($"[ImagePreviewWindowViewModel] ImagePath set to: '{ImagePath}'");
         LoadImageAsync();
     }
 
     private async void LoadImageAsync()
     {
+        Console.WriteLine($"[ImagePreviewWindowViewModel] LoadImageAsync called with path: '{ImagePath}'");
+        
         if (string.IsNullOrEmpty(ImagePath) || !File.Exists(ImagePath))
         {
+            Console.WriteLine($"[ImagePreviewWindowViewModel] Image path is invalid or file doesn't exist: '{ImagePath}'");
             return;
         }
 
+        Console.WriteLine($"[ImagePreviewWindowViewModel] Starting to load image: '{ImagePath}'");
         IsLoading = true;
         
         try
@@ -80,6 +91,7 @@ public partial class ImagePreviewWindowViewModel : ViewModelBase
                     
                     IsLoading = false;
                     Console.WriteLine($"[ImagePreviewWindowViewModel] ✅ Image loaded successfully: {ImagePath}");
+                    Console.WriteLine($"[ImagePreviewWindowViewModel] Image size: {ImageSize}, File info: {FileInfo}");
                 });
             }
             else

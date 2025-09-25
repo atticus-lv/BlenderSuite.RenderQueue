@@ -37,7 +37,7 @@
         </Border>
         
         <!-- 图片预览控件 -->
-        <controls:ImagePreviewControl x:Name="ImagePreviewControl" Grid.Row="1" Margin="8" Image="{Binding }"/>
+        <controls:ImagePreviewControl x:Name="ImagePreviewControl" Grid.Row="1" Margin="8" Image="{Binding Image}"/>
         
         <!-- 底部信息栏 -->
         <Border Grid.Row="2" Background="#F5F5F5" Padding="12,8" Opacity="0.7">

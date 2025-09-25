@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:conv="using:Avalonia.Data.Converters"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Controls.ImageSequencePreviewControl">
 
@@ -68,14 +69,21 @@
 
         </StackPanel>
         <!-- 图片预览区域 -->
-
         <Border Grid.Row="2"
                 Margin="5" MaxHeight="400"
                 IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}">
 
             <Panel>
-                <controls:ImagePreviewControl x:Name="ImagePreviewControl" Margin="8"
-                                              Image="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}" />
+                <!-- 普通图片控件 -->
+                <Image x:Name="PreviewImage" 
+                       Margin="8"
+                       Source="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Cursor="Hand"
+                       ToolTip.Tip="双击查看大图"
+                       DoubleTapped="PreviewImage_DoubleTapped" />
 
                 <!-- 加载指示器 -->
                 <ProgressBar IsIndeterminate="True"
@@ -84,6 +92,14 @@
                              VerticalAlignment="Center"
                              Width="100"
                              Height="4" />
+
+                <!-- 无图片提示 -->
+                <TextBlock Text="未选择图片序列"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Foreground="#FF999999"
+                           FontSize="16"
+                           IsVisible="{Binding HasImages, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}, Converter={x:Static conv:BoolConverters.Not}}" />
 
             </Panel>
         </Border>

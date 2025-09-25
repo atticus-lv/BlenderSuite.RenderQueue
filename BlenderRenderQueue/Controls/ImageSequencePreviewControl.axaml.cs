@@ -8,8 +8,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Interactivity;
 using System.Threading;
+using Avalonia.Input;
 using Avalonia.Threading;
+using BlenderRenderQueue.Views;
+using BlenderRenderQueue.ViewModels;
 using BlenderRenderQueue.Helpers;
+using BlenderRenderQueue.Services;
 
 namespace BlenderRenderQueue.Controls;
 
@@ -537,6 +541,43 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     {
         StopFileWatcher();
         ClearImages();
+    }
+
+    private void PreviewImage_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (_imageFiles.Count == 0 || _currentFrame < 0 || _currentFrame >= _imageFiles.Count)
+            return;
+
+        try
+        {
+            var currentImagePath = _imageFiles[_currentFrame];
+            Console.WriteLine($"[ImageSequencePreviewControl] Opening image preview for: {currentImagePath}");
+
+            // 先创建ViewModel
+            var viewModel = new ImagePreviewWindowViewModel(currentImagePath, _currentFrame + 1);
+            Console.WriteLine($"[ImageSequencePreviewControl] ViewModel created, ImagePath: '{viewModel.ImagePath}'");
+
+            // 使用接受ViewModel的构造函数创建窗口
+            var previewWindow = new ImagePreviewWindow(viewModel);
+            Console.WriteLine($"[ImageSequencePreviewControl] Window created with ViewModel");
+
+            // 使用 ToplevelService 获取父窗口
+            var parentTopLevel = ToplevelService.GetTopLevelForContext(this);
+            if (parentTopLevel is Window parentWindow)
+            {
+                Console.WriteLine($"[ImageSequencePreviewControl] Showing as dialog");
+                previewWindow.ShowDialog(parentWindow);
+            }
+            else
+            {
+                Console.WriteLine($"[ImageSequencePreviewControl] Showing as window");
+                previewWindow.Show();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ImageSequencePreviewControl] Error opening image preview: {ex.Message}");
+        }
     }
 
     private void Button_OnClick(object? sender, RoutedEventArgs e)
