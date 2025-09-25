@@ -12,21 +12,17 @@
     WindowStartupLocation="CenterScreen"
     x:Class="BlenderRenderQueue.Views.MainWindow"
     x:DataType="vm:MainWindowViewModel"
-    Icon="/Assets/avalonia-logo.ico"
-    Title="">
+    Icon="/Assets/logo.ico"
+    ShowTitlebarBackground="False"
+    TitleBarAutoShowDelay="2"
+    ShowBottomBorder="False"
+    Title="{Binding AppVersion, StringFormat=Blender Render Queue   v{0}}">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel />
     </Design.DataContext>
-
-    <suki:SukiWindow.LogoContent>
-        <StackPanel Orientation="Horizontal" Spacing="4">
-            <TextBlock Text="BlenderRenderQueue"></TextBlock>
-            <TextBlock Text="{Binding AppVersion, StringFormat=v{0}}" Opacity="0.5"></TextBlock>
-        </StackPanel>
-    </suki:SukiWindow.LogoContent>
 
     <suki:SukiWindow.Hosts>
         <suki:SukiDialogHost Manager="{Binding DialogManager}" />
@@ -37,8 +33,7 @@
     <suki:SukiWindow.RightWindowTitleBarControls>
         <Button Classes="Flat Rounded" HorizontalContentAlignment="Center"
                 Command="{Binding OpenSettingsCommand}">
-            <avalonia:MaterialIcon Kind="Settings"  HorizontalAlignment="Center" />
+            <avalonia:MaterialIcon Kind="Settings" HorizontalAlignment="Center" />
         </Button>
     </suki:SukiWindow.RightWindowTitleBarControls>
-
 </suki:SukiWindow>
