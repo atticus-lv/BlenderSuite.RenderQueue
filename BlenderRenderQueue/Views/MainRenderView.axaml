@@ -12,7 +12,7 @@
              x:DataType="vm:MainRenderViewModel"
              services1:ToplevelService.Register="{Binding}">
 
-    <Grid RowDefinitions="*,Auto">
+    <Grid RowDefinitions="*,Auto" Margin="0 4 0 0">
 
         <!-- 渲染队列视图 -->
         <views:RenderQueueView Grid.Row="0" DataContext="{Binding RenderQueue}" VerticalAlignment="Stretch"
