@@ -14,7 +14,7 @@ public class ImagePanZoomBehavior : Behavior<Panel>
 {
     // 缩放参数
     private const double ZoomScaleLogMap = 1.05;
-    private const double MinScale = 0.1;
+    private const double MinScale = 0.5; // 限制最小缩放为25%，防止图像缩得过于小
     private const double MaxScale = 10.0;
     private double _currentScale = 1.0;
 
