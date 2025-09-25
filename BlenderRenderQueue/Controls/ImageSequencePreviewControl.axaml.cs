@@ -103,7 +103,7 @@ public partial class ImageSequencePreviewControl : UserControl
         get => _folderPath;
         set 
         {
-            System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] FolderPath setter called with: '{value}'");
+            Console.WriteLine($"[ImageSequencePreviewControl] FolderPath setter called with: '{value}'");
             SetAndRaise(FolderPathProperty, ref _folderPath, value);
         }
     }
