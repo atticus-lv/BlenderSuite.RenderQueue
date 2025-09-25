@@ -49,16 +49,7 @@
                             <TextBlock Text="编辑" Margin="4,0,0,0" />
                         </StackPanel>
                     </Button>
-                    <Button Command="{Binding OpenFileDirectoryCommand}"
-                            IsEnabled="True"
-                            Classes="Outlined Rounded"
-                            IsVisible="{Binding IsValid}"
-                            FontSize="12">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <avalonia:MaterialIcon Kind="FolderOpen" />
-                            <TextBlock Text="打开文件夹" Margin="4,0,0,0" />
-                        </StackPanel>
-                    </Button>
+                    
                     <Button Command="{Binding RefreshFileInfoCommand}"
                             Classes="Rounded Outlined Small"
                             IsVisible="{Binding IsValid}"
@@ -85,7 +76,7 @@
 
                     <Grid ColumnDefinitions="*,Auto" Margin="4">
                         <StackPanel Spacing="8">
-                            <Grid ColumnDefinitions="Auto,5,*" RowDefinitions="Auto,Auto,Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,5,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="大小:" FontWeight="Bold"
                                            VerticalAlignment="Center" />
                                 <TextBlock Grid.Row="0" Grid.Column="2"
@@ -110,6 +101,16 @@
                                                      VerticalAlignment="Center"
                                                      TextWrapping="NoWrap">
                                 </SelectableTextBlock>
+                                <Button Grid.Row="3" Grid.Column="3" Command="{Binding OpenFileDirectoryCommand}"
+                                        IsEnabled="True"
+                                        Classes="Flat Outlined"
+                                        IsVisible="{Binding IsValid}"
+                                        Padding="4" 
+                                        FontSize="12">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <avalonia:MaterialIcon Kind="FolderOpen" />
+                                    </StackPanel>
+                                </Button>
                             </Grid>
 
                         </StackPanel>
