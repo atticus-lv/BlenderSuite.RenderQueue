@@ -13,7 +13,7 @@
     x:Class="BlenderRenderQueue.Views.MainWindow"
     x:DataType="vm:MainWindowViewModel"
     Icon="/Assets/logo.ico"
-    ShowTitlebarBackground="False"
+    ShowTitlebarBackground="True"
     TitleBarAutoShowDelay="2"
     ShowBottomBorder="False"
     Title="{Binding AppVersion, StringFormat=Blender Render Queue   v{0}}">
