@@ -105,14 +105,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     public string? FolderPath
     {
         get => _folderPath;
-        set 
-        {
-            Console.WriteLine($"[ImageSequencePreviewControl] FolderPath setter called with: '{value}' (previous: '{_folderPath}')");
-            if (SetAndRaise(FolderPathProperty, ref _folderPath, value))
-            {
-                Console.WriteLine($"[ImageSequencePreviewControl] FolderPath property changed, triggering OnFolderPathChanged");
-            }
-        }
+        set => SetAndRaise(FolderPathProperty, ref _folderPath, value);
     }
 
     public Bitmap? CurrentImage
@@ -185,35 +178,19 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     public ImageSequencePreviewControl()
     {
         InitializeComponent();
-        // 不要设置 DataContext = this，这会覆盖父级传递的 DataContext
-        
-        Console.WriteLine("[ImageSequencePreviewControl] Constructor called");
         
         // 监听文件夹路径变化
         this.GetObservable(FolderPathProperty).Subscribe(new Observer<string?>(OnFolderPathChanged));
-        
-        Console.WriteLine("[ImageSequencePreviewControl] Constructor completed");
-        
-        // 测试初始值
-        Console.WriteLine($"[ImageSequencePreviewControl] Initial FolderPath: '{FolderPath}'");
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
         base.OnLoaded(e);
-        Console.WriteLine("[ImageSequencePreviewControl] OnLoaded called");
-        Console.WriteLine($"[ImageSequencePreviewControl] Current FolderPath: '{FolderPath}'");
-        Console.WriteLine($"[ImageSequencePreviewControl] DataContext: {DataContext?.GetType().Name}");
         
         // 如果路径已经设置但没有触发变化事件，手动触发一次
         if (!string.IsNullOrEmpty(FolderPath))
         {
-            Console.WriteLine("[ImageSequencePreviewControl] Manually triggering OnFolderPathChanged");
             OnFolderPathChanged(FolderPath);
-        }
-        else
-        {
-            Console.WriteLine("[ImageSequencePreviewControl] FolderPath is empty, waiting for binding update");
         }
     }
 

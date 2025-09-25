@@ -295,8 +295,6 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel value)
     {
-        Console.WriteLine($"[RenderTaskViewModel] OnScenePropertiesViewChanged called");
-        
         // 当ScenePropertiesView变化时，触发FramePathDirectory属性通知
         OnPropertyChanged(nameof(FramePathDirectory));
         
@@ -304,11 +302,9 @@ public partial class RenderTaskViewModel : ViewModelBase
         if (value == null) return;
         value.PropertyChanged += (sender, args) =>
         {
-            Console.WriteLine($"[RenderTaskViewModel] ScenePropertiesView PropertyChanged: {args.PropertyName}");
             if (args.PropertyName == nameof(value.ActiveSceneProperties) || 
                 args.PropertyName == nameof(value.SceneProperties))
             {
-                Console.WriteLine($"[RenderTaskViewModel] Triggering FramePathDirectory property notification");
                 OnPropertyChanged(nameof(FramePathDirectory));
             }
         };
@@ -445,9 +441,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         get
         {
             var framePath = ScenePropertiesView.ActiveSceneProperties.FramePath;
-            var result = !string.IsNullOrEmpty(framePath) ? Path.GetDirectoryName(framePath)?.Replace("\\", "/") : null;
-            Console.WriteLine($"[RenderTaskViewModel] FramePathDirectory getter - FramePath: '{framePath}', Result: '{result}'");
-            return result;
+            return !string.IsNullOrEmpty(framePath) ? Path.GetDirectoryName(framePath)?.Replace("\\", "/") : null;
         }
     }
 

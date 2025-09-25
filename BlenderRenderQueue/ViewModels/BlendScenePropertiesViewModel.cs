@@ -168,7 +168,6 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
 
             Console.WriteLine(
                 $"[BlendScenePropertiesViewModel] Properties loaded successfully - ActiveScene: {ActiveSceneName}, ScenesCount: {AllScenes.Count}, IsLoaded: {ActiveSceneProperties.IsLoaded}");
-            Console.WriteLine($"[BlendScenePropertiesViewModel] FramePath: '{ActiveSceneProperties.FramePath}'");
 
             // 通知UI更新计算属性
             OnPropertyChanged(nameof(HasErrorMessage));
