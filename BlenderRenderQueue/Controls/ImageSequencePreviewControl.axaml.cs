@@ -6,6 +6,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Interactivity;
 
 namespace BlenderRenderQueue.Controls;
 
@@ -100,7 +101,11 @@ public partial class ImageSequencePreviewControl : UserControl
     public string? FolderPath
     {
         get => _folderPath;
-        set => SetAndRaise(FolderPathProperty, ref _folderPath, value);
+        set 
+        {
+            System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] FolderPath setter called with: '{value}'");
+            SetAndRaise(FolderPathProperty, ref _folderPath, value);
+        }
     }
 
     public Bitmap? CurrentImage
@@ -175,8 +180,29 @@ public partial class ImageSequencePreviewControl : UserControl
         InitializeComponent();
         DataContext = this;
         
+        System.Diagnostics.Debug.WriteLine("[ImageSequencePreviewControl] Constructor called");
+        
         // 监听文件夹路径变化
         this.GetObservable(FolderPathProperty).Subscribe(new Observer<string?>(OnFolderPathChanged));
+        
+        System.Diagnostics.Debug.WriteLine("[ImageSequencePreviewControl] Constructor completed");
+        
+        // 测试初始值
+        System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Initial FolderPath: '{FolderPath}'");
+    }
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        System.Diagnostics.Debug.WriteLine("[ImageSequencePreviewControl] OnLoaded called");
+        System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Current FolderPath: '{FolderPath}'");
+        
+        // 如果路径已经设置但没有触发变化事件，手动触发一次
+        if (!string.IsNullOrEmpty(FolderPath))
+        {
+            System.Diagnostics.Debug.WriteLine("[ImageSequencePreviewControl] Manually triggering OnFolderPathChanged");
+            OnFolderPathChanged(FolderPath);
+        }
     }
 
     private void OnFolderPathChanged(string? newPath)
@@ -185,19 +211,43 @@ public partial class ImageSequencePreviewControl : UserControl
         HasError = false;
         ErrorMessage = string.Empty;
 
+        System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] OnFolderPathChanged: '{newPath}'");
+
         if (string.IsNullOrEmpty(newPath))
         {
+            System.Diagnostics.Debug.WriteLine("[ImageSequencePreviewControl] Path is null or empty, clearing images");
             ClearImages();
             return;
         }
 
-        if (!Directory.Exists(newPath))
+        // 如果路径是文件，获取其所在目录
+        string directoryPath;
+        if (File.Exists(newPath))
         {
-            SetError($"文件夹不存在: {newPath}");
+            directoryPath = Path.GetDirectoryName(newPath) ?? string.Empty;
+            System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Path is file, directory: '{directoryPath}'");
+        }
+        else if (Directory.Exists(newPath))
+        {
+            directoryPath = newPath;
+            System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Path is directory: '{directoryPath}'");
+        }
+        else
+        {
+            System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Path does not exist: '{newPath}'");
+            SetError($"路径不存在: {newPath}");
             return;
         }
 
-        LoadImageSequence(newPath);
+        if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath))
+        {
+            System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Directory does not exist: '{directoryPath}'");
+            SetError($"文件夹不存在: {directoryPath}");
+            return;
+        }
+
+        System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Loading image sequence from: '{directoryPath}'");
+        LoadImageSequence(directoryPath);
     }
 
     private async void LoadImageSequence(string folderPath)
@@ -207,12 +257,23 @@ public partial class ImageSequencePreviewControl : UserControl
 
         try
         {
+            System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] LoadImageSequence: '{folderPath}'");
+            
             // 获取所有jpg和png文件，按文件名排序
             var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
-            var files = Directory.GetFiles(folderPath)
+            var allFiles = Directory.GetFiles(folderPath);
+            System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Found {allFiles.Length} total files in directory");
+            
+            var files = allFiles
                 .Where(file => imageExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
                 .OrderBy(file => file)
                 .ToList();
+
+            System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Found {files.Count} image files");
+            foreach (var file in files)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Image file: {Path.GetFileName(file)}");
+            }
 
             _imageFiles.Clear();
             foreach (var file in files)
@@ -229,11 +290,14 @@ public partial class ImageSequencePreviewControl : UserControl
                 // 初始化图片缓存
                 _imageCache = new Bitmap?[_imageFiles.Count];
                 
+                System.Diagnostics.Debug.WriteLine($"[ImageSequencePreviewControl] Successfully loaded {_imageFiles.Count} images");
+                
                 // 预加载第一张图片
                 await LoadImageAsync(0);
             }
             else
             {
+                System.Diagnostics.Debug.WriteLine("[ImageSequencePreviewControl] No image files found");
                 HasImages = false;
                 MaxFrame = 0;
                 CurrentFrame = 0;

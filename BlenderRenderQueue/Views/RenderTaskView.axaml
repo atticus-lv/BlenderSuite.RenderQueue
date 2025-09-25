@@ -5,6 +5,7 @@
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:design="clr-namespace:BlenderRenderQueue.ViewModels.DesignTime"
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
+             xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
@@ -189,6 +190,26 @@
                             </StackPanel>
 
                         </StackPanel>
+                    </TabItem>
+                    <TabItem Header="渲染预览">
+                        <Grid RowDefinitions="Auto,*" Margin="8 4">
+                            <!-- 预览控制按钮 -->
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="8 0">
+                                <TextBlock Text="渲染序列预览" FontWeight="Bold" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ScenePropertiesView.ActiveSceneProperties.FramePath}" 
+                                           FontSize="10" 
+                                           Foreground="#666" 
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip.Tip="{Binding ScenePropertiesView.ActiveSceneProperties.FramePath}" />
+                            </StackPanel>
+
+                            <!-- 图片序列预览控件 -->
+                            <Grid Grid.Row="1" Margin="8">
+                                <controls:ImageSequencePreviewControl 
+                                    FolderPath="{Binding ScenePropertiesView.ActiveSceneProperties.FramePath}" />
+                            </Grid>
+                        </Grid>
                     </TabItem>
                     <TabItem Header="日志">
                         <Grid RowDefinitions="Auto,300" Margin="8 4">
