@@ -1,0 +1,111 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="clr-namespace:BlenderRenderQueue.Behaviors"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
+             x:Class="BlenderRenderQueue.Controls.ImageSequencePreviewControl">
+
+    <Grid RowDefinitions="*,Auto,Auto">
+        <!-- 图片预览区域 -->
+        <Border Grid.Row="0"
+                BorderBrush="#FFCCCCCC"
+                BorderThickness="1"
+                Margin="5">
+            <Border.Background>
+                <VisualBrush TileMode="Tile" SourceRect="0,0,20,20" DestinationRect="0,0,20,20">
+                    <VisualBrush.Visual>
+                        <Grid Width="20" Height="20" ColumnDefinitions="*,*" RowDefinitions="*,*">
+                            <Rectangle Grid.Row="0" Grid.Column="0" Fill="{DynamicResource SukiPrimaryColor0}" />
+                            <Rectangle Grid.Row="1" Grid.Column="1" Fill="{DynamicResource SukiPrimaryColor0}" />
+                            <Rectangle Grid.Row="0" Grid.Column="1" Fill="{DynamicResource SukiPrimaryColor15}" />
+                            <Rectangle Grid.Row="1" Grid.Column="0" Fill="{DynamicResource SukiPrimaryColor15}" />
+                        </Grid>
+                    </VisualBrush.Visual>
+                </VisualBrush>
+            </Border.Background>
+
+            <Panel>
+                <Image x:Name="PreviewImage"
+                       Source="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapInterpolationMode="HighQuality"
+                       ClipToBounds="True"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+
+                <!-- 加载指示器 -->
+                <ProgressBar IsIndeterminate="True"
+                             IsVisible="{Binding IsLoading, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             Width="100"
+                             Height="4" />
+
+                <!-- 错误提示 -->
+                <TextBlock
+                    Text="{Binding ErrorMessage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource SukiDangerDarkColor}"
+                    FontSize="14"
+                    TextWrapping="Wrap"
+                    IsVisible="{Binding HasError, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}" />
+
+                <!-- 无图片提示 -->
+                <TextBlock Text="未选择图片序列"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"
+                           Opacity="0.5"
+                           IsVisible="{Binding HasImages, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}, Converter={x:Static BoolConverters.Not}}" />
+            </Panel>
+        </Border>
+
+        <!-- Slider 控制区域 -->
+        <Grid Grid.Row="1" Margin="10,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 当前帧数显示 -->
+            <TextBlock Grid.Column="0"
+                       Text="{Binding CurrentFrameText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,10,0"
+                       FontSize="12"
+                       Foreground="#FF666666" />
+
+            <!-- 滑动条 -->
+            <Slider Grid.Column="1"
+                    x:Name="FrameSlider"
+                    Minimum="0"
+                    Maximum="{Binding MaxFrame, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                    Value="{Binding CurrentFrame, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                    IsEnabled="{Binding HasImages, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                    TickPlacement="None"
+                    VerticalAlignment="Center" />
+
+            <!-- 总帧数显示 -->
+            <TextBlock Grid.Column="2"
+                       Text="{Binding TotalFramesText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                       VerticalAlignment="Center"
+                       Margin="10,0,0,0"
+                       FontSize="12"
+                       Foreground="#FF666666" />
+        </Grid>
+
+        <!-- 文件夹路径显示 -->
+        <TextBlock Grid.Row="2"
+                   Text="{Binding FolderPath, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                   FontSize="10"
+                   Foreground="#FF999999"
+                   Margin="10,0,10,5"
+                   TextTrimming="CharacterEllipsis"
+                   ToolTip.Tip="{Binding FolderPath, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}" />
+    </Grid>
+</UserControl>

@@ -63,6 +63,9 @@
       <Compile Update="Views\RenderTaskProgressPreviewView.axaml.cs">
         <DependentUpon>ImagePreviewCardView.axaml</DependentUpon>
       </Compile>
+      <Compile Update="Controls\ImageSequencePreviewControl.axaml.cs">
+        <DependentUpon>ImageSequencePreviewControl.axaml</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
