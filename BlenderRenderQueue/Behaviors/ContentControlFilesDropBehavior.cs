@@ -9,7 +9,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
-using Avalonia.Xaml.Interactivity;
 
 namespace BlenderRenderQueue.Behaviors;
 
@@ -159,7 +158,7 @@ public sealed class ContentControlFilesDropBehavior : DropBehaviorBase
 
             // 尝试从文本格式获取文件路径
             var text = e.Data.Get(DataFormats.Text);
-            if (text is string textData && !string.IsNullOrEmpty(textData))
+            if (text is not string textData || string.IsNullOrEmpty(textData)) return false;
             {
                 var lines = textData.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 var validFiles = lines
@@ -167,15 +166,11 @@ public sealed class ContentControlFilesDropBehavior : DropBehaviorBase
                     .Select(path => new FileInfo(path.Trim()))
                     .Cast<IStorageItem>()
                     .ToList();
-                
-                if (validFiles.Any())
-                {
-                    execute(validFiles);
-                    return true;
-                }
-            }
 
-            return false;
+                if (!validFiles.Any()) return false;
+                execute(validFiles);
+                return true;
+            }
         }
 
         public override void Cancel(object? sender, RoutedEventArgs e)
