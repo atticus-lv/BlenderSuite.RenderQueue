@@ -12,7 +12,7 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Version>0.1.8</Version>
+        <Version>0.1.9</Version>
         <Authors>Atticus</Authors>
         <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(DefineConstants);WINDOWS</DefineConstants>
         <DefineConstants Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(DefineConstants);OSX</DefineConstants>
@@ -20,6 +20,7 @@
         <Copyright>Atticus 2025</Copyright>
         <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
         <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
+        <PackageIcon>Assets\logo.png</PackageIcon>
     </PropertyGroup>
 
     <ItemGroup>
