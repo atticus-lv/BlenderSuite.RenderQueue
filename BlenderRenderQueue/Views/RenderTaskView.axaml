@@ -21,8 +21,11 @@
 
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="8" Margin="8">
-                    <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold" FontSize="20"
-                               VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold" FontSize="20"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
                     <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
 
                         <Border
@@ -39,25 +42,34 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="8" VerticalAlignment="Center">
-                    <Button Command="{Binding OpenInBlenderCommand}"
-                            IsEnabled="True"
-                            Classes="Outlined Rounded"
-                            IsVisible="{Binding IsValid}"
-                            FontSize="12">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <avalonia:MaterialIcon Kind="BlenderSoftware" />
-                            <TextBlock Text="编辑" Margin="4,0,0,0" />
-                        </StackPanel>
-                    </Button>
-                    
-                    <Button Command="{Binding RefreshFileInfoCommand}"
-                            Classes="Rounded Outlined Small"
-                            IsVisible="{Binding IsValid}"
-                            FontSize="12">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <avalonia:MaterialIcon Kind="Refresh" />
-                        </StackPanel>
-                    </Button>
+                    <DropDownButton Classes="Outlined Rounded" Content="打开">
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuItem Header="在Blender中打开"
+                                          Command="{Binding OpenInBlenderCommand}"
+                                          IsEnabled="{Binding IsValid}">
+                                    <MenuItem.Icon>
+                                        <avalonia:MaterialIcon Kind="BlenderSoftware" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="打开所在文件夹"
+                                          Command="{Binding OpenFileDirectoryCommand}">
+                                    <MenuItem.Icon>
+                                        <avalonia:MaterialIcon Kind="FolderOpen" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="从.blend文件中更新"
+                                          Command="{Binding RefreshFileInfoCommand}">
+                                    <MenuItem.Icon>
+                                        <avalonia:MaterialIcon Kind="Refresh" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
 
                     <Button Command="{Binding RefreshFileInfoCommand}"
                             Classes="Rounded Danger"
@@ -71,54 +83,9 @@
 
                 </StackPanel>
             </Grid>
-            <suki:GlassCard Grid.Column="1">
-                <StackPanel>
 
-                    <Grid ColumnDefinitions="*,Auto" Margin="4">
-                        <StackPanel Spacing="8">
-                            <Grid ColumnDefinitions="Auto,5,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="大小:" FontWeight="Bold"
-                                           VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="0" Grid.Column="2"
-                                           Text="{Binding FileInfo.FileSizeFormatted}"
-                                           VerticalAlignment="Center" />
-
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="创建:" FontWeight="Bold"
-                                           VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="1" Grid.Column="2"
-                                           Text="{Binding FileInfo.CreatedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
-                                           VerticalAlignment="Center" />
-
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="修改:" FontWeight="Bold"
-                                           VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="2" Grid.Column="2"
-                                           Text="{Binding FileInfo.LastModifiedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
-                                           VerticalAlignment="Center" />
-
-                                <TextBlock Grid.Row="3" Grid.Column="0" Text="路径:" FontWeight="Bold"
-                                           VerticalAlignment="Center" />
-                                <SelectableTextBlock Grid.Row="3" Grid.Column="2" Text="{Binding FileInfo.FilePath}"
-                                                     VerticalAlignment="Center"
-                                                     TextWrapping="NoWrap">
-                                </SelectableTextBlock>
-                                <Button Grid.Row="3" Grid.Column="3" Command="{Binding OpenFileDirectoryCommand}"
-                                        IsEnabled="True"
-                                        Classes="Flat Outlined"
-                                        IsVisible="{Binding IsValid}"
-                                        Padding="4" 
-                                        FontSize="12">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <avalonia:MaterialIcon Kind="FolderOpen" />
-                                    </StackPanel>
-                                </Button>
-                            </Grid>
-
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </suki:GlassCard>
             <suki:GlassCard>
-                <TabControl IsVisible="{Binding IsValid}">
+                <TabControl IsVisible="{Binding IsValid}" Name="TabControl">
                     <TabItem Header="场景信息">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8 4">
                             <!-- 场景信息 -->
@@ -244,6 +211,52 @@
                         </Grid>
                     </TabItem>
                 </TabControl>
+            </suki:GlassCard>
+            <suki:GlassCard IsVisible="{Binding !#TabControl.SelectedIndex}">
+                <StackPanel>
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="4">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="Auto,16,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="大小:" FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Row="0" Grid.Column="2"
+                                           Text="{Binding FileInfo.FileSizeFormatted}"
+                                           VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="创建:" FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Row="1" Grid.Column="2"
+                                           Text="{Binding FileInfo.CreatedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                           VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="修改:" FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Grid.Row="2" Grid.Column="2"
+                                           Text="{Binding FileInfo.LastModifiedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                           VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="路径:" FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <SelectableTextBlock Grid.Row="3" Grid.Column="2" Text="{Binding FileInfo.FilePath}"
+                                                     VerticalAlignment="Center"
+                                                     TextWrapping="NoWrap">
+                                </SelectableTextBlock>
+                                <Button Grid.Row="3" Grid.Column="3" Command="{Binding OpenFileDirectoryCommand}"
+                                        IsEnabled="True"
+                                        Classes="Flat Outlined"
+                                        IsVisible="{Binding IsValid}"
+                                        Padding="4"
+                                        FontSize="12">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <avalonia:MaterialIcon Kind="FolderOpen" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
             </suki:GlassCard>
         </StackPanel>
 
