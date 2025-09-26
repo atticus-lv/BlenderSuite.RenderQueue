@@ -76,8 +76,8 @@
                                            FontWeight="Bold"
                                            IsVisible="{Binding IsQueueRunning}"
                                            Foreground="{DynamicResource SukiAccentColor}"
+                                           Text="{Binding RemainingTimeText, Converter={StaticResource LocalizeConverter}}"
                                            VerticalAlignment="Center">
-                                    Text="{Binding RemainingTimeText, Converter={StaticResource LocalizeConverter}}"
                                 </TextBlock>
                             </StackPanel>
                         </StackPanel>

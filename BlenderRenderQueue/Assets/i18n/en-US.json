@@ -30,7 +30,7 @@
   "Success: {0} | Failed: {1}": "Success: {0} | Failed: {1}",
   "Remaining Time: {0}": "Remaining Time: {0}",
   "Queue_RemainingTime": "Remaining Time",
-  "Queue_RemainingTimeFormat": "Remaining Time: {0}",
+  "Queue_RemainingTimeFormat": "Remaining: {0}",
   "Queue_DeviceLoad": "Device Load",
   "Queue_StartQueue": "Start Queue",
   "Queue_PauseQueue": "Pause Queue",
