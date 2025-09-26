@@ -1070,11 +1070,11 @@ public partial class RenderTaskViewModel : ViewModelBase
             Progress01 = 0;
         }
 
-        // 计算整体进度（基于显示用的帧范围）
-        var totalFrames = DisplayTotalFrames;
+        // 计算整体进度（基于实际渲染用的帧范围）
+        var totalFrames = RealTotalFrames;
         if (totalFrames > 0)
         {
-            CompletedFrames = Math.Max(0, p.CurrentFrame - DisplayStartFrame + 1);
+            CompletedFrames = Math.Max(0, p.CurrentFrame - RealStartFrame + 1);
             double perFrame = Progress01; // 当前帧内进度
             OverallProgress01 = Math.Clamp((CompletedFrames + perFrame) / totalFrames, 0, 1);
         }
