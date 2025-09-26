@@ -14,7 +14,7 @@
              x:Class="BlenderRenderQueue.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-    <suki:SettingsLayout>
+    <suki:SettingsLayout MinWidthWhetherStackSummaryShow="800">
         <suki:SettingsLayout.Items>
             <objectModel:ObservableCollection x:TypeArguments="suki:SettingsLayoutItem">
 
