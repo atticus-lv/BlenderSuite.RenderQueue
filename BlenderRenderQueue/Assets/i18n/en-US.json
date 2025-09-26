@@ -75,5 +75,22 @@
   "TaskStatus_Resuming": "Resuming...",
   "TaskStatus_ResumeTimeoutFailed": "Resume Timeout Failed",
   "TaskStatus_ResumeFailed": "Resume Failed",
-  "TaskStatus_RenderFailed": "Render Failed"
+  "TaskStatus_RenderFailed": "Render Failed",
+  "SceneProperties_Scene": "Scene:",
+  "SceneProperties_NotDefaultScene": "Not default scene",
+  "SceneProperties_SceneType": "Scene Type:",
+  "SceneProperties_FrameRange": "Frame Range:",
+  "SceneProperties_FrameSeparator": "~",
+  "SceneProperties_FrameStartBracket": "(",
+  "SceneProperties_FrameEndBracket": "frames)",
+  "SceneProperties_CurrentFrame": "Current Frame:",
+  "SceneProperties_FrameRate": "Frame Rate:",
+  "SceneProperties_NotSet": "Not Set",
+  "SceneProperties_RenderEngine": "Render Engine:",
+  "SceneProperties_TimeLimit": "Time Limit:",
+  "SceneProperties_Camera": "Camera:",
+  "SceneProperties_OutputPath": "Output Path:",
+  "SceneProperties_RealFramePath": "Real Frame Path:",
+  "SceneProperties_OutputFormat": "Output Format:",
+  "SceneProperties_FileNotLoaded": "File Not Loaded"
 }

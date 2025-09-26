@@ -7,6 +7,7 @@
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Views.BlendScenePropertiesView"
              x:DataType="vm:BlendScenePropertiesViewModel">
@@ -47,13 +48,15 @@
                         <!-- 场景选择器 -->
                         <Grid ColumnDefinitions="Auto,Auto,*"
                               IsVisible="{Binding SceneNames.Count, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-                            <TextBlock Grid.Column="0" Text="场景:" FontWeight="SemiBold" MinWidth="80"
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_Scene}"
+                                       FontWeight="SemiBold" MinWidth="80"
                                        VerticalAlignment="Center" />
                             <ComboBox Grid.Column="1" ItemsSource="{Binding SceneNames}"
                                       SelectedItem="{Binding ActiveSceneName}"
                                       IsEnabled="{Binding !IsLoading}" HorizontalContentAlignment="Center"
                                       VerticalContentAlignment="Center" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="2" Text="不是文件默认场景" FontStyle="Italic" Foreground="#FF9800"
+                            <TextBlock Grid.Column="2" Text="{i18n:Localize SceneProperties_NotDefaultScene}"
+                                       FontStyle="Italic" Foreground="#FF9800"
                                        FontSize="12"
                                        VerticalAlignment="Center"
                                        IsVisible="{Binding IsNotDefaultScene}" />
@@ -61,10 +64,11 @@
                         </Grid>
 
                         <!-- 场景类型 -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="场景类型:" FontWeight="SemiBold" MinWidth="80"
+                        <Grid ColumnDefinitions="Auto,10,*">
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_SceneType}"
+                                       FontWeight="SemiBold" MinWidth="80"
                                        VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.SceneTypeDisplayText}"
+                            <TextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.SceneTypeDisplayText}"
                                        VerticalAlignment="Center" />
                         </Grid>
 
@@ -90,36 +94,39 @@
 
 
                         <!-- 帧范围 -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="帧范围:" FontWeight="SemiBold" MinWidth="80"
+                        <Grid ColumnDefinitions="Auto,10,*">
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_FrameRange}"
+                                       FontWeight="SemiBold" MinWidth="80"
                                        VerticalAlignment="Center" />
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding ActiveSceneProperties.FrameStart}" VerticalAlignment="Center" />
-                                <TextBlock Text="~" />
+                                <TextBlock Text="{i18n:Localize SceneProperties_FrameSeparator}" />
                                 <TextBlock Text="{Binding ActiveSceneProperties.FrameEnd}" VerticalAlignment="Center" />
-                                <TextBlock Text="(" />
+                                <TextBlock Text="{i18n:Localize SceneProperties_FrameStartBracket}" />
                                 <TextBlock Text="{Binding ActiveSceneProperties.TotalFrames}"
                                            VerticalAlignment="Center" />
-                                <TextBlock Text="帧 )" />
+                                <TextBlock Text="{i18n:Localize SceneProperties_FrameEndBracket}" />
                             </StackPanel>
                         </Grid>
 
                         <!-- 当前帧 -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="当前帧:" FontWeight="SemiBold" MinWidth="80"
+                        <Grid ColumnDefinitions="Auto,10,*">
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_CurrentFrame}"
+                                       FontWeight="SemiBold" MinWidth="80"
                                        VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.FrameCurrent}"
+                            <TextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.FrameCurrent}"
                                        VerticalAlignment="Center" />
                         </Grid>
 
 
                         <!-- FPS -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="帧率:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1"
+                        <Grid ColumnDefinitions="Auto,10,*">
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_FrameRate}"
+                                       FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="2"
                                        Text="{Binding ActiveSceneProperties.Fps, StringFormat='{}{0:F2} fps'}"
                                        IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
-                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                            <TextBlock Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNull}}" />
                         </Grid>
 
@@ -128,35 +135,41 @@
 
 
                         <!-- 渲染引擎 -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="渲染引擎:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.RenderEngineDisplayName}"
+                        <Grid ColumnDefinitions="Auto,10,*">
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_RenderEngine}"
+                                       FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.RenderEngineDisplayName}"
                                        IsVisible="{Binding ActiveSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
-                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                            <TextBlock Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                         <!-- Cycles时间限制 -->
-                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding ActiveSceneProperties.HasCyclesTimeLimit}">
-                            <TextBlock Grid.Column="0" Text="时间限制:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1"
+                        <Grid ColumnDefinitions="Auto,10,*"
+                              IsVisible="{Binding ActiveSceneProperties.HasCyclesTimeLimit}">
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_TimeLimit}"
+                                       FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="2"
                                        Text="{Binding ActiveSceneProperties.CyclesTimeLimit, StringFormat='{}{0:F1} 秒'}" />
                         </Grid>
 
 
                         <!-- 相机名称 -->
-                        <Grid ColumnDefinitions="Auto,*"
+                        <Grid ColumnDefinitions="Auto,10,*"
                               IsVisible="{Binding ActiveSceneProperties.IsMultiCameraScene, Converter={x:Static conv:BoolConverters.Not}}">
-                            <TextBlock Grid.Column="0" Text="相机:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.CameraName}"
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_Camera}"
+                                       FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.CameraName}"
                                        IsVisible="{Binding ActiveSceneProperties.CameraName, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
-                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                            <TextBlock Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.CameraName, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
-                        <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding ActiveSceneProperties.IsMultiCameraScene}">
-                            <TextBlock Grid.Column="0" Text="相机:" FontWeight="SemiBold" MinWidth="80"
+                        <Grid ColumnDefinitions="Auto,10,*"
+                              IsVisible="{Binding ActiveSceneProperties.IsMultiCameraScene}">
+                            <TextBlock Grid.Column="2" Text="{i18n:Localize SceneProperties_Camera}"
+                                       FontWeight="SemiBold" MinWidth="80"
                                        VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.CameraTypeDisplayText}"
+                            <TextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.CameraTypeDisplayText}"
                                        VerticalAlignment="Center" />
                         </Grid>
 
@@ -164,25 +177,28 @@
                         <Rectangle Height="1" Fill="Transparent" Margin="0,8" />
 
                         <!-- 输出路径 -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="输出路径:" FontWeight="SemiBold" MinWidth="80" />
-                            <SelectableTextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.RenderOutputPath}"
+                        <Grid ColumnDefinitions="Auto,10,*">
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_OutputPath}"
+                                       FontWeight="SemiBold" MinWidth="80" />
+                            <SelectableTextBlock Grid.Column="2"
+                                                 Text="{Binding ActiveSceneProperties.RenderOutputPath}"
                                                  TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
                                                  IsVisible="{Binding ActiveSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
-                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                            <TextBlock Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
                         <!-- Frame Path -->
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <TextBlock Grid.Column="0" Text="真实帧路径:" FontWeight="SemiBold" MinWidth="80"
-                                                 VerticalAlignment="Center" />
-                            <SelectableTextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.FramePath}"
+                        <Grid ColumnDefinitions="Auto,10,*,Auto">
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_RealFramePath}"
+                                       FontWeight="SemiBold" MinWidth="80"
+                                       VerticalAlignment="Center" />
+                            <SelectableTextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.FramePath}"
                                                  TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
                                                  IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
-                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                            <TextBlock Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
-                            <Button Grid.Column="2" Classes="Flat Outlined"
+                            <Button Grid.Column="3" Classes="Flat Outlined"
                                     Command="{Binding OpenFramePathDirectoryCommand}"
                                     IsEnabled="{Binding CanOpenFramePathDirectory}"
                                     Padding="4" Margin="4,0,0,0">
@@ -193,11 +209,12 @@
                         </Grid>
 
                         <!-- 输出格式 -->
-                        <Grid ColumnDefinitions="Auto,*">
-                            <TextBlock Grid.Column="0" Text="输出格式:" FontWeight="SemiBold" MinWidth="80" />
-                            <TextBlock Grid.Column="1" Text="{Binding ActiveSceneProperties.RenderOutputFormat}"
+                        <Grid ColumnDefinitions="Auto,10,*">
+                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_OutputFormat}"
+                                       FontWeight="SemiBold" MinWidth="80" />
+                            <TextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.RenderOutputFormat}"
                                        IsVisible="{Binding ActiveSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
-                            <TextBlock Grid.Column="1" Text="未设置" Foreground="#666"
+                            <TextBlock Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
                         </Grid>
 
@@ -208,7 +225,7 @@
                 <Border CornerRadius="4" IsVisible="{Binding ShowEmptyState}">
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                         <TextBlock Text="📄" FontSize="24" HorizontalAlignment="Center" />
-                        <TextBlock Text="文件未加载" HorizontalAlignment="Center"
+                        <TextBlock Text="{i18n:Localize SceneProperties_FileNotLoaded}" HorizontalAlignment="Center"
                                    Foreground="#666" FontStyle="Italic" />
                     </StackPanel>
                 </Border>

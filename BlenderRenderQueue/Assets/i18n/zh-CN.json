@@ -74,5 +74,22 @@
   "TaskStatus_Resuming": "正在恢复...",
   "TaskStatus_ResumeTimeoutFailed": "恢复超时失败",
   "TaskStatus_ResumeFailed": "恢复失败",
-  "TaskStatus_RenderFailed": "渲染失败"
+  "TaskStatus_RenderFailed": "渲染失败",
+  "SceneProperties_Scene": "场景:",
+  "SceneProperties_NotDefaultScene": "不是文件默认场景",
+  "SceneProperties_SceneType": "场景类型:",
+  "SceneProperties_FrameRange": "帧范围:",
+  "SceneProperties_FrameSeparator": "~",
+  "SceneProperties_FrameStartBracket": "(",
+  "SceneProperties_FrameEndBracket": "帧)",
+  "SceneProperties_CurrentFrame": "当前帧:",
+  "SceneProperties_FrameRate": "帧率:",
+  "SceneProperties_NotSet": "未设置",
+  "SceneProperties_RenderEngine": "渲染引擎:",
+  "SceneProperties_TimeLimit": "时间限制:",
+  "SceneProperties_Camera": "相机:",
+  "SceneProperties_OutputPath": "输出路径:",
+  "SceneProperties_RealFramePath": "真实帧路径:",
+  "SceneProperties_OutputFormat": "输出格式:",
+  "SceneProperties_FileNotLoaded": "文件未加载"
 }
