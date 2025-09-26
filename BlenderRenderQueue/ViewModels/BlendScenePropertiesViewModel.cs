@@ -146,7 +146,7 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
 
         IsLoading = true;
         ErrorMessage = string.Empty;
-        LoadingMessage = "正在加载文件属性...";
+        LoadingMessage = "SceneProperties_LoadingFileProperties";
 
         Console.WriteLine(
             $"[BlendScenePropertiesViewModel] After setting IsLoading=true - IsLoading: {IsLoading}, ShowEmptyState: {ShowEmptyState}");
@@ -156,7 +156,7 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
             var queryService = new BlenderQueryService();
 
             // 一次性查询所有文件属性（使用临时进程）
-            LoadingMessage = "正在获取文件属性...";
+            LoadingMessage = "SceneProperties_GettingFileProperties";
             var (activeScene, sceneData) =
                 await queryService.GetAllFilePropertiesWithTempProcessAsync(blenderPath, blendFilePath, cancellationToken);
 
@@ -164,7 +164,7 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
             ActiveSceneName = activeScene;
             DefaultSceneName = ActiveSceneName;
             SceneProperties = ActiveSceneProperties; // 保持向后兼容
-            LoadingMessage = "加载完成";
+            LoadingMessage = "SceneProperties_LoadingComplete";
 
             Console.WriteLine(
                 $"[BlendScenePropertiesViewModel] Properties loaded successfully - ActiveScene: {ActiveSceneName}, ScenesCount: {AllScenes.Count}, IsLoaded: {ActiveSceneProperties.IsLoaded}");

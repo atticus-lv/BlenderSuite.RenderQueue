@@ -113,5 +113,8 @@
   "RenderTask_Created": "创建:",
   "RenderTask_Modified": "修改:",
   "RenderTask_Path": "路径:",
-  "RenderTask_ClearLog": "清空日志"
+  "RenderTask_ClearLog": "清空日志",
+  "SceneProperties_LoadingFileProperties": "正在加载文件属性...",
+  "SceneProperties_GettingFileProperties": "正在获取文件属性...",
+  "SceneProperties_LoadingComplete": "加载完成"
 }

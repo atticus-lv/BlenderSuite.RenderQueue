@@ -1551,7 +1551,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                                 Console.WriteLine(
                                     $"[RenderQueueViewModel] Setting loading state for: {Path.GetFileName(taskInfo.Filepath)}");
                                 task.ScenePropertiesView.IsLoading = true;
-                                task.ScenePropertiesView.LoadingMessage = "正在加载文件属性...";
+                                task.ScenePropertiesView.LoadingMessage = "SceneProperties_LoadingFileProperties";
                                 Console.WriteLine(
                                     $"[RenderQueueViewModel] After setting loading - IsLoading: {task.ScenePropertiesView.IsLoading}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
                             });

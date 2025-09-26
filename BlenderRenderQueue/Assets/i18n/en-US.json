@@ -114,5 +114,8 @@
   "RenderTask_Created": "Created:",
   "RenderTask_Modified": "Modified:",
   "RenderTask_Path": "Path:",
-  "RenderTask_ClearLog": "Clear Log"
+  "RenderTask_ClearLog": "Clear Log",
+  "SceneProperties_LoadingFileProperties": "Loading file properties...",
+  "SceneProperties_GettingFileProperties": "Getting file properties...",
+  "SceneProperties_LoadingComplete": "Loading complete"
 }
