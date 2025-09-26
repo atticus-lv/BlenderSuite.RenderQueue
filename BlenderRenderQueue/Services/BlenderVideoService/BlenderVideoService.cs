@@ -102,11 +102,11 @@ public class VideoRenderOutputParser
 public class BlenderVideoService : IBlenderVideoService
 {
     private static readonly string[] SupportedImageExtensions = { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff", "*.tga" };
-    private readonly BlenderExeService _blenderService;
+    private readonly IBlenderProcess _blenderProcess;
 
-    public BlenderVideoService(BlenderExeService blenderService)
+    public BlenderVideoService(IBlenderProcess blenderProcess)
     {
-        _blenderService = blenderService;
+        _blenderProcess = blenderProcess;
     }
 
     public async Task<bool> GenerateVideoFromImagesAsync(
@@ -196,8 +196,8 @@ public class BlenderVideoService : IBlenderVideoService
                     }
                 });
                 
-                // 订阅Blender服务的输出事件
-                _blenderService.OnOutputReceived += (line) =>
+                // 订阅Blender进程的输出事件
+                _blenderProcess.OnOutputReceived += (line) =>
                 {
                     Console.WriteLine($"[BlenderVideoService] [DEBUG] 收到输出: {line.Trim()}");
                     
@@ -265,24 +265,23 @@ public class BlenderVideoService : IBlenderVideoService
                     }
                 };
                 
-                _blenderService.OnErrorReceived += (line) =>
+                _blenderProcess.OnErrorReceived += (line) =>
                 {
                     Console.WriteLine($"[BlenderVideoService] [ERROR] 收到错误输出: {line}");
                 };
                 
                 // 使用Blender执行脚本
                 Console.WriteLine($"[BlenderVideoService] [DEBUG] 开始执行Blender脚本");
-                var result = await _blenderService.ExecuteScript(
+                var result = await _blenderProcess.ExecuteScriptAsync(
                     scriptContent,
-                    "generate_video",
                     cancellationToken);
 
-                Console.WriteLine($"[BlenderVideoService] [DEBUG] Blender脚本执行完成，退出码: {result.ExitCode}");
+                Console.WriteLine($"[BlenderVideoService] [DEBUG] Blender脚本执行完成");
                 
                 // 确保进度达到100%
                 UpdateProgress(100, "脚本执行完成");
                 
-                if (result.ExitCode == 0)
+                if (!string.IsNullOrEmpty(result))
                 {
                     if (File.Exists(outputVideoPath))
                     {
@@ -298,7 +297,7 @@ public class BlenderVideoService : IBlenderVideoService
                 }
                 else
                 {
-                    Console.WriteLine($"[BlenderVideoService] ❌ 视频生成失败，退出码: {result.ExitCode}");
+                    Console.WriteLine($"[BlenderVideoService] ❌ 视频生成失败");
                     return false;
                 }
             }
@@ -320,17 +319,16 @@ public class BlenderVideoService : IBlenderVideoService
     {
         try
         {
-            if (string.IsNullOrEmpty(_blenderService.BlenderPath) || !File.Exists(_blenderService.BlenderPath))
+            if (string.IsNullOrEmpty(_blenderProcess.BlenderPath) || !File.Exists(_blenderProcess.BlenderPath))
             {
                 return false;
             }
 
-            var result = await _blenderService.ExecuteScript(
+            var result = await _blenderProcess.ExecuteScriptAsync(
                 "print('Blender is available')",
-                "check_availability",
                 CancellationToken.None);
 
-            return result.ExitCode == 0;
+            return !string.IsNullOrEmpty(result);
         }
         catch
         {
@@ -342,13 +340,12 @@ public class BlenderVideoService : IBlenderVideoService
     {
         try
         {
-            var result = await _blenderService.ExecuteScript(
+            var result = await _blenderProcess.ExecuteScriptAsync(
                 "print(bpy.app.version_string)",
-                "get_version",
                 CancellationToken.None);
 
-            if (result.ExitCode != 0 || string.IsNullOrEmpty(result.Output)) return "Unknown";
-            var lines = result.Output.Split('\n');
+            if (string.IsNullOrEmpty(result)) return "Unknown";
+            var lines = result.Split('\n');
             foreach (var line in lines)
             {
                 if (line.Contains(".") && !line.Contains("Blender"))

@@ -275,6 +275,8 @@ public partial class RenderQueueViewModel : ViewModelBase
     private readonly List<Task> _runningTasks = new();
     private BlenderExeService? _blenderService;
     private BlenderVideoService? _blenderVideoService;
+    private BlenderProcessService? _processService; // 新的进程管理服务
+    private string? _blenderPath; // 存储Blender路径，不创建长期运行的服务
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
     private int _globalMaxRetryAttempts = 3; // 默认最大重试3次
     private string _videoCodec = "H264"; // 默认使用H264编码
@@ -341,7 +343,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     [RelayCommand]
     private async Task AddTask()
     {
-        if (_blenderService == null)
+        if (!IsBlenderServiceReady())
         {
             StatusMessageChanged?.Invoke(this, "请先设置有效的Blender路径");
             return;
@@ -350,13 +352,13 @@ public partial class RenderQueueViewModel : ViewModelBase
         var blendFile = await SelectBlendFile();
         if (string.IsNullOrWhiteSpace(blendFile)) return;
 
-        await AddTaskToQueue(blendFile);
+        AddTaskToQueue(blendFile);
     }
 
     [RelayCommand]
     private async Task AddMultipleTasks()
     {
-        if (_blenderService == null)
+        if (!IsBlenderServiceReady())
         {
             StatusMessageChanged?.Invoke(this, "请先设置有效的Blender路径");
             return;
@@ -365,15 +367,15 @@ public partial class RenderQueueViewModel : ViewModelBase
         var blendFiles = await SelectMultipleBlendFiles();
         if (blendFiles == null || !blendFiles.Any()) return;
 
-        foreach (var blendFile in blendFiles) await AddTaskToQueue(blendFile);
+        foreach (var blendFile in blendFiles) AddTaskToQueue(blendFile);
 
         Console.WriteLine($"[DEBUG] AddMultipleTasks completed - Total tasks: {RenderTasks.Count}");
     }
 
     [RelayCommand]
-    private async Task AddDroppedFiles(IEnumerable<IStorageItem> files)
+    private void AddDroppedFiles(IEnumerable<IStorageItem> files)
     {
-        if (_blenderService == null)
+        if (!IsBlenderServiceReady())
         {
             StatusMessageChanged?.Invoke(this, "请先设置有效的Blender路径");
             return;
@@ -393,13 +395,13 @@ public partial class RenderQueueViewModel : ViewModelBase
         foreach (var file in blendFiles)
         {
             var filePath = file.Path.LocalPath;
-            await AddTaskToQueue(filePath);
+            AddTaskToQueue(filePath);
         }
 
         StatusMessageChanged?.Invoke(this, $"成功添加 {blendFiles.Count} 个文件到渲染队列");
     }
 
-    private async Task AddTaskToQueue(string blendFilePath)
+    private void AddTaskToQueue(string blendFilePath)
     {
         try
         {
@@ -410,15 +412,31 @@ public partial class RenderQueueViewModel : ViewModelBase
             task.SetGlobalRenderTimeout(_globalRenderTimeoutSeconds);
             task.SetGlobalMaxRetryAttempts(_globalMaxRetryAttempts);
 
-            // 自动加载文件属性
-            if (_blenderService != null) await task.LoadFilePropertiesAsync(_blenderService);
-
+            // 先添加到队列，显示加载状态
             RenderTasks.Add(task);
 
             // 订阅任务事件
             SubscribeToTaskEvents(task);
 
             StatusMessageChanged?.Invoke(this, $"已添加任务: {Path.GetFileName(blendFilePath)}");
+
+            // 异步加载文件属性，不阻塞UI
+            if (IsBlenderServiceReady())
+            {
+                Console.WriteLine($"[RenderQueueViewModel] Starting async file properties loading for: {Path.GetFileName(blendFilePath)}");
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await task.LoadFilePropertiesAsync(_blenderPath!);
+                        Console.WriteLine($"[RenderQueueViewModel] ✅ File properties loaded: {Path.GetFileName(blendFilePath)}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to load file properties for {Path.GetFileName(blendFilePath)}: {ex.Message}");
+                    }
+                });
+            }
         }
         catch (Exception ex)
         {
@@ -572,15 +590,15 @@ public partial class RenderQueueViewModel : ViewModelBase
     private async Task StartQueue()
     {
         Console.WriteLine(
-            $"[DEBUG] StartQueue called - CanStartQueue: {CanStartQueue}, QueueState: {QueueState}, TaskCount: {RenderTasks.Count}, BlenderService: {_blenderService != null}");
+            $"[DEBUG] StartQueue called - CanStartQueue: {CanStartQueue}, QueueState: {QueueState}, TaskCount: {RenderTasks.Count}, BlenderPath: {_blenderPath}");
 
         if (!CanStartQueue)
             // Console.WriteLine("[DEBUG] StartQueue aborted - CanStartQueue is false");
             return;
 
-        if (_blenderService == null)
+        if (!IsBlenderServiceReady())
         {
-            // Console.WriteLine("[DEBUG] StartQueue aborted - BlenderService is null");
+            // Console.WriteLine("[DEBUG] StartQueue aborted - Blender path is not ready");
             QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("需要先设置Blender路径"));
             return;
         }
@@ -739,7 +757,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         try
         {
             // 检查 Blender 是否可用
-            if (_blenderVideoService == null || !await _blenderVideoService.IsBlenderAvailableAsync())
+            if (!IsBlenderServiceReady())
             {
                 QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Blender 不可用，请先设置有效的 Blender 路径"));
                 return;
@@ -785,19 +803,36 @@ public partial class RenderQueueViewModel : ViewModelBase
             VideoGenerationStatus = "正在生成视频...";
             QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"开始生成视频: {outputVideoPath}"));
 
-            // 使用Blender生成视频
-            var success = await _blenderVideoService.GenerateVideoFromImagesAsync(
-                frameDirectory,
-                outputVideoPath,
-                fps,
-                _videoCodec,
-                _videoQuality,
-                progress =>
-                {
-                    // 更新进度
-                    VideoGenerationProgress = progress;
-                    VideoGenerationStatus = "生成中:";
-                });
+            // 使用新的进程管理服务创建视频生成进程
+            var videoProcess = await _processService!.CreateVideoProcessAsync();
+            bool success = false;
+            
+            try
+            {
+                // 创建视频服务（需要适配新的进程接口）
+                var tempVideoService = new BlenderVideoService(videoProcess);
+                
+                // 使用Blender生成视频
+                success = await tempVideoService.GenerateVideoFromImagesAsync(
+                    frameDirectory,
+                    outputVideoPath,
+                    fps,
+                    _videoCodec,
+                    _videoQuality,
+                    progress =>
+                    {
+                        // 更新进度
+                        VideoGenerationProgress = progress;
+                        VideoGenerationStatus = "生成中:";
+                    });
+            }
+            finally
+            {
+                // 视频生成完成后停止并释放进程
+                await videoProcess.StopAsync();
+                _processService.UnregisterProcess(videoProcess.ProcessId);
+                videoProcess.Dispose();
+            }
 
             if (success)
             {
@@ -824,11 +859,46 @@ public partial class RenderQueueViewModel : ViewModelBase
     public void SetBlenderService(BlenderExeService blenderService)
     {
         // 先释放旧的Blender服务（如果存在）
-        _blenderService?.Dispose();
+        if (_blenderService != null)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
+            _blenderService.Dispose();
+        }
         
         _blenderService = blenderService;
-        _blenderVideoService = new BlenderVideoService(blenderService);
-        // Console.WriteLine("[RenderQueueViewModel] BlenderService set successfully");
+        // 注意：BlenderVideoService现在需要IBlenderProcess，这里暂时设为null
+        // 视频生成时会创建临时的BlenderVideoService
+        _blenderVideoService = null;
+        Console.WriteLine($"[RenderQueueViewModel] BlenderService set successfully - ID: {blenderService.ServiceId}");
+
+        // 重新初始化文件监控，因为现在有了Blender路径
+        InitializeBlenderDataWatcher();
+    }
+
+    /// <summary>
+    /// 设置Blender路径（不创建长期运行的服务）
+    /// </summary>
+    public void SetBlenderPath(string blenderPath)
+    {
+        // 先释放旧的服务（如果存在）
+        if (_blenderService != null)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
+            _blenderService.Dispose();
+        }
+        
+        if (_processService != null)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] Disposing old process service");
+            _processService.Dispose();
+        }
+        
+        _blenderPath = blenderPath;
+        _blenderVideoService = null; // 视频服务需要BlenderExeService实例，暂时设为null
+        
+        // 创建新的进程管理服务
+        _processService = new BlenderProcessService(blenderPath);
+        Console.WriteLine($"[RenderQueueViewModel] Blender path and process service set successfully: {blenderPath}");
 
         // 重新初始化文件监控，因为现在有了Blender路径
         InitializeBlenderDataWatcher();
@@ -839,7 +909,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     /// </summary>
     public bool IsBlenderServiceReady()
     {
-        return _blenderService != null;
+        return !string.IsNullOrEmpty(_blenderPath) && File.Exists(_blenderPath);
     }
 
 
@@ -884,20 +954,30 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             try
             {
-                // 为每个任务创建独立的BlenderExeService实例
-                using var blenderService = new BlenderExeService(_blenderService!.BlenderPath);
+                // 使用新的进程管理服务创建渲染进程
+                var renderProcess = await _processService!.CreateRenderProcessAsync();
                 
-                // 如果是恢复暂停的任务，从指定帧开始
-                if (_pausedTask == taskCopy && _pausedFrame > 0)
+                try
                 {
-                    await taskCopy.ResumeRenderAsync(blenderService, _pausedFrame);
-                    // 清除暂停状态记录
-                    _pausedTask = null;
-                    _pausedFrame = 0;
+                    // 如果是恢复暂停的任务，从指定帧开始
+                    if (_pausedTask == taskCopy && _pausedFrame > 0)
+                    {
+                        await taskCopy.ResumeRenderAsync(renderProcess, _pausedFrame);
+                        // 清除暂停状态记录
+                        _pausedTask = null;
+                        _pausedFrame = 0;
+                    }
+                    else
+                    {
+                        await taskCopy.StartRenderAsync(renderProcess);
+                    }
                 }
-                else
+                finally
                 {
-                    await taskCopy.StartRenderAsync(blenderService);
+                    // 渲染完成后停止并释放进程
+                    await renderProcess.StopAsync();
+                    _processService.UnregisterProcess(renderProcess.ProcessId);
+                    renderProcess.Dispose();
                 }
             }
             catch (Exception)
@@ -967,7 +1047,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private async void OnTaskRefreshRequested(object? sender, EventArgs e)
     {
         var task = sender as RenderTaskViewModel;
-        if (task == null || _blenderService == null) return;
+        if (task == null || !IsBlenderServiceReady()) return;
 
         Console.WriteLine($"[RenderQueueViewModel] Task refresh requested for: {Path.GetFileName(task.BlendFilePath)}");
 
@@ -989,7 +1069,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             var newTask = new RenderTaskViewModel(filePath, 1, 1);
 
             // 重新加载文件属性
-            await newTask.LoadFilePropertiesAsync(_blenderService);
+            await newTask.LoadFilePropertiesAsync(_blenderPath!);
 
             // 替换原任务
             RenderTasks[currentIndex] = newTask;
@@ -1063,9 +1143,9 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         try
         {
-            if (_blenderService == null || string.IsNullOrEmpty(_blenderService.BlenderPath))
+            if (string.IsNullOrEmpty(_blenderPath))
             {
-                Console.WriteLine("[RenderQueueViewModel] ❌ BlenderService is null or BlenderPath is empty");
+                Console.WriteLine("[RenderQueueViewModel] ❌ Blender path is empty");
                 return;
             }
 
@@ -1076,7 +1156,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             }
 
             // 检测并选择最佳的Blender可执行文件
-            var blenderExecutable = GetBestBlenderExecutable(_blenderService.BlenderPath);
+            var blenderExecutable = GetBestBlenderExecutable(_blenderPath);
 
             // 启动Blender进程打开文件（独立进程，不关联到程序本体）
             var startInfo = new ProcessStartInfo
@@ -1336,8 +1416,8 @@ public partial class RenderQueueViewModel : ViewModelBase
             var task2 = new RenderTaskViewModel(testBlendPath, 1, 1);
 
             // 自动加载文件属性
-            await task.LoadFilePropertiesAsync(_blenderService);
-            await task2.LoadFilePropertiesAsync(_blenderService);
+            await task.LoadFilePropertiesAsync(_blenderPath!);
+            await task2.LoadFilePropertiesAsync(_blenderPath!);
 
             RenderTasks.Add(task);
             RenderTasks.Add(task2);
@@ -1456,7 +1536,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 SubscribeToTaskEvents(task);
 
                 // 异步加载文件属性，不等待完成
-                if (_blenderService != null)
+                if (IsBlenderServiceReady())
                 {
                     Console.WriteLine(
                         $"[RenderQueueViewModel] Starting async file properties loading for: {Path.GetFileName(taskInfo.Filepath)}");
@@ -1476,7 +1556,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                                     $"[RenderQueueViewModel] After setting loading - IsLoading: {task.ScenePropertiesView.IsLoading}, ShowEmptyState: {task.ScenePropertiesView.ShowEmptyState}");
                             });
 
-                            await task.LoadFilePropertiesAsync(_blenderService);
+                            await task.LoadFilePropertiesAsync(_blenderPath!);
 
                             // 文件属性加载完成后，设置场景覆写属性
                             if (savedOverrideScene != null)
@@ -1554,7 +1634,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         _blenderDataWatcher?.Dispose();
         _blenderDataWatcher = null;
 
-        if (_blenderService == null || string.IsNullOrEmpty(_blenderService.BlenderPath)) return;
+        if (string.IsNullOrEmpty(_blenderPath)) return;
 
         try
         {
@@ -1665,12 +1745,12 @@ public partial class RenderQueueViewModel : ViewModelBase
                         SubscribeToTaskEvents(task);
 
                         // 异步加载文件属性
-                        if (_blenderService != null)
+                        if (IsBlenderServiceReady())
                             _ = Task.Run(async () =>
                             {
                                 try
                                 {
-                                    await task.LoadFilePropertiesAsync(_blenderService);
+                                    await task.LoadFilePropertiesAsync(_blenderPath!);
 
                                     // 设置场景覆写
                                     if (savedOverrideScene != null)
@@ -1741,6 +1821,14 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 清理文件监控器
         _blenderDataWatcher?.Dispose();
         _blenderDataWatcher = null;
+
+        // 清理进程管理服务
+        _processService?.Dispose();
+        _processService = null;
+
+        // 清理Blender服务
+        _blenderService?.Dispose();
+        _blenderService = null;
 
         foreach (var task in RenderTasks)
         {

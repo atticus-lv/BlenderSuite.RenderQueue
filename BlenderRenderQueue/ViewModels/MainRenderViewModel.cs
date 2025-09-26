@@ -90,7 +90,11 @@ public partial class MainRenderViewModel : ViewModelBase
         {
             ClearBlenderInfo();
             // 正确释放旧的Blender服务
-            _blenderService?.Dispose();
+            if (_blenderService != null)
+            {
+                Console.WriteLine($"[MainRenderViewModel] Disposing Blender service due to invalid path - ID: {_blenderService.ServiceId}");
+                _blenderService.Dispose();
+            }
             _blenderService = null;
             RenderQueue.SetBlenderService(null!);
             StatusMessage = "Blender路径无效";
@@ -125,11 +129,19 @@ public partial class MainRenderViewModel : ViewModelBase
                 StatusMessage = $"Blender {info.Version} 已就绪";
 
                 // 先释放旧的Blender服务（如果存在）
-                _blenderService?.Dispose();
+                if (_blenderService != null)
+                {
+                    Console.WriteLine($"[MainRenderViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
+                    _blenderService.Dispose();
+                }
                 
-                // 创建新的Blender服务并设置到渲染队列
+                // 设置Blender路径到渲染队列（不创建长期运行的服务）
+                Console.WriteLine($"[MainRenderViewModel] Setting Blender path: {blenderPath}");
+                RenderQueue.SetBlenderPath(blenderPath);
+                
+                // 创建临时服务用于视频生成（如果需要的话）
                 _blenderService = new BlenderExeService(blenderPath);
-                RenderQueue.SetBlenderService(_blenderService);
+                Console.WriteLine($"[MainRenderViewModel] Temporary Blender service created for video generation - ID: {_blenderService.ServiceId}");
             });
         }
         catch (Exception ex)

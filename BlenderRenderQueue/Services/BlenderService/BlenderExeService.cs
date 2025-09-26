@@ -8,20 +8,27 @@ namespace BlenderRenderQueue.Services.BlenderService;
 public class BlenderExeService : BasePythonProcessService
 {
     private readonly string _blenderPath;
+    private readonly string _serviceId;
     
     public string BlenderPath => _blenderPath;
+    public string ServiceId => _serviceId;
 
     public BlenderExeService(string blenderPath)
     {
         _blenderPath = blenderPath;
+        _serviceId = Guid.NewGuid().ToString("N")[..8]; // Generate short UUID
+        Console.WriteLine($"[BlenderExeService] Creating service instance - ID: {_serviceId}, Path: {_blenderPath}");
         InitializeProcess();
     }
 
     protected override bool ValidateEnvironment()
     {
+        Console.WriteLine($"[BlenderExeService] Validating environment - ID: {_serviceId}");
+        
         // 检查Blender可执行文件是否存在
         if (!File.Exists(_blenderPath))
         {
+            Console.WriteLine($"[BlenderExeService] Blender executable not found - ID: {_serviceId}, Path: {_blenderPath}");
             RaiseErrorReceived($"Blender可执行文件不存在: {_blenderPath}");
             return false;
         }
@@ -32,21 +39,26 @@ public class BlenderExeService : BasePythonProcessService
             var versionInfo = FileVersionInfo.GetVersionInfo(_blenderPath);
             if (!versionInfo.FileName.Contains("blender", StringComparison.OrdinalIgnoreCase))
             {
+                Console.WriteLine($"[BlenderExeService] Invalid Blender executable - ID: {_serviceId}, Path: {_blenderPath}");
                 RaiseErrorReceived($"指定的文件不是Blender可执行文件: {_blenderPath}");
                 return false;
             }
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"[BlenderExeService] Error validating Blender executable - ID: {_serviceId}, Error: {ex.Message}");
             RaiseErrorReceived($"验证Blender可执行文件失败: {ex.Message}");
             return false;
         }
 
+        Console.WriteLine($"[BlenderExeService] Environment validation successful - ID: {_serviceId}");
         return true;
     }
 
     protected override void CreateProcess()
     {
+        Console.WriteLine($"[BlenderExeService] Creating Blender process - ID: {_serviceId}");
+        
         _process = new Process
         {
             StartInfo = new ProcessStartInfo
@@ -111,10 +123,52 @@ public class BlenderExeService : BasePythonProcessService
             _process.Start();
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
+            Console.WriteLine($"[BlenderExeService] Blender process started successfully - ID: {_serviceId}, PID: {_process.Id}");
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"[BlenderExeService] Failed to start Blender process - ID: {_serviceId}, Error: {ex.Message}");
             throw new InvalidOperationException($"启动Blender进程失败: {ex.Message}", ex);
         }
+    }
+
+    public override void Dispose()
+    {
+        if (_disposed)
+        {
+            Console.WriteLine($"[BlenderExeService] Service already disposed - ID: {_serviceId}");
+            return;
+        }
+
+        Console.WriteLine($"[BlenderExeService] Disposing service - ID: {_serviceId}");
+
+        try
+        {
+            _executeLock.Dispose();
+            if (_process is not null && !_process.HasExited)
+            {
+                Console.WriteLine($"[BlenderExeService] Killing Blender process - ID: {_serviceId}, PID: {_process.Id}");
+                _process.Kill(true); // 确保彻底终止进程
+                _process.Dispose();
+                Console.WriteLine($"[BlenderExeService] Blender process killed and disposed - ID: {_serviceId}");
+            }
+            else if (_process is not null)
+            {
+                Console.WriteLine($"[BlenderExeService] Blender process already exited - ID: {_serviceId}, PID: {_process.Id}");
+                _process.Dispose();
+            }
+            else
+            {
+                Console.WriteLine($"[BlenderExeService] No process to dispose - ID: {_serviceId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[BlenderExeService] Error disposing service - ID: {_serviceId}, Error: {ex.Message}");
+            RaiseErrorReceived($"关闭进程时出错: {ex.Message}");
+        }
+
+        _disposed = true;
+        Console.WriteLine($"[BlenderExeService] Service disposed successfully - ID: {_serviceId}");
     }
 }

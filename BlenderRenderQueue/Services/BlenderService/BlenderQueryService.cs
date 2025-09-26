@@ -13,21 +13,53 @@ public sealed class BlenderQueryService : IBlenderQueryService
     private const string Prefix = "[BRQ] ";
 
     /// <summary>
-    /// 使用临时进程查询文件属性，查询完成后自动释放进程
+    /// 使用新的进程管理服务查询文件属性
     /// </summary>
     public async Task<(string ActiveScene, Dictionary<string, BlendSceneProperties> SceneData)> GetAllFilePropertiesWithTempProcessAsync(
         string blenderPath,
         string blendFilePath,
         CancellationToken cancellationToken = default)
     {
-        using var tempProcess = new BlenderQueryProcessService(blenderPath);
-        return await QueryAsync<(string, Dictionary<string, BlendSceneProperties>)>(
-            tempProcess,
-            blendFilePath,
+        using var processService = new BlenderProcessService(blenderPath);
+        
+        return await processService.ExecuteQueryAsync(
+            GetFilePropertiesScript(blendFilePath),
             "get_all_file_properties",
-            null,
-            root =>
+            result =>
             {
+                Console.WriteLine($"[BlenderQueryService] Raw result received: {result}");
+                
+                // 查找包含 [BRQ] 前缀的行
+                var lines = result.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                string? jsonLine = null;
+                
+                for (int i = lines.Length - 1; i >= 0; i--)
+                {
+                    var line = lines[i].Trim();
+                    if (line.StartsWith(Prefix))
+                    {
+                        jsonLine = line.Substring(Prefix.Length);
+                        break;
+                    }
+                }
+                
+                if (string.IsNullOrEmpty(jsonLine))
+                {
+                    Console.WriteLine($"[BlenderQueryService] No JSON result found in output");
+                    throw new InvalidOperationException("未找到有效的JSON结果");
+                }
+                
+                Console.WriteLine($"[BlenderQueryService] JSON line: {jsonLine}");
+                
+                var root = JsonDocument.Parse(jsonLine).RootElement;
+                
+                if (!root.TryGetProperty("ok", out var okProp) || !okProp.GetBoolean())
+                {
+                    var error = root.TryGetProperty("err", out var errProp) ? errProp.GetString() : "未知错误";
+                    Console.WriteLine($"[BlenderQueryService] Query failed: {error}");
+                    throw new InvalidOperationException($"查询失败: {error}");
+                }
+                
                 var data = root.GetProperty("data");
                 var activeScene = data.GetProperty("active_scene").GetString() ?? string.Empty;
                 var sceneData = new Dictionary<string, BlendSceneProperties>();
@@ -69,9 +101,74 @@ public sealed class BlenderQueryService : IBlenderQueryService
                     };
                 }
                 
+                Console.WriteLine($"[BlenderQueryService] Successfully parsed {sceneData.Count} scenes");
                 return (activeScene, sceneData);
             },
             cancellationToken);
+    }
+
+    /// <summary>
+    /// 获取文件属性查询脚本
+    /// </summary>
+    private string GetFilePropertiesScript(string blendFilePath)
+    {
+        var normalizedPath = blendFilePath.Replace("\\", "/");
+        var cmd = "get_all_file_properties";
+        
+        return @"
+import bpy, json
+import os
+
+def safe_get(func, default=None):
+    try:
+        return func()
+    except:
+        return default
+
+def get_referenced_scenes(scene):
+    try:
+        return [ref.name for ref in scene.sequence_editor.sequences if hasattr(ref, 'scene') and ref.scene]
+    except:
+        return []
+
+def get_timeline_cameras(scene):
+    try:
+        return [seq.name for seq in scene.sequence_editor.sequences if seq.type == 'CAMERA']
+    except:
+        return []
+
+filepath = '" + normalizedPath + @"'
+try:
+    bpy.ops.wm.open_mainfile(filepath=filepath)
+    
+    scene_data = {}
+    active_scene_name = bpy.context.scene.name
+    
+    for scene in bpy.data.scenes:
+        scene_data[scene.name] = {
+            'frame_start': safe_get(lambda: int(scene.frame_start), 1),
+            'frame_end': safe_get(lambda: int(scene.frame_end), 1),
+            'frame_current': safe_get(lambda: int(scene.frame_current), 1),
+            'camera': safe_get(lambda: scene.camera.name if scene.camera else None),
+            'render_output_path': safe_get(lambda: scene.render.filepath, ''),
+            'render_output_format': safe_get(lambda: scene.render.image_settings.file_format, 'PNG'),
+            'render_engine': safe_get(lambda: scene.render.engine, 'BLENDER_EEVEE'),
+            'fps': safe_get(lambda: scene.render.fps, 24.0),
+            'frame_path': safe_get(lambda: scene.render.frame_path() if hasattr(scene.render, 'frame_path') else None),
+            'cycles_time_limit': safe_get(lambda: scene.cycles.time_limit if hasattr(scene, 'cycles') else None),
+            'referenced_scenes': safe_get(lambda: get_referenced_scenes(scene), []),
+            'timeline_cameras': safe_get(lambda: get_timeline_cameras(scene), [])
+        }
+    
+    data = {
+        'active_scene': active_scene_name,
+        'scene_data': scene_data
+    }
+    
+    print('" + Prefix + @"'+json.dumps({'cmd':'" + cmd + @"','ok':True,'data': data}, separators=(',', ':')))
+except Exception as e:
+    print('" + Prefix + @"'+json.dumps({'cmd':'" + cmd + @"','ok':False,'err':str(e)}, separators=(',', ':')))
+";
     }
 
     public async Task<(string ActiveScene, Dictionary<string, BlendSceneProperties> SceneData)> GetAllFilePropertiesAsync(BasePythonProcessService process,
@@ -145,9 +242,9 @@ public sealed class BlenderQueryService : IBlenderQueryService
         if (dataPythonDictLiteral == null)
         {
             // 使用内置的安全获取方式
-            script = $@"
+            script = @"
 import bpy, json
-filepath = '{normalizedPath}'
+filepath = '" + normalizedPath + @"'
 try:
     bpy.ops.wm.open_mainfile(filepath=filepath)
     
@@ -174,7 +271,7 @@ try:
                 return []
             
             # 使用列表推导式获取所有SCENE类型的strip
-            strip_scenes = [strip.scene.name for strip in scene.sequence_editor.strips_all if strip.type == ""SCENE""]
+            strip_scenes = [strip.scene.name for strip in scene.sequence_editor.strips_all if strip.type == 'SCENE']
             
             # 返回去重后的列表
             return list(set(strip_scenes))
@@ -189,7 +286,7 @@ try:
                 return []
             
             # 获取所有时间轴标记中的相机
-            cams = [m.camera for m in scene.timeline_markers if m.camera and m.camera.type == ""CAMERA""]
+            cams = [m.camera for m in scene.timeline_markers if m.camera and m.camera.type == 'CAMERA']
             
             # 返回去重后的相机名称列表
             return list(set([cam.name for cam in cams if cam.name]))
@@ -197,11 +294,11 @@ try:
             return []
     
     # 获取所有场景数据
-    scene_data = {{}}
+    scene_data = {}
     active_scene_name = bpy.context.scene.name
     
     for scene in bpy.data.scenes:
-        scene_data[scene.name] = {{
+        scene_data[scene.name] = {
             'frame_start': safe_get(lambda: int(scene.frame_start), 1),
             'frame_end': safe_get(lambda: int(scene.frame_end), 1),
             'frame_current': safe_get(lambda: int(scene.frame_current), 1),
@@ -214,30 +311,30 @@ try:
             'cycles_time_limit': safe_get(lambda: scene.cycles.time_limit if hasattr(scene, 'cycles') else None),
             'referenced_scenes': safe_get(lambda: get_referenced_scenes(scene), []),
             'timeline_cameras': safe_get(lambda: get_timeline_cameras(scene), [])
-        }}
+        }
     
-    data = {{
+    data = {
         'active_scene': active_scene_name,
         'scene_data': scene_data
-    }}
+    }
     
-    print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':True,'data': data}}, separators=(',', ':')))
+    print('" + Prefix + @"'+json.dumps({'cmd':'" + cmd + @"','ok':True,'data': data}, separators=(',', ':')))
 except Exception as e:
-    print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':False,'err':str(e)}}, separators=(',', ':')))
+    print('" + Prefix + @"'+json.dumps({'cmd':'" + cmd + @"','ok':False,'err':str(e)}, separators=(',', ':')))
 ";
         }
         else
         {
             // 使用传统方式
-            script = $@"
+            script = @"
 import bpy, json
-filepath = '{normalizedPath}'
+filepath = '" + normalizedPath + @"'
 try:
     bpy.ops.wm.open_mainfile(filepath=filepath)
     s=bpy.context.scene
-    print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':True,'data': {dataPythonDictLiteral}}}, separators=(',', ':')))
+    print('" + Prefix + @"'+json.dumps({'cmd':'" + cmd + @"','ok':True,'data': " + dataPythonDictLiteral + @"}, separators=(',', ':')))
 except Exception as e:
-    print('{Prefix}'+json.dumps({{'cmd':'{cmd}','ok':False,'err':str(e)}}, separators=(',', ':')))
+    print('" + Prefix + @"'+json.dumps({'cmd':'" + cmd + @"','ok':False,'err':str(e)}, separators=(',', ':')))
 ";
         }
 
