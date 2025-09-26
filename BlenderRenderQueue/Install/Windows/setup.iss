@@ -27,14 +27,13 @@ Compression=lzma
 SolidCompression=yes
 
 PrivilegesRequired=admin
-LicenseFile=..\license.txt
 
 UninstallDisplayName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
-Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "chinesesimplified"; MessagesFile: ".\Languages\ChineseSimplified.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"; LicenseFile: "..\license_en.txt"
+Name: "chinesesimplified"; MessagesFile: ".\Languages\ChineseSimplified.isl"; LicenseFile: "..\license_zh.txt"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}";
