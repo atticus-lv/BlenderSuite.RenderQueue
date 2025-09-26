@@ -9,6 +9,10 @@ namespace BlenderRenderQueue.Converters;
 /// </summary>
 public class FileNameConverter : IValueConverter
 {
+    /// <summary>
+    /// 静态实例，用于在 XAML 中通过 x:Static 引用
+    /// </summary>
+    public static readonly FileNameConverter Instance = new();
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is string fileName)

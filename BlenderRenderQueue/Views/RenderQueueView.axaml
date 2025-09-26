@@ -321,7 +321,7 @@
                                                                        TextTrimming="CharacterEllipsis">
                                                                 <TextBlock.Text>
                                                                     <Binding Path="BlendFileName"
-                                                                             Converter="{x:Static vm:RenderTaskViewModel.FileNameConverter}" />
+                                                                             Converter="{StaticResource FileNameConverter}" />
                                                                 </TextBlock.Text>
                                                             </TextBlock>
                                                         </StackPanel>

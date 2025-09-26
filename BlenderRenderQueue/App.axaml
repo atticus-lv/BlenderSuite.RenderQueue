@@ -4,13 +4,20 @@
              xmlns:local="using:BlenderRenderQueue"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:material="using:Material.Icons.Avalonia"
+             xmlns:localizer="clr-namespace:BlenderRenderQueue.Localizer"
+             xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
              RequestedThemeVariant="Dark">
     <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
 
     <Application.DataTemplates>
         <local:ViewLocator />
     </Application.DataTemplates>
-
+    <Application.Resources>
+        <ResourceDictionary>
+            <converters:FileNameConverter x:Key="FileNameConverter" />
+            <localizer:LocalizeConverter x:Key="LocalizeConverter" />
+        </ResourceDictionary>
+    </Application.Resources>
     <Application.Styles>
         <suki:SukiTheme ThemeColor="Blue" Locale="zh-CN"  />
         <material:MaterialIconStyles />
