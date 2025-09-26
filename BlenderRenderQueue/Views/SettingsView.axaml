@@ -52,12 +52,12 @@
                 </suki:SettingsLayoutItem>
 
                 <!-- 渲染超时设置部分 -->
-                <suki:SettingsLayoutItem Header="{i18n:Localize RenderTimeout}">
+                <suki:SettingsLayoutItem Header="{i18n:Localize Render}">
                     <suki:SettingsLayoutItem.Content>
                         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*">
 
                             <!-- 渲染超时设置 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize RenderTimeoutLabel}" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize TimeoutLabel}" VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
                             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8"
                                         VerticalAlignment="Center">
