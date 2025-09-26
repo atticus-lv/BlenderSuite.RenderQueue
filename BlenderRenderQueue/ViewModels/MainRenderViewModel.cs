@@ -209,10 +209,10 @@ public partial class MainRenderViewModel : ViewModelBase
         var dialogManager = GetDialogManager();
         if (dialogManager != null)
             dialogManager.CreateDialog()
-                .WithTitle("设置")
+                .WithTitle(Localizer.Localizer.Instance["Settings"])
                 .WithContent(_settingsViewModel!)
-                .WithActionButton("保存", _ => { _settingsViewModel!.SaveSettingsCommand.Execute(null); }, true)
-                .WithActionButton("取消", _ => { }, true)
+                .WithActionButton(Localizer.Localizer.Instance["Save"], _ => { _settingsViewModel!.SaveSettingsCommand.Execute(null); }, true)
+                .WithActionButton(Localizer.Localizer.Instance["Cancel"], _ => { }, true)
                 .Dismiss().ByClickingBackground()
                 .TryShow();
     }
