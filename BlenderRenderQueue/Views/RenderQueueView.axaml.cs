@@ -10,7 +10,7 @@ namespace BlenderRenderQueue.Views;
 
 public partial class RenderQueueView : UserControl
 {
-    private Border? _rightPanelBorder;
+    private SplitView? _rightPanelBorder;
     private TopLevel? _topLevel;
 
     public RenderQueueView()
@@ -23,7 +23,7 @@ public partial class RenderQueueView : UserControl
         AvaloniaXamlLoader.Load(this);
         
         // 获取右侧面板的Border控件
-        _rightPanelBorder = this.FindControl<Border>("RightPanelBorder");
+        _rightPanelBorder = this.FindControl<SplitView>("RightPanelBorder");
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -68,7 +68,7 @@ public partial class RenderQueueView : UserControl
             var windowWidth = _topLevel.ClientSize.Width;
             var calculatedWidth = windowWidth * scale;
             
-            _rightPanelBorder.Width = calculatedWidth;
+            _rightPanelBorder.OpenPaneLength = calculatedWidth;
         }
     }
 
