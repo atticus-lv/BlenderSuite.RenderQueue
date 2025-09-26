@@ -129,7 +129,6 @@
                                 IsVisible="{Binding CanPauseQueue}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <material:MaterialIcon Kind="Pause" Width="24" Height="24" />
-                                <!-- <TextBlock Text="暂停队列" VerticalAlignment="Center" /> -->
                             </StackPanel>
                         </Button>
 
@@ -147,7 +146,6 @@
                                 IsVisible="{Binding CanStopQueue}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <material:MaterialIcon Kind="Stop" Width="24" Height="24" />
-                                <!-- <TextBlock Text="停止队列" VerticalAlignment="Center" /> -->
                             </StackPanel>
                         </Button>
 

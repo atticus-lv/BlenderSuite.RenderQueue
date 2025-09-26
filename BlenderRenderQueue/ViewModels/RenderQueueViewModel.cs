@@ -1314,7 +1314,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                              t.Status == RenderTaskStatus.Cancelled))
                 {
                     // 只有当所有启用的任务都完成/失败/取消时，才设置为完成状态
-                    QueueStatusText = Localizer.Localizer.Instance["Queue_Completed"];
+                    QueueStatusText = "Queue_Completed";
                     QueueState = QueueState.Completed;
 
                     // 触发队列完成Toast
@@ -1339,7 +1339,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 else if (RenderTasks.Where(t => t.Enable && t.IsValid).Any(t =>
                              t.Status == RenderTaskStatus.Completed || t.Status == RenderTaskStatus.Failed ||
                              t.Status == RenderTaskStatus.Cancelled))
-                    QueueStatusText = Localizer.Localizer.Instance["Queue_Completed"];
+                    QueueStatusText = "Queue_Completed";
                 // 不自动改变状态，让用户手动决定是否重新开始
                 else
                     QueueStatusText = "Queue_Empty";

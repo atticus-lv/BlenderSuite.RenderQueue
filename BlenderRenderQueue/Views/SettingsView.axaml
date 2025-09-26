@@ -25,7 +25,8 @@
                         <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
                             <!-- Blender路径设置 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize BlenderPath}" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize BlenderPath}"
+                                       VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
                             <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BlenderPath, Mode=TwoWay}"
                                      IsReadOnly="True" Margin="0,0,0,0" />
@@ -57,24 +58,26 @@
                         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*">
 
                             <!-- 渲染超时设置 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize TimeoutLabel}" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize TimeoutLabel}"
+                                       VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
                             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8"
                                         VerticalAlignment="Center">
                                 <NumericUpDown Value="{Binding DefaultRenderTimeoutSeconds, Mode=TwoWay}"
-                                               Minimum="300" Maximum="7200" Width="120"
+                                               Minimum="300" Maximum="7200"
                                                suki:NumericUpDownExtensions.Unit="{i18n:Localize Seconds}" />
                             </StackPanel>
 
                             <!-- 最大重试次数设置 -->
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize MaxRetryLabel}" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize MaxRetryLabel}"
+                                       VerticalAlignment="Center"
                                        Margin="0,16,8,0" />
                             <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8"
                                         Margin="0,16,0,0" VerticalAlignment="Center">
                                 <NumericUpDown Value="{Binding MaxRetryAttempts, Mode=TwoWay}"
-                                               Minimum="1" Maximum="10" Width="120"
+                                               Minimum="1" Maximum="10"
                                                suki:NumericUpDownExtensions.Unit="{i18n:Localize Times}" />
-                                </StackPanel>
+                            </StackPanel>
 
                         </Grid>
                     </suki:SettingsLayoutItem.Content>
@@ -86,11 +89,12 @@
                         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*">
 
                             <!-- 视频编码 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize VideoCodec}" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize VideoCodec}"
+                                       VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
                             <ComboBox Grid.Row="0" Grid.Column="1" SelectedItem="{Binding VideoCodec, Mode=TwoWay}"
                                       ItemsSource="{x:Static models:VideoCodecOption.AllOptions}"
-                                      Width="200" HorizontalAlignment="Left">
+                                      HorizontalAlignment="Left">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate DataType="models:VideoCodecOption">
                                         <TextBlock Text="{Binding DisplayName}" />
@@ -99,17 +103,19 @@
                             </ComboBox>
 
                             <!-- 视频质量 -->
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize VideoQuality}" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize VideoQuality}"
+                                       VerticalAlignment="Center"
                                        Margin="0,16,8,0" />
-                             <ComboBox Grid.Row="1" Grid.Column="1" SelectedItem="{Binding VideoQuality, Mode=TwoWay}"
-                                       ItemsSource="{x:Static models:VideoQualityOption.AllOptions}"
-                                       Width="200" HorizontalAlignment="Left" Margin="0,16,0,0">
-                                 <ComboBox.ItemTemplate>
-                                     <DataTemplate DataType="models:VideoQualityOption">
-                                         <TextBlock Text="{Binding DisplayName, Converter={x:Static i18n:LocalizeConverter.Instance}}" />
-                                     </DataTemplate>
-                                 </ComboBox.ItemTemplate>
-                             </ComboBox>
+                            <ComboBox Grid.Row="1" Grid.Column="1" SelectedItem="{Binding VideoQuality, Mode=TwoWay}"
+                                      ItemsSource="{x:Static models:VideoQualityOption.AllOptions}"
+                                      Width="200" HorizontalAlignment="Left" Margin="0,16,0,0">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="models:VideoQualityOption">
+                                        <TextBlock
+                                            Text="{Binding DisplayName, Converter={x:Static i18n:LocalizeConverter.Instance}}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
 
                         </Grid>
                     </suki:SettingsLayoutItem.Content>
@@ -121,7 +127,8 @@
                         <Grid RowDefinitions="Auto" ColumnDefinitions="Auto,*">
 
                             <!-- 语言选择 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize LanguageLabel}" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize LanguageLabel}"
+                                       VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
                             <ComboBox Grid.Row="0" Grid.Column="1" SelectedItem="{Binding Language, Mode=TwoWay}"
                                       ItemsSource="{x:Static models:LanguageOption.AllOptions}"
