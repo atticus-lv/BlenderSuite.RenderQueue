@@ -194,7 +194,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         if (_currentRetryAttempts > _globalMaxRetryAttempts)
         {
             EnqueueLog($"已达到最大重试次数 ({_globalMaxRetryAttempts})，任务失败");
-            SetStatus(RenderTaskStatus.Failed, $"重试失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
+            SetStatus(RenderTaskStatus.Failed, "TaskStatus_RetryFailed");
             return false;
         }
 
@@ -426,7 +426,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private RenderTaskStatus _status = RenderTaskStatus.Pending;
 
     [ObservableProperty]
-    private string _statusText = "等待中";
+    private string _statusText = "TaskStatus_Pending";
 
     [ObservableProperty]
     private DateTime? _startTime;
@@ -752,7 +752,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         try
         {
-            SetStatus(RenderTaskStatus.Running, "正在启动渲染...");
+            SetStatus(RenderTaskStatus.Running, "TaskStatus_Starting");
             StartTime = DateTime.Now;
 
             // 创建适配器来包装 IBlenderProcess
@@ -802,7 +802,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (ex.CancellationToken.IsCancellationRequested)
             {
                 EnqueueLog("渲染任务被用户取消");
-                SetStatus(RenderTaskStatus.Cancelled, "已取消");
+                SetStatus(RenderTaskStatus.Cancelled, "TaskStatus_Cancelled");
             }
             else
             {
@@ -818,7 +818,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 }
 
                 // 重试失败或达到最大重试次数
-                SetStatus(RenderTaskStatus.Failed, $"超时失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
+                SetStatus(RenderTaskStatus.Failed, "TaskStatus_TimeoutFailed");
             }
         }
         catch (OperationCanceledException ex)
@@ -829,7 +829,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         catch (Exception ex)
         {
             EnqueueLog($"渲染启动失败: {ex.Message}");
-            SetStatus(RenderTaskStatus.Failed, "启动失败");
+            SetStatus(RenderTaskStatus.Failed, "TaskStatus_StartFailed");
         }
     }
 
@@ -853,7 +853,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 注意：不释放_exe，因为它可能被其他任务使用
         }
 
-        SetStatus(RenderTaskStatus.Cancelled, "已停止");
+        SetStatus(RenderTaskStatus.Cancelled, "TaskStatus_Stopped");
         EndTime = DateTime.Now;
         if (StartTime.HasValue)
         {
@@ -880,7 +880,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 _exe.OnErrorReceived -= HandleRawError;
             }
 
-            SetStatus(RenderTaskStatus.Paused, "已暂停");
+            SetStatus(RenderTaskStatus.Paused, "TaskStatus_Paused");
             EnqueueLog($"渲染已暂停，当前帧: {CurrentFrame}");
 
             // 添加一个小的延迟以确保状态更新完成
@@ -889,7 +889,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         catch (Exception ex)
         {
             EnqueueLog($"暂停渲染失败: {ex.Message}");
-            SetStatus(RenderTaskStatus.Failed, "暂停失败");
+            SetStatus(RenderTaskStatus.Failed, "TaskStatus_PauseFailed");
         }
     }
 
@@ -903,7 +903,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         try
         {
-            SetStatus(RenderTaskStatus.Running, "正在恢复渲染...");
+            SetStatus(RenderTaskStatus.Running, "TaskStatus_Resuming");
 
             // 创建适配器来包装 IBlenderProcess
             _exe = new BlenderProcessAdapter(blenderProcess);
@@ -943,7 +943,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (ex.CancellationToken.IsCancellationRequested)
             {
                 EnqueueLog("恢复渲染任务被用户取消");
-                SetStatus(RenderTaskStatus.Cancelled, "已取消");
+                SetStatus(RenderTaskStatus.Cancelled, "TaskStatus_Cancelled");
             }
             else
             {
@@ -959,7 +959,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 }
 
                 // 重试失败或达到最大重试次数
-                SetStatus(RenderTaskStatus.Failed, $"恢复超时失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
+                SetStatus(RenderTaskStatus.Failed, "TaskStatus_ResumeTimeoutFailed");
             }
         }
         catch (OperationCanceledException ex)
@@ -970,7 +970,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         catch (Exception ex)
         {
             EnqueueLog($"恢复渲染启动失败: {ex.Message}");
-            SetStatus(RenderTaskStatus.Failed, "恢复失败");
+            SetStatus(RenderTaskStatus.Failed, "TaskStatus_ResumeFailed");
         }
     }
 
@@ -1096,7 +1096,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             case RenderSessionStarted s:
                 EnqueueLog(s.IsAnimation ? $"开始动画渲染: {s.StartFrame}..{s.EndFrame}" : $"开始单帧渲染");
-                SetStatus(RenderTaskStatus.Running, "渲染中");
+                SetStatus(RenderTaskStatus.Running, "TaskStatus_Running");
                 break;
             case RenderStarted rs:
                 EnqueueLog($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
@@ -1114,7 +1114,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 OverallProgress01 = 1;
 
                 // 先设置状态，确保状态变化事件被触发
-                SetStatus(RenderTaskStatus.Completed, "已完成");
+                SetStatus(RenderTaskStatus.Completed, "TaskStatus_Completed");
                 EndTime = DateTime.Now;
                 if (StartTime.HasValue)
                 {
@@ -1153,7 +1153,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 }
 
                 // 重试失败或达到最大重试次数
-                SetStatus(RenderTaskStatus.Failed, $"渲染失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
+                SetStatus(RenderTaskStatus.Failed, "TaskStatus_RenderFailed");
                 EndTime = DateTime.Now;
                 if (StartTime.HasValue)
                 {

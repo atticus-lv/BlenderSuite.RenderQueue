@@ -13,6 +13,28 @@ public class LocalizeConverter : IValueConverter, IMultiValueConverter
     {
         if (value is string key)
         {
+            // 检查是否是特殊格式的字符串（如 "Queue_RemainingTimeFormat:01:23:45"）
+            if (key.Contains(':'))
+            {
+                var parts = key.Split(':', 2);
+                if (parts.Length == 2)
+                {
+                    var translationKey = parts[0];
+                    var formatValue = parts[1];
+                    var translatedFormat = Localizer.Instance[translationKey];
+                    
+                    try
+                    {
+                        return string.Format(translatedFormat, formatValue);
+                    }
+                    catch (FormatException)
+                    {
+                        // 如果格式化失败，返回翻译文本
+                        return translatedFormat;
+                    }
+                }
+            }
+            
             return Localizer.Instance[key];
         }
 

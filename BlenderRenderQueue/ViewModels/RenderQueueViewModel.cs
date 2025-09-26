@@ -47,7 +47,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private int _failedTaskCount;
 
     [ObservableProperty]
-    private string _queueStatusText = "队列空闲";
+    private string _queueStatusText = "Queue_Idle";
 
     [ObservableProperty]
     private bool _autoStartNext = true; // 自动开始下一个任务
@@ -167,7 +167,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 如果没有帧渲染时间数据，显示"计算中..."
         if (_recentFrameRenderTimes.Count == 0)
         {
-            RemainingTimeText = "计算中...";
+            RemainingTimeText = "Queue_Calculating";
             return;
         }
 
@@ -177,7 +177,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         // 显示计算出的剩余时间
         var formattedTime = FormatTimeSpan(TimeSpan.FromSeconds(estimatedRemainingSeconds));
-        RemainingTimeText = formattedTime;
+        RemainingTimeText = $"Queue_RemainingTimeFormat:{formattedTime}";
 
         Console.WriteLine(
             $"[RemainingTime] RemainingFrames: {remainingFrames}, AvgRenderTime: {averageRenderTime:F2}s, Estimated: {estimatedRemainingSeconds:F2}s, Display: {formattedTime}");
@@ -613,14 +613,14 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             // 重置启用的任务状态为等待中，从头开始
             task.Status = RenderTaskStatus.Pending;
-            task.StatusText = "等待中";
+            task.StatusText = "TaskStatus_Pending";
             // 重置进度信息
             task.ResetProgress();
         }
 
         QueueState = QueueState.Running;
-        QueueStatusText = "队列运行中";
-        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已启动"));
+        QueueStatusText = "Queue_Running";
+        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Started"));
 
         // 清空帧渲染时间记录，重新开始计算
         _recentFrameRenderTimes.Clear();
@@ -641,8 +641,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running)) task.StopRender();
 
         QueueState = QueueState.Idle;
-        QueueStatusText = "队列已停止";
-        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已停止"));
+        QueueStatusText = "Queue_Stopped";
+        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Stopped"));
 
         // 清除当前渲染任务
         CurrentRenderingTask = null;
@@ -683,8 +683,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
 
         QueueState = QueueState.Paused;
-        QueueStatusText = "队列已暂停";
-        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已暂停"));
+        QueueStatusText = "Queue_Paused";
+        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Paused"));
 
         // 停止剩余时间更新定时器
         _remainingTimeTimer?.Stop();
@@ -700,8 +700,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         Console.WriteLine("[RenderQueueViewModel] Resuming queue...");
 
         QueueState = QueueState.Running;
-        QueueStatusText = "队列运行中";
-        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("队列已恢复"));
+        QueueStatusText = "Queue_Running";
+        QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Resumed"));
 
         // 启动剩余时间更新定时器
         _remainingTimeTimer?.Start();
@@ -1286,11 +1286,11 @@ public partial class RenderQueueViewModel : ViewModelBase
             case QueueState.Running:
                 if (ActiveTaskCount > 0)
                 {
-                    QueueStatusText = $"运行中 ({ActiveTaskCount} 个任务)";
+                    QueueStatusText = $"Queue_RunningWithTasks:{ActiveTaskCount}";
                 }
                 else if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid))
                 {
-                    QueueStatusText = "等待中";
+                    QueueStatusText = "Queue_Waiting";
                 }
                 else if (RenderTasks.Where(t => t.Enable && t.IsValid).All(t =>
                              t.Status == RenderTaskStatus.Completed ||
@@ -1298,7 +1298,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                              t.Status == RenderTaskStatus.Cancelled))
                 {
                     // 只有当所有启用的任务都完成/失败/取消时，才设置为完成状态
-                    QueueStatusText = "队列完成";
+                    QueueStatusText = "Queue_Completed";
                     QueueState = QueueState.Completed;
 
                     // 触发队列完成Toast
@@ -1306,40 +1306,40 @@ public partial class RenderQueueViewModel : ViewModelBase
                         .Where(t => t.Enable && t.IsValid && t.Status == RenderTaskStatus.Completed).Count();
                     var totalTasks = RenderTasks.Where(t => t.Enable && t.IsValid).Count();
                     ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
-                        "渲染队列完成",
-                        $"所有任务已完成！成功渲染 {completedTasks}/{totalTasks} 个任务",
+                        "Queue_Completed",
+                        "Queue_AllTasksCompleted",
                         NotificationType.Success));
                 }
                 else
                 {
-                    QueueStatusText = "运行中";
+                    QueueStatusText = "Queue_Running";
                 }
 
                 break;
 
             case QueueState.Idle:
                 if (RenderTasks.Any(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid))
-                    QueueStatusText = "队列空闲";
+                    QueueStatusText = "Queue_Idle";
                 else if (RenderTasks.Where(t => t.Enable && t.IsValid).Any(t =>
                              t.Status == RenderTaskStatus.Completed || t.Status == RenderTaskStatus.Failed ||
                              t.Status == RenderTaskStatus.Cancelled))
-                    QueueStatusText = "队列完成";
+                    QueueStatusText = "Queue_Completed";
                 // 不自动改变状态，让用户手动决定是否重新开始
                 else
-                    QueueStatusText = "队列为空";
+                    QueueStatusText = "Queue_Empty";
 
                 break;
 
             case QueueState.Completed:
-                QueueStatusText = "队列完成";
+                QueueStatusText = "Queue_Completed";
                 break;
 
             case QueueState.Paused:
-                QueueStatusText = "队列已暂停";
+                QueueStatusText = "Queue_Paused";
                 break;
 
             case QueueState.Error:
-                QueueStatusText = "队列错误";
+                QueueStatusText = "Queue_Error";
                 break;
         }
 
