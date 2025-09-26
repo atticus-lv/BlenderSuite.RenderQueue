@@ -118,6 +118,28 @@
                     </suki:SettingsLayoutItem.Content>
                 </suki:SettingsLayoutItem>
 
+                <!-- 语言设置部分 -->
+                <suki:SettingsLayoutItem Header="通用">
+                    <suki:SettingsLayoutItem.Content>
+                        <Grid RowDefinitions="Auto" ColumnDefinitions="Auto,*">
+
+                            <!-- 语言选择 -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="界面语言:" VerticalAlignment="Center"
+                                       Margin="0,0,8,0" />
+                            <ComboBox Grid.Row="0" Grid.Column="1" SelectedItem="{Binding Language, Mode=TwoWay}"
+                                      ItemsSource="{x:Static models:LanguageOption.AllOptions}"
+                                      Width="200" HorizontalAlignment="Left">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="models:LanguageOption">
+                                        <TextBlock Text="{Binding DisplayName}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                        </Grid>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
+
             </objectModel:ObservableCollection>
         </suki:SettingsLayout.Items>
     </suki:SettingsLayout>

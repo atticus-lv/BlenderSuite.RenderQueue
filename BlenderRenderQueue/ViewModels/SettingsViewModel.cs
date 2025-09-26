@@ -48,6 +48,9 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private VideoQualityOption _videoQuality = VideoQualityOption.PerceptualLossless; // 默认感知无损质量
 
+    [ObservableProperty]
+    private LanguageOption _language = LanguageOption.Default; // 默认英语
+
     // 内部状态
     private CancellationTokenSource? _versionCts;
     private readonly ISettingsPersistenceService _settingsPersistenceService = new SettingsPersistenceService();
@@ -199,7 +202,7 @@ public partial class SettingsViewModel : ViewModelBase
     private async Task SaveSettings()
     {
         // 触发设置变化事件
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoCodec.Value, VideoQuality.Value));
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoCodec.Value, VideoQuality.Value, Language.Value));
         
         // 保存设置到文件
         await SaveSettingsToFileAsync();
@@ -218,7 +221,8 @@ public partial class SettingsViewModel : ViewModelBase
                 DefaultRenderTimeoutSeconds = DefaultRenderTimeoutSeconds,
                 MaxRetryAttempts = MaxRetryAttempts,
                 VideoCodec = VideoCodec.Value,
-                VideoQuality = VideoQuality.Value
+                VideoQuality = VideoQuality.Value,
+                Language = Language.Value
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
@@ -285,6 +289,15 @@ public partial class SettingsViewModel : ViewModelBase
                 };
             }
 
+            if (!string.IsNullOrEmpty(settings.Language))
+            {
+                var languageOption = LanguageOption.FindByValue(settings.Language);
+                if (languageOption != null)
+                {
+                    Language = languageOption;
+                }
+            }
+
             Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
         }
         catch (Exception ex)
@@ -318,14 +331,16 @@ public class SettingsChangedEventArgs : EventArgs
     public int MaxRetryAttempts { get; }
     public string VideoCodec { get; }
     public string VideoQuality { get; }
+    public string Language { get; }
 
-    public SettingsChangedEventArgs(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoCodec, string videoQuality)
+    public SettingsChangedEventArgs(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoCodec, string videoQuality, string language)
     {
         BlenderPath = blenderPath;
         DefaultRenderTimeoutSeconds = defaultRenderTimeoutSeconds;
         MaxRetryAttempts = maxRetryAttempts;
         VideoCodec = videoCodec;
         VideoQuality = videoQuality;
+        Language = language;
     }
 }
 

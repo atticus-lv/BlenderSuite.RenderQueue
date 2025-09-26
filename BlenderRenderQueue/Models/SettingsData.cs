@@ -27,4 +27,7 @@ public class SettingsData
 
     [JsonPropertyName("VideoQuality")]
     public string VideoQuality { get; set; } = "PERC_LOSSLESS"; // 默认感知无损质量
+
+    [JsonPropertyName("Language")]
+    public string Language { get; set; } = "en-US"; // 默认英语
 }
