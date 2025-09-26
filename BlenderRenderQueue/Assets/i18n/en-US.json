@@ -16,5 +16,10 @@
   "Minutes": "minutes",
   "Seconds": "seconds",
   "Hours": "hours",
-  "Times": "times"
+  "Times": "times",
+  "VideoQuality_Lossless": "Lossless",
+  "VideoQuality_PerceptualLossless": "Perceptual Lossless",
+  "VideoQuality_High": "High Quality",
+  "VideoQuality_Medium": "Medium Quality",
+  "VideoQuality_Low": "Low Quality"
 }

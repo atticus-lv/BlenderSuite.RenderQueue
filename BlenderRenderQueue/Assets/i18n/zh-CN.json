@@ -15,5 +15,10 @@
   "LanguageLabel": "界面语言:",
   "Minutes": "分钟",
   "Hours": "小时",
-  "Times": "次"
+  "Times": "次",
+  "VideoQuality_Lossless": "无损",
+  "VideoQuality_PerceptualLossless": "感知无损",
+  "VideoQuality_High": "高质量",
+  "VideoQuality_Medium": "中等质量",
+  "VideoQuality_Low": "低质量"
 }

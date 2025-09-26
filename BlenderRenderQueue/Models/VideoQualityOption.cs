@@ -43,11 +43,11 @@ public class VideoQualityOption
     }
 
     // 预定义的质量选项
-    public static readonly VideoQualityOption Lossless = new("无损", "LOSSLESS");
-    public static readonly VideoQualityOption PerceptualLossless = new("感知无损", "PERC_LOSSLESS");
-    public static readonly VideoQualityOption High = new("高质量", "HIGH");
-    public static readonly VideoQualityOption Medium = new("中等质量", "MEDIUM");
-    public static readonly VideoQualityOption Low = new("低质量", "LOW");
+    public static readonly VideoQualityOption Lossless = new("VideoQuality_Lossless", "LOSSLESS");
+    public static readonly VideoQualityOption PerceptualLossless = new("VideoQuality_PerceptualLossless", "PERC_LOSSLESS");
+    public static readonly VideoQualityOption High = new("VideoQuality_High", "HIGH");
+    public static readonly VideoQualityOption Medium = new("VideoQuality_Medium", "MEDIUM");
+    public static readonly VideoQualityOption Low = new("VideoQuality_Low", "LOW");
 
     public static readonly VideoQualityOption[] AllOptions = { Lossless, PerceptualLossless, High, Medium, Low };
 }

@@ -101,15 +101,15 @@
                             <!-- 视频质量 -->
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize VideoQuality}" VerticalAlignment="Center"
                                        Margin="0,16,8,0" />
-                            <ComboBox Grid.Row="1" Grid.Column="1" SelectedItem="{Binding VideoQuality, Mode=TwoWay}"
-                                      ItemsSource="{x:Static models:VideoQualityOption.AllOptions}"
-                                      Width="200" HorizontalAlignment="Left" Margin="0,16,0,0">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate DataType="models:VideoQualityOption">
-                                        <TextBlock Text="{Binding DisplayName}" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+                             <ComboBox Grid.Row="1" Grid.Column="1" SelectedItem="{Binding VideoQuality, Mode=TwoWay}"
+                                       ItemsSource="{x:Static models:VideoQualityOption.AllOptions}"
+                                       Width="200" HorizontalAlignment="Left" Margin="0,16,0,0">
+                                 <ComboBox.ItemTemplate>
+                                     <DataTemplate DataType="models:VideoQualityOption">
+                                         <TextBlock Text="{Binding DisplayName, Converter={x:Static i18n:LocalizeConverter.Instance}}" />
+                                     </DataTemplate>
+                                 </ComboBox.ItemTemplate>
+                             </ComboBox>
 
                         </Grid>
                     </suki:SettingsLayoutItem.Content>
