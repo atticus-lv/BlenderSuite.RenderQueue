@@ -142,5 +142,9 @@
   "Toast_TaskAddFailedTitle": "任务添加失败",
   "ProgressPreview_Progress": "进度: {0}/{1}",
   "ProgressPreview_Sample": "采样: {0}",
-  "ProgressPreview_Frame": "帧: {0}"
+  "ProgressPreview_Frame": "帧: {0}",
+  "ConfirmClearAll_Title": "确认清空",
+  "ConfirmClearAll_Message": "确定要清空所有任务吗？\n\n这将删除队列中的 {0} 个任务，此操作无法撤销。",
+  "ConfirmClearAll_Cancel": "取消",
+  "ConfirmClearAll_Confirm": "清空"
 }

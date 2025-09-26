@@ -18,6 +18,7 @@ using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.BlenderVideoService;
+using BlenderRenderQueue.Localizer;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -542,10 +543,10 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         // 请求显示确认对话框
         ConfirmDialogRequested?.Invoke(this, new ConfirmDialogRequestedEventArgs(
-            "确认清空",
-            $"确定要清空所有任务吗？\n\n这将删除队列中的 {RenderTasks.Count} 个任务，此操作无法撤销。",
-            "取消",
-            "清空",
+            Localizer.Localizer.Instance["ConfirmClearAll_Title"],
+            string.Format(Localizer.Localizer.Instance["ConfirmClearAll_Message"], RenderTasks.Count),
+            Localizer.Localizer.Instance["ConfirmClearAll_Cancel"],
+            Localizer.Localizer.Instance["ConfirmClearAll_Confirm"],
             ExecuteRemoveAllTasks));
     }
 

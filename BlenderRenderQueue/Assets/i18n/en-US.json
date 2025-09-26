@@ -143,5 +143,9 @@
   "Toast_TaskAddFailedTitle": "Task add failed",
   "ProgressPreview_Progress": "Progress: {0}/{1}",
   "ProgressPreview_Sample": "Sample: {0}",
-  "ProgressPreview_Frame": "Frame: {0}"
+  "ProgressPreview_Frame": "Frame: {0}",
+  "ConfirmClearAll_Title": "Confirm Clear",
+  "ConfirmClearAll_Message": "Are you sure you want to clear all tasks?\n\nThis will delete {0} tasks from the queue. This action cannot be undone.",
+  "ConfirmClearAll_Cancel": "Cancel",
+  "ConfirmClearAll_Confirm": "Clear"
 }
