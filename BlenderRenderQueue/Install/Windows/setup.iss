@@ -41,7 +41,8 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
 ; 使用中文简体界面
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "chinesesimplified"; MessagesFile: ".\Languages\ChineseSimplified.isl"
 
 [Tasks]
 ; 安装任务
