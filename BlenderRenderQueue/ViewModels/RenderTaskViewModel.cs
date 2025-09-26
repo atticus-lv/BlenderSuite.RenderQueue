@@ -263,6 +263,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(RealStartFrame));
         OnPropertyChanged(nameof(RealEndFrame));
         OnPropertyChanged(nameof(RealTotalFrames));
+        OnPropertyChanged(nameof(FinalSceneProperties));
+        OnPropertyChanged(nameof(FramePathDirectory));
 
         // 触发父级保存数据
         OverrideSceneChanged?.Invoke(this, EventArgs.Empty);
@@ -276,6 +278,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(RealStartFrame));
         OnPropertyChanged(nameof(RealEndFrame));
         OnPropertyChanged(nameof(RealTotalFrames));
+        OnPropertyChanged(nameof(FinalSceneProperties));
+        OnPropertyChanged(nameof(FramePathDirectory));
 
         // 触发父级保存数据
         SceneSelectionChanged?.Invoke(this, EventArgs.Empty);
@@ -295,7 +299,8 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel value)
     {
-        // 当ScenePropertiesView变化时，触发FramePathDirectory属性通知
+        // 当ScenePropertiesView变化时，触发相关属性通知
+        OnPropertyChanged(nameof(FinalSceneProperties));
         OnPropertyChanged(nameof(FramePathDirectory));
         
         // 订阅ScenePropertiesView的属性变化事件
@@ -303,8 +308,10 @@ public partial class RenderTaskViewModel : ViewModelBase
         value.PropertyChanged += (sender, args) =>
         {
             if (args.PropertyName == nameof(value.ActiveSceneProperties) || 
-                args.PropertyName == nameof(value.SceneProperties))
+                args.PropertyName == nameof(value.SceneProperties) ||
+                args.PropertyName == nameof(value.AllScenes))
             {
+                OnPropertyChanged(nameof(FinalSceneProperties));
                 OnPropertyChanged(nameof(FramePathDirectory));
             }
         };
@@ -434,13 +441,32 @@ public partial class RenderTaskViewModel : ViewModelBase
     private BlendScenePropertiesViewModel _scenePropertiesViewModel = new();
 
     /// <summary>
-    /// 获取当前帧路径目录，用于绑定到ImageSequencePreviewControl
+    /// 获取最终渲染场景的属性（考虑场景覆写设置）
+    /// </summary>
+    public BlendSceneProperties FinalSceneProperties
+    {
+        get
+        {
+            // 如果有场景覆写且选择了有效场景，使用覆写场景
+            if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) && 
+                ScenePropertiesView.AllScenes.ContainsKey(SelectedSceneName))
+            {
+                return ScenePropertiesView.AllScenes[SelectedSceneName];
+            }
+            
+            // 否则使用默认场景
+            return ScenePropertiesView.ActiveSceneProperties;
+        }
+    }
+
+    /// <summary>
+    /// 获取最终渲染场景的帧路径目录，用于绑定到ImageSequencePreviewControl
     /// </summary>
     public string? FramePathDirectory 
     {
         get
         {
-            var framePath = ScenePropertiesView.ActiveSceneProperties.FramePath;
+            var framePath = FinalSceneProperties.FramePath;
             return !string.IsNullOrEmpty(framePath) ? Path.GetDirectoryName(framePath)?.Replace("\\", "/") : null;
         }
     }
@@ -706,7 +732,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             OnPropertyChanged(nameof(HasValidSceneSelection));
             OnPropertyChanged(nameof(ShowSceneOverrideWarning));
             
-            // 触发FramePathDirectory属性更新
+            // 触发最终场景相关属性更新
+            OnPropertyChanged(nameof(FinalSceneProperties));
             OnPropertyChanged(nameof(FramePathDirectory));
         }
         catch (Exception ex)
