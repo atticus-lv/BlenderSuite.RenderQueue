@@ -13,11 +13,11 @@ using System.Timers;
 using Avalonia.Controls.Notifications;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.BlenderVideoService;
-using BlenderRenderQueue.Helpers;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -190,11 +190,11 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             // 没有任务时不可见（通过HasNoTasks控制）
             if (HasNoTasks) return false;
-            
+
             // 有任务时，根据队列状态和可用任务数量决定是否可用
             var hasAvailableTasks = RenderTasks.Any(t => t.Enable && t.IsValid);
             var canStart = (QueueState == QueueState.Idle || QueueState == QueueState.Completed) && hasAvailableTasks;
-            
+
             return canStart;
         }
     }
@@ -205,7 +205,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             // 没有任务时不可见
             if (HasNoTasks) return false;
-            
+
             // 有任务时，只有在队列空闲或完成时才显示开始按钮
             // 队列运行/暂停时显示其他控制按钮（暂停、恢复、停止）
             return QueueState == QueueState.Idle || QueueState == QueueState.Completed;
@@ -219,33 +219,27 @@ public partial class RenderQueueViewModel : ViewModelBase
     public bool CanResumeQueue => QueueState == QueueState.Paused;
 
     /// <summary>
-    /// 设置全局渲染超时时间
+    ///     设置全局渲染超时时间
     /// </summary>
     /// <param name="timeoutSeconds">超时时间（秒）</param>
     public void SetGlobalRenderTimeout(int timeoutSeconds)
     {
         _globalRenderTimeoutSeconds = timeoutSeconds;
-        
+
         // 更新所有现有任务的超时设置
-        foreach (var task in RenderTasks)
-        {
-            task.SetGlobalRenderTimeout(timeoutSeconds);
-        }
+        foreach (var task in RenderTasks) task.SetGlobalRenderTimeout(timeoutSeconds);
     }
 
     /// <summary>
-    /// 设置全局最大重试次数
+    ///     设置全局最大重试次数
     /// </summary>
     /// <param name="maxRetryAttempts">最大重试次数</param>
     public void SetGlobalMaxRetryAttempts(int maxRetryAttempts)
     {
         _globalMaxRetryAttempts = maxRetryAttempts;
-        
+
         // 更新所有现有任务的重试次数设置
-        foreach (var task in RenderTasks)
-        {
-            task.SetGlobalMaxRetryAttempts(maxRetryAttempts);
-        }
+        foreach (var task in RenderTasks) task.SetGlobalMaxRetryAttempts(maxRetryAttempts);
     }
 
 
@@ -307,7 +301,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             UpdateQueueStatistics();
             // 任务集合变化时自动保存
             AutoSaveQueueData();
-            
+
             // 通知按钮状态属性变更
             OnPropertyChanged(nameof(CanStartQueue));
             OnPropertyChanged(nameof(CanShowStartQueue));
@@ -345,7 +339,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         if (!IsBlenderServiceReady())
         {
-            StatusMessageChanged?.Invoke(this, "请先设置有效的Blender路径");
+            StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPathRequired"]);
             return;
         }
 
@@ -360,7 +354,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         if (!IsBlenderServiceReady())
         {
-            StatusMessageChanged?.Invoke(this, "请先设置有效的Blender路径");
+            StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPathRequired"]);
             return;
         }
 
@@ -377,7 +371,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         if (!IsBlenderServiceReady())
         {
-            StatusMessageChanged?.Invoke(this, "请先设置有效的Blender路径");
+            StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPathRequired"]);
             return;
         }
 
@@ -388,7 +382,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         if (!blendFiles.Any())
         {
-            StatusMessageChanged?.Invoke(this, "请拖拽 .blend 文件");
+            StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_DragBlendFiles"]);
             return;
         }
 
@@ -398,7 +392,8 @@ public partial class RenderQueueViewModel : ViewModelBase
             AddTaskToQueue(filePath);
         }
 
-        StatusMessageChanged?.Invoke(this, $"成功添加 {blendFiles.Count} 个文件到渲染队列");
+        StatusMessageChanged?.Invoke(this,
+            string.Format(Localizer.Localizer.Instance["Toast_TasksAddedSuccessfully"], blendFiles.Count));
     }
 
     private void AddTaskToQueue(string blendFilePath)
@@ -407,7 +402,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             // 新任务默认不覆写帧范围，使用场景默认值
             var task = new RenderTaskViewModel(blendFilePath, 1, 1);
-            
+
             // 设置全局超时和重试次数
             task.SetGlobalRenderTimeout(_globalRenderTimeoutSeconds);
             task.SetGlobalMaxRetryAttempts(_globalMaxRetryAttempts);
@@ -418,29 +413,34 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 订阅任务事件
             SubscribeToTaskEvents(task);
 
-            StatusMessageChanged?.Invoke(this, $"已添加任务: {Path.GetFileName(blendFilePath)}");
+            StatusMessageChanged?.Invoke(this,
+                string.Format(Localizer.Localizer.Instance["Toast_TaskAdded"], Path.GetFileName(blendFilePath)));
 
             // 异步加载文件属性，不阻塞UI
             if (IsBlenderServiceReady())
             {
-                Console.WriteLine($"[RenderQueueViewModel] Starting async file properties loading for: {Path.GetFileName(blendFilePath)}");
+                Console.WriteLine(
+                    $"[RenderQueueViewModel] Starting async file properties loading for: {Path.GetFileName(blendFilePath)}");
                 _ = Task.Run(async () =>
                 {
                     try
                     {
                         await task.LoadFilePropertiesAsync(_blenderPath!);
-                        Console.WriteLine($"[RenderQueueViewModel] ✅ File properties loaded: {Path.GetFileName(blendFilePath)}");
+                        Console.WriteLine(
+                            $"[RenderQueueViewModel] ✅ File properties loaded: {Path.GetFileName(blendFilePath)}");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to load file properties for {Path.GetFileName(blendFilePath)}: {ex.Message}");
+                        Console.WriteLine(
+                            $"[RenderQueueViewModel] ❌ Failed to load file properties for {Path.GetFileName(blendFilePath)}: {ex.Message}");
                     }
                 });
             }
         }
         catch (Exception ex)
         {
-            StatusMessageChanged?.Invoke(this, $"添加任务失败: {ex.Message}");
+            StatusMessageChanged?.Invoke(this,
+                string.Format(Localizer.Localizer.Instance["Toast_TaskAddFailed"], ex.Message));
         }
     }
 
@@ -565,7 +565,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         SelectedTask = null;
         UpdateQueueStatistics();
 
-        StatusMessageChanged?.Invoke(this, "已清空所有任务");
+        StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_AllTasksCleared"]);
     }
 
     [RelayCommand]
@@ -599,7 +599,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (!IsBlenderServiceReady())
         {
             // Console.WriteLine("[DEBUG] StartQueue aborted - Blender path is not ready");
-            QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("需要先设置Blender路径"));
+            QueueStatusChanged?.Invoke(this,
+                new QueueStatusChangedEventArgs(Localizer.Localizer.Instance["Toast_BlenderPathRequired"]));
             return;
         }
 
@@ -673,14 +674,13 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             _pausedTask = CurrentRenderingTask;
             _pausedFrame = CurrentRenderingTask.CurrentFrame;
-            Console.WriteLine($"[RenderQueueViewModel] Paused at task: {Path.GetFileName(_pausedTask.BlendFilePath)}, frame: {_pausedFrame}");
+            Console.WriteLine(
+                $"[RenderQueueViewModel] Paused at task: {Path.GetFileName(_pausedTask.BlendFilePath)}, frame: {_pausedFrame}");
         }
 
         // 停止所有运行中的任务
         foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
-        {
             await task.PauseRenderAsync();
-        }
 
         QueueState = QueueState.Paused;
         QueueStatusText = "Queue_Paused";
@@ -759,7 +759,8 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 检查 Blender 是否可用
             if (!IsBlenderServiceReady())
             {
-                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Blender 不可用，请先设置有效的 Blender 路径"));
+                QueueStatusChanged?.Invoke(this,
+                    new QueueStatusChangedEventArgs(Localizer.Localizer.Instance["Toast_BlenderUnavailable"]));
                 return;
             }
 
@@ -767,14 +768,17 @@ public partial class RenderQueueViewModel : ViewModelBase
             var framePath = SelectedTask.ScenePropertiesView.SceneProperties.FramePath;
             if (string.IsNullOrEmpty(framePath))
             {
-                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("任务没有帧路径信息"));
+                QueueStatusChanged?.Invoke(this,
+                    new QueueStatusChangedEventArgs(Localizer.Localizer.Instance["Toast_NoFramePath"]));
                 return;
             }
 
             var frameDirectory = Path.GetDirectoryName(framePath);
             if (string.IsNullOrEmpty(frameDirectory) || !Directory.Exists(frameDirectory))
             {
-                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"帧路径目录不存在: {frameDirectory}"));
+                QueueStatusChanged?.Invoke(this,
+                    new QueueStatusChangedEventArgs(
+                        string.Format(Localizer.Localizer.Instance["Toast_FramePathNotExists"], frameDirectory)));
                 return;
             }
 
@@ -785,7 +789,9 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             if (!hasImages)
             {
-                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"帧路径目录中没有找到图片文件: {frameDirectory}"));
+                QueueStatusChanged?.Invoke(this,
+                    new QueueStatusChangedEventArgs(
+                        string.Format(Localizer.Localizer.Instance["Toast_NoImagesInFramePath"], frameDirectory)));
                 return;
             }
 
@@ -801,17 +807,19 @@ public partial class RenderQueueViewModel : ViewModelBase
             IsGeneratingVideo = true;
             VideoGenerationProgress = 0.0;
             VideoGenerationStatus = "正在生成视频...";
-            QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"开始生成视频: {outputVideoPath}"));
+            QueueStatusChanged?.Invoke(this,
+                new QueueStatusChangedEventArgs(
+                    string.Format(Localizer.Localizer.Instance["Toast_VideoGenerationStarted"], outputVideoPath)));
 
             // 使用新的进程管理服务创建视频生成进程
             var videoProcess = await _processService!.CreateVideoProcessAsync();
-            bool success = false;
-            
+            var success = false;
+
             try
             {
                 // 创建视频服务（需要适配新的进程接口）
                 var tempVideoService = new BlenderVideoService(videoProcess);
-                
+
                 // 使用Blender生成视频
                 success = await tempVideoService.GenerateVideoFromImagesAsync(
                     frameDirectory,
@@ -837,18 +845,24 @@ public partial class RenderQueueViewModel : ViewModelBase
             if (success)
             {
                 VideoGenerationStatus = "视频生成完成";
-                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"视频生成完成: {outputVideoPath}"));
+                QueueStatusChanged?.Invoke(this,
+                    new QueueStatusChangedEventArgs(
+                        string.Format(Localizer.Localizer.Instance["Toast_VideoGenerationCompleted"],
+                            outputVideoPath)));
             }
             else
             {
                 VideoGenerationStatus = "视频生成失败";
-                QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("视频生成失败"));
+                QueueStatusChanged?.Invoke(this,
+                    new QueueStatusChangedEventArgs(Localizer.Localizer.Instance["Toast_VideoGenerationFailed"]));
             }
         }
         catch (Exception ex)
         {
             VideoGenerationStatus = $"生成失败: {ex.Message}";
-            QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs($"生成视频时出错: {ex.Message}"));
+            QueueStatusChanged?.Invoke(this,
+                new QueueStatusChangedEventArgs(
+                    string.Format(Localizer.Localizer.Instance["Toast_VideoGenerationError"], ex.Message)));
         }
         finally
         {
@@ -861,10 +875,11 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 先释放旧的Blender服务（如果存在）
         if (_blenderService != null)
         {
-            Console.WriteLine($"[RenderQueueViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
+            Console.WriteLine(
+                $"[RenderQueueViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
             _blenderService.Dispose();
         }
-        
+
         _blenderService = blenderService;
         // 注意：BlenderVideoService现在需要IBlenderProcess，这里暂时设为null
         // 视频生成时会创建临时的BlenderVideoService
@@ -876,26 +891,27 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 设置Blender路径（不创建长期运行的服务）
+    ///     设置Blender路径（不创建长期运行的服务）
     /// </summary>
     public void SetBlenderPath(string blenderPath)
     {
         // 先释放旧的服务（如果存在）
         if (_blenderService != null)
         {
-            Console.WriteLine($"[RenderQueueViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
+            Console.WriteLine(
+                $"[RenderQueueViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
             _blenderService.Dispose();
         }
-        
+
         if (_processService != null)
         {
-            Console.WriteLine($"[RenderQueueViewModel] Disposing old process service");
+            Console.WriteLine("[RenderQueueViewModel] Disposing old process service");
             _processService.Dispose();
         }
-        
+
         _blenderPath = blenderPath;
         _blenderVideoService = null; // 视频服务需要BlenderExeService实例，暂时设为null
-        
+
         // 创建新的进程管理服务
         _processService = new BlenderProcessService(blenderPath);
         Console.WriteLine($"[RenderQueueViewModel] Blender path and process service set successfully: {blenderPath}");
@@ -931,12 +947,14 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (_pausedTask != null && _pausedTask.Enable && _pausedTask.IsValid)
         {
             taskToStart = _pausedTask;
-            Console.WriteLine($"[RenderQueueViewModel] Resuming paused task: {Path.GetFileName(_pausedTask.BlendFilePath)} from frame {_pausedFrame}");
+            Console.WriteLine(
+                $"[RenderQueueViewModel] Resuming paused task: {Path.GetFileName(_pausedTask.BlendFilePath)} from frame {_pausedFrame}");
         }
         else
         {
             // 启动下一个待处理且启用且有效的任务
-            taskToStart = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid);
+            taskToStart =
+                RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid);
         }
 
         if (taskToStart == null)
@@ -956,7 +974,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             {
                 // 使用新的进程管理服务创建渲染进程
                 var renderProcess = await _processService!.CreateRenderProcessAsync();
-                
+
                 try
                 {
                     // 如果是恢复暂停的任务，从指定帧开始
@@ -1080,11 +1098,13 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 如果这是之前选中的任务，重新选中新任务
             if (wasSelected) SelectedTask = newTask;
 
-            StatusMessageChanged?.Invoke(this, $"任务已重新加载: {Path.GetFileName(filePath)}");
+            StatusMessageChanged?.Invoke(this,
+                string.Format(Localizer.Localizer.Instance["Toast_TaskReloaded"], Path.GetFileName(filePath)));
         }
         catch (Exception ex)
         {
-            StatusMessageChanged?.Invoke(this, $"重新加载任务失败: {ex.Message}");
+            StatusMessageChanged?.Invoke(this,
+                string.Format(Localizer.Localizer.Instance["Toast_TaskReloadFailed"], ex.Message));
         }
     }
 
@@ -1196,13 +1216,9 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 使用FileSystemHelper打开文件所在文件夹
             var success = FileSystemHelper.OpenFileDirectory(e.FilePath);
             if (success)
-            {
                 Console.WriteLine($"[RenderQueueViewModel] ✅ Opened file directory: {e.FilePath}");
-            }
             else
-            {
                 Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to open file directory: {e.FilePath}");
-            }
         }
         catch (Exception ex)
         {
@@ -1298,7 +1314,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                              t.Status == RenderTaskStatus.Cancelled))
                 {
                     // 只有当所有启用的任务都完成/失败/取消时，才设置为完成状态
-                    QueueStatusText = "Queue_Completed";
+                    QueueStatusText = Localizer.Localizer.Instance["Queue_Completed"];
                     QueueState = QueueState.Completed;
 
                     // 触发队列完成Toast
@@ -1306,8 +1322,8 @@ public partial class RenderQueueViewModel : ViewModelBase
                         .Where(t => t.Enable && t.IsValid && t.Status == RenderTaskStatus.Completed).Count();
                     var totalTasks = RenderTasks.Where(t => t.Enable && t.IsValid).Count();
                     ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
-                        "Queue_Completed",
-                        "Queue_AllTasksCompleted",
+                        Localizer.Localizer.Instance["Queue_Completed"],
+                        string.Format(Localizer.Localizer.Instance["Queue_AllTasksCompleted"], completedTasks, totalTasks),
                         NotificationType.Success));
                 }
                 else
@@ -1323,7 +1339,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 else if (RenderTasks.Where(t => t.Enable && t.IsValid).Any(t =>
                              t.Status == RenderTaskStatus.Completed || t.Status == RenderTaskStatus.Failed ||
                              t.Status == RenderTaskStatus.Cancelled))
-                    QueueStatusText = "Queue_Completed";
+                    QueueStatusText = Localizer.Localizer.Instance["Queue_Completed"];
                 // 不自动改变状态，让用户手动决定是否重新开始
                 else
                     QueueStatusText = "Queue_Empty";
@@ -1599,7 +1615,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             }
 
             Console.WriteLine($"[RenderQueueViewModel] ✅ Queue data loaded successfully - {RenderTasks.Count} tasks");
-            
+
             // 数据加载完成后，通知按钮状态属性变更
             OnPropertyChanged(nameof(CanStartQueue));
             OnPropertyChanged(nameof(CanShowStartQueue));
@@ -1782,23 +1798,24 @@ public partial class RenderQueueViewModel : ViewModelBase
                         Console.WriteLine($"[RenderQueueViewModel] ⚠️ Failed to delete source file: {ex.Message}");
                     }
 
-                    StatusMessageChanged?.Invoke(this, "检测到blender插件提交,添加到渲染队列");
+                    StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPluginDetected"]);
 
                     // 显示成功toast
                     ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
-                        "任务添加成功",
-                        "检测到blender插件提交,添加到渲染队列",
+                        Localizer.Localizer.Instance["Toast_TaskAddSuccess"],
+                        Localizer.Localizer.Instance["Toast_BlenderPluginDetected"],
                         NotificationType.Information));
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[RenderQueueViewModel] ❌ Error processing Blender data file: {ex.Message}");
-                    StatusMessageChanged?.Invoke(this, $"处理Blender数据文件时出错: {ex.Message}");
+                    StatusMessageChanged?.Invoke(this,
+                        string.Format(Localizer.Localizer.Instance["Toast_BlenderDataProcessError"], ex.Message));
 
                     // 显示错误toast
                     ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
-                        "任务添加失败",
-                        $"处理Blender数据文件时出错: {ex.Message}",
+                        Localizer.Localizer.Instance["Toast_TaskAddFailedTitle"],
+                        string.Format(Localizer.Localizer.Instance["Toast_BlenderDataProcessError"], ex.Message),
                         NotificationType.Error));
                 }
             });
