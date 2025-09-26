@@ -306,6 +306,8 @@ public partial class SettingsViewModel : ViewModelBase
                 if (languageOption != null)
                 {
                     Language = languageOption;
+                    // 加载语言设置时，立即应用语言切换
+                    Localizer.Localizer.Instance.LoadLanguage(settings.Language);
                 }
             }
 

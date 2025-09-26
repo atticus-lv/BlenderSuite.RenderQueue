@@ -15,6 +15,7 @@
              xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
              xmlns:animations="clr-namespace:SukiUI.Animations;assembly=SukiUI"
              xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
+             xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
              x:DataType="viewModels:RenderQueueViewModel"
@@ -52,7 +53,8 @@
 
                                 <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
                                     <TextBlock.Text>
-                                        <MultiBinding StringFormat="{}成功: {0} | 失败: {1}">
+                                        <MultiBinding Converter="{StaticResource LocalizeConverter}">
+                                            <Binding Source="{}Success: {0} | Failed: {1}" />
                                             <Binding Path="CompletedTaskCount" />
                                             <Binding Path="FailedTaskCount" />
                                         </MultiBinding>
@@ -61,20 +63,27 @@
                                 <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
                                 <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
                                     <TextBlock.Text>
-                                        <MultiBinding StringFormat="{}帧: {0} | {1}">
+                                        <MultiBinding Converter="{StaticResource LocalizeConverter}">
+                                            <Binding Source="{}Frames: {0} | {1}" />
                                             <Binding Path="CompletedFrames" />
                                             <Binding Path="TotalFrames" />
                                         </MultiBinding>
                                     </TextBlock.Text>
                                 </TextBlock>
                                 <!-- 剩余时间显示 -->
-                                <TextBlock Text="{Binding RemainingTimeText,StringFormat=剩余时间: {0}}"
-                                           FontSize="16"
+                                <TextBlock FontSize="16"
                                            FontFamily="Foran"
                                            FontWeight="Bold"
                                            IsVisible="{Binding IsQueueRunning}"
                                            Foreground="{DynamicResource SukiAccentColor}"
-                                           VerticalAlignment="Center" />
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource LocalizeConverter}">
+                                            <Binding Source="{}Remaining Time: {0}" />
+                                            <Binding Path="RemainingTimeText" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
@@ -89,12 +98,7 @@
                         <SplitView.Content>
                             <Button Click="ToggleDeviceInfoPane" Classes="Basic" Padding="8 0 0 0 ">
                                 <Button.Content>
-                                    <StackPanel>
-                                        <TextBlock>设</TextBlock>
-                                        <TextBlock>备</TextBlock>
-                                        <TextBlock>负</TextBlock>
-                                        <TextBlock>载</TextBlock>
-                                    </StackPanel>
+                                    <material:MaterialIcon Kind="Chip"></material:MaterialIcon>
                                 </Button.Content>
                             </Button>
                         </SplitView.Content>
@@ -121,7 +125,7 @@
                                 IsEnabled="{Binding CanStartQueue}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <material:MaterialIcon Kind="BlenderSoftware" Width="24" Height="24" />
-                                <TextBlock Text="开始队列" VerticalAlignment="Center" />
+                                <TextBlock Text="{i18n:Localize Queue_StartQueue}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -139,7 +143,7 @@
                                 IsVisible="{Binding CanResumeQueue}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <material:MaterialIcon Kind="Play" Width="24" Height="24" />
-                                <TextBlock Text="恢复队列" VerticalAlignment="Center" />
+                                <TextBlock Text="{i18n:Localize Queue_ResumeQueue}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
@@ -156,7 +160,7 @@
                                 Classes="Flat Rounded">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                                 <material:MaterialIcon Kind="AddBold" Width="24" Height="24" />
-                                <TextBlock Text="添加任务" VerticalAlignment="Center" IsVisible="{Binding HasNoTasks}" />
+                                <TextBlock Text="{i18n:Localize Queue_AddTasks}" VerticalAlignment="Center" IsVisible="{Binding HasNoTasks}" />
                             </StackPanel>
                         </Button>
 
@@ -176,7 +180,7 @@
                         <Button.Content>
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <TextBlock Text="🎬" VerticalAlignment="Center" />
-                                <TextBlock Text="合成视频" VerticalAlignment="Center" />
+                                <TextBlock Text="{i18n:Localize Queue_GenerateVideo}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button.Content>
                     </Button>
@@ -234,7 +238,7 @@
                                             </Setter>
                                             <Setter Property="ContextMenu">
                                                 <ContextMenu>
-                                                    <MenuItem Header="在Blender中打开"
+                                                    <MenuItem Header="{i18n:Localize Queue_OpenInBlender}"
                                                               Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).OpenInBlenderCommand}"
                                                               IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).IsValid}">
                                                         <MenuItem.Icon>
@@ -242,14 +246,14 @@
                                                                 Height="16" />
                                                         </MenuItem.Icon>
                                                     </MenuItem>
-                                                    <MenuItem Header="打开所在文件夹"
+                                                    <MenuItem Header="{i18n:Localize Queue_OpenFolder}"
                                                               Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).OpenFileDirectoryCommand}">
                                                         <MenuItem.Icon>
                                                             <material:MaterialIcon Kind="FolderOpen" Width="16"
                                                                 Height="16" />
                                                         </MenuItem.Icon>
                                                     </MenuItem>
-                                                    <MenuItem Header="刷新"
+                                                    <MenuItem Header="{i18n:Localize Queue_Refresh}"
                                                               Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).RefreshFileInfoCommand}">
                                                         <MenuItem.Icon>
                                                             <material:MaterialIcon Kind="Refresh" Width="16"
@@ -329,7 +333,7 @@
                                                         <!-- 加载状态显示 -->
                                                         <StackPanel Orientation="Horizontal" Spacing="8"
                                                                     IsVisible="{Binding ScenePropertiesView.IsLoading}">
-                                                            <TextBlock Text="正在加载..." FontSize="10"
+                                                            <TextBlock Text="{i18n:Localize Queue_Loading}" FontSize="10"
                                                                        Foreground="Gray" />
                                                         </StackPanel>
 
@@ -377,7 +381,7 @@
                                                                 <!-- 显示覆写模式提示 -->
                                                                 <TextBlock Text="*" FontSize="10" Foreground="#FF9800"
                                                                            FontWeight="Bold"
-                                                                           ToolTip.Tip="使用覆写的帧范围或场景">
+                                                                           ToolTip.Tip="{i18n:Localize Queue_OverrideTip}">
                                                                     <TextBlock.IsVisible>
                                                                         <MultiBinding
                                                                             Converter="{x:Static conv:BoolConverters.Or}">
@@ -388,7 +392,7 @@
                                                                 </TextBlock>
                                                             </StackPanel>
 
-                                                            <TextBlock Text="文件无效" FontSize="10"
+                                                            <TextBlock Text="{i18n:Localize Queue_FileInvalid}" FontSize="10"
                                                                        Foreground="{DynamicResource SukiDangerColor}"
                                                                        FontWeight="Bold"
                                                                        IsVisible="{Binding IsValid, Converter={x:Static BoolConverters.Not}}" />
@@ -413,7 +417,7 @@
                                                                   IsChecked="{Binding Enable}"
                                                                   Margin="16,0, 0,0"
                                                                   VerticalAlignment="Center"
-                                                                  ToolTip.Tip="启用/禁用此任务">
+                                                                  ToolTip.Tip="{i18n:Localize Queue_EnableDisable}">
                                                         <ToggleSwitch.IsEnabled>
                                                             <MultiBinding Converter="{x:Static BoolConverters.Or}">
                                                                 <Binding
@@ -458,7 +462,7 @@
                                                             Padding="0"
                                                             VerticalAlignment="Center"
                                                             Classes="Basic Icon"
-                                                            ToolTip.Tip="删除此任务">
+                                                            ToolTip.Tip="{i18n:Localize Queue_DeleteTask}">
                                                             <material:MaterialIcon Kind="Delete" Width="24"
                                                                 Height="24" />
                                                             <Button.IsVisible>
@@ -510,7 +514,7 @@
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
                                 </ListBox>
-                                <TextBlock Text="拖拽 .blend 文件到这里" Foreground="Gray"
+                                <TextBlock Text="{i18n:Localize Queue_DragFilesHere}" Foreground="Gray"
                                            FontWeight="SemiBold"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
