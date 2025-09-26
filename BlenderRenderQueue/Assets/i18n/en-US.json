@@ -147,5 +147,11 @@
   "ConfirmClearAll_Title": "Confirm Clear",
   "ConfirmClearAll_Message": "Are you sure you want to clear all tasks?\n\nThis will delete {0} tasks from the queue. This action cannot be undone.",
   "ConfirmClearAll_Cancel": "Cancel",
-  "ConfirmClearAll_Confirm": "Clear"
+  "ConfirmClearAll_Confirm": "Clear",
+  "VideoGeneration_Starting": "Starting video generation...",
+  "VideoGeneration_Generating": "Generating:",
+  "VideoGeneration_Completed": "Video generation completed",
+  "VideoGeneration_Failed": "Video generation failed",
+  "VideoGeneration_Error": "Generation failed: {0}",
+  "VideoGeneration_ToastTitle": "Generating video..."
 }

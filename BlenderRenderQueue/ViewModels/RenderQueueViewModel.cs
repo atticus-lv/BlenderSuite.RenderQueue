@@ -807,10 +807,9 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 开始生成视频
             IsGeneratingVideo = true;
             VideoGenerationProgress = 0.0;
-            VideoGenerationStatus = "正在生成视频...";
+            VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Starting"];
             QueueStatusChanged?.Invoke(this,
-                new QueueStatusChangedEventArgs(
-                    string.Format(Localizer.Localizer.Instance["Toast_VideoGenerationStarted"], outputVideoPath)));
+                new QueueStatusChangedEventArgs("Toast_VideoGenerationStarted"));
 
             // 使用新的进程管理服务创建视频生成进程
             var videoProcess = await _processService!.CreateVideoProcessAsync();
@@ -832,7 +831,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                     {
                         // 更新进度
                         VideoGenerationProgress = progress;
-                        VideoGenerationStatus = "生成中:";
+                        VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Generating"];
                     });
             }
             finally
@@ -845,25 +844,22 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             if (success)
             {
-                VideoGenerationStatus = "视频生成完成";
+                VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Completed"];
                 QueueStatusChanged?.Invoke(this,
-                    new QueueStatusChangedEventArgs(
-                        string.Format(Localizer.Localizer.Instance["Toast_VideoGenerationCompleted"],
-                            outputVideoPath)));
+                    new QueueStatusChangedEventArgs("Toast_VideoGenerationCompleted"));
             }
             else
             {
-                VideoGenerationStatus = "视频生成失败";
+                VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Failed"];
                 QueueStatusChanged?.Invoke(this,
-                    new QueueStatusChangedEventArgs(Localizer.Localizer.Instance["Toast_VideoGenerationFailed"]));
+                    new QueueStatusChangedEventArgs("Toast_VideoGenerationFailed"));
             }
         }
         catch (Exception ex)
         {
-            VideoGenerationStatus = $"生成失败: {ex.Message}";
+            VideoGenerationStatus = string.Format(Localizer.Localizer.Instance["VideoGeneration_Error"], ex.Message);
             QueueStatusChanged?.Invoke(this,
-                new QueueStatusChangedEventArgs(
-                    string.Format(Localizer.Localizer.Instance["Toast_VideoGenerationError"], ex.Message)));
+                new QueueStatusChangedEventArgs("Toast_VideoGenerationError"));
         }
         finally
         {

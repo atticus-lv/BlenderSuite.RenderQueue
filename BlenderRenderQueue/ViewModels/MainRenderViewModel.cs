@@ -11,6 +11,7 @@ using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
+using BlenderRenderQueue.Localizer;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SukiUI.Dialogs;
@@ -369,7 +370,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
             // 创建进度 Toast
             _videoGenerationToast = toastManager.CreateToast()
-                .WithTitle("正在生成视频...")
+                .WithTitle(Localizer.Localizer.Instance["VideoGeneration_ToastTitle"])
                 .WithContent(_videoGenerationProgressBar)
                 .OfType(NotificationType.Information)
                 .Queue();
@@ -562,19 +563,20 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnQueueStatusChanged(object? sender, QueueStatusChangedEventArgs e)
     {
-        StatusMessage = e.StatusMessage;
+        // 将翻译键转换为翻译后的文本显示在状态栏
+        StatusMessage = Localizer.Localizer.Instance[e.StatusMessage];
 
         // 检查是否是视频生成相关的状态消息，显示 Toast 提示
-        if (e.StatusMessage.Contains("开始生成视频"))
+        if (e.StatusMessage.Contains("Toast_VideoGenerationStarted"))
         {
             ShowVideoGenerationProgressToast();
         }
-        else if (e.StatusMessage.Contains("视频生成完成"))
+        else if (e.StatusMessage.Contains("Toast_VideoGenerationCompleted"))
         {
             DismissVideoGenerationToast();
             ShowVideoGenerationSuccessToast(e.StatusMessage);
         }
-        else if (e.StatusMessage.Contains("视频生成失败") || e.StatusMessage.Contains("生成视频时出错"))
+        else if (e.StatusMessage.Contains("Toast_VideoGenerationFailed") || e.StatusMessage.Contains("Toast_VideoGenerationError"))
         {
             DismissVideoGenerationToast();
             ShowToast("视频生成失败", e.StatusMessage, NotificationType.Error);
