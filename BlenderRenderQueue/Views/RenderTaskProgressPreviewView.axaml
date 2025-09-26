@@ -6,6 +6,7 @@
              xmlns:design="clr-namespace:BlenderRenderQueue.ViewModels.DesignTime"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
 
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
              x:Class="BlenderRenderQueue.Views.RenderTaskProgressPreviewView"
@@ -63,7 +64,8 @@
                 VerticalAlignment="Center" FontWeight="Bold" FontSize="12"
                 MinWidth="60">
                 <TextBlock.Text>
-                    <MultiBinding StringFormat="{}进度: {0}/{1}">
+                    <MultiBinding Converter="{StaticResource LocalizeConverter}">
+                        <Binding Source="{}ProgressPreview_Progress" />
                         <Binding Path="CompletedFrames" />
                         <Binding Path="RealTotalFrames" />
                     </MultiBinding>
@@ -77,11 +79,23 @@
             <!-- 当前帧 -->
             <Grid ColumnDefinitions="Auto,8,Auto" RowDefinitions="Auto">
                 <TextBlock Grid.Row="0" Grid.Column="0" FontWeight="Bold"
-                           Text="{Binding SampleText,StringFormat=采样: {0}}"
-                           FontSize="12" />
+                           FontSize="12">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource LocalizeConverter}">
+                            <Binding Source="{}ProgressPreview_Sample" />
+                            <Binding Path="SampleText" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
                 <TextBlock
-                    Grid.Column="2" Text="{Binding CurrentFrame, StringFormat='帧: {0}'}"
-                    FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    Grid.Column="2" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource LocalizeConverter}">
+                            <Binding Source="{}ProgressPreview_Frame" />
+                            <Binding Path="CurrentFrame" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
             </Grid>
             <ProgressBar MaxWidth="200"
                          Minimum="0" Maximum="1"

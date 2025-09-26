@@ -139,5 +139,8 @@
   "Toast_VideoGenerationFailed": "视频生成失败",
   "Toast_VideoGenerationError": "生成视频时出错: {0}",
   "Toast_TaskAddSuccess": "任务添加成功",
-  "Toast_TaskAddFailedTitle": "任务添加失败"
+  "Toast_TaskAddFailedTitle": "任务添加失败",
+  "ProgressPreview_Progress": "进度: {0}/{1}",
+  "ProgressPreview_Sample": "采样: {0}",
+  "ProgressPreview_Frame": "帧: {0}"
 }

@@ -140,5 +140,8 @@
   "Toast_VideoGenerationFailed": "Video generation failed",
   "Toast_VideoGenerationError": "Error generating video: {0}",
   "Toast_TaskAddSuccess": "Task added successfully",
-  "Toast_TaskAddFailedTitle": "Task add failed"
+  "Toast_TaskAddFailedTitle": "Task add failed",
+  "ProgressPreview_Progress": "Progress: {0}/{1}",
+  "ProgressPreview_Sample": "Sample: {0}",
+  "ProgressPreview_Frame": "Frame: {0}"
 }
