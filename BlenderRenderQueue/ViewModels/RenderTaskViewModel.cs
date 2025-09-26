@@ -767,8 +767,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             var cmd = new BlenderCommandService();
 
             // 为渲染任务设置可配置的超时时间
-            // 对于长时间渲染任务，使用更长的超时时间（至少30分钟）
-            var renderTimeout = Math.Max(_globalRenderTimeoutSeconds, 3600); // 最少60分钟
+            // 使用来自SettingsViewModel的超时设置，但确保有合理的最小值
+            var renderTimeout = Math.Max(_globalRenderTimeoutSeconds, 300); // 最少5分钟
             _exe.Timeout = renderTimeout;
 
             // 根据覆写设置决定是否传递帧范围和场景参数
@@ -917,7 +917,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             var cmd = new BlenderCommandService();
 
             // 为渲染任务设置可配置的超时时间
-            var renderTimeout = Math.Max(_globalRenderTimeoutSeconds, 3600); // 最少60分钟
+            // 使用来自SettingsViewModel的超时设置，但确保有合理的最小值
+            var renderTimeout = Math.Max(_globalRenderTimeoutSeconds, 300); // 最少5分钟
             _exe.Timeout = renderTimeout;
 
             // 根据覆写设置决定是否传递帧范围和场景参数
