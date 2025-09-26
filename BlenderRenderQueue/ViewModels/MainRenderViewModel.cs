@@ -8,13 +8,12 @@ using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
 using BlenderRenderQueue.Helpers;
+using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SukiUI.Controls;
 using SukiUI.Dialogs;
-using SukiUI.Enums;
 using SukiUI.Toasts;
 
 namespace BlenderRenderQueue.ViewModels;
@@ -50,7 +49,6 @@ public partial class MainRenderViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isLoadingBlenderInfo;
-
 
 
     // 内部状态
@@ -92,9 +90,11 @@ public partial class MainRenderViewModel : ViewModelBase
             // 正确释放旧的Blender服务
             if (_blenderService != null)
             {
-                Console.WriteLine($"[MainRenderViewModel] Disposing Blender service due to invalid path - ID: {_blenderService.ServiceId}");
+                Console.WriteLine(
+                    $"[MainRenderViewModel] Disposing Blender service due to invalid path - ID: {_blenderService.ServiceId}");
                 _blenderService.Dispose();
             }
+
             _blenderService = null;
             RenderQueue.SetBlenderService(null!);
             StatusMessage = "Blender路径无效";
@@ -131,17 +131,19 @@ public partial class MainRenderViewModel : ViewModelBase
                 // 先释放旧的Blender服务（如果存在）
                 if (_blenderService != null)
                 {
-                    Console.WriteLine($"[MainRenderViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
+                    Console.WriteLine(
+                        $"[MainRenderViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
                     _blenderService.Dispose();
                 }
-                
+
                 // 设置Blender路径到渲染队列（不创建长期运行的服务）
                 Console.WriteLine($"[MainRenderViewModel] Setting Blender path: {blenderPath}");
                 RenderQueue.SetBlenderPath(blenderPath);
-                
+
                 // 创建临时服务用于视频生成（如果需要的话）
                 _blenderService = new BlenderExeService(blenderPath);
-                Console.WriteLine($"[MainRenderViewModel] Temporary Blender service created for video generation - ID: {_blenderService.ServiceId}");
+                Console.WriteLine(
+                    $"[MainRenderViewModel] Temporary Blender service created for video generation - ID: {_blenderService.ServiceId}");
             });
         }
         catch (Exception ex)
@@ -187,7 +189,9 @@ public partial class MainRenderViewModel : ViewModelBase
             ShowSettingsDialog();
         else
             // 检测成功，直接应用设置
-            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.DefaultRenderTimeoutSeconds, _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoCodec.Value, _settingsViewModel.VideoQuality.Value);
+            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.DefaultRenderTimeoutSeconds,
+                _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoCodec.Value,
+                _settingsViewModel.VideoQuality.Value);
     }
 
     [RelayCommand]
@@ -218,14 +222,15 @@ public partial class MainRenderViewModel : ViewModelBase
         ApplySettings(e.BlenderPath, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts, e.VideoCodec, e.VideoQuality);
     }
 
-    private void ApplySettings(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoCodec, string videoQuality)
+    private void ApplySettings(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts,
+        string videoCodec, string videoQuality)
     {
         BlenderPath = blenderPath;
-        
+
         // 更新全局超时设置和重试次数
         _renderQueue.SetGlobalRenderTimeout(defaultRenderTimeoutSeconds);
         _renderQueue.SetGlobalMaxRetryAttempts(maxRetryAttempts);
-        
+
         // 更新视频生成设置
         _renderQueue.SetVideoCodec(videoCodec);
         _renderQueue.SetVideoQuality(videoQuality);
@@ -334,10 +339,7 @@ public partial class MainRenderViewModel : ViewModelBase
                 // 延迟一点时间再打开，让用户看到toast通知
                 Task.Delay(1000).ContinueWith(_ =>
                 {
-                    Dispatcher.UIThread.Invoke(() =>
-                    {
-                        OpenVideoLocation(videoPath);
-                    });
+                    Dispatcher.UIThread.Invoke(() => { OpenVideoLocation(videoPath); });
                 });
             }
         }

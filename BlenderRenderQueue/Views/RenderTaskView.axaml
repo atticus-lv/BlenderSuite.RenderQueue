@@ -30,7 +30,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
 
                         <Border
-                            Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
+                            Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
                             CornerRadius="4" Padding="8,4">
                             <TextBlock Text="{Binding StatusText}" FontSize="12" FontWeight="Bold" />
                         </Border>

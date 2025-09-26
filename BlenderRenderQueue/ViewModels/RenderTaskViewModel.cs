@@ -190,7 +190,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private async Task<bool> TryRetryRenderAsync(IBlenderProcess blenderProcess)
     {
         _currentRetryAttempts++;
-        
+
         if (_currentRetryAttempts > _globalMaxRetryAttempts)
         {
             EnqueueLog($"已达到最大重试次数 ({_globalMaxRetryAttempts})，任务失败");
@@ -199,18 +199,18 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
 
         EnqueueLog($"开始第 {_currentRetryAttempts} 次重试 (最大 {_globalMaxRetryAttempts} 次)");
-        
+
         try
         {
             // 暂停当前渲染
             await PauseRenderAsync();
-            
+
             // 等待一小段时间再重试
             await Task.Delay(2000);
-            
+
             // 从当前帧重新开始渲染
             await ResumeRenderAsync(blenderProcess, CurrentFrame);
-            
+
             EnqueueLog($"第 {_currentRetryAttempts} 次重试开始成功");
             return true;
         }
@@ -302,12 +302,12 @@ public partial class RenderTaskViewModel : ViewModelBase
         // 当ScenePropertiesView变化时，触发相关属性通知
         OnPropertyChanged(nameof(FinalSceneProperties));
         OnPropertyChanged(nameof(FramePathDirectory));
-        
+
         // 订阅ScenePropertiesView的属性变化事件
         if (value == null) return;
         value.PropertyChanged += (sender, args) =>
         {
-            if (args.PropertyName == nameof(value.ActiveSceneProperties) || 
+            if (args.PropertyName == nameof(value.ActiveSceneProperties) ||
                 args.PropertyName == nameof(value.SceneProperties) ||
                 args.PropertyName == nameof(value.AllScenes))
             {
@@ -448,12 +448,12 @@ public partial class RenderTaskViewModel : ViewModelBase
         get
         {
             // 如果有场景覆写且选择了有效场景，使用覆写场景
-            if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) && 
+            if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) &&
                 ScenePropertiesView.AllScenes.ContainsKey(SelectedSceneName))
             {
                 return ScenePropertiesView.AllScenes[SelectedSceneName];
             }
-            
+
             // 否则使用默认场景
             return ScenePropertiesView.ActiveSceneProperties;
         }
@@ -462,7 +462,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// <summary>
     /// 获取最终渲染场景的帧路径目录，用于绑定到ImageSequencePreviewControl
     /// </summary>
-    public string? FramePathDirectory 
+    public string? FramePathDirectory
     {
         get
         {
@@ -502,7 +502,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         _logTimer.Elapsed += (_, __) => FlushLogQueue();
         _logTimer.AutoReset = true;
         _logTimer.Start();
-        
+
         // 手动触发ScenePropertiesView的初始化
         OnScenePropertiesViewChanged(ScenePropertiesView);
     }
@@ -731,7 +731,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             OnPropertyChanged(nameof(DisplayTotalFrames));
             OnPropertyChanged(nameof(HasValidSceneSelection));
             OnPropertyChanged(nameof(ShowSceneOverrideWarning));
-            
+
             // 触发最终场景相关属性更新
             OnPropertyChanged(nameof(FinalSceneProperties));
             OnPropertyChanged(nameof(FramePathDirectory));
@@ -807,7 +807,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             else
             {
                 EnqueueLog($"渲染任务超时: {ex.Message}");
-                
+
                 // 尝试重试
                 if (_exe != null && _currentRetryAttempts < _globalMaxRetryAttempts)
                 {
@@ -816,7 +816,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                     // 暂时跳过重试，直接标记为失败
                     EnqueueLog($"重试功能暂不可用，任务失败");
                 }
-                
+
                 // 重试失败或达到最大重试次数
                 SetStatus(RenderTaskStatus.Failed, $"超时失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
             }
@@ -868,7 +868,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         try
         {
             EnqueueLog("正在暂停渲染...");
-            
+
             // 停止渲染会话
             _session?.Dispose();
             _session = null;
@@ -882,7 +882,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             SetStatus(RenderTaskStatus.Paused, "已暂停");
             EnqueueLog($"渲染已暂停，当前帧: {CurrentFrame}");
-            
+
             // 添加一个小的延迟以确保状态更新完成
             await Task.Delay(1);
         }
@@ -948,7 +948,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             else
             {
                 EnqueueLog($"恢复渲染任务超时: {ex.Message}");
-                
+
                 // 尝试重试
                 if (_exe != null && _currentRetryAttempts < _globalMaxRetryAttempts)
                 {
@@ -957,7 +957,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                     // 暂时跳过重试，直接标记为失败
                     EnqueueLog($"重试功能暂不可用，任务失败");
                 }
-                
+
                 // 重试失败或达到最大重试次数
                 SetStatus(RenderTaskStatus.Failed, $"恢复超时失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
             }
@@ -1086,7 +1086,8 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         // 触发进度变化事件
         var frameRenderTime = p.Elapsed ?? TimeSpan.Zero;
-        ProgressChanged?.Invoke(this, new RenderTaskProgressEventArgs(OverallProgress01, Progress01, p.CurrentFrame, frameRenderTime));
+        ProgressChanged?.Invoke(this,
+            new RenderTaskProgressEventArgs(OverallProgress01, Progress01, p.CurrentFrame, frameRenderTime));
     }
 
     private async void OnEvent(RenderEvent e)
@@ -1141,7 +1142,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 break;
             case RenderError err:
                 EnqueueLog($"渲染错误: {err.Message}");
-                
+
                 // 尝试重试
                 if (_exe != null && _currentRetryAttempts < _globalMaxRetryAttempts)
                 {
@@ -1150,7 +1151,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                     // 暂时跳过重试，直接标记为失败
                     EnqueueLog($"重试功能暂不可用，任务失败");
                 }
-                
+
                 // 重试失败或达到最大重试次数
                 SetStatus(RenderTaskStatus.Failed, $"渲染失败 ({_currentRetryAttempts}/{_globalMaxRetryAttempts})");
                 EndTime = DateTime.Now;
@@ -1311,48 +1312,6 @@ public partial class RenderTaskViewModel : ViewModelBase
         FileInfo?.Dispose();
         RenderedImage?.Dispose();
     }
-
-    // 转换器
-    public static readonly IValueConverter StatusToColorConverter = new StatusToColorConverter();
-}
-
-// 状态到颜色的转换器
-public class StatusToColorConverter : IValueConverter
-{
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        if (value is RenderTaskStatus status)
-        {
-            return status switch
-            {
-                RenderTaskStatus.Pending => "#808080", // 灰色 - 等待中
-                RenderTaskStatus.Running => "#00C000", // 绿色 - 运行中
-                RenderTaskStatus.Paused => "#FFA500", // 橙色 - 已暂停
-                RenderTaskStatus.Completed => "#008000", // 深绿色 - 已完成
-                RenderTaskStatus.Failed => "#FF0000", // 红色 - 失败
-                RenderTaskStatus.Cancelled => "#CCCCCC", // 浅灰色 - 已取消
-                _ => "#CCCCCC" // 默认灰色
-            };
-        }
-
-        return "#CCCCCC";
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-// 渲染任务状态枚举
-public enum RenderTaskStatus
-{
-    Pending, // 等待中
-    Running, // 运行中
-    Paused, // 已暂停
-    Completed, // 已完成
-    Failed, // 失败
-    Cancelled // 已取消
 }
 
 // 状态变化事件参数
@@ -1376,7 +1335,8 @@ public class RenderTaskProgressEventArgs : EventArgs
     public int CurrentFrame { get; }
     public TimeSpan FrameRenderTime { get; }
 
-    public RenderTaskProgressEventArgs(double overallProgress, double currentFrameProgress, int currentFrame, TimeSpan frameRenderTime)
+    public RenderTaskProgressEventArgs(double overallProgress, double currentFrameProgress, int currentFrame,
+        TimeSpan frameRenderTime)
     {
         OverallProgress = overallProgress;
         CurrentFrameProgress = currentFrameProgress;

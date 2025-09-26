@@ -15,12 +15,13 @@
     <Application.Resources>
         <ResourceDictionary>
             <converters:FileNameConverter x:Key="FileNameConverter" />
+            <converters:StatusToColorConverter x:Key="StatusToColorConverter" />
             <localizer:LocalizeConverter x:Key="LocalizeConverter" />
         </ResourceDictionary>
     </Application.Resources>
     <Application.Styles>
-        <suki:SukiTheme ThemeColor="Blue" Locale="zh-CN"  />
+        <suki:SukiTheme ThemeColor="Blue" Locale="zh-CN" />
         <material:MaterialIconStyles />
     </Application.Styles>
-    
+
 </Application>

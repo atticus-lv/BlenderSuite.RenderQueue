@@ -160,7 +160,8 @@
                                 Classes="Flat Rounded">
                             <StackPanel Orientation="Horizontal" Spacing="4">
                                 <material:MaterialIcon Kind="AddBold" Width="24" Height="24" />
-                                <TextBlock Text="{i18n:Localize Queue_AddTasks}" VerticalAlignment="Center" IsVisible="{Binding HasNoTasks}" />
+                                <TextBlock Text="{i18n:Localize Queue_AddTasks}" VerticalAlignment="Center"
+                                           IsVisible="{Binding HasNoTasks}" />
                             </StackPanel>
                         </Button>
 
@@ -202,8 +203,8 @@
                     <!-- 任务列表 -->
                     <suki:GlassCard Grid.Row="1" Padding="2">
                         <Border BorderThickness="2" CornerRadius="8"
-                            MinHeight="60"
-                            DragDrop.AllowDrop="True">
+                                MinHeight="60"
+                                DragDrop.AllowDrop="True">
                             <i:Interaction.Behaviors>
                                 <behaviors:BorderFilesDropBehavior
                                     Command="{Binding AddDroppedFilesCommand}"
@@ -291,7 +292,7 @@
                                                         <!--render status icon -->
                                                         <Border Width="16" Height="16"
                                                                 VerticalAlignment="Top"
-                                                                Background="{Binding Status, Converter={x:Static vm:RenderTaskViewModel.StatusToColorConverter}}"
+                                                                Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
                                                                 CornerRadius="8">
                                                             <Border.IsVisible>
                                                                 <MultiBinding
@@ -333,7 +334,8 @@
                                                         <!-- 加载状态显示 -->
                                                         <StackPanel Orientation="Horizontal" Spacing="8"
                                                                     IsVisible="{Binding ScenePropertiesView.IsLoading}">
-                                                            <TextBlock Text="{i18n:Localize Queue_Loading}" FontSize="10"
+                                                            <TextBlock Text="{i18n:Localize Queue_Loading}"
+                                                                       FontSize="10"
                                                                        Foreground="Gray" />
                                                         </StackPanel>
 
@@ -392,7 +394,8 @@
                                                                 </TextBlock>
                                                             </StackPanel>
 
-                                                            <TextBlock Text="{i18n:Localize Queue_FileInvalid}" FontSize="10"
+                                                            <TextBlock Text="{i18n:Localize Queue_FileInvalid}"
+                                                                       FontSize="10"
                                                                        Foreground="{DynamicResource SukiDangerColor}"
                                                                        FontWeight="Bold"
                                                                        IsVisible="{Binding IsValid, Converter={x:Static BoolConverters.Not}}" />
