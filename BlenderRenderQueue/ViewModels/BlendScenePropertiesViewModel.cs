@@ -128,9 +128,9 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 加载文件属性
+    /// 加载文件属性（使用临时进程，查询完成后自动释放）
     /// </summary>
-    public async Task LoadPropertiesAsync(BasePythonProcessService process, string blendFilePath,
+    public async Task LoadPropertiesAsync(string blenderPath, string blendFilePath,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(blendFilePath))
@@ -155,10 +155,10 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
         {
             var queryService = new BlenderQueryService();
 
-            // 一次性查询所有文件属性
+            // 一次性查询所有文件属性（使用临时进程）
             LoadingMessage = "正在获取文件属性...";
             var (activeScene, sceneData) =
-                await queryService.GetAllFilePropertiesAsync(process, blendFilePath, cancellationToken);
+                await queryService.GetAllFilePropertiesWithTempProcessAsync(blenderPath, blendFilePath, cancellationToken);
 
             AllScenes = sceneData;
             ActiveSceneName = activeScene;

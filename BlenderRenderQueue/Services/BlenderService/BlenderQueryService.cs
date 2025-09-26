@@ -12,6 +12,68 @@ public sealed class BlenderQueryService : IBlenderQueryService
 {
     private const string Prefix = "[BRQ] ";
 
+    /// <summary>
+    /// 使用临时进程查询文件属性，查询完成后自动释放进程
+    /// </summary>
+    public async Task<(string ActiveScene, Dictionary<string, BlendSceneProperties> SceneData)> GetAllFilePropertiesWithTempProcessAsync(
+        string blenderPath,
+        string blendFilePath,
+        CancellationToken cancellationToken = default)
+    {
+        using var tempProcess = new BlenderQueryProcessService(blenderPath);
+        return await QueryAsync<(string, Dictionary<string, BlendSceneProperties>)>(
+            tempProcess,
+            blendFilePath,
+            "get_all_file_properties",
+            null,
+            root =>
+            {
+                var data = root.GetProperty("data");
+                var activeScene = data.GetProperty("active_scene").GetString() ?? string.Empty;
+                var sceneData = new Dictionary<string, BlendSceneProperties>();
+                
+                var scenesData = data.GetProperty("scene_data");
+                foreach (var sceneProperty in scenesData.EnumerateObject())
+                {
+                    var sceneName = sceneProperty.Name;
+                    var sceneInfo = sceneProperty.Value;
+                    
+                    sceneData[sceneName] = new BlendSceneProperties
+                    {
+                        FilePath = blendFilePath,
+                        FrameStart = sceneInfo.GetProperty("frame_start").GetInt32(),
+                        FrameEnd = sceneInfo.GetProperty("frame_end").GetInt32(),
+                        FrameCurrent = sceneInfo.GetProperty("frame_current").GetInt32(),
+                        CameraName = sceneInfo.GetProperty("camera").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("camera").GetString(),
+                        RenderOutputPath = sceneInfo.GetProperty("render_output_path").GetString(),
+                        RenderOutputFormat = sceneInfo.GetProperty("render_output_format").GetString(),
+                        RenderEngine = sceneInfo.GetProperty("render_engine").GetString(),
+                        SceneName = sceneName,
+                        Fps = sceneInfo.GetProperty("fps").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("fps").GetDouble(),
+                        FramePath = sceneInfo.GetProperty("frame_path").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("frame_path").GetString(),
+                        CyclesTimeLimit = sceneInfo.GetProperty("cycles_time_limit").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("cycles_time_limit").GetDouble(),
+                        ReferencedScenes = sceneInfo.GetProperty("referenced_scenes").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("referenced_scenes").EnumerateArray().Select(x => x.GetString()!).Where(x => x != null).ToList(),
+                        TimelineCameras = sceneInfo.GetProperty("timeline_cameras").ValueKind == JsonValueKind.Null
+                            ? null
+                            : sceneInfo.GetProperty("timeline_cameras").EnumerateArray().Select(x => x.GetString()!).Where(x => x != null).ToList()
+                    };
+                }
+                
+                return (activeScene, sceneData);
+            },
+            cancellationToken);
+    }
+
     public async Task<(string ActiveScene, Dictionary<string, BlendSceneProperties> SceneData)> GetAllFilePropertiesAsync(BasePythonProcessService process,
         string blendFilePath,
         CancellationToken cancellationToken = default)

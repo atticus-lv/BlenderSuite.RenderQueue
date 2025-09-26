@@ -179,7 +179,7 @@ public partial class TestRenderViewModel : ViewModelBase
 
 				try
 				{
-					await ScenePropertiesViewModel.LoadPropertiesAsync(_exe, BlendFilePath);
+					await ScenePropertiesViewModel.LoadPropertiesAsync(_exe.BlenderPath, BlendFilePath);
 					
 					// 从FilePropertiesViewModel获取帧范围信息
 					StartFrame = ScenePropertiesViewModel.SceneProperties.FrameStart;

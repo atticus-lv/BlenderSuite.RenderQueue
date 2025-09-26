@@ -674,7 +674,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         try
         {
             EnqueueLog("[QUERY] 开始加载文件属性...");
-            await ScenePropertiesView.LoadPropertiesAsync(exeService, BlendFilePath);
+            await ScenePropertiesView.LoadPropertiesAsync(exeService.BlenderPath, BlendFilePath);
 
             // 只有在覆写模式下才设置帧范围，否则使用场景默认值
             if (OverrideFrameRange)

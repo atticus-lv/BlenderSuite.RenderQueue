@@ -89,6 +89,8 @@ public partial class MainRenderViewModel : ViewModelBase
         if (!IsBlenderPathValid)
         {
             ClearBlenderInfo();
+            // 正确释放旧的Blender服务
+            _blenderService?.Dispose();
             _blenderService = null;
             RenderQueue.SetBlenderService(null!);
             StatusMessage = "Blender路径无效";
@@ -122,7 +124,10 @@ public partial class MainRenderViewModel : ViewModelBase
                 IsLoadingBlenderInfo = false;
                 StatusMessage = $"Blender {info.Version} 已就绪";
 
-                // 创建Blender服务并设置到渲染队列
+                // 先释放旧的Blender服务（如果存在）
+                _blenderService?.Dispose();
+                
+                // 创建新的Blender服务并设置到渲染队列
                 _blenderService = new BlenderExeService(blenderPath);
                 RenderQueue.SetBlenderService(_blenderService);
             });

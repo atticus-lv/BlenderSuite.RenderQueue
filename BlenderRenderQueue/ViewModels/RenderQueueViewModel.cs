@@ -823,6 +823,9 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     public void SetBlenderService(BlenderExeService blenderService)
     {
+        // 先释放旧的Blender服务（如果存在）
+        _blenderService?.Dispose();
+        
         _blenderService = blenderService;
         _blenderVideoService = new BlenderVideoService(blenderService);
         // Console.WriteLine("[RenderQueueViewModel] BlenderService set successfully");
