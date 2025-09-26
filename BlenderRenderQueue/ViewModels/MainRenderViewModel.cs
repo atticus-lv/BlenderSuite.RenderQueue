@@ -332,7 +332,9 @@ public partial class MainRenderViewModel : ViewModelBase
             var videoPath = ExtractVideoPathFromStatusMessage(statusMessage);
 
             // 显示简单的成功通知
-            ShowToast("视频生成完成", "视频已成功生成，正在打开所在位置...", NotificationType.Success);
+            ShowToast(Localizer.Localizer.Instance["VideoGeneration_SuccessTitle"], 
+                     Localizer.Localizer.Instance["VideoGeneration_SuccessMessage"], 
+                     NotificationType.Success);
 
             // 自动打开视频所在位置
             if (!string.IsNullOrEmpty(videoPath))
@@ -438,9 +440,10 @@ public partial class MainRenderViewModel : ViewModelBase
         try
         {
             // 状态消息格式通常是 "视频生成完成: C:\path\to\video.mp4"
-            if (statusMessage.Contains("视频生成完成: "))
+            var successPrefix = Localizer.Localizer.Instance["VideoGeneration_SuccessPrefix"];
+            if (statusMessage.Contains(successPrefix))
             {
-                return statusMessage.Substring(statusMessage.IndexOf("视频生成完成: ") + "视频生成完成: ".Length);
+                return statusMessage.Substring(statusMessage.IndexOf(successPrefix) + successPrefix.Length);
             }
 
             return string.Empty;
@@ -579,7 +582,9 @@ public partial class MainRenderViewModel : ViewModelBase
         else if (e.StatusMessage.Contains("Toast_VideoGenerationFailed") || e.StatusMessage.Contains("Toast_VideoGenerationError"))
         {
             DismissVideoGenerationToast();
-            ShowToast("视频生成失败", e.StatusMessage, NotificationType.Error);
+            ShowToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], 
+                     Localizer.Localizer.Instance[e.StatusMessage], 
+                     NotificationType.Error);
         }
     }
 

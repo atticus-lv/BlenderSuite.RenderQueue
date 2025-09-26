@@ -153,5 +153,9 @@
   "VideoGeneration_Completed": "Video generation completed",
   "VideoGeneration_Failed": "Video generation failed",
   "VideoGeneration_Error": "Generation failed: {0}",
-  "VideoGeneration_ToastTitle": "Generating video..."
+  "VideoGeneration_ToastTitle": "Generating video...",
+  "VideoGeneration_SuccessTitle": "Video generation completed",
+  "VideoGeneration_SuccessMessage": "Video has been successfully generated, opening location...",
+  "VideoGeneration_SuccessPrefix": "Video generation completed: ",
+  "VideoGeneration_FailedTitle": "Video generation failed"
 }

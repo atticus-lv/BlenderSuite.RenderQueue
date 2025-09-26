@@ -166,10 +166,17 @@ public class BlenderVideoService : IBlenderVideoService
                 var currentFrame = 0;
                 var startTime = DateTime.Now;
                 var lastReportedProgress = 0.0; // 跟踪上次报告的进度，用于检测异常跳动
+                var isVideoGenerationCompleted = false; // 标记视频生成是否已完成
                 
                 // 创建进度更新辅助方法
                 void UpdateProgress(double newProgress, string source)
                 {
+                    // 如果视频生成已完成，停止更新进度
+                    if (isVideoGenerationCompleted)
+                    {
+                        return;
+                    }
+                    
                     // 检测异常进度跳动（进度突然大幅下降）
                     if (newProgress < lastReportedProgress - 10 && lastReportedProgress > 50)
                     {
@@ -185,16 +192,16 @@ public class BlenderVideoService : IBlenderVideoService
                 var progressTask = Task.Run(async () =>
                 {
                     var progress = 0.0;
-                    while (progress < 95)
+                    while (progress < 95 && !cancellationToken.IsCancellationRequested)
                     {
-                        await Task.Delay(2000); // 每2秒更新一次进度
+                        await Task.Delay(2000, cancellationToken); // 每2秒更新一次进度
                         
                         // 基于时间的进度估算（假设视频生成需要30-60秒）
                         var elapsed = DateTime.Now - startTime;
                         progress = Math.Min(95, (elapsed.TotalSeconds / 45) * 100); // 假设45秒完成
                         UpdateProgress(progress, "时间基础进度");
                     }
-                });
+                }, cancellationToken);
                 
                 // 订阅Blender进程的输出事件
                 _blenderProcess.OnOutputReceived += (line) =>
@@ -278,26 +285,31 @@ public class BlenderVideoService : IBlenderVideoService
 
                 Console.WriteLine($"[BlenderVideoService] [DEBUG] Blender脚本执行完成");
                 
-                // 确保进度达到100%
-                UpdateProgress(100, "脚本执行完成");
-                
                 if (!string.IsNullOrEmpty(result))
                 {
                     if (File.Exists(outputVideoPath))
                     {
                         var fileInfo = new FileInfo(outputVideoPath);
                         Console.WriteLine($"[BlenderVideoService] ✅ 视频生成成功: {Path.GetFileName(outputVideoPath)} ({fileInfo.Length / 1024 / 1024} MB)");
+                        
+                        // 标记视频生成已完成
+                        isVideoGenerationCompleted = true;
+                        
+                        // 只有在确认视频文件存在且生成完成后才设置进度为100%
+                        UpdateProgress(100, "视频生成完成");
                         return true;
                     }
                     else
                     {
                         Console.WriteLine($"[BlenderVideoService] ❌ 输出文件不存在: {Path.GetFileName(outputVideoPath)}");
+                        isVideoGenerationCompleted = true;
                         return false;
                     }
                 }
                 else
                 {
                     Console.WriteLine($"[BlenderVideoService] ❌ 视频生成失败");
+                    isVideoGenerationCompleted = true;
                     return false;
                 }
             }

@@ -152,5 +152,9 @@
   "VideoGeneration_Completed": "视频生成完成",
   "VideoGeneration_Failed": "视频生成失败",
   "VideoGeneration_Error": "生成失败: {0}",
-  "VideoGeneration_ToastTitle": "正在生成视频..."
+  "VideoGeneration_ToastTitle": "正在生成视频...",
+  "VideoGeneration_SuccessTitle": "视频生成完成",
+  "VideoGeneration_SuccessMessage": "视频已成功生成，正在打开所在位置...",
+  "VideoGeneration_SuccessPrefix": "视频生成完成: ",
+  "VideoGeneration_FailedTitle": "视频生成失败"
 }
