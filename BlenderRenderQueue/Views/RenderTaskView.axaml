@@ -23,7 +23,7 @@
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="8" Margin="8">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding BlendFileName}" FontWeight="Bold" FontSize="20"
+                        <SelectableTextBlock Text="{Binding BlendFileName}" FontWeight="Bold" FontSize="20"
                                    VerticalAlignment="Center" />
                     </StackPanel>
 

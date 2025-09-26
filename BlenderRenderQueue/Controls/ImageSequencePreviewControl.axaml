@@ -40,7 +40,7 @@
         </Grid>
         <!-- 文件夹路径显示 -->
         <StackPanel Grid.Row="0">
-            <TextBlock
+            <SelectableTextBlock
                 Text="{Binding ErrorMessage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
@@ -50,7 +50,7 @@
                 IsVisible="{Binding $parent[controls:ImageSequencePreviewControl].HasError}" />
 
             <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock
+                <SelectableTextBlock
                     IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
                     Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
                     FontSize="16"
