@@ -61,7 +61,7 @@ public class Localizer : INotifyPropertyChanged
     {
         Language = language;
 
-        Uri uri = new Uri($"avares://VirtualStreetSnap/Assets/i18n/{language}.json");
+        var uri = new Uri($"avares://BlenderRenderQueue/Assets/i18n/{language}.json");
         if (!AssetLoader.Exists(uri)) return false;
         
         using (StreamReader sr = new StreamReader(AssetLoader.Open(uri), Encoding.UTF8))

@@ -35,15 +35,14 @@ namespace BlenderRenderQueue.Localizer;
 
 public class LocalizeExtension : MarkupExtension
 {
-    public LocalizeExtension(string key, string context)
+    public LocalizeExtension(string key)
     {
         Key = key;
-        Context = context;
     }
 
     public string Key { get; set; }
 
-    public string Context { get; set; }
+    public string? Context { get; set; }
 
     [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Localizer))]
     public override object ProvideValue(IServiceProvider serviceProvider)

@@ -10,6 +10,7 @@ using Avalonia.Platform.Storage;
 using System.Threading;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Localizer;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -50,6 +51,14 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private LanguageOption _language = LanguageOption.Default; // 默认英语
+
+    partial void OnLanguageChanged(LanguageOption value)
+    {
+        // 当语言设置发生变化时，立即加载新的语言
+        if (value == null) return;
+        var language = value.Value;
+        Localizer.Localizer.Instance.LoadLanguage(language);
+    }
 
     // 内部状态
     private CancellationTokenSource? _versionCts;

@@ -1,4 +1,5 @@
 {
-  "p_Greetings": "Welcome to Avalonia :-)",
-  "p_HelloWorld": "Hello World"
+  "Greetings": "Welcome to Avalonia :-)",
+  "HelloWorld": "Hello World",
+  "Language": "Language"
 }

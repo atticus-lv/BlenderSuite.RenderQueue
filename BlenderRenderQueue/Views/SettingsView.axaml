@@ -8,6 +8,7 @@
              xmlns:objectModel="using:System.Collections.ObjectModel"
              xmlns:models="clr-namespace:BlenderRenderQueue.Models"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              mc:Ignorable="d"
              MaxWidth="1000"
              MaxHeight="500"
@@ -124,7 +125,7 @@
                         <Grid RowDefinitions="Auto" ColumnDefinitions="Auto,*">
 
                             <!-- 语言选择 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="界面语言:" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize Language}" VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
                             <ComboBox Grid.Row="0" Grid.Column="1" SelectedItem="{Binding Language, Mode=TwoWay}"
                                       ItemsSource="{x:Static models:LanguageOption.AllOptions}"
