@@ -39,8 +39,17 @@
                        FontSize="12" />
         </Grid>
         <!-- 文件夹路径显示 -->
-        <StackPanel Grid.Row="0">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+            <Button Grid.Column="0" Classes="Outlined Small"
+                    Click="Button_OnClick" VerticalAlignment="Center"
+                    IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
+                    Padding="4" Margin="4,0,0,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <avalonia:MaterialIcon Kind="FolderOpen" />
+                </StackPanel>
+            </Button>
             <SelectableTextBlock
+                Grid.Column="2"
                 Text="{Binding ErrorMessage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
@@ -49,25 +58,15 @@
                 TextWrapping="Wrap"
                 IsVisible="{Binding $parent[controls:ImageSequencePreviewControl].HasError}" />
 
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <SelectableTextBlock
-                    IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
-                    Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
-                    FontSize="16"
-                    VerticalAlignment="Center"
-                    TextTrimming="CharacterEllipsis" />
-                <Button Classes="Outlined Small"
-                        Click="Button_OnClick" VerticalAlignment="Center"
-                        IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
-                        Padding="4" Margin="4,0,0,0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <avalonia:MaterialIcon Kind="FolderOpen" />
-                    </StackPanel>
-                </Button>
-            </StackPanel>
+            <SelectableTextBlock
+                Grid.Column="2" IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
+                Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
+                FontSize="14"
+                TextWrapping="Wrap"
+                VerticalAlignment="Center" />
 
+        </Grid>
 
-        </StackPanel>
         <!-- 图片预览区域 -->
         <Border Grid.Row="2"
                 Margin="5" MaxHeight="400"
@@ -75,7 +74,7 @@
 
             <Panel>
                 <!-- 普通图片控件 -->
-                <Image x:Name="PreviewImage" 
+                <Image x:Name="PreviewImage"
                        Margin="8"
                        Source="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
                        Stretch="Uniform"
