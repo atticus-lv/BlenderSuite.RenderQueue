@@ -309,6 +309,18 @@ public partial class SettingsViewModel : ViewModelBase
                     // 加载语言设置时，立即应用语言切换
                     Localizer.Localizer.Instance.LoadLanguage(settings.Language);
                 }
+                else
+                {
+                    // 如果语言选项无效，设置为默认英文
+                    Language = LanguageOption.Default;
+                    Localizer.Localizer.Instance.LoadLanguage(LanguageOption.Default.Value);
+                }
+            }
+            else
+            {
+                // 如果没有语言设置，设置为默认英文
+                Language = LanguageOption.Default;
+                Localizer.Localizer.Instance.LoadLanguage(LanguageOption.Default.Value);
             }
 
             Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
