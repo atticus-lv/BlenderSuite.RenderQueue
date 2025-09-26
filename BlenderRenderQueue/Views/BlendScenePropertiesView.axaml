@@ -68,8 +68,8 @@
                             <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_SceneType}"
                                        FontWeight="SemiBold" MinWidth="80"
                                        VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.SceneTypeDisplayText}"
-                                       VerticalAlignment="Center" />
+                             <TextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.SceneTypeDisplayText, Converter={StaticResource LocalizeConverter}}"
+                                        VerticalAlignment="Center" />
                         </Grid>
 
                         <!-- 场景信息分隔线 -->
@@ -169,8 +169,8 @@
                             <TextBlock Grid.Column="2" Text="{i18n:Localize SceneProperties_Camera}"
                                        FontWeight="SemiBold" MinWidth="80"
                                        VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.CameraTypeDisplayText}"
-                                       VerticalAlignment="Center" />
+                             <TextBlock Grid.Column="2" Text="{Binding ActiveSceneProperties.CameraTypeDisplayText, Converter={StaticResource LocalizeConverter}}"
+                                        VerticalAlignment="Center" />
                         </Grid>
 
                         <!-- 分隔线 -->

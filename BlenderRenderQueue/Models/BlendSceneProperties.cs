@@ -48,12 +48,12 @@ public class BlendSceneProperties
         {
             if (ReferencedScenes == null || !ReferencedScenes.Any())
             {
-                return "单一场景";
+                return "SceneType_Single";
             }
             else
             {
                 var sceneNames = string.Join(", ", ReferencedScenes);
-                return $"复合场景 ({sceneNames})";
+                return $"SceneType_Composite:{sceneNames}";
             }
         }
     }
@@ -72,12 +72,12 @@ public class BlendSceneProperties
         {
             if (TimelineCameras == null || !TimelineCameras.Any())
             {
-                return "单一相机";
+                return "CameraType_Single";
             }
             else
             {
                 var cameraNames = string.Join(", ", TimelineCameras);
-                return $"时间线相机 ({cameraNames})";
+                return $"CameraType_Timeline:{cameraNames}";
             }
         }
     }

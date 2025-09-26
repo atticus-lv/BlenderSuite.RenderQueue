@@ -92,5 +92,9 @@
   "SceneProperties_OutputPath": "Output Path:",
   "SceneProperties_RealFramePath": "Real Frame Path:",
   "SceneProperties_OutputFormat": "Output Format:",
-  "SceneProperties_FileNotLoaded": "File Not Loaded"
+  "SceneProperties_FileNotLoaded": "File Not Loaded",
+  "SceneType_Single": "Single Scene",
+  "SceneType_Composite": "Composite Scene ({0})",
+  "CameraType_Single": "Single Camera",
+  "CameraType_Timeline": "Timeline Camera ({0})"
 }
