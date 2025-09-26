@@ -1,5 +1,19 @@
 {
   "Greetings": "欢迎来到 Avalonia :-)",
   "HelloWorld": "你好世界",
-  "Language": "语言"
+  "Language": "语言",
+  "Blender": "Blender",
+  "BlenderPath": "Blender路径:",
+  "RenderTimeout": "渲染超时",
+  "RenderTimeoutLabel": "渲染超时:",
+  "MaxRetry": "最大重试",
+  "MaxRetryLabel": "最大重试:",
+  "VideoComposition": "视频合成",
+  "VideoCodec": "视频编码:",
+  "VideoQuality": "视频质量:",
+  "General": "通用",
+  "LanguageLabel": "界面语言:",
+  "Minutes": "分钟",
+  "Hours": "小时",
+  "Times": "次"
 }

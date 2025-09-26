@@ -20,12 +20,12 @@
             <objectModel:ObservableCollection x:TypeArguments="suki:SettingsLayoutItem">
 
                 <!-- Blender 设置部分 -->
-                <suki:SettingsLayoutItem Header="Blender">
+                <suki:SettingsLayoutItem Header="{i18n:Localize Blender}">
                     <suki:SettingsLayoutItem.Content>
                         <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
                             <!-- Blender路径设置 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Blender路径:" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize BlenderPath}" VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
                             <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BlenderPath, Mode=TwoWay}"
                                      IsReadOnly="True" Margin="0,0,0,0" />
@@ -52,45 +52,41 @@
                 </suki:SettingsLayoutItem>
 
                 <!-- 渲染超时设置部分 -->
-                <suki:SettingsLayoutItem Header="渲染超时">
+                <suki:SettingsLayoutItem Header="{i18n:Localize RenderTimeout}">
                     <suki:SettingsLayoutItem.Content>
                         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*">
 
                             <!-- 渲染超时设置 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="渲染超时:" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize RenderTimeoutLabel}" VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
                             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8"
                                         VerticalAlignment="Center">
                                 <NumericUpDown Value="{Binding DefaultRenderTimeoutSeconds, Mode=TwoWay}"
                                                Minimum="300" Maximum="7200" Width="120"
-                                               suki:NumericUpDownExtensions.Unit="秒" />
-                                <TextBlock Text="(5分钟 - 2小时)" VerticalAlignment="Center"
-                                           Foreground="{DynamicResource SukiTextColorSecondary}" />
+                                               suki:NumericUpDownExtensions.Unit="{i18n:Localize Seconds}" />
                             </StackPanel>
 
                             <!-- 最大重试次数设置 -->
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="最大重试:" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize MaxRetryLabel}" VerticalAlignment="Center"
                                        Margin="0,16,8,0" />
                             <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8"
                                         Margin="0,16,0,0" VerticalAlignment="Center">
                                 <NumericUpDown Value="{Binding MaxRetryAttempts, Mode=TwoWay}"
                                                Minimum="1" Maximum="10" Width="120"
-                                               suki:NumericUpDownExtensions.Unit="次" />
-                                <TextBlock Text="(1-10次)" VerticalAlignment="Center"
-                                           Foreground="{DynamicResource SukiTextColorSecondary}" />
-                            </StackPanel>
+                                               suki:NumericUpDownExtensions.Unit="{i18n:Localize Times}" />
+                                </StackPanel>
 
                         </Grid>
                     </suki:SettingsLayoutItem.Content>
                 </suki:SettingsLayoutItem>
 
                 <!-- 视频合成设置部分 -->
-                <suki:SettingsLayoutItem Header="视频合成">
+                <suki:SettingsLayoutItem Header="{i18n:Localize VideoComposition}">
                     <suki:SettingsLayoutItem.Content>
                         <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*">
 
                             <!-- 视频编码 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="视频编码:" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize VideoCodec}" VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
                             <ComboBox Grid.Row="0" Grid.Column="1" SelectedItem="{Binding VideoCodec, Mode=TwoWay}"
                                       ItemsSource="{x:Static models:VideoCodecOption.AllOptions}"
@@ -103,7 +99,7 @@
                             </ComboBox>
 
                             <!-- 视频质量 -->
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="视频质量:" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize VideoQuality}" VerticalAlignment="Center"
                                        Margin="0,16,8,0" />
                             <ComboBox Grid.Row="1" Grid.Column="1" SelectedItem="{Binding VideoQuality, Mode=TwoWay}"
                                       ItemsSource="{x:Static models:VideoQualityOption.AllOptions}"
@@ -120,12 +116,12 @@
                 </suki:SettingsLayoutItem>
 
                 <!-- 语言设置部分 -->
-                <suki:SettingsLayoutItem Header="通用">
+                <suki:SettingsLayoutItem Header="{i18n:Localize General}">
                     <suki:SettingsLayoutItem.Content>
                         <Grid RowDefinitions="Auto" ColumnDefinitions="Auto,*">
 
                             <!-- 语言选择 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize Language}" VerticalAlignment="Center"
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize LanguageLabel}" VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
                             <ComboBox Grid.Row="0" Grid.Column="1" SelectedItem="{Binding Language, Mode=TwoWay}"
                                       ItemsSource="{x:Static models:LanguageOption.AllOptions}"

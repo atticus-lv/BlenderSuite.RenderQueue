@@ -1,5 +1,20 @@
 {
   "Greetings": "Welcome to Avalonia :-)",
   "HelloWorld": "Hello World",
-  "Language": "Language"
+  "Language": "Language",
+  "Blender": "Blender",
+  "BlenderPath": "Blender Path:",
+  "RenderTimeout": "Render Timeout",
+  "RenderTimeoutLabel": "Render Timeout:",
+  "MaxRetry": "Max Retry",
+  "MaxRetryLabel": "Max Retry:",
+  "VideoComposition": "Video Composition",
+  "VideoCodec": "Video Codec:",
+  "VideoQuality": "Video Quality:",
+  "General": "General",
+  "LanguageLabel": "Interface Language:",
+  "Minutes": "minutes",
+  "Seconds": "seconds",
+  "Hours": "hours",
+  "Times": "times"
 }

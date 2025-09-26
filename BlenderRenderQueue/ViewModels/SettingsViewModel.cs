@@ -55,9 +55,11 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnLanguageChanged(LanguageOption value)
     {
         // 当语言设置发生变化时，立即加载新的语言
-        if (value == null) return;
-        var language = value.Value;
-        Localizer.Localizer.Instance.LoadLanguage(language);
+        if (value != null)
+        {
+            var language = value.Value;
+            Localizer.Localizer.Instance.LoadLanguage(language);
+        }
     }
 
     // 内部状态
