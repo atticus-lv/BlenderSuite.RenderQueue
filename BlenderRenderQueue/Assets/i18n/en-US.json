@@ -163,7 +163,6 @@
   "Settings_RemoveSelected": "Remove Selected",
   "Settings_RemoveSelectedTooltip": "Remove selected",
   "Settings_QueueRunningWarning": "Queue is running or paused, Blender switching is disabled",
-  "Settings_BlenderDetails": "Blender Details",
   "Settings_Path": "Path: {0}",
   "Settings_Version": "Version: {0}",
   "Settings_Platform": "Platform: {0}",

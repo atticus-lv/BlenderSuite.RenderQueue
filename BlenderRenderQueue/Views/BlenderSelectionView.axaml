@@ -43,75 +43,7 @@
                         <RadioButton.CommandParameter>
                             <Binding Path="." />
                         </RadioButton.CommandParameter>
-                        <ToolTip.Tip>
-                            <StackPanel Spacing="4">
-                                <TextBlock FontWeight="Bold"
-                                           Text="{i18n:Localize Settings_BlenderDetails}" />
-                                <TextBlock>
-                                    <TextBlock.Text>
-                                        <MultiBinding
-                                            Converter="{StaticResource LocalizeConverter}">
-                                            <Binding Source="{}Settings_Path" />
-                                            <Binding Path="Path" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                                <TextBlock>
-                                    <TextBlock.Text>
-                                        <MultiBinding
-                                            Converter="{StaticResource LocalizeConverter}">
-                                            <Binding Source="{}Settings_Version" />
-                                            <Binding Path="Version" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                                <TextBlock>
-                                    <TextBlock.Text>
-                                        <MultiBinding
-                                            Converter="{StaticResource LocalizeConverter}">
-                                            <Binding Source="{}Settings_Platform" />
-                                            <Binding Path="Platform" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                                <!-- <TextBlock> -->
-                                <!--     <TextBlock.Text> -->
-                                <!--         <MultiBinding -->
-                                <!--             Converter="{StaticResource LocalizeConverter}"> -->
-                                <!--             <Binding Source="{}Settings_Branch" /> -->
-                                <!--             <Binding Path="Branch" /> -->
-                                <!--         </MultiBinding> -->
-                                <!--     </TextBlock.Text> -->
-                                <!-- </TextBlock> -->
-                                <TextBlock>
-                                    <TextBlock.Text>
-                                        <MultiBinding
-                                            Converter="{StaticResource LocalizeConverter}">
-                                            <Binding Source="{}Settings_Hash" />
-                                            <Binding Path="Hash" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                                <!-- <TextBlock> -->
-                                <!--     <TextBlock.Text> -->
-                                <!--         <MultiBinding -->
-                                <!--             Converter="{StaticResource LocalizeConverter}"> -->
-                                <!--             <Binding Source="{}Settings_Status" /> -->
-                                <!--             <Binding Path="IsValid" /> -->
-                                <!--         </MultiBinding> -->
-                                <!--     </TextBlock.Text> -->
-                                <!-- </TextBlock> -->
-                                <!-- <TextBlock> -->
-                                <!--     <TextBlock.Text> -->
-                                <!--         <MultiBinding -->
-                                <!--             Converter="{StaticResource LocalizeConverter}"> -->
-                                <!--             <Binding Source="{}Settings_ValidatedTime" /> -->
-                                <!--             <Binding Path="LastValidated" /> -->
-                                <!--         </MultiBinding> -->
-                                <!--     </TextBlock.Text> -->
-                                <!-- </TextBlock> -->
-                            </StackPanel>
-                        </ToolTip.Tip>
+
                         <StackPanel HorizontalAlignment="Left" Spacing="0,6" Margin="12">
                             <!-- 状态图标和标题 -->
                             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -138,25 +70,29 @@
                                 </TextBlock>
                             </StackPanel>
 
-                            <!-- 版本-分支 -->
                             <TextBlock FontSize="18"
                                        FontWeight="DemiBold"
                                        Text="{Binding VersionBranchDisplay}" />
 
-                            <!-- 构建日期-时间 -->
                             <TextBlock FontSize="12"
-                                       Foreground="{DynamicResource SukiLowText}"
                                        Text="{Binding BuildDateTimeDisplay}" />
 
-                            <!-- 路径信息（头尾显示） -->
+                            <TextBlock FontSize="12" Text="{Binding Hash}" />
+
                             <TextBlock FontSize="10"
-                                       Foreground="{DynamicResource SukiLowText}"
                                        Text="{Binding FormattedPath}"
                                        TextWrapping="Wrap"
-                                       MaxHeight="20" />
+                                       MaxHeight="20">
+
+                            </TextBlock>
 
 
                         </StackPanel>
+                        <ToolTip.Tip>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{Binding Path}" />
+                            </StackPanel>
+                        </ToolTip.Tip>
                     </RadioButton>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

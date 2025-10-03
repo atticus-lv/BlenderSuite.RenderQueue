@@ -162,7 +162,6 @@
   "Settings_RemoveSelected": "移除选中",
   "Settings_RemoveSelectedTooltip": "移除选中",
   "Settings_QueueRunningWarning": "队列正在运行或暂停中，Blender切换已被禁用",
-  "Settings_BlenderDetails": "Blender 详细信息",
   "Settings_Path": "路径: {0}",
   "Settings_Version": "版本: {0}",
   "Settings_Platform": "平台: {0}",
