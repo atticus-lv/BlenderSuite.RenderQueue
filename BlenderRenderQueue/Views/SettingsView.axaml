@@ -11,6 +11,7 @@
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
+             xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              mc:Ignorable="d"
              MaxWidth="1000"
              MaxHeight="500"
@@ -51,7 +52,7 @@
                 <suki:SettingsLayoutItem Header="{i18n:Localize Blender}">
                     <suki:SettingsLayoutItem.Content>
                         <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
-                            
+
                             <!-- 运行任务提示 -->
                             <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
                                     Background="{DynamicResource SukiWarningDarkColor}"
@@ -73,162 +74,10 @@
                             </Border>
 
                             <!-- Blender选择卡片区域 -->
-                            <ScrollViewer Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
-                                          HorizontalScrollBarVisibility="Auto"
-                                          VerticalScrollBarVisibility="Disabled"
-                                          IsVisible="{Binding CanSwitchBlender}"
-                                          Margin="0,8,0,0">
-                                <ItemsControl ItemsSource="{Binding BlenderExecutables}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" Spacing="8" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="models:BlenderExecutable">
-                                            <RadioButton Width="280" Height="160" Margin="4"
-                                                         Tag="{Binding .}"
-                                                         Classes="GigaChips"
-                                                         GroupName="BlenderSelection"
-                                                         IsEnabled="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanSwitchBlender}">
-                                                <RadioButton.IsChecked>
-                                                    <MultiBinding
-                                                        Converter="{StaticResource ObjectEqualMultiConverter}">
-                                                        <Binding
-                                                            Path="$parent[UserControl].((vm:SettingsViewModel)DataContext).SelectedBlenderExecutable" />
-                                                        <Binding Path="." />
-                                                    </MultiBinding>
-                                                </RadioButton.IsChecked>
-                                                <RadioButton.Command>
-                                                    <Binding
-                                                        Path="$parent[UserControl].((vm:SettingsViewModel)DataContext).SelectBlender" />
-                                                </RadioButton.Command>
-                                                <RadioButton.CommandParameter>
-                                                    <Binding Path="." />
-                                                </RadioButton.CommandParameter>
-                                                <ToolTip.Tip>
-                                                    <StackPanel Spacing="4">
-                                                        <TextBlock FontWeight="Bold"
-                                                                   Text="{i18n:Localize Settings_BlenderDetails}" />
-                                                        <TextBlock>
-                                                            <TextBlock.Text>
-                                                                <MultiBinding
-                                                                    Converter="{StaticResource LocalizeConverter}">
-                                                                    <Binding Source="{}Settings_Path" />
-                                                                    <Binding Path="Path" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                        <TextBlock>
-                                                            <TextBlock.Text>
-                                                                <MultiBinding
-                                                                    Converter="{StaticResource LocalizeConverter}">
-                                                                    <Binding Source="{}Settings_Version" />
-                                                                    <Binding Path="Version" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                        <TextBlock>
-                                                            <TextBlock.Text>
-                                                                <MultiBinding
-                                                                    Converter="{StaticResource LocalizeConverter}">
-                                                                    <Binding Source="{}Settings_Platform" />
-                                                                    <Binding Path="Platform" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                        <TextBlock>
-                                                            <TextBlock.Text>
-                                                                <MultiBinding
-                                                                    Converter="{StaticResource LocalizeConverter}">
-                                                                    <Binding Source="{}Settings_Branch" />
-                                                                    <Binding Path="Branch" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                        <TextBlock>
-                                                            <TextBlock.Text>
-                                                                <MultiBinding
-                                                                    Converter="{StaticResource LocalizeConverter}">
-                                                                    <Binding Source="{}Settings_Hash" />
-                                                                    <Binding Path="Hash" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                        <TextBlock>
-                                                            <TextBlock.Text>
-                                                                <MultiBinding
-                                                                    Converter="{StaticResource LocalizeConverter}">
-                                                                    <Binding Source="{}Settings_Status" />
-                                                                    <Binding Path="IsValid" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                        <TextBlock>
-                                                            <TextBlock.Text>
-                                                                <MultiBinding
-                                                                    Converter="{StaticResource LocalizeConverter}">
-                                                                    <Binding Source="{}Settings_ValidatedTime" />
-                                                                    <Binding Path="LastValidated" />
-                                                                </MultiBinding>
-                                                            </TextBlock.Text>
-                                                        </TextBlock>
-                                                    </StackPanel>
-                                                </ToolTip.Tip>
-                                                <StackPanel HorizontalAlignment="Left" Spacing="0,6" Margin="12">
-                                                    <!-- 状态图标和标题 -->
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <avalonia:MaterialIcon Kind="CheckCircle"
-                                                                               Width="20"
-                                                                               Height="20"
-                                                                               Foreground="{DynamicResource SukiSuccessColor}"
-                                                                               IsVisible="{Binding IsValid}" />
-                                                        <avalonia:MaterialIcon Kind="Error"
-                                                                               Width="20"
-                                                                               Height="20"
-                                                                               Foreground="{DynamicResource SukiDangerColor}"
-                                                                               IsVisible="{Binding !IsValid}" />
-                                                        <TextBlock FontSize="12"
-                                                                   FontWeight="DemiBold"
-                                                                   Foreground="{DynamicResource SukiLowText}"
-                                                                   Text="{i18n:Localize Settings_StatusLabel}" />
-                                                    </StackPanel>
+                            <views:BlenderSelectionView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                                                        IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanSwitchBlender}"
+                                                        DataContext="{Binding}" />
 
-                                                    <!-- 版本-分支 -->
-                                                    <TextBlock FontSize="18"
-                                                               FontWeight="DemiBold"
-                                                               Text="{Binding VersionBranchDisplay}" />
-
-                                                    <!-- 构建日期-时间 -->
-                                                    <TextBlock FontSize="12"
-                                                               Foreground="{DynamicResource SukiLowText}"
-                                                               Text="{Binding BuildDateTimeDisplay}" />
-
-                                                    <!-- 路径信息（头尾显示） -->
-                                                    <TextBlock FontSize="10"
-                                                               Foreground="{DynamicResource SukiLowText}"
-                                                               Text="{Binding FormattedPath}"
-                                                               TextWrapping="Wrap"
-                                                               MaxHeight="20" />
-
-                                                    <!-- 最后验证时间 -->
-                                                    <TextBlock FontSize="9"
-                                                               Foreground="{DynamicResource SukiLowText}">
-                                                        <TextBlock.Text>
-                                                            <MultiBinding
-                                                                Converter="{StaticResource LocalizeConverter}">
-                                                                <Binding Source="{}Settings_Validated" />
-                                                                <Binding Path="LastValidated" />
-                                                            </MultiBinding>
-                                                        </TextBlock.Text>
-                                                    </TextBlock>
-                                                </StackPanel>
-                                            </RadioButton>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
-                            
                             <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8"
                                         HorizontalAlignment="Right"
                                         IsVisible="{Binding CanSwitchBlender}">
@@ -250,7 +99,7 @@
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
-                            
+
                             <!-- Blender验证状态 -->
                             <Border Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
                                     Background="{DynamicResource SukiDangerDarkColor}"

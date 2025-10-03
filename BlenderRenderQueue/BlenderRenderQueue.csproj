@@ -67,6 +67,9 @@
       <Compile Update="Controls\ImageSequencePreviewControl.axaml.cs">
         <DependentUpon>ImageSequencePreviewControl.axaml</DependentUpon>
       </Compile>
+      <Compile Update="Views\BlenderSelectionView.axaml.cs">
+        <DependentUpon>BlenderSelectionView.axaml</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
