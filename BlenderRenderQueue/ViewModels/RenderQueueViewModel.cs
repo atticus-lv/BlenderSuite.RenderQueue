@@ -867,7 +867,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 
-    public void SetBlenderService(BlenderExeService blenderService)
+    public void SetBlenderService(BlenderExeService? blenderService)
     {
         // 先释放旧的Blender服务（如果存在）
         if (_blenderService != null)
@@ -881,10 +881,19 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 注意：BlenderVideoService现在需要IBlenderProcess，这里暂时设为null
         // 视频生成时会创建临时的BlenderVideoService
         _blenderVideoService = null;
-        Console.WriteLine($"[RenderQueueViewModel] BlenderService set successfully - ID: {blenderService.ServiceId}");
-
-        // 重新初始化文件监控，因为现在有了Blender路径
-        InitializeBlenderDataWatcher();
+        
+        if (blenderService != null)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] BlenderService set successfully - ID: {blenderService.ServiceId}");
+            // 重新初始化文件监控，因为现在有了Blender路径
+            InitializeBlenderDataWatcher();
+        }
+        else
+        {
+            Console.WriteLine("[RenderQueueViewModel] BlenderService set to null - cleaning up");
+            // 清理文件监控，因为没有Blender路径
+            CleanupBlenderDataWatcher();
+        }
     }
 
     /// <summary>
@@ -1679,6 +1688,28 @@ public partial class RenderQueueViewModel : ViewModelBase
         catch (Exception ex)
         {
             Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to initialize file watcher: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    ///     清理Blender数据文件监控器
+    /// </summary>
+    private void CleanupBlenderDataWatcher()
+    {
+        try
+        {
+            if (_blenderDataWatcher != null)
+            {
+                _blenderDataWatcher.Changed -= OnBlenderDataFileChanged;
+                _blenderDataWatcher.Created -= OnBlenderDataFileChanged;
+                _blenderDataWatcher.Dispose();
+                _blenderDataWatcher = null;
+                Console.WriteLine("[RenderQueueViewModel] ✅ File watcher cleaned up");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to cleanup file watcher: {ex.Message}");
         }
     }
 
