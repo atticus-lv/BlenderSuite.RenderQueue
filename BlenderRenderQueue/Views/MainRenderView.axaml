@@ -7,6 +7,7 @@
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
              xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.MainRenderView"
              x:DataType="vm:MainRenderViewModel"
@@ -14,9 +15,42 @@
 
     <Grid RowDefinitions="*,Auto" Margin="0 4 0 0">
 
+        <!-- Blender验证失败时的覆盖层 -->
+        <Border Grid.Row="0" 
+                Background="{DynamicResource SukiOverlayColor}" 
+                IsVisible="{Binding HasBlenderValidationError}"
+                ZIndex="1000">
+            <StackPanel HorizontalAlignment="Center" 
+                        VerticalAlignment="Center" 
+                        Spacing="16">
+                <avalonia:MaterialIcon Kind="Error" 
+                                       Width="64" 
+                                       Height="64" 
+                                       Foreground="{DynamicResource SukiDangerColor}" />
+                <TextBlock Text="Blender验证失败" 
+                           FontSize="24" 
+                           FontWeight="Bold" 
+                           Foreground="{DynamicResource SukiTextColor}" 
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding BlenderValidationMessage}" 
+                           FontSize="16" 
+                           Foreground="{DynamicResource SukiTextSecondaryColor}" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap" 
+                           TextAlignment="Center" />
+                <Button Content="打开设置" 
+                        Command="{Binding OpenSettingsCommand}"
+                        Classes="Primary"
+                        HorizontalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
         <!-- 渲染队列视图 -->
-        <views:RenderQueueView Grid.Row="0" DataContext="{Binding RenderQueue}" VerticalAlignment="Stretch"
-                               HorizontalAlignment="Stretch" />
+        <views:RenderQueueView Grid.Row="0" 
+                               DataContext="{Binding RenderQueue}" 
+                               VerticalAlignment="Stretch"
+                               HorizontalAlignment="Stretch"
+                               IsEnabled="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).IsBlenderPathValid}" />
 
         <!-- 底部日志区域 -->
         <Border Grid.Row="1" Margin="4 0 4 8" 

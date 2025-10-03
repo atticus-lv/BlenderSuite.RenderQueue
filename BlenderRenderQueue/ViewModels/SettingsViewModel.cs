@@ -38,6 +38,12 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _isLoadingBlenderInfo = false;
 
     [ObservableProperty]
+    private string _blenderValidationMessage = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasBlenderValidationError = false;
+
+    [ObservableProperty]
     private int _defaultRenderTimeoutSeconds = 300; // 默认5分钟
 
     [ObservableProperty]
@@ -71,6 +77,9 @@ public partial class SettingsViewModel : ViewModelBase
     
     // 事件：当初始化完成时通知
     public event EventHandler<InitializationCompletedEventArgs>? InitializationCompleted;
+    
+    // 事件：当Blender验证状态发生变化时通知
+    public event EventHandler<BlenderValidationChangedEventArgs>? BlenderValidationChanged;
 
     public SettingsViewModel()
     {
@@ -110,11 +119,27 @@ public partial class SettingsViewModel : ViewModelBase
         _versionCts = new CancellationTokenSource();
         var ct = _versionCts.Token;
 
-        IsBlenderPathValid = !string.IsNullOrWhiteSpace(value) && File.Exists(value);
+        // 重置验证状态
+        HasBlenderValidationError = false;
+        BlenderValidationMessage = string.Empty;
 
-        if (!IsBlenderPathValid)
+        if (string.IsNullOrWhiteSpace(value))
         {
+            IsBlenderPathValid = false;
+            HasBlenderValidationError = true;
+            BlenderValidationMessage = "请选择Blender可执行文件";
             ClearBlenderInfo();
+            NotifyBlenderValidationChanged();
+            return;
+        }
+
+        if (!File.Exists(value))
+        {
+            IsBlenderPathValid = false;
+            HasBlenderValidationError = true;
+            BlenderValidationMessage = "指定的文件不存在";
+            ClearBlenderInfo();
+            NotifyBlenderValidationChanged();
             return;
         }
 
@@ -143,16 +168,24 @@ public partial class SettingsViewModel : ViewModelBase
                 BlenderBranch = info.Branch ?? string.Empty;
                 BlenderHash = info.Hash ?? string.Empty;
                 IsLoadingBlenderInfo = false;
+                IsBlenderPathValid = true;
+                HasBlenderValidationError = false;
+                BlenderValidationMessage = string.Empty;
+                NotifyBlenderValidationChanged();
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             if (!cancellationToken.IsCancellationRequested)
             {
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
                     IsLoadingBlenderInfo = false;
+                    IsBlenderPathValid = false;
+                    HasBlenderValidationError = true;
+                    BlenderValidationMessage = $"Blender验证失败: {ex.Message}";
                     ClearBlenderInfo();
+                    NotifyBlenderValidationChanged();
                 });
             }
         }
@@ -165,6 +198,11 @@ public partial class SettingsViewModel : ViewModelBase
         BlenderPlatform = string.Empty;
         BlenderBranch = string.Empty;
         BlenderHash = string.Empty;
+    }
+
+    private void NotifyBlenderValidationChanged()
+    {
+        BlenderValidationChanged?.Invoke(this, new BlenderValidationChangedEventArgs(IsBlenderPathValid, BlenderValidationMessage));
     }
 
     private async Task<bool> TryAutoDetectBlenderAsync()
@@ -377,5 +415,18 @@ public class InitializationCompletedEventArgs : EventArgs
     public InitializationCompletedEventArgs(bool isBlenderDetected)
     {
         IsBlenderDetected = isBlenderDetected;
+    }
+}
+
+// Blender验证状态变化事件参数
+public class BlenderValidationChangedEventArgs : EventArgs
+{
+    public bool IsValid { get; }
+    public string Message { get; }
+
+    public BlenderValidationChangedEventArgs(bool isValid, string message)
+    {
+        IsValid = isValid;
+        Message = message;
     }
 }

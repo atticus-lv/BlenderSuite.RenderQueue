@@ -31,6 +31,11 @@ public partial class MainRenderViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isBlenderPathValid;
 
+    [ObservableProperty]
+    private string _blenderValidationMessage = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasBlenderValidationError = false;
 
     [ObservableProperty]
     private string _blenderVersion = string.Empty;
@@ -83,21 +88,28 @@ public partial class MainRenderViewModel : ViewModelBase
         _versionCts = new CancellationTokenSource();
         var ct = _versionCts.Token;
 
-        IsBlenderPathValid = !string.IsNullOrWhiteSpace(value) && File.Exists(value);
+        // 重置验证状态
+        HasBlenderValidationError = false;
+        BlenderValidationMessage = string.Empty;
 
-        if (!IsBlenderPathValid)
+        if (string.IsNullOrWhiteSpace(value))
         {
+            IsBlenderPathValid = false;
+            HasBlenderValidationError = true;
+            BlenderValidationMessage = "请选择Blender可执行文件";
             ClearBlenderInfo();
-            // 正确释放旧的Blender服务
-            if (_blenderService != null)
-            {
-                Console.WriteLine(
-                    $"[MainRenderViewModel] Disposing Blender service due to invalid path - ID: {_blenderService.ServiceId}");
-                _blenderService.Dispose();
-            }
+            CleanupBlenderService();
+            StatusMessage = "Blender路径无效";
+            return;
+        }
 
-            _blenderService = null;
-            RenderQueue.SetBlenderService(null!);
+        if (!File.Exists(value))
+        {
+            IsBlenderPathValid = false;
+            HasBlenderValidationError = true;
+            BlenderValidationMessage = "指定的文件不存在";
+            ClearBlenderInfo();
+            CleanupBlenderService();
             StatusMessage = "Blender路径无效";
             return;
         }
@@ -127,6 +139,9 @@ public partial class MainRenderViewModel : ViewModelBase
                 BlenderBranch = info.Branch;
                 BlenderHash = info.Hash;
                 IsLoadingBlenderInfo = false;
+                IsBlenderPathValid = true;
+                HasBlenderValidationError = false;
+                BlenderValidationMessage = string.Empty;
                 StatusMessage = $"Blender {info.Version} 已就绪";
 
                 // 先释放旧的Blender服务（如果存在）
@@ -141,10 +156,19 @@ public partial class MainRenderViewModel : ViewModelBase
                 Console.WriteLine($"[MainRenderViewModel] Setting Blender path: {blenderPath}");
                 RenderQueue.SetBlenderPath(blenderPath);
 
-                // 创建临时服务用于视频生成（如果需要的话）
-                _blenderService = new BlenderExeService(blenderPath);
-                Console.WriteLine(
-                    $"[MainRenderViewModel] Temporary Blender service created for video generation - ID: {_blenderService.ServiceId}");
+                // 只有在验证成功时才创建临时服务用于视频生成
+                try
+                {
+                    _blenderService = new BlenderExeService(blenderPath);
+                    Console.WriteLine(
+                        $"[MainRenderViewModel] Temporary Blender service created for video generation - ID: {_blenderService.ServiceId}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[MainRenderViewModel] Failed to create Blender service: {ex.Message}");
+                    // 即使服务创建失败，我们仍然认为Blender路径是有效的，因为版本信息获取成功了
+                    _blenderService = null;
+                }
             });
         }
         catch (Exception ex)
@@ -153,8 +177,12 @@ public partial class MainRenderViewModel : ViewModelBase
                 Dispatcher.UIThread.Post(() =>
                 {
                     IsLoadingBlenderInfo = false;
+                    IsBlenderPathValid = false;
+                    HasBlenderValidationError = true;
+                    BlenderValidationMessage = $"Blender验证失败: {ex.Message}";
                     StatusMessage = $"加载Blender信息失败: {ex.Message}";
                     ClearBlenderInfo();
+                    CleanupBlenderService();
                 });
         }
     }
@@ -168,6 +196,20 @@ public partial class MainRenderViewModel : ViewModelBase
         BlenderHash = string.Empty;
     }
 
+    private void CleanupBlenderService()
+    {
+        // 正确释放旧的Blender服务
+        if (_blenderService != null)
+        {
+            Console.WriteLine(
+                $"[MainRenderViewModel] Disposing Blender service due to invalid path - ID: {_blenderService.ServiceId}");
+            _blenderService.Dispose();
+        }
+
+        _blenderService = null;
+        RenderQueue.SetBlenderService(null!);
+    }
+
     private void InitializeSettings()
     {
         _settingsViewModel = new SettingsViewModel();
@@ -175,6 +217,7 @@ public partial class MainRenderViewModel : ViewModelBase
         // 订阅设置变化事件
         _settingsViewModel.SettingsChanged += OnSettingsChanged;
         _settingsViewModel.InitializationCompleted += OnInitializationCompleted;
+        _settingsViewModel.BlenderValidationChanged += OnBlenderValidationChanged;
 
         // 异步加载设置
         _ = Task.Run(async () => await _settingsViewModel.LoadSettingsFromFileAsync());
@@ -221,6 +264,19 @@ public partial class MainRenderViewModel : ViewModelBase
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
         ApplySettings(e.BlenderPath, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts, e.VideoCodec, e.VideoQuality);
+    }
+
+    private void OnBlenderValidationChanged(object? sender, BlenderValidationChangedEventArgs e)
+    {
+        // 同步验证状态到主界面
+        IsBlenderPathValid = e.IsValid;
+        HasBlenderValidationError = !e.IsValid;
+        BlenderValidationMessage = e.Message;
+        
+        if (!e.IsValid)
+        {
+            StatusMessage = $"Blender验证失败: {e.Message}";
+        }
     }
 
     private void ApplySettings(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts,
@@ -637,6 +693,7 @@ public partial class MainRenderViewModel : ViewModelBase
         {
             _settingsViewModel.SettingsChanged -= OnSettingsChanged;
             _settingsViewModel.InitializationCompleted -= OnInitializationCompleted;
+            _settingsViewModel.BlenderValidationChanged -= OnBlenderValidationChanged;
         }
 
         // 关闭视频生成进度 Toast
