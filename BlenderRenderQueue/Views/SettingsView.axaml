@@ -90,7 +90,7 @@
                                     </StackPanel>
                                 </Button>
                                 <Button Command="{Binding RemoveBlenderCommand}"
-                                        Classes="Outlined"
+                                        Classes="Outlined Danger"
                                         ToolTip.Tip="{i18n:Localize Settings_RemoveSelectedTooltip}"
                                         IsEnabled="{Binding SelectedBlenderExecutable, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
                                     <StackPanel Orientation="Horizontal" Spacing="4">

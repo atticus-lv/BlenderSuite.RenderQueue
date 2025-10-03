@@ -3,14 +3,10 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
-             xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:services="clr-namespace:BlenderRenderQueue.Services"
-             xmlns:objectModel="using:System.Collections.ObjectModel"
              xmlns:models="clr-namespace:BlenderRenderQueue.Models"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
-             xmlns:conv="using:Avalonia.Data.Converters"
-             xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.BlenderSelectionView"
              x:DataType="vm:SettingsViewModel"
@@ -78,15 +74,15 @@
                                         </MultiBinding>
                                     </TextBlock.Text>
                                 </TextBlock>
-                                <TextBlock>
-                                    <TextBlock.Text>
-                                        <MultiBinding
-                                            Converter="{StaticResource LocalizeConverter}">
-                                            <Binding Source="{}Settings_Branch" />
-                                            <Binding Path="Branch" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
+                                <!-- <TextBlock> -->
+                                <!--     <TextBlock.Text> -->
+                                <!--         <MultiBinding -->
+                                <!--             Converter="{StaticResource LocalizeConverter}"> -->
+                                <!--             <Binding Source="{}Settings_Branch" /> -->
+                                <!--             <Binding Path="Branch" /> -->
+                                <!--         </MultiBinding> -->
+                                <!--     </TextBlock.Text> -->
+                                <!-- </TextBlock> -->
                                 <TextBlock>
                                     <TextBlock.Text>
                                         <MultiBinding
@@ -96,24 +92,24 @@
                                         </MultiBinding>
                                     </TextBlock.Text>
                                 </TextBlock>
-                                <TextBlock>
-                                    <TextBlock.Text>
-                                        <MultiBinding
-                                            Converter="{StaticResource LocalizeConverter}">
-                                            <Binding Source="{}Settings_Status" />
-                                            <Binding Path="IsValid" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                                <TextBlock>
-                                    <TextBlock.Text>
-                                        <MultiBinding
-                                            Converter="{StaticResource LocalizeConverter}">
-                                            <Binding Source="{}Settings_ValidatedTime" />
-                                            <Binding Path="LastValidated" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
+                                <!-- <TextBlock> -->
+                                <!--     <TextBlock.Text> -->
+                                <!--         <MultiBinding -->
+                                <!--             Converter="{StaticResource LocalizeConverter}"> -->
+                                <!--             <Binding Source="{}Settings_Status" /> -->
+                                <!--             <Binding Path="IsValid" /> -->
+                                <!--         </MultiBinding> -->
+                                <!--     </TextBlock.Text> -->
+                                <!-- </TextBlock> -->
+                                <!-- <TextBlock> -->
+                                <!--     <TextBlock.Text> -->
+                                <!--         <MultiBinding -->
+                                <!--             Converter="{StaticResource LocalizeConverter}"> -->
+                                <!--             <Binding Source="{}Settings_ValidatedTime" /> -->
+                                <!--             <Binding Path="LastValidated" /> -->
+                                <!--         </MultiBinding> -->
+                                <!--     </TextBlock.Text> -->
+                                <!-- </TextBlock> -->
                             </StackPanel>
                         </ToolTip.Tip>
                         <StackPanel HorizontalAlignment="Left" Spacing="0,6" Margin="12">
@@ -129,10 +125,17 @@
                                                        Height="20"
                                                        Foreground="{DynamicResource SukiDangerColor}"
                                                        IsVisible="{Binding !IsValid}" />
-                                <TextBlock FontSize="12"
-                                           FontWeight="DemiBold"
-                                           Foreground="{DynamicResource SukiLowText}"
-                                           Text="{i18n:Localize Settings_StatusLabel}" />
+                                <!-- 最后验证时间 -->
+                                <TextBlock FontSize="10" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource SukiLowText}">
+                                    <TextBlock.Text>
+                                        <MultiBinding
+                                            Converter="{StaticResource LocalizeConverter}">
+                                            <Binding Source="{}Settings_Validated" />
+                                            <Binding Path="LastValidated" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
                             </StackPanel>
 
                             <!-- 版本-分支 -->
@@ -152,17 +155,7 @@
                                        TextWrapping="Wrap"
                                        MaxHeight="20" />
 
-                            <!-- 最后验证时间 -->
-                            <TextBlock FontSize="9"
-                                       Foreground="{DynamicResource SukiLowText}">
-                                <TextBlock.Text>
-                                    <MultiBinding
-                                        Converter="{StaticResource LocalizeConverter}">
-                                        <Binding Source="{}Settings_Validated" />
-                                        <Binding Path="LastValidated" />
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
+
                         </StackPanel>
                     </RadioButton>
                 </DataTemplate>

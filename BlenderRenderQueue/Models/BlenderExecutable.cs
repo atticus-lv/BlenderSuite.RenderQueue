@@ -133,7 +133,7 @@ public class BlenderExecutable
     {
         if (BuildDate.HasValue && !string.IsNullOrEmpty(BuildTime))
         {
-            return $"{BuildDate.Value:yyyy-MM-dd}-{BuildTime}";
+            return $"{BuildDate.Value:yyyy-MM-dd} {BuildTime}";
         }
         
         if (BuildDate.HasValue)
