@@ -3,8 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
-             xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:services="clr-namespace:BlenderRenderQueue.Services"
              xmlns:objectModel="using:System.Collections.ObjectModel"
              xmlns:models="clr-namespace:BlenderRenderQueue.Models"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
@@ -13,7 +13,9 @@
              MaxWidth="1000"
              MaxHeight="500"
              x:Class="BlenderRenderQueue.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
+             x:DataType="vm:SettingsViewModel"
+             services:ToplevelService.Register="{Binding}">
+
 
     <suki:SettingsLayout MinWidthWhetherStackSummaryShow="800">
         <suki:SettingsLayout.Items>
@@ -31,7 +33,6 @@
                             <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BlenderPath, Mode=TwoWay}"
                                      IsReadOnly="True" Margin="0,0,0,0" />
                             <Button Grid.Row="0" Grid.Column="2" Command="{Binding BrowseBlenderCommand}"
-                                    IsEnabled="{Binding IsBlenderPathValid, Converter={x:Static conv:BoolConverters.Not}}"
                                     Classes="Outlined Small"
                                     Margin="0,0,0,0">
                                 <avalonia:MaterialIcon Kind="FolderOpen" Width="16"
@@ -97,7 +98,7 @@
                                       HorizontalAlignment="Right">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate DataType="models:VideoCodecOption">
-                                        <TextBlock Text="{Binding DisplayName}"  VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
@@ -108,11 +109,11 @@
                                        Margin="0,16,8,0" />
                             <ComboBox Grid.Row="1" Grid.Column="2" SelectedItem="{Binding VideoQuality, Mode=TwoWay}"
                                       ItemsSource="{x:Static models:VideoQualityOption.AllOptions}"
-                                       HorizontalAlignment="Right" Margin="0,16,0,0">
+                                      HorizontalAlignment="Right" Margin="0,16,0,0">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate DataType="models:VideoQualityOption">
                                         <TextBlock
-                                            Text="{Binding DisplayName, Converter={x:Static i18n:LocalizeConverter.Instance}}" 
+                                            Text="{Binding DisplayName, Converter={x:Static i18n:LocalizeConverter.Instance}}"
                                             VerticalAlignment="Center" />
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
@@ -133,10 +134,10 @@
                                        Margin="0,0,8,0" />
                             <ComboBox Grid.Row="0" Grid.Column="2" SelectedItem="{Binding Language, Mode=TwoWay}"
                                       ItemsSource="{x:Static models:LanguageOption.AllOptions}"
-                                       HorizontalAlignment="Right" >
+                                      HorizontalAlignment="Right">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate DataType="models:LanguageOption">
-                                        <TextBlock Text="{Binding DisplayName}" 
+                                        <TextBlock Text="{Binding DisplayName}"
                                                    VerticalAlignment="Center" />
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
