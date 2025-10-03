@@ -309,7 +309,7 @@ public partial class SettingsViewModel : ViewModelBase
             new BlenderValidationChangedEventArgs(isValid, BlenderValidationMessage));
     }
 
-    private async Task<bool> TryAutoDetectBlenderAsync(bool autoSelect = true)
+    private Task<bool> TryAutoDetectBlenderAsync(bool autoSelect = true)
     {
         try
         {
@@ -317,17 +317,10 @@ public partial class SettingsViewModel : ViewModelBase
             {
                 var detectedBlenders = new List<string>();
 
-                // 先尝试快速检测
+                // 仅使用注册表扫描，不进行文件系统扫描
                 if (BlenderRenderQueue.Helpers.BlenderLocator.TryFindBlenderExe(out var exe))
                 {
                     detectedBlenders.Add(exe);
-                }
-
-                // 如果快速检测失败，进行异步扫描
-                var asyncExe = await BlenderRenderQueue.Helpers.BlenderLocator.FindBlenderExeAsync();
-                if (!string.IsNullOrWhiteSpace(asyncExe) && !detectedBlenders.Contains(asyncExe))
-                {
-                    detectedBlenders.Add(asyncExe);
                 }
 
                 // 添加检测到的Blender到列表并立即验证
@@ -355,7 +348,7 @@ public partial class SettingsViewModel : ViewModelBase
                             SelectedBlenderExecutable = BlenderExecutables.First();
                         }
                     });
-                    return true;
+                    return Task.FromResult(true);
                 }
             }
         }
@@ -364,7 +357,7 @@ public partial class SettingsViewModel : ViewModelBase
             // 忽略错误
         }
         
-        return false;
+        return Task.FromResult(false);
     }
 
 
