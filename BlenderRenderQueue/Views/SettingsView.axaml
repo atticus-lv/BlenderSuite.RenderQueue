@@ -84,7 +84,7 @@
                                                         <TextBlock Text="{Binding LastValidated, StringFormat='验证时间: {0:yyyy-MM-dd HH:mm:ss}'}" />
                                                     </StackPanel>
                                                 </ToolTip.Tip>
-                                                <StackPanel HorizontalAlignment="Left" Spacing="0,8" Margin="12">
+                                                <StackPanel HorizontalAlignment="Left" Spacing="0,6" Margin="12">
                                                     <!-- 状态图标和标题 -->
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                                         <avalonia:MaterialIcon Kind="CheckCircle" 
@@ -103,28 +103,27 @@
                                                                    Text="STATUS" />
                                                     </StackPanel>
                                                     
-                                                    <!-- Blender版本 -->
-                                                    <TextBlock FontSize="20"
+                                                    <!-- 版本-分支 -->
+                                                    <TextBlock FontSize="18"
                                                                FontWeight="DemiBold"
-                                                               Text="{Binding Version, FallbackValue='Unknown Version'}" />
+                                                               Text="{Binding VersionBranchDisplay}" />
                                                     
-                                                    <!-- 平台信息 -->
-                                                    <TextBlock FontSize="14"
-                                                               Foreground="{DynamicResource SukiLowText}"
-                                                               Text="{Binding Platform, FallbackValue='Unknown Platform'}" />
-                                                    
-                                                    <!-- 分支信息 -->
+                                                    <!-- 构建日期-时间 -->
                                                     <TextBlock FontSize="12"
                                                                Foreground="{DynamicResource SukiLowText}"
-                                                               Text="{Binding Branch, FallbackValue='Unknown Branch'}" />
+                                                               Text="{Binding BuildDateTimeDisplay}" />
                                                     
-                                                    <!-- 路径信息（截断显示） -->
+                                                    <!-- 路径信息（头尾显示） -->
                                                     <TextBlock FontSize="10"
                                                                Foreground="{DynamicResource SukiLowText}"
-                                                               Text="{Binding Path}"
+                                                               Text="{Binding FormattedPath}"
                                                                TextWrapping="Wrap"
-                                                               MaxHeight="30"
-                                                               TextTrimming="CharacterEllipsis" />
+                                                               MaxHeight="20" />
+                                                    
+                                                    <!-- 最后验证时间 -->
+                                                    <TextBlock FontSize="9"
+                                                               Foreground="{DynamicResource SukiLowText}"
+                                                               Text="{Binding LastValidated, StringFormat='验证: {0:MM-dd HH:mm}'}" />
                                                 </StackPanel>
                                             </RadioButton>
                                         </DataTemplate>

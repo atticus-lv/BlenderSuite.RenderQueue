@@ -47,6 +47,15 @@ public class BlenderExecutable
     [JsonPropertyName("DisplayName")]
     public string DisplayName => GetDisplayName();
 
+    [JsonPropertyName("FormattedPath")]
+    public string FormattedPath => GetFormattedPath();
+
+    [JsonPropertyName("VersionBranchDisplay")]
+    public string VersionBranchDisplay => GetVersionBranchDisplay();
+
+    [JsonPropertyName("BuildDateTimeDisplay")]
+    public string BuildDateTimeDisplay => GetBuildDateTimeDisplay();
+
     /// <summary>
     /// 获取显示名称
     /// </summary>
@@ -69,6 +78,75 @@ public class BlenderExecutable
         }
         
         return $"{fileName} ({parentDir})";
+    }
+
+    /// <summary>
+    /// 获取格式化的路径显示（头尾显示）
+    /// </summary>
+    public string GetFormattedPath(int maxLength = 50)
+    {
+        if (string.IsNullOrEmpty(Path))
+            return "未知路径";
+
+        if (Path.Length <= maxLength)
+            return Path;
+
+        // 使用简单的头尾显示
+        var startLength = Math.Max(15, maxLength / 3); // 至少显示15个字符的开头
+        var endLength = Math.Max(20, maxLength / 3);   // 至少显示20个字符的结尾
+        
+        // 确保不会超出路径长度
+        startLength = Math.Min(startLength, Path.Length - endLength - 3);
+        endLength = Math.Min(endLength, Path.Length - startLength - 3);
+        
+        if (startLength <= 0 || endLength <= 0)
+        {
+            // 如果无法合理分割，只显示文件名
+            var fileName = System.IO.Path.GetFileName(Path);
+            return fileName.Length > maxLength ? fileName.Substring(0, maxLength - 3) + "..." : fileName;
+        }
+
+        return $"{Path.Substring(0, startLength)}...{Path.Substring(Path.Length - endLength)}";
+    }
+
+    /// <summary>
+    /// 获取版本-分支显示
+    /// </summary>
+    public string GetVersionBranchDisplay()
+    {
+        if (string.IsNullOrEmpty(Version) && string.IsNullOrEmpty(Branch))
+            return "未知版本";
+        
+        if (string.IsNullOrEmpty(Version))
+            return Branch;
+        
+        if (string.IsNullOrEmpty(Branch))
+            return Version;
+        
+        return $"{Version}-{Branch}";
+    }
+
+    /// <summary>
+    /// 获取构建日期-时间显示
+    /// </summary>
+    public string GetBuildDateTimeDisplay()
+    {
+        if (BuildDate.HasValue && !string.IsNullOrEmpty(BuildTime))
+        {
+            return $"{BuildDate.Value:yyyy-MM-dd}-{BuildTime}";
+        }
+        
+        if (BuildDate.HasValue)
+        {
+            return BuildDate.Value.ToString("yyyy-MM-dd");
+        }
+        
+        if (!string.IsNullOrEmpty(BuildTime))
+        {
+            return BuildTime;
+        }
+        
+        return "未知构建时间";
     }
 
     /// <summary>
