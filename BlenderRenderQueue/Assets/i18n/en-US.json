@@ -173,5 +173,9 @@
   "Settings_StatusLabel": "STATUS",
   "Settings_Validated": "Validated: {0:MM-dd HH:mm}",
   "Queue_RenderQueue": "Render Queue",
-  "Settings_Save": "Save Settings"
+  "Settings_Save": "Save Settings",
+  "MainRender_NoBlenderAvailable": "No Blender available",
+  "Blender_SelectExecutable": "Please select a Blender executable file",
+  "Blender_SelectFileDialog": "Select Blender Executable File",
+  "Blender_PathInvalid": "Blender path is invalid"
 }

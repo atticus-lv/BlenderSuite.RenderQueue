@@ -99,10 +99,10 @@ public partial class MainRenderViewModel : ViewModelBase
         {
             IsBlenderPathValid = false;
             HasBlenderValidationError = true;
-            BlenderValidationMessage = "请选择Blender可执行文件";
+            BlenderValidationMessage = "Blender_SelectExecutable";
             ClearBlenderInfo();
             CleanupBlenderService();
-            StatusMessage = "Blender路径无效";
+            StatusMessage = "Blender_PathInvalid";
             return;
         }
 
@@ -113,7 +113,7 @@ public partial class MainRenderViewModel : ViewModelBase
             BlenderValidationMessage = "指定的文件不存在";
             ClearBlenderInfo();
             CleanupBlenderService();
-            StatusMessage = "Blender路径无效";
+            StatusMessage = "Blender_PathInvalid";
             return;
         }
 

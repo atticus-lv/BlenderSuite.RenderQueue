@@ -102,7 +102,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             // 清空验证状态
             HasBlenderValidationError = true;
-            BlenderValidationMessage = "请选择一个Blender可执行文件";
+            BlenderValidationMessage = "Blender_SelectExecutable";
             NotifyBlenderValidationChanged();
         }
     }
@@ -364,7 +364,7 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private async Task BrowseBlender()
     {
-        var path = await this.SelectFile("选择 Blender 可执行文件", GetBlenderExecutableFileTypes());
+        var path = await this.SelectFile("Blender_SelectFileDialog", GetBlenderExecutableFileTypes());
         if (!string.IsNullOrWhiteSpace(path))
         {
             // 检查是否已存在

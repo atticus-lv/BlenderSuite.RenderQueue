@@ -43,12 +43,12 @@
                                                        Width="64"
                                                        Height="64"
                                                        Foreground="{DynamicResource SukiDangerColor}" />
-                                <TextBlock Text="没有可用的blender"
+                                <TextBlock Text="{i18n:Localize MainRender_NoBlenderAvailable}"
                                            FontSize="24"
                                            FontWeight="Bold"
                                            HorizontalAlignment="Center" />
                                 <TextBlock
-                                    Text="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).BlenderValidationMessage}"
+                                    Text="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).BlenderValidationMessage, Converter={StaticResource LocalizeConverter}}"
                                     FontSize="16"
                                     HorizontalAlignment="Center"
                                     TextWrapping="Wrap"

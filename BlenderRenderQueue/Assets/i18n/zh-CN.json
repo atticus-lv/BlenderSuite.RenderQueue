@@ -173,5 +173,9 @@
   "Settings_StatusLabel": "STATUS",
   "Settings_Validated": "验证: {0:MM-dd HH:mm}",
   "Queue_RenderQueue": "渲染队列",
-  "Settings_Save": "保存设置"
+  "Settings_Save": "保存设置",
+  "MainRender_NoBlenderAvailable": "没有可用的blender",
+  "Blender_SelectExecutable": "请选择一个Blender可执行文件",
+  "Blender_SelectFileDialog": "选择 Blender 可执行文件",
+  "Blender_PathInvalid": "Blender路径无效"
 }

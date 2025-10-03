@@ -156,7 +156,7 @@ public partial class TestRenderViewModel : ViewModelBase
 	[RelayCommand]
 	private async Task BrowseBlender()
 	{
-		var path = await this.SelectFile("选择 Blender 可执行文件", GetBlenderExecutableFileTypes());
+		var path = await this.SelectFile("Blender_SelectFileDialog", GetBlenderExecutableFileTypes());
 		if (!string.IsNullOrWhiteSpace(path)) BlenderPath = path;
 	}
 
@@ -221,7 +221,7 @@ public partial class TestRenderViewModel : ViewModelBase
 	{
 		if (string.IsNullOrWhiteSpace(BlenderPath) || string.IsNullOrWhiteSpace(BlendFilePath))
 		{
-			EnqueueLog("请先选择 Blender 路径和 .blend 文件");
+			EnqueueLog("Blender_SelectExecutable");
 			return;
 		}
 
