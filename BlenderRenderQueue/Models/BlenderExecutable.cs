@@ -194,4 +194,24 @@ public class BlenderExecutable
             LastValidated = DateTime.UtcNow
         };
     }
+
+    /// <summary>
+    /// 重写Equals方法，基于Path进行比较
+    /// </summary>
+    public override bool Equals(object? obj)
+    {
+        if (obj is BlenderExecutable other)
+        {
+            return string.Equals(Path, other.Path, StringComparison.OrdinalIgnoreCase);
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 重写GetHashCode方法
+    /// </summary>
+    public override int GetHashCode()
+    {
+        return Path?.GetHashCode(StringComparison.OrdinalIgnoreCase) ?? 0;
+    }
 }

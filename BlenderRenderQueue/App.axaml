@@ -16,6 +16,7 @@
         <ResourceDictionary>
             <converters:FileNameConverter x:Key="FileNameConverter" />
             <converters:StatusToColorConverter x:Key="StatusToColorConverter" />
+            <converters:ObjectEqualMultiConverter x:Key="ObjectEqualMultiConverter" />
             <localizer:LocalizeConverter x:Key="LocalizeConverter" />
         </ResourceDictionary>
     </Application.Resources>

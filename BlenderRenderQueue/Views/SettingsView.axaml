@@ -9,6 +9,8 @@
              xmlns:models="clr-namespace:BlenderRenderQueue.Models"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:converters="clr-namespace:BlenderRenderQueue.Converters"
              mc:Ignorable="d"
              MaxWidth="1000"
              MaxHeight="500"
@@ -42,7 +44,7 @@
                                 <Button Command="{Binding RemoveBlenderCommand}"
                                         Classes="Outlined"
                                         ToolTip.Tip="移除选中的Blender"
-                                        IsEnabled="{Binding SelectedBlenderExecutable, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                        IsEnabled="{Binding SelectedBlenderExecutable, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <avalonia:MaterialIcon Kind="Delete" Width="16" Height="16" />
                                         <TextBlock Text="移除选中" />
@@ -65,13 +67,20 @@
                                         <DataTemplate DataType="models:BlenderExecutable">
                                             <RadioButton Width="280" Height="160" Margin="4"
                                                          Tag="{Binding .}"
-                                                         IsChecked="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).SelectedBlenderExecutable, 
-                                                                           Converter={x:Static ObjectConverters.Equal}, 
-                                                                           ConverterParameter={Binding .}}"
-                                                         Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).SelectBlender}"
-                                                         CommandParameter="{Binding .}"
                                                          Classes="GigaChips"
                                                          GroupName="BlenderSelection">
+                                                <RadioButton.IsChecked>
+                                                    <MultiBinding Converter="{StaticResource ObjectEqualMultiConverter}">
+                                                        <Binding Path="$parent[UserControl].((vm:SettingsViewModel)DataContext).SelectedBlenderExecutable" />
+                                                        <Binding Path="." />
+                                                    </MultiBinding>
+                                                </RadioButton.IsChecked>
+                                                <RadioButton.Command>
+                                                    <Binding Path="$parent[UserControl].((vm:SettingsViewModel)DataContext).SelectBlender" />
+                                                </RadioButton.Command>
+                                                <RadioButton.CommandParameter>
+                                                    <Binding Path="." />
+                                                </RadioButton.CommandParameter>
                                                 <ToolTip.Tip>
                                                     <StackPanel Spacing="4">
                                                         <TextBlock FontWeight="Bold" Text="Blender 详细信息" />

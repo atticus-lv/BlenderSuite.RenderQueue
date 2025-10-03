@@ -47,6 +47,15 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private LanguageOption _language = LanguageOption.Default; // 默认英语
 
+    /// <summary>
+    /// 检查指定的Blender是否被选中
+    /// </summary>
+    public bool IsBlenderSelected(BlenderExecutable blender)
+    {
+        return SelectedBlenderExecutable != null && 
+               SelectedBlenderExecutable.Path == blender.Path;
+    }
+
     partial void OnLanguageChanged(LanguageOption value)
     {
         // 当语言设置发生变化时，立即加载新的语言
@@ -59,6 +68,8 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedBlenderExecutableChanged(BlenderExecutable? value)
     {
+        Console.WriteLine($"[SettingsViewModel] SelectedBlenderExecutable changed: {value?.Path ?? "NULL"}");
+        
         if (value != null)
         {
             // 验证选中的Blender
