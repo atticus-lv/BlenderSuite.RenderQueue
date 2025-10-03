@@ -208,6 +208,52 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
 
+    /// <summary>
+    /// 验证单个Blender（用于自动检测后的验证）
+    /// </summary>
+    private async Task ValidateBlenderAsync(BlenderExecutable blender)
+    {
+        try
+        {
+            var svc = new BlenderCliInfoService();
+            var info = await svc.GetVersionInfoAsync(blender.Path, CancellationToken.None);
+
+            // 更新UI线程上的属性
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                // 更新Blender信息
+                blender.UpdateFromVersionInfo(info);
+                blender.UpdateValidationStatus(true, DateTime.UtcNow);
+
+                // 触发集合更改通知，让UI更新
+                var index = BlenderExecutables.IndexOf(blender);
+                if (index >= 0)
+                {
+                    BlenderExecutables[index] = blender;
+                }
+
+                Console.WriteLine($"[SettingsViewModel] ✅ Auto-validated Blender: {blender.Path} - {blender.Version}");
+            });
+        }
+        catch (Exception ex)
+        {
+            // 验证失败，更新状态
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                blender.UpdateValidationStatus(false, DateTime.UtcNow);
+                
+                // 触发集合更改通知，让UI更新
+                var index = BlenderExecutables.IndexOf(blender);
+                if (index >= 0)
+                {
+                    BlenderExecutables[index] = blender;
+                }
+
+                Console.WriteLine($"[SettingsViewModel] ❌ Auto-validation failed for Blender: {blender.Path} - {ex.Message}");
+            });
+        }
+    }
+
     private async Task LoadBlenderInfoAsync(BlenderExecutable blender, CancellationToken cancellationToken)
     {
         try
@@ -225,6 +271,13 @@ public partial class SettingsViewModel : ViewModelBase
                 // 更新Blender信息
                 blender.UpdateFromVersionInfo(info);
                 blender.UpdateValidationStatus(true, DateTime.UtcNow);
+
+                // 触发集合更改通知，让UI更新
+                var index = BlenderExecutables.IndexOf(blender);
+                if (index >= 0)
+                {
+                    BlenderExecutables[index] = blender;
+                }
 
                 IsLoadingBlenderInfo = false;
                 HasBlenderValidationError = false;
@@ -277,7 +330,7 @@ public partial class SettingsViewModel : ViewModelBase
                     detectedBlenders.Add(asyncExe);
                 }
 
-                // 添加检测到的Blender到列表
+                // 添加检测到的Blender到列表并立即验证
                 if (detectedBlenders.Any())
                 {
                     Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -290,6 +343,9 @@ public partial class SettingsViewModel : ViewModelBase
                             {
                                 var blender = BlenderExecutable.CreateDefault(blenderPath);
                                 BlenderExecutables.Add(blender);
+                                
+                                // 立即验证新添加的Blender
+                                _ = Task.Run(async () => await ValidateBlenderAsync(blender));
                             }
                         }
                         
