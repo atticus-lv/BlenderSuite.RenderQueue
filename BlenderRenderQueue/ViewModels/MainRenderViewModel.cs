@@ -82,7 +82,7 @@ public partial class MainRenderViewModel : ViewModelBase
         _ = Task.Run(async () => await LoadSavedDataAsync());
     }
 
-    partial void OnBlenderPathChanged(string value)
+    private void ValidateSelectedBlender()
     {
         _versionCts?.Cancel();
         _versionCts = new CancellationTokenSource();
@@ -92,7 +92,8 @@ public partial class MainRenderViewModel : ViewModelBase
         HasBlenderValidationError = false;
         BlenderValidationMessage = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(value))
+        var selectedBlender = _settingsViewModel.SelectedBlenderExecutable;
+        if (selectedBlender == null)
         {
             IsBlenderPathValid = false;
             HasBlenderValidationError = true;
@@ -103,7 +104,7 @@ public partial class MainRenderViewModel : ViewModelBase
             return;
         }
 
-        if (!File.Exists(value))
+        if (!File.Exists(selectedBlender.Path))
         {
             IsBlenderPathValid = false;
             HasBlenderValidationError = true;
@@ -115,11 +116,11 @@ public partial class MainRenderViewModel : ViewModelBase
         }
 
         // 异步获取Blender版本信息
-        _ = Task.Run(async () => await LoadBlenderInfoAsync(value, ct));
+        _ = Task.Run(async () => await LoadBlenderInfoAsync(selectedBlender, ct));
     }
 
 
-    private async Task LoadBlenderInfoAsync(string blenderPath, CancellationToken cancellationToken)
+    private async Task LoadBlenderInfoAsync(BlenderExecutable blenderExecutable, CancellationToken cancellationToken)
     {
         try
         {
@@ -127,7 +128,7 @@ public partial class MainRenderViewModel : ViewModelBase
             StatusMessage = "正在加载Blender信息...";
 
             var svc = new BlenderCliInfoService();
-            var info = await svc.GetVersionInfoAsync(blenderPath, cancellationToken);
+            var info = await svc.GetVersionInfoAsync(blenderExecutable.Path, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested) return;
 
@@ -153,13 +154,13 @@ public partial class MainRenderViewModel : ViewModelBase
                 }
 
                 // 设置Blender路径到渲染队列（不创建长期运行的服务）
-                Console.WriteLine($"[MainRenderViewModel] Setting Blender path: {blenderPath}");
-                RenderQueue.SetBlenderPath(blenderPath);
+                Console.WriteLine($"[MainRenderViewModel] Setting Blender path: {blenderExecutable.Path}");
+                RenderQueue.SetBlenderPath(blenderExecutable.Path);
 
                 // 只有在验证成功时才创建临时服务用于视频生成
                 try
                 {
-                    _blenderService = new BlenderExeService(blenderPath);
+                    _blenderService = new BlenderExeService(blenderExecutable.Path);
                     Console.WriteLine(
                         $"[MainRenderViewModel] Temporary Blender service created for video generation - ID: {_blenderService.ServiceId}");
                 }
@@ -230,12 +231,17 @@ public partial class MainRenderViewModel : ViewModelBase
     {
         // 如果检测失败，自动弹出设置对话框
         if (!e.IsBlenderDetected)
+        {
             ShowSettingsDialog();
+        }
         else
+        {
             // 检测成功，直接应用设置
-            ApplySettings(_settingsViewModel!.BlenderPath, _settingsViewModel.DefaultRenderTimeoutSeconds,
+            var selectedPath = _settingsViewModel.SelectedBlenderExecutable?.Path ?? string.Empty;
+            ApplySettings(selectedPath, _settingsViewModel.DefaultRenderTimeoutSeconds,
                 _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoCodec.Value,
                 _settingsViewModel.VideoQuality.Value);
+        }
     }
 
     [RelayCommand]
@@ -263,7 +269,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        ApplySettings(e.BlenderPath, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts, e.VideoCodec, e.VideoQuality);
+        ApplySettings(string.Empty, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts, e.VideoCodec, e.VideoQuality);
     }
 
     private void OnBlenderValidationChanged(object? sender, BlenderValidationChangedEventArgs e)
@@ -282,7 +288,8 @@ public partial class MainRenderViewModel : ViewModelBase
     private void ApplySettings(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts,
         string videoCodec, string videoQuality)
     {
-        BlenderPath = blenderPath;
+        // 验证选中的Blender
+        ValidateSelectedBlender();
 
         // 更新全局超时设置和重试次数
         _renderQueue.SetGlobalRenderTimeout(defaultRenderTimeoutSeconds);

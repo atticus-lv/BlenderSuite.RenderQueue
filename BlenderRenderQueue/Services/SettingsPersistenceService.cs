@@ -47,7 +47,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService
             var json = JsonSerializer.Serialize(settings, JsonOptions);
             await File.WriteAllTextAsync(SettingsFilePath, json);
 
-            Console.WriteLine($"[SettingsPersistenceService] ✅ Settings saved successfully - Blender: {settings.BlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s");
+            Console.WriteLine($"[SettingsPersistenceService] ✅ Settings saved successfully - Selected Blender: {settings.SelectedBlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s");
             return true;
         }
         catch (Exception ex)
@@ -90,7 +90,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService
                 settings.Version = "0.0.1"; // 设置默认版本
             }
 
-            Console.WriteLine($"[SettingsPersistenceService] ✅ Settings loaded successfully - Version: {settings.Version}, Blender: {settings.BlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s");
+            Console.WriteLine($"[SettingsPersistenceService] ✅ Settings loaded successfully - Version: {settings.Version}, Selected Blender: {settings.SelectedBlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s");
             return settings;
         }
         catch (Exception ex)

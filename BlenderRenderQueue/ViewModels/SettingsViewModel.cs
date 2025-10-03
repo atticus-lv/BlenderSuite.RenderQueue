@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,22 +18,10 @@ namespace BlenderRenderQueue.ViewModels;
 public partial class SettingsViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private string _blenderPath = string.Empty;
+    private ObservableCollection<BlenderExecutable> _blenderExecutables = new();
 
     [ObservableProperty]
-    private bool _isBlenderPathValid = false;
-
-    [ObservableProperty]
-    private string _blenderVersion = string.Empty;
-
-    [ObservableProperty]
-    private string _blenderPlatform = string.Empty;
-
-    [ObservableProperty]
-    private string _blenderBranch = string.Empty;
-
-    [ObservableProperty]
-    private string _blenderHash = string.Empty;
+    private BlenderExecutable? _selectedBlenderExecutable;
 
     [ObservableProperty]
     private bool _isLoadingBlenderInfo = false;
@@ -65,6 +54,22 @@ public partial class SettingsViewModel : ViewModelBase
         {
             var language = value.Value;
             Localizer.Localizer.Instance.LoadLanguage(language);
+        }
+    }
+
+    partial void OnSelectedBlenderExecutableChanged(BlenderExecutable? value)
+    {
+        if (value != null)
+        {
+            // 验证选中的Blender
+            ValidateSelectedBlender(value);
+        }
+        else
+        {
+            // 清空验证状态
+            HasBlenderValidationError = true;
+            BlenderValidationMessage = "请选择一个Blender可执行文件";
+            NotifyBlenderValidationChanged();
         }
     }
 
@@ -113,7 +118,7 @@ public partial class SettingsViewModel : ViewModelBase
         });
     }
 
-    partial void OnBlenderPathChanged(string value)
+    private void ValidateSelectedBlender(BlenderExecutable blender)
     {
         _versionCts?.Cancel();
         _versionCts = new CancellationTokenSource();
@@ -123,52 +128,47 @@ public partial class SettingsViewModel : ViewModelBase
         HasBlenderValidationError = false;
         BlenderValidationMessage = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(value))
+        if (string.IsNullOrWhiteSpace(blender.Path))
         {
-            IsBlenderPathValid = false;
             HasBlenderValidationError = true;
-            BlenderValidationMessage = "请选择Blender可执行文件";
-            ClearBlenderInfo();
+            BlenderValidationMessage = "Blender路径为空";
             NotifyBlenderValidationChanged();
             return;
         }
 
-        if (!File.Exists(value))
+        if (!File.Exists(blender.Path))
         {
-            IsBlenderPathValid = false;
             HasBlenderValidationError = true;
             BlenderValidationMessage = "指定的文件不存在";
-            ClearBlenderInfo();
             NotifyBlenderValidationChanged();
             return;
         }
 
         // 异步获取Blender版本信息
-        _ = Task.Run(async () => await LoadBlenderInfoAsync(value, ct));
+        _ = Task.Run(async () => await LoadBlenderInfoAsync(blender, ct));
     }
 
 
 
-    private async Task LoadBlenderInfoAsync(string blenderPath, CancellationToken cancellationToken)
+    private async Task LoadBlenderInfoAsync(BlenderExecutable blender, CancellationToken cancellationToken)
     {
         try
         {
             IsLoadingBlenderInfo = true;
 
             var svc = new BlenderCliInfoService();
-            var info = await svc.GetVersionInfoAsync(blenderPath, cancellationToken);
+            var info = await svc.GetVersionInfoAsync(blender.Path, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested) return;
 
             // 更新UI线程上的属性
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                BlenderVersion = info.Version ?? string.Empty;
-                BlenderPlatform = info.Platform ?? string.Empty;
-                BlenderBranch = info.Branch ?? string.Empty;
-                BlenderHash = info.Hash ?? string.Empty;
+                // 更新Blender信息
+                blender.UpdateFromVersionInfo(info);
+                blender.UpdateValidationStatus(true, DateTime.UtcNow);
+                
                 IsLoadingBlenderInfo = false;
-                IsBlenderPathValid = true;
                 HasBlenderValidationError = false;
                 BlenderValidationMessage = string.Empty;
                 NotifyBlenderValidationChanged();
@@ -181,10 +181,9 @@ public partial class SettingsViewModel : ViewModelBase
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
                     IsLoadingBlenderInfo = false;
-                    IsBlenderPathValid = false;
+                    blender.UpdateValidationStatus(false, DateTime.UtcNow);
                     HasBlenderValidationError = true;
                     BlenderValidationMessage = $"Blender验证失败: {ex.Message}";
-                    ClearBlenderInfo();
                     NotifyBlenderValidationChanged();
                 });
             }
@@ -192,17 +191,11 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
 
-    private void ClearBlenderInfo()
-    {
-        BlenderVersion = string.Empty;
-        BlenderPlatform = string.Empty;
-        BlenderBranch = string.Empty;
-        BlenderHash = string.Empty;
-    }
 
     private void NotifyBlenderValidationChanged()
     {
-        BlenderValidationChanged?.Invoke(this, new BlenderValidationChangedEventArgs(IsBlenderPathValid, BlenderValidationMessage));
+        var isValid = SelectedBlenderExecutable?.IsValid ?? false;
+        BlenderValidationChanged?.Invoke(this, new BlenderValidationChangedEventArgs(isValid, BlenderValidationMessage));
     }
 
     private async Task<bool> TryAutoDetectBlenderAsync()
@@ -211,18 +204,38 @@ public partial class SettingsViewModel : ViewModelBase
         {
             if (OperatingSystem.IsWindows())
             {
+                var detectedBlenders = new List<string>();
+
                 // 先尝试快速检测
                 if (BlenderRenderQueue.Helpers.BlenderLocator.TryFindBlenderExe(out var exe))
                 {
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { BlenderPath = exe; });
-                    return true;
+                    detectedBlenders.Add(exe);
                 }
 
                 // 如果快速检测失败，进行异步扫描
                 var asyncExe = await BlenderRenderQueue.Helpers.BlenderLocator.FindBlenderExeAsync();
-                if (!string.IsNullOrWhiteSpace(asyncExe))
+                if (!string.IsNullOrWhiteSpace(asyncExe) && !detectedBlenders.Contains(asyncExe))
                 {
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { BlenderPath = asyncExe; });
+                    detectedBlenders.Add(asyncExe);
+                }
+
+                // 添加检测到的Blender到列表
+                if (detectedBlenders.Any())
+                {
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        foreach (var blenderPath in detectedBlenders)
+                        {
+                            var blender = BlenderExecutable.CreateDefault(blenderPath);
+                            BlenderExecutables.Add(blender);
+                        }
+                        
+                        // 选择第一个检测到的Blender
+                        if (BlenderExecutables.Any())
+                        {
+                            SelectedBlenderExecutable = BlenderExecutables.First();
+                        }
+                    });
                     return true;
                 }
             }
@@ -242,7 +255,30 @@ public partial class SettingsViewModel : ViewModelBase
         var path = await this.SelectFile("选择 Blender 可执行文件", GetBlenderExecutableFileTypes());
         if (!string.IsNullOrWhiteSpace(path))
         {
-            BlenderPath = path;
+            // 检查是否已存在
+            var existing = BlenderExecutables.FirstOrDefault(b => b.Path == path);
+            if (existing != null)
+            {
+                // 如果已存在，选择它
+                SelectedBlenderExecutable = existing;
+            }
+            else
+            {
+                // 创建新的Blender可执行文件
+                var newBlender = BlenderExecutable.CreateDefault(path);
+                BlenderExecutables.Add(newBlender);
+                SelectedBlenderExecutable = newBlender;
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void RemoveBlender()
+    {
+        if (SelectedBlenderExecutable != null)
+        {
+            BlenderExecutables.Remove(SelectedBlenderExecutable);
+            SelectedBlenderExecutable = BlenderExecutables.FirstOrDefault();
         }
     }
 
@@ -250,8 +286,10 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private async Task SaveSettings()
     {
+        var selectedPath = SelectedBlenderExecutable?.Path ?? string.Empty;
+        
         // 触发设置变化事件
-        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(BlenderPath, DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoCodec.Value, VideoQuality.Value, Language.Value));
+        SettingsChanged?.Invoke(this, new SettingsChangedEventArgs(DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoCodec.Value, VideoQuality.Value, Language.Value));
         
         // 保存设置到文件
         await SaveSettingsToFileAsync();
@@ -266,7 +304,8 @@ public partial class SettingsViewModel : ViewModelBase
         {
             var settings = new SettingsData
             {
-                BlenderPath = BlenderPath,
+                BlenderExecutables = BlenderExecutables.ToList(),
+                SelectedBlenderPath = SelectedBlenderExecutable?.Path ?? string.Empty,
                 DefaultRenderTimeoutSeconds = DefaultRenderTimeoutSeconds,
                 MaxRetryAttempts = MaxRetryAttempts,
                 VideoCodec = VideoCodec.Value,
@@ -277,7 +316,7 @@ public partial class SettingsViewModel : ViewModelBase
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
             if (success)
             {
-                Console.WriteLine($"[SettingsViewModel] ✅ Settings saved successfully - Blender: {BlenderPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
+                Console.WriteLine($"[SettingsViewModel] ✅ Settings saved successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
             }
             else
             {
@@ -299,9 +338,20 @@ public partial class SettingsViewModel : ViewModelBase
         {
             var settings = await _settingsPersistenceService.LoadSettingsAsync();
             
-            if (!string.IsNullOrEmpty(settings.BlenderPath))
+            // 加载Blender可执行文件列表
+            if (settings.BlenderExecutables != null && settings.BlenderExecutables.Any())
             {
-                BlenderPath = settings.BlenderPath;
+                BlenderExecutables.Clear();
+                foreach (var blender in settings.BlenderExecutables)
+                {
+                    BlenderExecutables.Add(blender);
+                }
+                
+                // 设置选中的Blender
+                if (!string.IsNullOrEmpty(settings.SelectedBlenderPath))
+                {
+                    SelectedBlenderExecutable = BlenderExecutables.FirstOrDefault(b => b.Path == settings.SelectedBlenderPath);
+                }
             }
 
             if (settings.DefaultRenderTimeoutSeconds > 0)
@@ -361,7 +411,7 @@ public partial class SettingsViewModel : ViewModelBase
                 Localizer.Localizer.Instance.LoadLanguage(LanguageOption.Default.Value);
             }
 
-            Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Blender: {BlenderPath}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
+            Console.WriteLine($"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
         }
         catch (Exception ex)
         {
@@ -389,16 +439,14 @@ public partial class SettingsViewModel : ViewModelBase
 // 设置变化事件参数
 public class SettingsChangedEventArgs : EventArgs
 {
-    public string BlenderPath { get; }
     public int DefaultRenderTimeoutSeconds { get; }
     public int MaxRetryAttempts { get; }
     public string VideoCodec { get; }
     public string VideoQuality { get; }
     public string Language { get; }
 
-    public SettingsChangedEventArgs(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoCodec, string videoQuality, string language)
+    public SettingsChangedEventArgs(int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoCodec, string videoQuality, string language)
     {
-        BlenderPath = blenderPath;
         DefaultRenderTimeoutSeconds = defaultRenderTimeoutSeconds;
         MaxRetryAttempts = maxRetryAttempts;
         VideoCodec = videoCodec;

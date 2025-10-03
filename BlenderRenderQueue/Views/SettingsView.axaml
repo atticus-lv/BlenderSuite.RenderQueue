@@ -24,20 +24,48 @@
                 <!-- Blender 设置部分 -->
                 <suki:SettingsLayoutItem Header="{i18n:Localize Blender}">
                     <suki:SettingsLayoutItem.Content>
-                        <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
-                            <!-- Blender路径设置 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize BlenderPath}"
+                            <!-- Blender选择 -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="选择Blender:"
                                        VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
-                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding BlenderPath, Mode=TwoWay}"
-                                     IsReadOnly="True" Margin="0,0,0,0" />
-                            <Button Grid.Row="0" Grid.Column="2" Command="{Binding BrowseBlenderCommand}"
-                                    Classes="Outlined Small"
-                                    Margin="0,0,0,0">
-                                <avalonia:MaterialIcon Kind="FolderOpen" Width="16"
-                                                       Height="16" />
-                            </Button>
+                            <ComboBox Grid.Row="0" Grid.Column="1" 
+                                      SelectedItem="{Binding SelectedBlenderExecutable, Mode=TwoWay}"
+                                      ItemsSource="{Binding BlenderExecutables}"
+                                      Margin="0,0,0,0">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="models:BlenderExecutable">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <avalonia:MaterialIcon Kind="CheckCircle" 
+                                                                   Width="16" 
+                                                                   Height="16" 
+                                                                   Foreground="{DynamicResource SukiSuccessColor}"
+                                                                   IsVisible="{Binding IsValid}" />
+                                            <avalonia:MaterialIcon Kind="Error" 
+                                                                   Width="16" 
+                                                                   Height="16" 
+                                                                   Foreground="{DynamicResource SukiDangerColor}"
+                                                                   IsVisible="{Binding !IsValid}" />
+                                            <TextBlock Text="{Binding DisplayName}" 
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                                <Button Command="{Binding BrowseBlenderCommand}"
+                                        Classes="Outlined Small"
+                                        ToolTip.Tip="添加新的Blender">
+                                    <avalonia:MaterialIcon Kind="Add" Width="16" Height="16" />
+                                </Button>
+                                <Button Command="{Binding RemoveBlenderCommand}"
+                                        Classes="Outlined Small"
+                                        ToolTip.Tip="移除选中的Blender"
+                                        IsEnabled="{Binding SelectedBlenderExecutable, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                    <avalonia:MaterialIcon Kind="Delete" Width="16" Height="16" />
+                                </Button>
+                            </StackPanel>
 
                             <!-- Blender验证状态 -->
                             <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" 
@@ -67,7 +95,7 @@
                                     CornerRadius="4"
                                     Padding="8,4"
                                     Margin="0,4,0,0"
-                                    IsVisible="{Binding IsBlenderPathValid}">
+                                    IsVisible="{Binding SelectedBlenderExecutable.IsValid}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <avalonia:MaterialIcon Kind="CheckCircle" 
                                                            Width="16" 
@@ -81,9 +109,9 @@
                             <!-- Blender信息 -->
                             <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8"
                                         Margin="0,8,0,0" VerticalAlignment="Center">
-                                <SelectableTextBlock Text="{Binding BlenderVersion}" />
-                                <SelectableTextBlock Text="{Binding BlenderPlatform}" />
-                                <SelectableTextBlock Text="{Binding BlenderBranch}" />
+                                <SelectableTextBlock Text="{Binding SelectedBlenderExecutable.Version}" />
+                                <SelectableTextBlock Text="{Binding SelectedBlenderExecutable.Platform}" />
+                                <SelectableTextBlock Text="{Binding SelectedBlenderExecutable.Branch}" />
                                 <ProgressBar IsIndeterminate="True" Width="16" Height="16"
                                              IsVisible="{Binding IsLoadingBlenderInfo}" />
                             </StackPanel>
