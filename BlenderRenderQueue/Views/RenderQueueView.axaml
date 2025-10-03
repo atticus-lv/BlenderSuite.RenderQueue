@@ -9,7 +9,7 @@
              xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              xmlns:viewModels="clr-namespace:BlenderRenderQueue.ViewModels"
-             xmlns:services1="clr-namespace:BlenderRenderQueue.Services"
+             xmlns:services="clr-namespace:BlenderRenderQueue.Services"
              xmlns:behaviors="clr-namespace:BlenderRenderQueue.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
@@ -19,7 +19,7 @@
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
              x:DataType="viewModels:RenderQueueViewModel"
-             services1:ToplevelService.Register="{Binding}">
+             services:ToplevelService.Register="{Binding}">
 
     <Design.DataContext>
         <design:DesignTimeRenderQueueViewModel />
