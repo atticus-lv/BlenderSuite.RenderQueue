@@ -86,7 +86,7 @@
                 </StackPanel>
             </Grid>
 
-            <suki:GlassCard>
+            <suki:GlassCard IsAnimated="False">
                 <TabControl IsVisible="{Binding IsValid}" Name="TabControl">
                     <TabItem Header="{i18n:Localize RenderTask_SceneInfo}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8 4">
@@ -218,7 +218,7 @@
                     </TabItem>
                 </TabControl>
             </suki:GlassCard>
-            <suki:GlassCard IsVisible="{Binding !#TabControl.SelectedIndex}">
+            <suki:GlassCard IsAnimated="False" IsVisible="{Binding !#TabControl.SelectedIndex}">
                 <StackPanel>
 
                     <Grid ColumnDefinitions="*,Auto" Margin="4">

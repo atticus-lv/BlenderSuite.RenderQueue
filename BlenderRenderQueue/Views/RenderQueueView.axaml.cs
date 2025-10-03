@@ -64,7 +64,7 @@ public partial class RenderQueueView : UserControl
     {
         if (_rightPanelBorder != null && _topLevel != null)
         {
-            var scale = 0.6;
+            var scale = 0.5;
             var windowWidth = _topLevel.ClientSize.Width;
             var calculatedWidth = windowWidth * scale;
             

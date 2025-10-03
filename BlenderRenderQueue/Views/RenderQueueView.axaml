@@ -199,7 +199,7 @@
                 <!-- 右侧任务详情 -->
                 <Border Grid.Column="0" Margin="4">
                     <Panel>
-                        <suki:GlassCard>
+                        <suki:GlassCard IsAnimated="False">
                             <Panel>
                                 <ScrollViewer>
                                     <ContentControl Content="{Binding SelectedTask}">

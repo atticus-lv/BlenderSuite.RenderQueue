@@ -56,11 +56,12 @@ public partial class MainRenderViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isLoadingBlenderInfo;
 
+    [ObservableProperty]
+    private SettingsViewModel? _settingsViewModel;
 
     // 内部状态
     private BlenderExeService? _blenderService;
     private CancellationTokenSource? _versionCts;
-    private SettingsViewModel? _settingsViewModel;
 
     // 视频生成进度 Toast 相关
     private ISukiToast? _videoGenerationToast;
@@ -215,6 +216,7 @@ public partial class MainRenderViewModel : ViewModelBase
     private void InitializeSettings()
     {
         _settingsViewModel = new SettingsViewModel();
+        SettingsViewModel = _settingsViewModel; // 设置公共属性
 
         // 订阅设置变化事件
         _settingsViewModel.SettingsChanged += OnSettingsChanged;
@@ -230,31 +232,24 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnInitializationCompleted(object? sender, InitializationCompletedEventArgs e)
     {
-        // 如果检测失败，自动弹出设置对话框
-        if (!e.IsBlenderDetected)
-        {
-            ShowSettingsDialog();
-        }
-        else
-        {
-            // 检测成功，直接应用设置
-            var selectedPath = _settingsViewModel.SelectedBlenderExecutable?.Path ?? string.Empty;
-            ApplySettings(selectedPath, _settingsViewModel.DefaultRenderTimeoutSeconds,
-                _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoCodec.Value,
-                _settingsViewModel.VideoQuality.Value);
-        }
+        // 检测完成后，直接应用设置（不再自动弹出对话框，用户可以通过侧边菜单访问设置）
+        var selectedPath = _settingsViewModel.SelectedBlenderExecutable?.Path ?? string.Empty;
+        ApplySettings(selectedPath, _settingsViewModel.DefaultRenderTimeoutSeconds,
+            _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoCodec.Value,
+            _settingsViewModel.VideoQuality.Value);
     }
 
     [RelayCommand]
-    private void OpenSettings()
+    private void NavigateToSettings()
     {
-        // 在打开设置窗口时，同步队列状态（与开始队列按钮逻辑保持一致）
+        // 在导航到设置页面时，同步队列状态（与开始队列按钮逻辑保持一致）
         if (_settingsViewModel != null)
         {
             _settingsViewModel.UpdateQueueState(RenderQueue.QueueState);
         }
         
-        ShowSettingsDialog();
+        // 这里可以添加导航逻辑，但由于我们使用的是SukiSideMenu，它会自动处理页面切换
+        // 如果需要程序化导航，可以使用SukiSideMenu的SelectedIndex属性
     }
 
     private void ShowSettingsDialog()
@@ -268,7 +263,7 @@ public partial class MainRenderViewModel : ViewModelBase
             dialogManager.CreateDialog()
                 .WithTitle(Localizer.Localizer.Instance["Settings"])
                 .WithContent(_settingsViewModel!)
-                .WithActionButton(Localizer.Localizer.Instance["Save"], _ => { _settingsViewModel!.SaveSettingsCommand.Execute(null); }, true)
+                .WithActionButton(Localizer.Localizer.Instance["Save"], async _ => { await _settingsViewModel!.SaveSettingsToFileAsync(); }, true)
                 .WithActionButton(Localizer.Localizer.Instance["Cancel"], _ => { }, true)
                 .Dismiss().ByClickingBackground()
                 .TryShow();

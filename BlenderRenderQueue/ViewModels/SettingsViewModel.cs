@@ -351,13 +351,13 @@ public partial class SettingsViewModel : ViewModelBase
         if (blenderExecutable != null)
         {
             SelectedBlenderExecutable = blenderExecutable;
-            await SaveSettings();
+            await SaveSettingsToFileAsync();
         }
     }
 
 
     [RelayCommand]
-    private async Task SaveSettings()
+    public async Task SaveSettingsCommand()
     {
         var selectedPath = SelectedBlenderExecutable?.Path ?? string.Empty;
 
@@ -522,6 +522,8 @@ public partial class SettingsViewModel : ViewModelBase
         return new[] { new FilePickerFileType("Blender") { Patterns = new[] { "blender", "*blender*" } } };
 #endif
     }
+
+
 
 
     public void Dispose()

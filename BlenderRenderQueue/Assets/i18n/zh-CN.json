@@ -171,5 +171,7 @@
   "Settings_Status": "状态: {0}",
   "Settings_ValidatedTime": "验证时间: {0:yyyy-MM-dd HH:mm:ss}",
   "Settings_StatusLabel": "STATUS",
-  "Settings_Validated": "验证: {0:MM-dd HH:mm}"
+  "Settings_Validated": "验证: {0:MM-dd HH:mm}",
+  "Queue_RenderQueue": "渲染队列",
+  "Settings_Save": "保存设置"
 }

@@ -31,7 +31,7 @@ public partial class MainWindowViewModel : ViewModelBase
 		// 委托给 MainRenderViewModel 处理
 		if (Content is MainRenderViewModel mainRender)
 		{
-			mainRender.OpenSettingsCommand.Execute(null);
+			mainRender.NavigateToSettingsCommand.Execute(null);
 		}
 	}
 

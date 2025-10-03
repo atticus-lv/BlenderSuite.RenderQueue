@@ -171,5 +171,7 @@
   "Settings_Status": "Status: {0}",
   "Settings_ValidatedTime": "Validated: {0:yyyy-MM-dd HH:mm:ss}",
   "Settings_StatusLabel": "STATUS",
-  "Settings_Validated": "Validated: {0:MM-dd HH:mm}"
+  "Settings_Validated": "Validated: {0:MM-dd HH:mm}",
+  "Queue_RenderQueue": "Render Queue",
+  "Settings_Save": "Save Settings"
 }
