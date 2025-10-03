@@ -19,7 +19,7 @@
              services:ToplevelService.Register="{Binding}">
 
 
-    <suki:SettingsLayout MinWidthWhetherStackSummaryShow="800">
+    <suki:SettingsLayout>
         <suki:SettingsLayout.Items>
             <objectModel:ObservableCollection x:TypeArguments="suki:SettingsLayoutItem">
 
