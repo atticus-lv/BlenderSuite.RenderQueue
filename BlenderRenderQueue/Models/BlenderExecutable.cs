@@ -1,0 +1,119 @@
+using System;
+using System.Text.Json.Serialization;
+
+namespace BlenderRenderQueue.Models;
+
+/// <summary>
+/// Blender可执行文件信息模型
+/// </summary>
+public class BlenderExecutable
+{
+    [JsonPropertyName("Path")]
+    public string Path { get; set; } = string.Empty;
+
+    [JsonPropertyName("Version")]
+    public string Version { get; set; } = string.Empty;
+
+    [JsonPropertyName("Platform")]
+    public string Platform { get; set; } = string.Empty;
+
+    [JsonPropertyName("Branch")]
+    public string Branch { get; set; } = string.Empty;
+
+    [JsonPropertyName("Hash")]
+    public string Hash { get; set; } = string.Empty;
+
+    [JsonPropertyName("BuildDate")]
+    public DateTime? BuildDate { get; set; }
+
+    [JsonPropertyName("BuildTime")]
+    public string BuildTime { get; set; } = string.Empty;
+
+    [JsonPropertyName("CommitDate")]
+    public DateTime? CommitDate { get; set; }
+
+    [JsonPropertyName("CommitTime")]
+    public string CommitTime { get; set; } = string.Empty;
+
+    [JsonPropertyName("Type")]
+    public string Type { get; set; } = string.Empty;
+
+    [JsonPropertyName("IsValid")]
+    public bool IsValid { get; set; } = false;
+
+    [JsonPropertyName("LastValidated")]
+    public DateTime? LastValidated { get; set; }
+
+    [JsonPropertyName("DisplayName")]
+    public string DisplayName => GetDisplayName();
+
+    /// <summary>
+    /// 获取显示名称
+    /// </summary>
+    private string GetDisplayName()
+    {
+        if (string.IsNullOrEmpty(Path))
+            return "未知";
+
+        var fileName = System.IO.Path.GetFileNameWithoutExtension(Path);
+        var directory = System.IO.Path.GetDirectoryName(Path);
+        
+        if (string.IsNullOrEmpty(directory))
+            return fileName;
+
+        // 尝试从路径中提取版本信息
+        var parentDir = System.IO.Path.GetFileName(directory);
+        if (!string.IsNullOrEmpty(Version))
+        {
+            return $"Blender {Version} ({parentDir})";
+        }
+        
+        return $"{fileName} ({parentDir})";
+    }
+
+    /// <summary>
+    /// 检查Blender可执行文件是否仍然有效
+    /// </summary>
+    public bool IsFileStillValid()
+    {
+        return !string.IsNullOrEmpty(Path) && System.IO.File.Exists(Path);
+    }
+
+    /// <summary>
+    /// 更新验证状态
+    /// </summary>
+    public void UpdateValidationStatus(bool isValid, DateTime validatedAt)
+    {
+        IsValid = isValid;
+        LastValidated = validatedAt;
+    }
+
+    /// <summary>
+    /// 从BlenderVersionInfo更新信息
+    /// </summary>
+    public void UpdateFromVersionInfo(BlenderRenderQueue.Services.BlenderService.BlenderVersionInfo versionInfo)
+    {
+        Version = versionInfo.Version ?? string.Empty;
+        Platform = versionInfo.Platform ?? string.Empty;
+        Branch = versionInfo.Branch ?? string.Empty;
+        Hash = versionInfo.Hash ?? string.Empty;
+        BuildDate = versionInfo.BuildDate;
+        BuildTime = versionInfo.BuildTime ?? string.Empty;
+        CommitDate = versionInfo.CommitDate;
+        CommitTime = versionInfo.CommitTime ?? string.Empty;
+        Type = versionInfo.Type ?? string.Empty;
+    }
+
+    /// <summary>
+    /// 创建默认的BlenderExecutable实例
+    /// </summary>
+    public static BlenderExecutable CreateDefault(string path)
+    {
+        return new BlenderExecutable
+        {
+            Path = path,
+            IsValid = false,
+            LastValidated = DateTime.UtcNow
+        };
+    }
+}

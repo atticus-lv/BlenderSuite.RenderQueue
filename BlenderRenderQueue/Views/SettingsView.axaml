@@ -24,51 +24,116 @@
                 <!-- Blender 设置部分 -->
                 <suki:SettingsLayoutItem Header="{i18n:Localize Blender}">
                     <suki:SettingsLayoutItem.Content>
-                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
-                            <!-- Blender选择 -->
+                            <!-- Blender选择标题和操作按钮 -->
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="选择Blender:"
                                        VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
-                            <ComboBox Grid.Row="0" Grid.Column="1" 
-                                      SelectedItem="{Binding SelectedBlenderExecutable, Mode=TwoWay}"
-                                      ItemsSource="{Binding BlenderExecutables}"
-                                      Margin="0,0,0,0">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate DataType="models:BlenderExecutable">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <avalonia:MaterialIcon Kind="CheckCircle" 
-                                                                   Width="16" 
-                                                                   Height="16" 
-                                                                   Foreground="{DynamicResource SukiSuccessColor}"
-                                                                   IsVisible="{Binding IsValid}" />
-                                            <avalonia:MaterialIcon Kind="Error" 
-                                                                   Width="16" 
-                                                                   Height="16" 
-                                                                   Foreground="{DynamicResource SukiDangerColor}"
-                                                                   IsVisible="{Binding !IsValid}" />
-                                            <TextBlock Text="{Binding DisplayName}" 
-                                                       VerticalAlignment="Center" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8">
                                 <Button Command="{Binding BrowseBlenderCommand}"
-                                        Classes="Outlined Small"
+                                        Classes="Outlined"
                                         ToolTip.Tip="添加新的Blender">
-                                    <avalonia:MaterialIcon Kind="Add" Width="16" Height="16" />
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <avalonia:MaterialIcon Kind="Add" Width="16" Height="16" />
+                                        <TextBlock Text="添加Blender" />
+                                    </StackPanel>
                                 </Button>
                                 <Button Command="{Binding RemoveBlenderCommand}"
-                                        Classes="Outlined Small"
+                                        Classes="Outlined"
                                         ToolTip.Tip="移除选中的Blender"
                                         IsEnabled="{Binding SelectedBlenderExecutable, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                    <avalonia:MaterialIcon Kind="Delete" Width="16" Height="16" />
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <avalonia:MaterialIcon Kind="Delete" Width="16" Height="16" />
+                                        <TextBlock Text="移除选中" />
+                                    </StackPanel>
                                 </Button>
                             </StackPanel>
 
+                            <!-- Blender选择卡片区域 -->
+                            <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" 
+                                          HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Disabled"
+                                          Margin="0,16,0,0">
+                                <ItemsControl ItemsSource="{Binding BlenderExecutables}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="8" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="models:BlenderExecutable">
+                                            <RadioButton Width="280" Height="160" Margin="4"
+                                                         Tag="{Binding .}"
+                                                         IsChecked="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).SelectedBlenderExecutable, 
+                                                                           Converter={x:Static ObjectConverters.Equal}, 
+                                                                           ConverterParameter={Binding .}}"
+                                                         Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).SelectBlender}"
+                                                         CommandParameter="{Binding .}"
+                                                         Classes="GigaChips"
+                                                         GroupName="BlenderSelection">
+                                                <ToolTip.Tip>
+                                                    <StackPanel Spacing="4">
+                                                        <TextBlock FontWeight="Bold" Text="Blender 详细信息" />
+                                                        <TextBlock Text="{Binding Path, StringFormat='路径: {0}'}" />
+                                                        <TextBlock Text="{Binding Version, StringFormat='版本: {0}'}" />
+                                                        <TextBlock Text="{Binding Platform, StringFormat='平台: {0}'}" />
+                                                        <TextBlock Text="{Binding Branch, StringFormat='分支: {0}'}" />
+                                                        <TextBlock Text="{Binding Hash, StringFormat='哈希: {0}'}" />
+                                                        <TextBlock Text="{Binding IsValid, StringFormat='状态: {0}'}" />
+                                                        <TextBlock Text="{Binding LastValidated, StringFormat='验证时间: {0:yyyy-MM-dd HH:mm:ss}'}" />
+                                                    </StackPanel>
+                                                </ToolTip.Tip>
+                                                <StackPanel HorizontalAlignment="Left" Spacing="0,8" Margin="12">
+                                                    <!-- 状态图标和标题 -->
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <avalonia:MaterialIcon Kind="CheckCircle" 
+                                                                               Width="20" 
+                                                                               Height="20" 
+                                                                               Foreground="{DynamicResource SukiSuccessColor}"
+                                                                               IsVisible="{Binding IsValid}" />
+                                                        <avalonia:MaterialIcon Kind="Error" 
+                                                                               Width="20" 
+                                                                               Height="20" 
+                                                                               Foreground="{DynamicResource SukiDangerColor}"
+                                                                               IsVisible="{Binding !IsValid}" />
+                                                        <TextBlock FontSize="12"
+                                                                   FontWeight="DemiBold"
+                                                                   Foreground="{DynamicResource SukiLowText}"
+                                                                   Text="STATUS" />
+                                                    </StackPanel>
+                                                    
+                                                    <!-- Blender版本 -->
+                                                    <TextBlock FontSize="20"
+                                                               FontWeight="DemiBold"
+                                                               Text="{Binding Version, FallbackValue='Unknown Version'}" />
+                                                    
+                                                    <!-- 平台信息 -->
+                                                    <TextBlock FontSize="14"
+                                                               Foreground="{DynamicResource SukiLowText}"
+                                                               Text="{Binding Platform, FallbackValue='Unknown Platform'}" />
+                                                    
+                                                    <!-- 分支信息 -->
+                                                    <TextBlock FontSize="12"
+                                                               Foreground="{DynamicResource SukiLowText}"
+                                                               Text="{Binding Branch, FallbackValue='Unknown Branch'}" />
+                                                    
+                                                    <!-- 路径信息（截断显示） -->
+                                                    <TextBlock FontSize="10"
+                                                               Foreground="{DynamicResource SukiLowText}"
+                                                               Text="{Binding Path}"
+                                                               TextWrapping="Wrap"
+                                                               MaxHeight="30"
+                                                               TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                            </RadioButton>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
                             <!-- Blender验证状态 -->
-                            <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" 
+                            <Border Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" 
                                     Background="{DynamicResource SukiDangerDarkColor}" 
                                     BorderBrush="{DynamicResource SukiDangerColor}" 
                                     BorderThickness="1" 
@@ -88,7 +153,7 @@
                             </Border>
 
                             <!-- Blender成功验证状态 -->
-                            <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" 
+                            <Border Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" 
                                     Background="{DynamicResource SukiSuccessDarkColor}" 
                                     BorderBrush="{DynamicResource SukiSuccessColor}" 
                                     BorderThickness="1" 
@@ -107,7 +172,7 @@
                             </Border>
 
                             <!-- Blender信息 -->
-                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                            <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Spacing="8"
                                         Margin="0,8,0,0" VerticalAlignment="Center">
                                 <SelectableTextBlock Text="{Binding SelectedBlenderExecutable.Version}" />
                                 <SelectableTextBlock Text="{Binding SelectedBlenderExecutable.Platform}" />
