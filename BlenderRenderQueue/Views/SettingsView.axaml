@@ -113,7 +113,6 @@
                                                            Height="16"
                                                            Foreground="{DynamicResource SukiDangerColor}" />
                                     <TextBlock Text="{Binding BlenderValidationMessage}"
-                                               Foreground="{DynamicResource SukiDangerColor}"
                                                VerticalAlignment="Center" />
                                     <ProgressBar IsIndeterminate="True" Width="16" Height="16"
                                                  IsVisible="{Binding IsLoadingBlenderInfo}" />

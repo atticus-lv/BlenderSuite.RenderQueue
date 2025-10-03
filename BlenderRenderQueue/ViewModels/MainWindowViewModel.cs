@@ -24,17 +24,8 @@ public partial class MainWindowViewModel : ViewModelBase
 		Content = new MainRenderViewModel();
 		GetFileVersion();
 	}
-
-	[RelayCommand]
-	private void OpenSettings()
-	{
-		// 委托给 MainRenderViewModel 处理
-		if (Content is MainRenderViewModel mainRender)
-		{
-			mainRender.NavigateToSettingsCommand.Execute(null);
-		}
-	}
-
+	
+	
 	private void GetFileVersion()
 	{
 #if WINDOWS

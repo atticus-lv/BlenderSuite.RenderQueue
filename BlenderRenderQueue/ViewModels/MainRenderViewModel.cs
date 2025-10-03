@@ -248,8 +248,7 @@ public partial class MainRenderViewModel : ViewModelBase
             _settingsViewModel.UpdateQueueState(RenderQueue.QueueState);
         }
         
-        // 这里可以添加导航逻辑，但由于我们使用的是SukiSideMenu，它会自动处理页面切换
-        // 如果需要程序化导航，可以使用SukiSideMenu的SelectedIndex属性
+
     }
 
     private void ShowSettingsDialog()

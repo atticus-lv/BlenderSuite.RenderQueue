@@ -16,38 +16,10 @@
 
     <Grid RowDefinitions="*,Auto" Margin="0 0 0 0">
 
-        <!-- Blender验证失败时的覆盖层 -->
-        <Border Grid.Row="0"
-                Background="{DynamicResource SukiOverlayColor}"
-                IsVisible="{Binding HasBlenderValidationError}"
-                ZIndex="1000">
-            <StackPanel HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Spacing="16">
-                <avalonia:MaterialIcon Kind="Error"
-                                       Width="64"
-                                       Height="64"
-                                       Foreground="{DynamicResource SukiDangerColor}" />
-                <TextBlock Text="Blender验证失败"
-                           FontSize="24"
-                           FontWeight="Bold"
-                           Foreground="{DynamicResource SukiTextColor}"
-                           HorizontalAlignment="Center" />
-                <TextBlock Text="{Binding BlenderValidationMessage}"
-                           FontSize="16"
-                           Foreground="{DynamicResource SukiTextSecondaryColor}"
-                           HorizontalAlignment="Center"
-                           TextWrapping="Wrap"
-                           TextAlignment="Center" />
-                <Button Content="打开设置"
-                        Command="{Binding NavigateToSettingsCommand}"
-                        Classes="Primary"
-                        HorizontalAlignment="Center" />
-            </StackPanel>
-        </Border>
-
         <!-- 主界面内容 -->
-        <suki:SukiSideMenu Grid.Row="0" IsSearchEnabled="False" IsMenuExpanded="False">
+        <suki:SukiSideMenu Grid.Row="0"
+                           IsSearchEnabled="False"
+                           IsMenuExpanded="False">
             <suki:SukiSideMenu.Items>
                 <!-- 渲染队列页面 -->
                 <suki:SukiSideMenuItem Header="{i18n:Localize Queue_RenderQueue}" Classes="Compact">
@@ -55,12 +27,39 @@
                         <avalonia:MaterialIcon Kind="ListStatus" Width="24" Height="24" />
                     </suki:SukiSideMenuItem.Icon>
                     <suki:SukiSideMenuItem.PageContent>
-                        <views:RenderQueueView DataContext="{Binding RenderQueue}"
-                                               VerticalAlignment="Stretch"
-                                               Margin="0 4 0 0 "
-                                               HorizontalAlignment="Stretch"
-                                               IsEnabled="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).IsBlenderPathValid}" />
+                        <Grid>
+                            <views:RenderQueueView DataContext="{Binding RenderQueue}"
+                                                   VerticalAlignment="Stretch"
+                                                   Margin="0 4 0 0 "
+                                                   HorizontalAlignment="Stretch"
+                                                   IsEnabled="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).IsBlenderPathValid}" />
 
+                            <Border Background="{DynamicResource ControlSukiGlassCardBackground}"
+                                    Opacity="0.5"
+                                    IsVisible="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).HasBlenderValidationError}"
+                                    ZIndex="1000">
+                                
+                            </Border>
+                            <StackPanel HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        IsVisible="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).HasBlenderValidationError}"
+                                        Spacing="16">
+                                <avalonia:MaterialIcon Kind="Error"
+                                                       Width="64"
+                                                       Height="64"
+                                                       Foreground="{DynamicResource SukiDangerColor}" />
+                                <TextBlock Text="Blender验证失败"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock
+                                    Text="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).BlenderValidationMessage}"
+                                    FontSize="16"
+                                    HorizontalAlignment="Center"
+                                    TextWrapping="Wrap"
+                                    TextAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
                     </suki:SukiSideMenuItem.PageContent>
                 </suki:SukiSideMenuItem>
 
@@ -85,7 +84,6 @@
                 <!--            TextWrapping="Wrap" /> -->
             </suki:SukiSideMenu.FooterContent>
         </suki:SukiSideMenu>
-
 
     </Grid>
 
