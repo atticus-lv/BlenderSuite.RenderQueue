@@ -248,10 +248,10 @@ public partial class MainRenderViewModel : ViewModelBase
     [RelayCommand]
     private void OpenSettings()
     {
-        // 在打开设置窗口时，同步运行任务状态
+        // 在打开设置窗口时，同步队列状态（与开始队列按钮逻辑保持一致）
         if (_settingsViewModel != null)
         {
-            _settingsViewModel.UpdateRunningTasksStatus(RenderQueue.HasRunningTasks);
+            _settingsViewModel.UpdateQueueState(RenderQueue.QueueState);
         }
         
         ShowSettingsDialog();
@@ -559,14 +559,14 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnRenderQueuePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        // 监听HasRunningTasks变化，通知SettingsViewModel
-        if (e.PropertyName == nameof(RenderQueue.HasRunningTasks))
+        // 监听QueueState变化，通知SettingsViewModel（与开始队列按钮逻辑保持一致）
+        if (e.PropertyName == nameof(RenderQueue.QueueState))
         {
-            var hasRunningTasks = RenderQueue.HasRunningTasks;
-            Console.WriteLine($"[MainRenderViewModel] 队列运行任务状态变化 - HasRunningTasks: {hasRunningTasks}");
+            var queueState = RenderQueue.QueueState;
+            Console.WriteLine($"[MainRenderViewModel] 队列状态变化 - QueueState: {queueState}");
             
             // 通知SettingsViewModel更新CanSwitchBlender状态
-            _settingsViewModel?.UpdateRunningTasksStatus(hasRunningTasks);
+            _settingsViewModel?.UpdateQueueState(queueState);
         }
     }
 

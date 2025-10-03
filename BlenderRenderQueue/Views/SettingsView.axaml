@@ -66,7 +66,7 @@
                                                            Width="16" 
                                                            Height="16" 
                                                            Foreground="{DynamicResource SukiWarningColor}" />
-                                    <TextBlock Text="检测到有正在运行的渲染任务，Blender切换已被禁用" 
+                                    <TextBlock Text="队列正在运行或暂停中，Blender切换已被禁用" 
                                                Foreground="{DynamicResource SukiWarningColor}" 
                                                VerticalAlignment="Center" />
                                 </StackPanel>

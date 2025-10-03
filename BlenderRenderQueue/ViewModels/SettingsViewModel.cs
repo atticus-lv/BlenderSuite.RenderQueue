@@ -64,8 +64,19 @@ public partial class SettingsViewModel : ViewModelBase
     /// </summary>
     public void UpdateRunningTasksStatus(bool hasRunningTasks)
     {
+        // 与开始队列按钮逻辑保持一致：只有在队列空闲或完成时才允许切换Blender
         CanSwitchBlender = !hasRunningTasks;
         Console.WriteLine($"[SettingsViewModel] 更新运行任务状态 - HasRunningTasks: {hasRunningTasks}, CanSwitchBlender: {CanSwitchBlender}");
+    }
+
+    /// <summary>
+    /// 更新队列状态（与开始队列按钮逻辑保持一致）
+    /// </summary>
+    public void UpdateQueueState(QueueState queueState)
+    {
+        // 只有在队列空闲或完成时才允许切换Blender
+        CanSwitchBlender = queueState == QueueState.Idle || queueState == QueueState.Completed;
+        Console.WriteLine($"[SettingsViewModel] 更新队列状态 - QueueState: {queueState}, CanSwitchBlender: {CanSwitchBlender}");
     }
 
     partial void OnLanguageChanged(LanguageOption value)
