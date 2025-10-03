@@ -64,7 +64,9 @@
                         <avalonia:MaterialIcon Kind="Settings" Width="24" Height="24" />
                     </suki:SukiSideMenuItem.Icon>
                     <suki:SukiSideMenuItem.PageContent>
-                        <views:SettingsView DataContext="{Binding SettingsViewModel}" />
+                        <suki:GlassCard Margin="8">
+                            <views:SettingsView DataContext="{Binding SettingsViewModel}" />
+                        </suki:GlassCard>
                     </suki:SukiSideMenuItem.PageContent>
                 </suki:SukiSideMenuItem>
             </suki:SukiSideMenu.Items>
