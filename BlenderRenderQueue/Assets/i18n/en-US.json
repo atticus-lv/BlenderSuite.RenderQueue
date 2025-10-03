@@ -157,5 +157,20 @@
   "VideoGeneration_SuccessTitle": "Video generation completed",
   "VideoGeneration_SuccessMessage": "Video has been successfully generated, opening location...",
   "VideoGeneration_SuccessPrefix": "Video generation completed: ",
-  "VideoGeneration_FailedTitle": "Video generation failed"
+  "VideoGeneration_FailedTitle": "Video generation failed",
+  "Settings_AddBlender": "Add Blender",
+  "Settings_AddBlenderTooltip": "Add new Blender executable",
+  "Settings_RemoveSelected": "Remove Selected",
+  "Settings_RemoveSelectedTooltip": "Remove selected Blender",
+  "Settings_QueueRunningWarning": "Queue is running or paused, Blender switching is disabled",
+  "Settings_BlenderDetails": "Blender Details",
+  "Settings_Path": "Path: {0}",
+  "Settings_Version": "Version: {0}",
+  "Settings_Platform": "Platform: {0}",
+  "Settings_Branch": "Branch: {0}",
+  "Settings_Hash": "Hash: {0}",
+  "Settings_Status": "Status: {0}",
+  "Settings_ValidatedTime": "Validated: {0:yyyy-MM-dd HH:mm:ss}",
+  "Settings_StatusLabel": "STATUS",
+  "Settings_Validated": "Validated: {0:MM-dd HH:mm}"
 }
