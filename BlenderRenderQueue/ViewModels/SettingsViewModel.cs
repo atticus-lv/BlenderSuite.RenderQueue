@@ -47,6 +47,9 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private LanguageOption _language = LanguageOption.Default; // 默认英语
 
+    [ObservableProperty]
+    private bool _canSwitchBlender = true; // 是否可以切换Blender
+
     /// <summary>
     /// 检查指定的Blender是否被选中
     /// </summary>
@@ -54,6 +57,15 @@ public partial class SettingsViewModel : ViewModelBase
     {
         return SelectedBlenderExecutable != null && 
                SelectedBlenderExecutable.Path == blender.Path;
+    }
+
+    /// <summary>
+    /// 更新运行任务状态
+    /// </summary>
+    public void UpdateRunningTasksStatus(bool hasRunningTasks)
+    {
+        CanSwitchBlender = !hasRunningTasks;
+        Console.WriteLine($"[SettingsViewModel] 更新运行任务状态 - HasRunningTasks: {hasRunningTasks}, CanSwitchBlender: {CanSwitchBlender}");
     }
 
     partial void OnLanguageChanged(LanguageOption value)
@@ -96,6 +108,9 @@ public partial class SettingsViewModel : ViewModelBase
 
     // 事件：当Blender验证状态发生变化时通知
     public event EventHandler<BlenderValidationChangedEventArgs>? BlenderValidationChanged;
+
+    // 事件：当运行任务状态发生变化时通知
+    public event EventHandler<bool>? RunningTasksStatusChanged;
 
     public SettingsViewModel()
     {

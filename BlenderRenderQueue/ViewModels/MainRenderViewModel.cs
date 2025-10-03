@@ -74,6 +74,7 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.StatusMessageChanged += OnRenderQueueStatusMessageChanged;
         RenderQueue.ConfirmDialogRequested += OnConfirmDialogRequested;
         RenderQueue.ToastRequested += OnToastRequested;
+        RenderQueue.PropertyChanged += OnRenderQueuePropertyChanged;
 
         // 初始化设置并检测路径
         InitializeSettings();
@@ -247,6 +248,12 @@ public partial class MainRenderViewModel : ViewModelBase
     [RelayCommand]
     private void OpenSettings()
     {
+        // 在打开设置窗口时，同步运行任务状态
+        if (_settingsViewModel != null)
+        {
+            _settingsViewModel.UpdateRunningTasksStatus(RenderQueue.HasRunningTasks);
+        }
+        
         ShowSettingsDialog();
     }
 
@@ -269,7 +276,13 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
-        ApplySettings(string.Empty, e.DefaultRenderTimeoutSeconds, e.MaxRetryAttempts, e.VideoCodec, e.VideoQuality);
+        // 只更新非Blender相关的设置，不重新验证Blender
+        _renderQueue.SetGlobalRenderTimeout(e.DefaultRenderTimeoutSeconds);
+        _renderQueue.SetGlobalMaxRetryAttempts(e.MaxRetryAttempts);
+        
+        // 更新视频生成设置
+        _renderQueue.SetVideoCodec(e.VideoCodec);
+        _renderQueue.SetVideoQuality(e.VideoQuality);
     }
 
     private void OnBlenderValidationChanged(object? sender, BlenderValidationChangedEventArgs e)
@@ -279,10 +292,89 @@ public partial class MainRenderViewModel : ViewModelBase
         HasBlenderValidationError = !e.IsValid;
         BlenderValidationMessage = e.Message;
         
-        if (!e.IsValid)
+        Console.WriteLine($"[MainRenderViewModel] OnBlenderValidationChanged - IsValid: {e.IsValid}, Message: {e.Message}");
+        
+        if (e.IsValid)
         {
-            StatusMessage = $"Blender验证失败: {e.Message}";
+            // 如果验证成功，检查是否有正在运行的任务
+            var hasRunningTasks = RenderQueue.HasRunningTasks;
+            var activeTaskCount = RenderQueue.ActiveTaskCount;
+            var queueState = RenderQueue.QueueState;
+            
+            Console.WriteLine($"[MainRenderViewModel] 检查运行任务 - HasRunningTasks: {hasRunningTasks}, ActiveTaskCount: {activeTaskCount}, QueueState: {queueState}");
+            
+            if (hasRunningTasks)
+            {
+                // 如果有正在运行的任务，显示警告并询问用户
+                Console.WriteLine("[MainRenderViewModel] 检测到运行任务，显示警告弹窗");
+                ShowBlenderSwitchWarning();
+            }
+            else
+            {
+                // 如果没有正在运行的任务，安全地切换Blender服务
+                Console.WriteLine("[MainRenderViewModel] 没有运行任务，直接切换Blender");
+                var selectedBlender = _settingsViewModel?.SelectedBlenderExecutable;
+                if (selectedBlender != null)
+                {
+                    _ = Task.Run(async () => await LoadBlenderInfoAsync(selectedBlender, CancellationToken.None));
+                }
+            }
         }
+        else
+        {
+            // 如果验证失败，清理Blender服务
+            StatusMessage = $"Blender验证失败: {e.Message}";
+            CleanupBlenderService();
+        }
+    }
+
+    private void ShowBlenderSwitchWarning()
+    {
+        Console.WriteLine("[MainRenderViewModel] ShowBlenderSwitchWarning 被调用");
+        
+        var selectedBlender = _settingsViewModel?.SelectedBlenderExecutable;
+        if (selectedBlender == null) 
+        {
+            Console.WriteLine("[MainRenderViewModel] selectedBlender 为 null，退出");
+            return;
+        }
+
+        var blenderName = selectedBlender.VersionBranchDisplay;
+        Console.WriteLine($"[MainRenderViewModel] 准备显示警告弹窗，Blender: {blenderName}");
+        
+        // 确保在UI线程上执行
+        Dispatcher.UIThread.Post(() =>
+        {
+            Console.WriteLine("[MainRenderViewModel] 在UI线程上执行警告弹窗");
+            
+            var dialogManager = GetDialogManager();
+            if (dialogManager == null)
+            {
+                Console.WriteLine("[MainRenderViewModel] 无法获取DialogManager，跳过警告弹窗");
+                // 如果无法获取DialogManager，直接执行切换
+                Task.Run(async () => await LoadBlenderInfoAsync(selectedBlender, CancellationToken.None));
+                return;
+            }
+            
+            Console.WriteLine("[MainRenderViewModel] 创建并显示警告弹窗");
+            dialogManager.CreateDialog()
+                .WithTitle("⚠️ 切换Blender警告")
+                .WithContent($"检测到有正在运行的渲染任务。\n\n切换到 {blenderName} 将会中断当前正在进行的任务。\n\n是否确定要切换？")
+                .WithActionButton("取消", _ => 
+                {
+                    // 取消切换，恢复之前的选择
+                    Console.WriteLine("[MainRenderViewModel] 用户取消了Blender切换");
+                    StatusMessage = "Blender切换已取消";
+                }, true)
+                .WithActionButton("确定切换", _ => 
+                {
+                    // 用户确认切换，执行切换
+                    Console.WriteLine($"[MainRenderViewModel] 用户确认切换Blender到: {selectedBlender.Path}");
+                    Task.Run(async () => await LoadBlenderInfoAsync(selectedBlender, CancellationToken.None));
+                })
+                .Dismiss().ByClickingBackground()
+                .TryShow();
+        });
     }
 
     private void ApplySettings(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts,
@@ -462,6 +554,19 @@ public partial class MainRenderViewModel : ViewModelBase
                 // BlenderVideoService 已经将帧数转换为百分比 (0-100)，直接使用
                 _videoGenerationProgressBar.Value = RenderQueue.VideoGenerationProgress;
             });
+        }
+    }
+
+    private void OnRenderQueuePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // 监听HasRunningTasks变化，通知SettingsViewModel
+        if (e.PropertyName == nameof(RenderQueue.HasRunningTasks))
+        {
+            var hasRunningTasks = RenderQueue.HasRunningTasks;
+            Console.WriteLine($"[MainRenderViewModel] 队列运行任务状态变化 - HasRunningTasks: {hasRunningTasks}");
+            
+            // 通知SettingsViewModel更新CanSwitchBlender状态
+            _settingsViewModel?.UpdateRunningTasksStatus(hasRunningTasks);
         }
     }
 
@@ -695,6 +800,7 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.ConfirmDialogRequested -= OnConfirmDialogRequested;
         RenderQueue.ToastRequested -= OnToastRequested;
         RenderQueue.PropertyChanged -= OnRenderQueueProgressChanged;
+        RenderQueue.PropertyChanged -= OnRenderQueuePropertyChanged;
 
         if (_settingsViewModel != null)
         {

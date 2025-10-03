@@ -26,7 +26,7 @@
                 <!-- Blender 设置部分 -->
                 <suki:SettingsLayoutItem Header="{i18n:Localize Blender}">
                     <suki:SettingsLayoutItem.Content>
-                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
                             <!-- Blender选择标题和操作按钮 -->
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="选择Blender:"
@@ -52,11 +52,31 @@
                                 </Button>
                             </StackPanel>
 
+                            <!-- 运行任务提示 -->
+                            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" 
+                                    Background="{DynamicResource SukiWarningDarkColor}" 
+                                    BorderBrush="{DynamicResource SukiWarningColor}" 
+                                    BorderThickness="1" 
+                                    CornerRadius="4"
+                                    Padding="8,4"
+                                    Margin="0,16,0,8"
+                                    IsVisible="{Binding !CanSwitchBlender}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <avalonia:MaterialIcon Kind="Warning" 
+                                                           Width="16" 
+                                                           Height="16" 
+                                                           Foreground="{DynamicResource SukiWarningColor}" />
+                                    <TextBlock Text="检测到有正在运行的渲染任务，Blender切换已被禁用" 
+                                               Foreground="{DynamicResource SukiWarningColor}" 
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+
                             <!-- Blender选择卡片区域 -->
-                            <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                            <ScrollViewer Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
                                           HorizontalScrollBarVisibility="Auto"
                                           VerticalScrollBarVisibility="Disabled"
-                                          Margin="0,16,0,0">
+                                          Margin="0,8,0,0">
                                 <ItemsControl ItemsSource="{Binding BlenderExecutables}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -68,7 +88,8 @@
                                             <RadioButton Width="280" Height="160" Margin="4"
                                                          Tag="{Binding .}"
                                                          Classes="GigaChips"
-                                                         GroupName="BlenderSelection">
+                                                         GroupName="BlenderSelection"
+                                                         IsEnabled="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanSwitchBlender}">
                                                 <RadioButton.IsChecked>
                                                     <MultiBinding
                                                         Converter="{StaticResource ObjectEqualMultiConverter}">
@@ -145,7 +166,7 @@
                             </ScrollViewer>
 
                             <!-- Blender验证状态 -->
-                            <Border Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                            <Border Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
                                     Background="{DynamicResource SukiDangerDarkColor}"
                                     BorderBrush="{DynamicResource SukiDangerColor}"
                                     BorderThickness="1"
