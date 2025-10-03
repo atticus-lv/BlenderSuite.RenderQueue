@@ -103,12 +103,34 @@ public partial class SettingsViewModel : ViewModelBase
 
         try
         {
-            // 尝试自动检测 Blender
-            blenderDetected = await TryAutoDetectBlenderAsync();
+            // 首先加载保存的设置
+            await LoadSettingsFromFileAsync();
+            
+            // 验证已保存的Blender
+            if (SelectedBlenderExecutable != null)
+            {
+                // 验证选中的Blender是否仍然有效
+                if (SelectedBlenderExecutable.IsFileStillValid())
+                {
+                    ValidateSelectedBlender(SelectedBlenderExecutable);
+                    blenderDetected = true;
+                }
+                else
+                {
+                    // 如果选中的Blender无效，清空选择
+                    SelectedBlenderExecutable = null;
+                }
+            }
+            
+            // 如果没有有效的Blender，尝试自动检测（但不自动选中）
+            if (SelectedBlenderExecutable == null)
+            {
+                await TryAutoDetectBlenderAsync(false); // 不自动选中
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // 忽略检测过程中的错误
+            Console.WriteLine($"[SettingsViewModel] ❌ Error during initialization: {ex.Message}");
         }
 
         // 通知初始化完成
@@ -197,7 +219,7 @@ public partial class SettingsViewModel : ViewModelBase
             new BlenderValidationChangedEventArgs(isValid, BlenderValidationMessage));
     }
 
-    private async Task<bool> TryAutoDetectBlenderAsync()
+    private async Task<bool> TryAutoDetectBlenderAsync(bool autoSelect = true)
     {
         try
         {
@@ -233,9 +255,9 @@ public partial class SettingsViewModel : ViewModelBase
                                 BlenderExecutables.Add(blender);
                             }
                         }
-
-                        // 选择第一个检测到的Blender（如果当前没有选中的）
-                        if (SelectedBlenderExecutable == null && BlenderExecutables.Any())
+                        
+                        // 只有在autoSelect为true且当前没有选中的Blender时才自动选择
+                        if (autoSelect && SelectedBlenderExecutable == null && BlenderExecutables.Any())
                         {
                             SelectedBlenderExecutable = BlenderExecutables.First();
                         }
@@ -248,7 +270,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             // 忽略错误
         }
-
+        
         return false;
     }
 
@@ -318,9 +340,15 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
+            // 去重：只保留每个路径的最新版本
+            var uniqueBlenders = BlenderExecutables
+                .GroupBy(b => b.Path)
+                .Select(g => g.OrderByDescending(b => b.LastValidated).First())
+                .ToList();
+
             var settings = new SettingsData
             {
-                BlenderExecutables = BlenderExecutables.ToList(),
+                BlenderExecutables = uniqueBlenders,
                 SelectedBlenderPath = SelectedBlenderExecutable?.Path ?? string.Empty,
                 DefaultRenderTimeoutSeconds = DefaultRenderTimeoutSeconds,
                 MaxRetryAttempts = MaxRetryAttempts,
@@ -359,16 +387,27 @@ public partial class SettingsViewModel : ViewModelBase
             if (settings.BlenderExecutables != null && settings.BlenderExecutables.Any())
             {
                 BlenderExecutables.Clear();
-                foreach (var blender in settings.BlenderExecutables)
+                
+                // 去重：只保留每个路径的最新版本
+                var uniqueBlenders = settings.BlenderExecutables
+                    .GroupBy(b => b.Path)
+                    .Select(g => g.OrderByDescending(b => b.LastValidated).First())
+                    .ToList();
+                
+                foreach (var blender in uniqueBlenders)
                 {
                     BlenderExecutables.Add(blender);
                 }
+
+                Console.WriteLine($"[SettingsViewModel] Loaded {BlenderExecutables.Count} unique Blender executables");
 
                 // 设置选中的Blender
                 if (!string.IsNullOrEmpty(settings.SelectedBlenderPath))
                 {
                     SelectedBlenderExecutable =
                         BlenderExecutables.FirstOrDefault(b => b.Path == settings.SelectedBlenderPath);
+                    
+                    Console.WriteLine($"[SettingsViewModel] Selected Blender: {SelectedBlenderExecutable?.Path ?? "NOT FOUND"}");
                 }
             }
 
