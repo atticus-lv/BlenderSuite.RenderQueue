@@ -20,7 +20,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        // 移除 PropertyNamingPolicy，使用 JsonPropertyName 特性来控制命名
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         // 使用 DefaultJsonTypeInfoResolver 来支持反射序列化，同时保持 AOT 兼容性
         TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()

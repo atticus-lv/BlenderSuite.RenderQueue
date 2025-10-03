@@ -44,16 +44,16 @@ public class BlenderExecutable
     [JsonPropertyName("LastValidated")]
     public DateTime? LastValidated { get; set; }
 
-    [JsonPropertyName("DisplayName")]
+    [JsonIgnore]
     public string DisplayName => GetDisplayName();
 
-    [JsonPropertyName("FormattedPath")]
+    [JsonIgnore]
     public string FormattedPath => GetFormattedPath();
 
-    [JsonPropertyName("VersionBranchDisplay")]
+    [JsonIgnore]
     public string VersionBranchDisplay => GetVersionBranchDisplay();
 
-    [JsonPropertyName("BuildDateTimeDisplay")]
+    [JsonIgnore]
     public string BuildDateTimeDisplay => GetBuildDateTimeDisplay();
 
     /// <summary>
