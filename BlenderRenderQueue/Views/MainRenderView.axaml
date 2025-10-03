@@ -48,7 +48,7 @@
                                                        Width="64"
                                                        Height="64"
                                                        Foreground="{DynamicResource SukiDangerColor}" />
-                                <TextBlock Text="Blender验证失败"
+                                <TextBlock Text="没有可用的blender"
                                            FontSize="24"
                                            FontWeight="Bold"
                                            HorizontalAlignment="Center" />
