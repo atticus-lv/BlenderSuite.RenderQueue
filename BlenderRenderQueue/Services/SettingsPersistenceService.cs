@@ -1,10 +1,22 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Models;
+using System.Text.Json.Serialization;
 
 namespace BlenderRenderQueue.Services;
+
+/// <summary>
+/// JSON serialization context supports AOT mode
+/// </summary>
+[JsonSerializable(typeof(SettingsData))]
+[JsonSerializable(typeof(BlenderExecutable))]
+[JsonSerializable(typeof(List<BlenderExecutable>), TypeInfoPropertyName = "BlenderExecutableList")]
+public partial class SettingsJsonContext : JsonSerializerContext
+{
+}
 
 /// <summary>
 /// 设置数据持久化服务实现
@@ -20,10 +32,10 @@ public class SettingsPersistenceService : ISettingsPersistenceService
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
-        // 移除 PropertyNamingPolicy，使用 JsonPropertyName 特性来控制命名
+        // Remove PropertyNamingPolicy，use JsonPropertyName to control the naming
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        // 使用 DefaultJsonTypeInfoResolver 来支持反射序列化，同时保持 AOT 兼容性
-        TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+        // Use the pre-built JsonSerializerContext to support AOT mode
+        TypeInfoResolver = SettingsJsonContext.Default
     };
 
     public async Task<bool> SaveSettingsAsync(SettingsData settings)
@@ -45,6 +57,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService
 
             // 序列化并保存到文件
             var json = JsonSerializer.Serialize(settings, JsonOptions);
+            Console.WriteLine($"[SettingsPersistenceService] Serialized JSON: {json}");
             await File.WriteAllTextAsync(SettingsFilePath, json);
 
             Console.WriteLine($"[SettingsPersistenceService] ✅ Settings saved successfully - Selected Blender: {settings.SelectedBlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s");
@@ -68,6 +81,8 @@ public class SettingsPersistenceService : ISettingsPersistenceService
             }
 
             var json = await File.ReadAllTextAsync(SettingsFilePath);
+            Console.WriteLine($"[SettingsPersistenceService] Raw JSON content: {json}");
+            
             var settings = JsonSerializer.Deserialize<SettingsData>(json, JsonOptions);
 
             if (settings == null)
