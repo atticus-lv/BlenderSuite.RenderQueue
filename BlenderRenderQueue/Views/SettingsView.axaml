@@ -23,15 +23,35 @@
         <suki:SettingsLayout.Items>
             <objectModel:ObservableCollection x:TypeArguments="suki:SettingsLayoutItem">
 
+                <!-- 语言设置部分 -->
+                <suki:SettingsLayoutItem Header="{i18n:Localize General}">
+                    <suki:SettingsLayoutItem.Content>
+                        <Grid RowDefinitions="Auto" ColumnDefinitions="Auto,*,Auto">
+
+                            <!-- 语言选择 -->
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize LanguageLabel}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0" />
+                            <ComboBox Grid.Row="0" Grid.Column="2" SelectedItem="{Binding Language, Mode=TwoWay}"
+                                      ItemsSource="{x:Static models:LanguageOption.AllOptions}"
+                                      HorizontalAlignment="Right">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="models:LanguageOption">
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                        </Grid>
+                    </suki:SettingsLayoutItem.Content>
+                </suki:SettingsLayoutItem>
+
                 <!-- Blender 设置部分 -->
                 <suki:SettingsLayoutItem Header="{i18n:Localize Blender}">
                     <suki:SettingsLayoutItem.Content>
                         <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
-                            <!-- Blender选择标题和操作按钮 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="选择Blender:"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0" />
                             <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="8">
                                 <Button Command="{Binding BrowseBlenderCommand}"
                                         Classes="Outlined"
@@ -53,21 +73,21 @@
                             </StackPanel>
 
                             <!-- 运行任务提示 -->
-                            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" 
-                                    Background="{DynamicResource SukiWarningDarkColor}" 
-                                    BorderBrush="{DynamicResource SukiWarningColor}" 
-                                    BorderThickness="1" 
+                            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                    Background="{DynamicResource SukiWarningDarkColor}"
+                                    BorderBrush="{DynamicResource SukiWarningColor}"
+                                    BorderThickness="1"
                                     CornerRadius="4"
                                     Padding="8,4"
                                     Margin="0,16,0,8"
                                     IsVisible="{Binding !CanSwitchBlender}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <avalonia:MaterialIcon Kind="Warning" 
-                                                           Width="16" 
-                                                           Height="16" 
+                                    <avalonia:MaterialIcon Kind="Warning"
+                                                           Width="16"
+                                                           Height="16"
                                                            Foreground="{DynamicResource SukiWarningColor}" />
-                                    <TextBlock Text="队列正在运行或暂停中，Blender切换已被禁用" 
-                                               Foreground="{DynamicResource SukiWarningColor}" 
+                                    <TextBlock Text="队列正在运行或暂停中，Blender切换已被禁用"
+                                               Foreground="{DynamicResource SukiWarningColor}"
                                                VerticalAlignment="Center" />
                                 </StackPanel>
                             </Border>
@@ -263,29 +283,6 @@
                     </suki:SettingsLayoutItem.Content>
                 </suki:SettingsLayoutItem>
 
-                <!-- 语言设置部分 -->
-                <suki:SettingsLayoutItem Header="{i18n:Localize General}">
-                    <suki:SettingsLayoutItem.Content>
-                        <Grid RowDefinitions="Auto" ColumnDefinitions="Auto,*,Auto">
-
-                            <!-- 语言选择 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize LanguageLabel}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0" />
-                            <ComboBox Grid.Row="0" Grid.Column="2" SelectedItem="{Binding Language, Mode=TwoWay}"
-                                      ItemsSource="{x:Static models:LanguageOption.AllOptions}"
-                                      HorizontalAlignment="Right">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate DataType="models:LanguageOption">
-                                        <TextBlock Text="{Binding DisplayName}"
-                                                   VerticalAlignment="Center" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-
-                        </Grid>
-                    </suki:SettingsLayoutItem.Content>
-                </suki:SettingsLayoutItem>
 
             </objectModel:ObservableCollection>
         </suki:SettingsLayout.Items>
