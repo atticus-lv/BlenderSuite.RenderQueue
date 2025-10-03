@@ -32,14 +32,9 @@
                                                    VerticalAlignment="Stretch"
                                                    Margin="0 4 0 0 "
                                                    HorizontalAlignment="Stretch"
-                                                   IsEnabled="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).IsBlenderPathValid}" />
+                                                   IsVisible="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).IsBlenderPathValid}" />
 
-                            <Border Background="{DynamicResource ControlSukiGlassCardBackground}"
-                                    Opacity="0.5"
-                                    IsVisible="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).HasBlenderValidationError}"
-                                    ZIndex="1000">
-                                
-                            </Border>
+
                             <StackPanel HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
                                         IsVisible="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).HasBlenderValidationError}"
