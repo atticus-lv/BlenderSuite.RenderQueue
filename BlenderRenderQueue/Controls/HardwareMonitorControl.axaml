@@ -11,9 +11,14 @@
             <!-- <ProgressBar  -->
             <!--              Value="{Binding $parent[controls:HardwareMonitorControl].CpuLoad}" -->
             <!--              Maximum="100" /> -->
-            <Border Width="80" Height="80">
-                <Viewbox Width="80" Height="80">
-                    <suki:WaveProgress Value="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad }"></suki:WaveProgress>
+            <Border Width="60" Height="60">
+                <Viewbox Width="60" Height="60">
+                    <suki:CircleProgressBar Value="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad }" StrokeWidth="12">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad ,StringFormat={}{0:#0}%}" FontWeight="SemiBold" FontSize="36" />
+                            <!-- <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].CpuTemperature,StringFormat={}{0}℃ }" FontWeight="SemiBold" FontSize="24"  /> -->
+                        </StackPanel>
+                    </suki:CircleProgressBar>
                 </Viewbox>
             </Border>
             <TextBlock Text="CPU" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"  FontSize="18"/>
@@ -37,9 +42,14 @@
             <!--              Maximum="100" /> -->
             <!-- <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].GpuLoad, StringFormat={}{0:F1}%}" -->
             <!--            VerticalAlignment="Center" /> -->
-            <Border Width="80" Height="80">
-                <Viewbox Width="80" Height="80">
-                    <suki:WaveProgress Value="{Binding $parent[controls1:HardwareMonitorControl].GpuLoad }"></suki:WaveProgress>
+            <Border Width="60" Height="60">
+                <Viewbox Width="60" Height="60">
+                    <suki:CircleProgressBar Value="{Binding $parent[controls1:HardwareMonitorControl].GpuLoad }" StrokeWidth="12">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].GpuLoad ,StringFormat={}{0:#0}%}" FontWeight="SemiBold" FontSize="36" />
+                            <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].GpuTemperature,StringFormat={}{0}℃ }" FontWeight="SemiBold" FontSize="24" />
+                        </StackPanel>
+                    </suki:CircleProgressBar>
                 </Viewbox>
             </Border>
             

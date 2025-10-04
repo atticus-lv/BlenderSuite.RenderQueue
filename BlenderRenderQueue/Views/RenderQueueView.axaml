@@ -84,18 +84,18 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                    <SplitView Grid.Column="1" PanePlacement="Left" OpenPaneLength="170" Name="DeviceInfoSplitView"
+                    <SplitView Grid.Column="1" PanePlacement="Left" OpenPaneLength="140" Name="DeviceInfoSplitView"
                                CompactPaneLength="0" DisplayMode="Inline"
                                VerticalAlignment="Center"
                                Margin="0 0 0 0"
-                               IsPaneOpen="False">
+                               IsPaneOpen="True">
                         <SplitView.Pane>
                             <controls:HardwareMonitorControl />
                         </SplitView.Pane>
                         <SplitView.Content>
                             <Button Click="ToggleDeviceInfoPane" Classes="Basic" Padding="8 0 0 0 ">
                                 <Button.Content>
-                                    <material:MaterialIcon Kind="Chip"></material:MaterialIcon>
+                                    <material:MaterialIcon Kind="Gpu"></material:MaterialIcon>
                                 </Button.Content>
                             </Button>
                         </SplitView.Content>
