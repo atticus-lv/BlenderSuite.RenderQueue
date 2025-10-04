@@ -85,13 +85,13 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                    <SplitView Grid.Column="1" PanePlacement="Left" OpenPaneLength="140" Name="DeviceInfoSplitView"
+                    <SplitView Grid.Column="1" PanePlacement="Left" OpenPaneLength="200" Name="DeviceInfoSplitView"
                                CompactPaneLength="0" DisplayMode="Inline"
                                VerticalAlignment="Center"
                                Margin="0 0 0 0"
-                               IsPaneOpen="True">
+                               IsPaneOpen="False">
                         <SplitView.Pane>
-                            <controls:HardwareMonitorControl />
+                            <ContentControl Content="{Binding HardwareChartViewModel}"  />
                         </SplitView.Pane>
                         <SplitView.Content>
                             <Button Click="ToggleDeviceInfoPane" Classes="Basic" Padding="8 0 0 0 ">

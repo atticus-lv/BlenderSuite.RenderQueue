@@ -27,11 +27,10 @@ public partial class App : Application
             {
                 DataContext = new MainWindowViewModel(),
             };
-            var hardwareWindow = new HardwareChartTestWindow
-            {
-                DataContext = new HardwareChartViewModel(),
-            };
-            hardwareWindow.Show();
+            // desktop.MainWindow = new HardwareChartTestWindow
+            // {
+            //     DataContext = new HardwareChartViewModel(),
+            // };
         }
 
         base.OnFrameworkInitializationCompleted();

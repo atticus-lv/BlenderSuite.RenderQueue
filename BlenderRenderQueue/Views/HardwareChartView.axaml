@@ -8,59 +8,77 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BlenderRenderQueue.Views.HardwareChartView"
              x:DataType="vm:HardwareChartViewModel">
-    
+
     <Design.DataContext>
-        <vm:HardwareChartViewModel/>
+        <vm:HardwareChartViewModel />
     </Design.DataContext>
 
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        
-        <!-- CPU使用率图表 -->
-        <Border Grid.Column="0" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
-                Margin="4" Padding="8" CornerRadius="4">
-            <lvc:CartesianChart SyncContext="{Binding Sync}"
-                               AnimationsSpeed="0:0:0.1">
+    <Grid ColumnDefinitions="Auto,*,Auto,*">
+        <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="4">
+            <TextBlock Text="C" FontWeight="Bold" FontSize="16" />
+            <TextBlock Text="P" FontWeight="Bold" FontSize="16" />
+            <TextBlock Text="U" FontWeight="Bold" FontSize="16" />
+        </StackPanel>
+
+        <Border Grid.Column="1" Background="{DynamicResource ControlSukiGlassCardBackground}"
+                Margin="0 0  10 0 " Padding="0" CornerRadius="4" IsHitTestVisible="False" ClipToBounds="True" >
+            <lvc:CartesianChart SyncContext="{Binding Sync}" 
+                                AnimationsSpeed="0:0:0.1">
                 <lvc:CartesianChart.Series>
-                    <lvc:XamlLineSeries Values="{Binding CpuLoadValues}" 
-                                       Fill="{x:Null}"
-                                       GeometryFill="{x:Null}"
-                                       GeometryStroke="{x:Null}"
-                                       Stroke="#0000FF" />
+                    <lvc:XamlLineSeries Values="{Binding CpuLoadValues}"
+                                        Fill="#80808080"
+                                        GeometryFill="{x:Null}"
+                                        GeometryStroke="{x:Null}"
+                                        Stroke="#808080" />
                 </lvc:CartesianChart.Series>
-                
+
                 <lvc:CartesianChart.XAxes>
-                    <skiaSharpView:Axis IsVisible="False"/>
+                    <skiaSharpView:Axis
+                        TextSize="0"
+                        IsVisible="False"
+                        SeparatorsPaint="{x:Null}" />
                 </lvc:CartesianChart.XAxes>
-                
+
                 <lvc:CartesianChart.YAxes>
-                    <skiaSharpView:Axis MinLimit="0" MaxLimit="100"/>
+                    <skiaSharpView:Axis MinLimit="0" MaxLimit="100"
+                                        IsVisible="False"
+                                        TextSize="0"
+                                        SeparatorsPaint="{x:Null}" />
                 </lvc:CartesianChart.YAxes>
             </lvc:CartesianChart>
         </Border>
-        
+
+        <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center" Margin="4">
+            <TextBlock Text="G" FontWeight="Bold" FontSize="16" />
+            <TextBlock Text="P" FontWeight="Bold" FontSize="16" />
+            <TextBlock Text="U" FontWeight="Bold" FontSize="16" />
+        </StackPanel>
+
         <!-- GPU使用率图表 -->
-        <Border Grid.Column="1" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
-                Margin="4" Padding="8" CornerRadius="4">
-            <lvc:CartesianChart SyncContext="{Binding Sync}"
-                               AnimationsSpeed="0:0:0.1">
+        <Border Grid.Column="3" Background="{DynamicResource ControlSukiGlassCardBackground}"
+                Margin="0" Padding="0" CornerRadius="4" IsHitTestVisible="False" ClipToBounds="True">
+            <lvc:CartesianChart SyncContext="{Binding Sync}" 
+                                AnimationsSpeed="0:0:0.1">
                 <lvc:CartesianChart.Series>
-                    <lvc:XamlLineSeries Values="{Binding GpuLoadValues}" 
-                                       Fill="{x:Null}"
-                                       GeometryFill="{x:Null}"
-                                       GeometryStroke="{x:Null}"
-                                       Stroke="#FF0000" />
+                    <lvc:XamlLineSeries Values="{Binding GpuLoadValues}"
+                                        Fill="#80808080"
+                                        GeometryFill="{x:Null}"
+                                        GeometryStroke="{x:Null}"
+                                        Stroke="#808080" />
                 </lvc:CartesianChart.Series>
-                
+
                 <lvc:CartesianChart.XAxes>
-                    <skiaSharpView:Axis IsVisible="False"/>
+                    <skiaSharpView:Axis
+                        TextSize="0"
+                        IsVisible="False"
+                        SeparatorsPaint="{x:Null}" />
                 </lvc:CartesianChart.XAxes>
-                
+
                 <lvc:CartesianChart.YAxes>
-                    <skiaSharpView:Axis MinLimit="0" MaxLimit="100"/>
+                    <skiaSharpView:Axis MinLimit="0" MaxLimit="100"
+                                        TextSize="0"
+                                        IsVisible="False"
+                                        SeparatorsPaint="{x:Null}" />
                 </lvc:CartesianChart.YAxes>
             </lvc:CartesianChart>
         </Border>

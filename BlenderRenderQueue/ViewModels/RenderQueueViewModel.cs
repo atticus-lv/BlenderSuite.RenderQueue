@@ -61,7 +61,10 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _videoGenerationStatus = string.Empty; // 视频生成状态
-
+    
+    [ObservableProperty]
+    private HardwareChartViewModel _hardwareChartViewModel = new();
+    
     // 暂停/恢复相关
 
     // 暂停状态记录
