@@ -845,8 +845,9 @@ public partial class RenderQueueViewModel : ViewModelBase
             if (success)
             {
                 VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Completed"];
+                var statusMessage = $"{Localizer.Localizer.Instance["VideoGeneration_SuccessPrefix"]}{outputVideoPath}";
                 QueueStatusChanged?.Invoke(this,
-                    new QueueStatusChangedEventArgs("Toast_VideoGenerationCompleted"));
+                    new QueueStatusChangedEventArgs(statusMessage));
             }
             else
             {

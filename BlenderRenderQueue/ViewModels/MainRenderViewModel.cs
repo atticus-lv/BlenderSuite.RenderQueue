@@ -728,18 +728,18 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnQueueStatusChanged(object? sender, QueueStatusChangedEventArgs e)
     {
-        // 将翻译键转换为翻译后的文本显示在状态栏
-        StatusMessage = Localizer.Localizer.Instance[e.StatusMessage];
-
         // 检查是否是视频生成相关的状态消息，显示 Toast 提示
         if (e.StatusMessage.Contains("Toast_VideoGenerationStarted"))
         {
             ShowVideoGenerationProgressToast();
+            StatusMessage = Localizer.Localizer.Instance[e.StatusMessage];
         }
-        else if (e.StatusMessage.Contains("Toast_VideoGenerationCompleted"))
+        else if (e.StatusMessage.Contains("Toast_VideoGenerationCompleted") || 
+                 e.StatusMessage.Contains(Localizer.Localizer.Instance["VideoGeneration_SuccessPrefix"]))
         {
             DismissVideoGenerationToast();
             ShowVideoGenerationSuccessToast(e.StatusMessage);
+            StatusMessage = e.StatusMessage;
         }
         else if (e.StatusMessage.Contains("Toast_VideoGenerationFailed") || e.StatusMessage.Contains("Toast_VideoGenerationError"))
         {
@@ -747,6 +747,18 @@ public partial class MainRenderViewModel : ViewModelBase
             ShowToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], 
                      Localizer.Localizer.Instance[e.StatusMessage], 
                      NotificationType.Error);
+            StatusMessage = Localizer.Localizer.Instance[e.StatusMessage];
+        }
+        else
+        {
+            try
+            {
+                StatusMessage = Localizer.Localizer.Instance[e.StatusMessage];
+            }
+            catch
+            {
+                StatusMessage = e.StatusMessage;
+            }
         }
     }
 
