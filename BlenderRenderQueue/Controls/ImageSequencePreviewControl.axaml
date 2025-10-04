@@ -40,7 +40,7 @@
                        FontSize="12" />
         </Grid>
         <!-- 文件夹路径显示 -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto">
+        <StackPanel Grid.Row="0" Spacing="10" Orientation="Horizontal">
             <Button Grid.Column="0" Classes="Outlined Small"
                     Click="Button_OnClick" VerticalAlignment="Center"
                     IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
@@ -50,7 +50,6 @@
                 </StackPanel>
             </Button>
             <SelectableTextBlock
-                Grid.Column="2"
                 Text="{Binding ErrorMessage,RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
@@ -59,14 +58,13 @@
                 TextWrapping="Wrap"
                 IsVisible="{Binding $parent[controls:ImageSequencePreviewControl].HasError}" />
 
-            <SelectableTextBlock
-                Grid.Column="2" IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
+            <SelectableTextBlock IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
                 Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
                 FontSize="14"
                 TextWrapping="Wrap"
                 VerticalAlignment="Center" />
 
-        </Grid>
+        </StackPanel>
 
         <!-- 图片预览区域 -->
         <Border Grid.Row="2"
