@@ -91,8 +91,33 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
     /// <inheritdoc />
     protected override void OnAttachedToVisualTree()
     {
+        AttachEventHandlers();
+    }
+
+    /// <inheritdoc />
+    protected override void OnDetachedFromVisualTree()
+    {
+        DetachEventHandlers();
+    }
+
+    /// <inheritdoc />
+    protected override void OnAttached()
+    {
+        base.OnAttached();
+        // 确保在附加时也设置事件处理器
+        if (AssociatedObject is not null && AssociatedObject.IsAttachedToVisualTree())
+        {
+            AttachEventHandlers();
+        }
+    }
+
+    private void AttachEventHandlers()
+    {
         if (AssociatedObject is not null)
         {
+            // 先移除可能存在的处理器，避免重复添加
+            DetachEventHandlers();
+            
             AssociatedObject.AddHandler(InputElement.PointerReleasedEvent, PointerReleased, RoutingStrategies.Tunnel);
             AssociatedObject.AddHandler(InputElement.PointerPressedEvent, PointerPressed, RoutingStrategies.Tunnel);
             AssociatedObject.AddHandler(InputElement.PointerMovedEvent, PointerMoved, RoutingStrategies.Tunnel);
@@ -100,8 +125,7 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
         }
     }
 
-    /// <inheritdoc />
-    protected override void OnDetachedFromVisualTree()
+    private void DetachEventHandlers()
     {
         if (AssociatedObject is not null)
         {
@@ -145,6 +169,8 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
 
     private bool IsClickOnDragHandle(PointerEventArgs e)
     {
+        if (AssociatedObject is null) return false;
+        
         var point = e.GetPosition(AssociatedObject);
         var visuals = AssociatedObject.GetVisualsAt(point).ToList();
 
