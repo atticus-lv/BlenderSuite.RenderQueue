@@ -52,7 +52,7 @@
                                       Margin="0,16,0,0">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate DataType="models:ThemeOption">
-                                        <TextBlock Text="{Binding DisplayName}"
+                                        <TextBlock Text="{Binding DisplayName,Converter={StaticResource LocalizeConverter}}"
                                                    VerticalAlignment="Center" />
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
@@ -201,7 +201,7 @@
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate DataType="models:VideoQualityOption">
                                         <TextBlock
-                                            Text="{Binding DisplayName, Converter={x:Static i18n:LocalizeConverter.Instance}}"
+                                            Text="{Binding DisplayName, Converter={StaticResource LocalizeConverter}}"
                                             VerticalAlignment="Center" />
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>

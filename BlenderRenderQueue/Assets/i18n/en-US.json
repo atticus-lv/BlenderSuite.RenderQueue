@@ -8,6 +8,8 @@
   "Settings": "Settings",
   "Save": "Save",
   "Cancel": "Cancel",
+  "Light": "Light",
+  "Dark": "Dark",
   "TimeoutLabel": "Timeout:",
   "MaxRetry": "Max Retry",
   "MaxRetryLabel": "Max Retry:",

@@ -8,6 +8,8 @@
   "Settings": "设置",
   "Save": "保存",
   "Cancel": "取消",
+  "Light": "亮",
+  "Dark": "暗",
   "TimeoutLabel": "超时:",
   "MaxRetry": "最大重试",
   "MaxRetryLabel": "最大重试:",
