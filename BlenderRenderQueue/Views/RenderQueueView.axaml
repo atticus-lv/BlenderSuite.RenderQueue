@@ -33,14 +33,15 @@
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Orientation="Horizontal">
                         <Viewbox Width="80"
-                                 Height="80" Margin="0"
+                                 Height="80"
                                  HorizontalAlignment="Center"
-                                 VerticalAlignment="Center">
+                                 VerticalAlignment="Center"
+                                 IsVisible="{Binding IsQueueRunning}">
                             <suki:CircleProgressBar Value="{Binding OverallQueueProgressInt}">
                                 <TextBlock Margin="1,1,0,0"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
-                                           FontSize="28"
+                                           FontSize="32"
                                            FontWeight="Bold"
                                            Text="{Binding OverallQueueProgressInt,StringFormat={}{0}%}" />
                             </suki:CircleProgressBar>
@@ -186,7 +187,7 @@
             </suki:GlassCard>
         </Grid>
 
-        <SplitView DisplayMode="Inline"  Name="RightPanelBorder"
+        <SplitView DisplayMode="Inline" Name="RightPanelBorder"
                    Grid.Row="2" Grid.ColumnSpan="2" Grid.Column="0" Margin="4">
             <SplitView.IsPaneOpen>
                 <MultiBinding Converter="{x:Static BoolConverters.And}">
