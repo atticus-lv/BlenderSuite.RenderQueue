@@ -221,12 +221,13 @@
             Background="{DynamicResource SukiBackgroundColor}" 
             BorderBrush="{DynamicResource SukiBorderColor}" 
             BorderThickness="0,1,0,0"
-            Padding="16,12">
+            Padding="16,12"
+            IsVisible="{Binding HasUnsavedChanges}">
         <StackPanel Orientation="Horizontal" 
                     HorizontalAlignment="Right" 
                     Spacing="12">
             <Button Command="{Binding SaveSettingsCommand}"
-                    Classes="Rounded"
+                    Classes="Flat Accent Rounded"
                     MinWidth="100">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <avalonia:MaterialIcon Kind="ContentSave" Width="16" Height="16" />

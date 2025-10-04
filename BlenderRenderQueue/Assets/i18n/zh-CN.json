@@ -182,7 +182,7 @@
   "Settings_Theme": "主题",
   "Settings_ThemeLabel": "界面主题:",
   "Settings_ToggleTheme": "切换主题",
-  "Settings_ThemeChanged": "主题已切换",
   "Restart": "重启",
-  "RestartApplication": "重启应用程序"
+  "RestartApplication": "重启应用程序",
+  "Settings_ThemeChanged": "主题已切换"
 }

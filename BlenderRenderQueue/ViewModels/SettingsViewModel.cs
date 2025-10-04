@@ -54,6 +54,9 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private ThemeOption _baseTheme = ThemeOption.Default; // 当前主题
 
+    [ObservableProperty]
+    private bool _hasUnsavedChanges; // 是否有未保存的更改
+
     private readonly SukiTheme _theme;
 
     /// <summary>
@@ -93,6 +96,12 @@ public partial class SettingsViewModel : ViewModelBase
             var language = value.Value;
             Localizer.Localizer.Instance.LoadLanguage(language);
         }
+        
+        // 标记有未保存的更改
+        if (!_isLoadingSettings)
+        {
+            HasUnsavedChanges = true;
+        }
     }
 
     partial void OnSelectedBlenderExecutableChanged(BlenderExecutable? value)
@@ -110,6 +119,12 @@ public partial class SettingsViewModel : ViewModelBase
             HasBlenderValidationError = true;
             BlenderValidationMessage = "Blender_SelectExecutable";
             NotifyBlenderValidationChanged();
+        }
+        
+        // 标记有未保存的更改
+        if (!_isLoadingSettings)
+        {
+            HasUnsavedChanges = true;
         }
     }
 
@@ -409,6 +424,8 @@ public partial class SettingsViewModel : ViewModelBase
                 var newBlender = BlenderExecutable.CreateDefault(path);
                 BlenderExecutables.Add(newBlender);
                 SelectedBlenderExecutable = newBlender;
+                // 标记有未保存的更改
+                HasUnsavedChanges = true;
             }
         }
     }
@@ -420,6 +437,8 @@ public partial class SettingsViewModel : ViewModelBase
         {
             BlenderExecutables.Remove(SelectedBlenderExecutable);
             SelectedBlenderExecutable = BlenderExecutables.FirstOrDefault();
+            // 标记有未保存的更改
+            HasUnsavedChanges = true;
         }
     }
 
@@ -430,6 +449,8 @@ public partial class SettingsViewModel : ViewModelBase
         {
             SelectedBlenderExecutable = blenderExecutable;
             await SaveSettingsToFileAsync();
+            // 选择Blender后立即保存，所以清除未保存更改标记
+            HasUnsavedChanges = false;
         }
     }
 
@@ -448,7 +469,45 @@ public partial class SettingsViewModel : ViewModelBase
             if (!_isLoadingSettings)
             {
                 ApplyTheme(value.Value);
+                // 标记有未保存的更改
+                HasUnsavedChanges = true;
             }
+        }
+    }
+
+    partial void OnDefaultRenderTimeoutSecondsChanged(int value)
+    {
+        // 标记有未保存的更改
+        if (!_isLoadingSettings)
+        {
+            HasUnsavedChanges = true;
+        }
+    }
+
+    partial void OnMaxRetryAttemptsChanged(int value)
+    {
+        // 标记有未保存的更改
+        if (!_isLoadingSettings)
+        {
+            HasUnsavedChanges = true;
+        }
+    }
+
+    partial void OnVideoCodecChanged(VideoCodecOption value)
+    {
+        // 标记有未保存的更改
+        if (!_isLoadingSettings)
+        {
+            HasUnsavedChanges = true;
+        }
+    }
+
+    partial void OnVideoQualityChanged(VideoQualityOption value)
+    {
+        // 标记有未保存的更改
+        if (!_isLoadingSettings)
+        {
+            HasUnsavedChanges = true;
         }
     }
 
@@ -501,6 +560,9 @@ public partial class SettingsViewModel : ViewModelBase
 
         // 保存设置到文件
         await SaveSettingsToFileAsync();
+        
+        // 标记已保存，清除未保存更改标记
+        HasUnsavedChanges = false;
     }
 
     /// <summary>
