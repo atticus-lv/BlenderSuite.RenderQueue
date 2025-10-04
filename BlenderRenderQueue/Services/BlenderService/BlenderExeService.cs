@@ -91,8 +91,9 @@ public class BlenderExeService : BasePythonProcessService
             // 检查是否是真正的Blender崩溃（显著特征：输出"Blender quit"）
             var isBlenderCrash = data.Contains("Blender quit", StringComparison.OrdinalIgnoreCase);
             var isAccessViolationCrash = data.Contains("EXCEPTION_ACCESS_VIOLATION", StringComparison.OrdinalIgnoreCase);
+            var isNoCameraError = data.Contains("Cannot render, no camera", StringComparison.OrdinalIgnoreCase);
             
-            if (isBlenderCrash || isAccessViolationCrash)
+            if (isBlenderCrash || isAccessViolationCrash || isNoCameraError)
             {
                 RaiseErrorReceived($"Error: {e.Data}");
                 return;

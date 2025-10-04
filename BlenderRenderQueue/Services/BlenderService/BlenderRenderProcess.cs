@@ -77,8 +77,9 @@ public class BlenderRenderProcess : IBlenderProcess
                     var data = e.Data;
                     var isBlenderCrash = data.Contains("Blender quit", StringComparison.OrdinalIgnoreCase);
                     var isAccessViolationCrash = data.Contains("EXCEPTION_ACCESS_VIOLATION", StringComparison.OrdinalIgnoreCase);
+                    var isNoCameraError = data.Contains("Cannot render, no camera", StringComparison.OrdinalIgnoreCase);
                     
-                    if (isBlenderCrash || isAccessViolationCrash)
+                    if (isBlenderCrash || isAccessViolationCrash || isNoCameraError)
                     {
                         OnErrorReceived?.Invoke($"Error: {data}");
                     }
