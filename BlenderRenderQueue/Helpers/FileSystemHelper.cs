@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace BlenderRenderQueue.Helpers;
 
@@ -108,6 +109,56 @@ public static class FileSystemHelper
         catch (Exception ex)
         {
             Console.WriteLine($"[FileSystemHelper] ❌ Error playing video: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 重启当前应用程序
+    /// </summary>
+    /// <returns>操作是否成功</returns>
+    public static bool RestartApplication()
+    {
+        try
+        {
+            // 获取当前应用程序的可执行文件路径
+            var currentExecutable = Environment.ProcessPath;
+            
+            if (string.IsNullOrEmpty(currentExecutable))
+            {
+                Console.WriteLine("[FileSystemHelper] ❌ Cannot get current executable path");
+                return false;
+            }
+
+            if (!File.Exists(currentExecutable))
+            {
+                Console.WriteLine($"[FileSystemHelper] ❌ Current executable does not exist: {currentExecutable}");
+                return false;
+            }
+
+            // 启动新的应用程序实例
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = currentExecutable,
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Normal
+            };
+
+            Process.Start(startInfo);
+            Console.WriteLine($"[FileSystemHelper] ✅ Restarting application: {currentExecutable}");
+            
+            // 延迟退出，让UI有时间处理命令
+            Task.Run(async () =>
+            {
+                await Task.Delay(100); // 等待1秒
+                Environment.Exit(0);
+            });
+            
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FileSystemHelper] ❌ Error restarting application: {ex.Message}");
             return false;
         }
     }

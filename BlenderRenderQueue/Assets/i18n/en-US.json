@@ -188,5 +188,7 @@
   "Settings_Theme": "Theme",
   "Settings_ThemeLabel": "Interface Theme:",
   "Settings_ToggleTheme": "Toggle Theme",
-  "Settings_ThemeChanged": "Theme Changed"
+  "Settings_ThemeChanged": "Theme Changed",
+  "Restart": "Restart",
+  "RestartApplication": "Restart Application"
 }
