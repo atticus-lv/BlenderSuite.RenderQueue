@@ -176,5 +176,11 @@
   "MainRender_NoBlenderAvailable": "No Blender available",
   "Blender_SelectExecutable": "Please select a Blender executable file",
   "Blender_SelectFileDialog": "Select Blender Executable File",
-  "Blender_PathInvalid": "Blender path is invalid"
+  "Blender_PathInvalid": "Blender path is invalid",
+  "ImageSequence_Frame": "Frame: {0}",
+  "ImageSequence_TotalFrames": "Total {0} frames",
+  "ImageSequence_DoubleClickToView": "Double-click to view large image",
+  "ImageSequence_NoSequenceSelected": "No image sequence selected",
+  "ImageSequence_PathNotExists": "Missing: {0}",
+  "ImageSequence_LoadFailed": "Failed to load image sequence: {0}"
 }

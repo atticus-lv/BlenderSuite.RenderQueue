@@ -174,13 +174,13 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
     public string CurrentFrameText
     {
-        get => $"帧: {_currentFrame + 1}";
+        get => $"ImageSequence_Frame:{_currentFrame + 1}";
         private set { } // 只读属性，不需要setter
     }
 
     public string TotalFramesText
     {
-        get => $"共 {_imageFiles.Count} 帧";
+        get => $"ImageSequence_TotalFrames:{_imageFiles.Count}";
         private set { } // 只读属性，不需要setter
     }
 
@@ -236,14 +236,14 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         else
         {
             Console.WriteLine($"[ImageSequencePreviewControl] Path does not exist: '{newPath}'");
-            SetError($"路径不存在: {newPath}");
+            SetError($"ImageSequence_PathNotExists:{newPath}");
             return;
         }
 
         if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath))
         {
             Console.WriteLine($"[ImageSequencePreviewControl] Directory does not exist: '{directoryPath}'");
-            SetError($"文件夹不存在: {directoryPath}");
+            SetError($"ImageSequence_PathNotExists:{directoryPath}");
             return;
         }
 
@@ -312,7 +312,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         {
             // 处理加载错误
             Console.WriteLine($"加载图片序列失败: {ex.Message}");
-            SetError($"加载图片序列失败: {ex.Message}");
+            SetError($"ImageSequence_LoadFailed:{ex.Message}");
             ClearImages();
         }
         finally

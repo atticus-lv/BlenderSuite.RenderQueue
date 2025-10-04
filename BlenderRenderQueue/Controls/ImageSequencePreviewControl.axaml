@@ -5,6 +5,7 @@
              xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Controls.ImageSequencePreviewControl">
 
@@ -15,7 +16,7 @@
 
             <!-- 当前帧数显示 -->
             <TextBlock Grid.Column="0"
-                       Text="{Binding CurrentFrameText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                       Text="{Binding CurrentFrameText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
                        VerticalAlignment="Center"
                        Margin="0,0,10,0"
                        FontSize="12"
@@ -33,13 +34,13 @@
 
             <!-- 总帧数显示 -->
             <TextBlock Grid.Column="2"
-                       Text="{Binding TotalFramesText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                       Text="{Binding TotalFramesText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
                        VerticalAlignment="Center"
                        Margin="10,0,0,0"
                        FontSize="12" />
         </Grid>
         <!-- 文件夹路径显示 -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto">
             <Button Grid.Column="0" Classes="Outlined Small"
                     Click="Button_OnClick" VerticalAlignment="Center"
                     IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
@@ -50,7 +51,7 @@
             </Button>
             <SelectableTextBlock
                 Grid.Column="2"
-                Text="{Binding ErrorMessage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                Text="{Binding ErrorMessage,RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Foreground="{DynamicResource SukiDangerDarkColor}"
@@ -81,7 +82,7 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Cursor="Hand"
-                       ToolTip.Tip="双击查看大图"
+                       ToolTip.Tip="{i18n:Localize ImageSequence_DoubleClickToView}"
                        DoubleTapped="PreviewImage_DoubleTapped" />
 
                 <!-- 加载指示器 -->
@@ -93,7 +94,7 @@
                              Height="4" />
 
                 <!-- 无图片提示 -->
-                <TextBlock Text="未选择图片序列"
+                <TextBlock Text="{i18n:Localize ImageSequence_NoSequenceSelected}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            Foreground="#FF999999"
