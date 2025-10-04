@@ -6,7 +6,6 @@
              xmlns:design="using:BlenderRenderQueue.ViewModels.DesignTime"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
-             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Views.BlendScenePropertiesView"
@@ -184,21 +183,11 @@
                         <TextBlock Grid.Row="12" Grid.Column="0" Text="{i18n:Localize SceneProperties_RealFramePath}"
                                    FontWeight="SemiBold" MinWidth="80"
                                    VerticalAlignment="Center" />
-                        <Grid Grid.Row="12" Grid.Column="2" ColumnDefinitions="*,Auto">
-                            <SelectableTextBlock Grid.Column="0" Text="{Binding ActiveSceneProperties.FramePath}"
-                                                 TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
-                                                 IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
-                            <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="#666"
-                                       IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
-                            <!-- <Button Grid.Column="1" Classes="Flat Outlined" -->
-                            <!--         Command="{Binding OpenFramePathDirectoryCommand}" -->
-                            <!--         IsEnabled="{Binding CanOpenFramePathDirectory}" -->
-                            <!--         Padding="4" Margin="4,0,0,0"> -->
-                            <!--     <StackPanel Orientation="Horizontal" VerticalAlignment="Center"> -->
-                            <!--         <avalonia:MaterialIcon Kind="FolderOpen" /> -->
-                            <!--     </StackPanel> -->
-                            <!-- </Button> -->
-                        </Grid>
+                        <SelectableTextBlock Grid.Row="12"  Grid.Column="2" Text="{Binding ActiveSceneProperties.FramePath}"
+                                             TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
+                                             IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Grid.Row="12" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="#666"
+                                   IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
 
                         <!-- 输出格式 -->
                         <TextBlock Grid.Row="13" Grid.Column="0" Text="{i18n:Localize SceneProperties_OutputFormat}"
