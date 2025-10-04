@@ -6,16 +6,23 @@
 
 ### 已实现功能 ✅
 
-- 🎬 **队列渲染管理** - 高效管理多个Blender渲染任务
+- 🎬 **队列渲染** 
+  - 拖拽排序，启用/禁用
+  - 状态提示
+  - 场景/帧范围覆写
+  - 暂停渲染/恢复渲染
+  - 可选blender
+  - 合成视频
+
 - 📦 **Windows安装程序** - 使用Inno Setup创建专业的Windows安装包
 - ⚡ **AOT编译** - 支持Ahead-of-Time编译，获得更小的文件体积和更快的启动速度
 - 🔧 **现代化UI** - 基于Avalonia UI框架的现代化界面
+- 🌍 **多语言支持** - 应用程序界面支持中文和英文切换
+- 深色/浅色主题切换
 
 ### 计划中功能 🚧
 
-- 🌍 **多语言支持** - 应用程序界面支持中文和英文切换
 - 🖥️ **跨平台支持** - 支持Windows、macOS和Linux平台
-- 📱 **响应式设计** - 适配不同屏幕尺寸和分辨率
 
 ## 开发环境配置
 
@@ -124,7 +131,6 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - Windows 10/11 (64位)
 - .NET 9.0 SDK
 - Inno Setup 6
-- 管理员权限（用于创建安装程序）
 
 #### 计划支持 (跨平台)
 
@@ -133,13 +139,6 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 - **通用要求**: .NET 9.0 SDK, 对应平台的构建工具
 
 ## 开发路线图
-
-### 多语言支持计划 🚧
-
-- [ ] 应用程序界面国际化 (i18n)
-- [ ] 中文界面翻译
-- [ ] 英文界面翻译
-- [ ] 运行时语言切换
 
 ### 跨平台支持计划 🚧
 
@@ -151,7 +150,6 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 ### 技术改进计划 🚧
 
-- [ ] 深色/浅色主题切换
 - [ ] 插件系统架构
 
 ## 许可证
