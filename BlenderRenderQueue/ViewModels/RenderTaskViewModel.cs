@@ -183,43 +183,31 @@ public partial class RenderTaskViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 尝试重试渲染
+    /// 处理Blender进程退出事件
     /// </summary>
-    /// <param name="exeService">Blender服务</param>
-    /// <returns>是否成功重试</returns>
-    private async Task<bool> TryRetryRenderAsync(IBlenderProcess blenderProcess)
+    /// <param name="exitCode">进程退出码</param>
+    private void OnBlenderProcessExited(int exitCode)
     {
-        _currentRetryAttempts++;
-
-        if (_currentRetryAttempts > _globalMaxRetryAttempts)
+        // 只在渲染状态时处理进程退出
+        if (Status != RenderTaskStatus.Running)
         {
-            EnqueueLog($"已达到最大重试次数 ({_globalMaxRetryAttempts})，任务失败");
-            SetStatus(RenderTaskStatus.Failed, "TaskStatus_RetryFailed");
-            return false;
+            return;
         }
 
-        EnqueueLog($"开始第 {_currentRetryAttempts} 次重试 (最大 {_globalMaxRetryAttempts} 次)");
+        EnqueueLog($"Blender进程异常退出，退出码: {exitCode}");
 
-        try
+        // 进程异常退出，直接标记任务失败（不进行重试）
+        if (exitCode != 0)
         {
-            // 暂停当前渲染
-            await PauseRenderAsync();
-
-            // 等待一小段时间再重试
-            await Task.Delay(2000);
-
-            // 从当前帧重新开始渲染
-            await ResumeRenderAsync(blenderProcess, CurrentFrame);
-
-            EnqueueLog($"第 {_currentRetryAttempts} 次重试开始成功");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            EnqueueLog($"第 {_currentRetryAttempts} 次重试失败: {ex.Message}");
-            return false;
+            SetStatus(RenderTaskStatus.Failed, "TaskStatus_ProcessExited");
+            EndTime = DateTime.Now;
+            if (StartTime.HasValue)
+            {
+                Duration = EndTime.Value - StartTime.Value;
+            }
         }
     }
+
 
     partial void OnStartFrameChanged(int value)
     {
@@ -420,7 +408,8 @@ public partial class RenderTaskViewModel : ViewModelBase
     // 全局超时设置（从SettingsViewModel获取）
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
     private int _globalMaxRetryAttempts = 3; // 默认最大重试3次
-    private int _currentRetryAttempts = 0; // 当前重试次数
+    private int _currentFrameRetryAttempts = 0; // 当前帧的重试次数
+    private IBlenderProcess? _currentBlenderProcess; // 存储当前的Blender进程实例
 
     [ObservableProperty]
     private RenderTaskStatus _status = RenderTaskStatus.Pending;
@@ -755,10 +744,16 @@ public partial class RenderTaskViewModel : ViewModelBase
             SetStatus(RenderTaskStatus.Running, "TaskStatus_Starting");
             StartTime = DateTime.Now;
 
+            // 存储当前的Blender进程实例
+            _currentBlenderProcess = blenderProcess;
+
             // 创建适配器来包装 IBlenderProcess
             _exe = new BlenderProcessAdapter(blenderProcess);
             _exe.OnOutputReceived += HandleRawOutput;
             _exe.OnErrorReceived += HandleRawError;
+            
+            // 订阅进程退出事件，用于处理进程异常退出时的重试
+            blenderProcess.OnProcessExited += OnBlenderProcessExited;
 
             _session = new RenderSession(_exe, new RenderOutputParser());
             _session.OnProgress += s => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnProgress(s));
@@ -808,16 +803,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 EnqueueLog($"渲染任务超时: {ex.Message}");
 
-                // 尝试重试
-                if (_exe != null && _currentRetryAttempts < _globalMaxRetryAttempts)
-                {
-                    EnqueueLog($"检测到渲染超时，尝试重试...");
-                    // 注意：重试功能需要重新设计，因为现在使用进程管理服务
-                    // 暂时跳过重试，直接标记为失败
-                    EnqueueLog($"重试功能暂不可用，任务失败");
-                }
-
-                // 重试失败或达到最大重试次数
+                // 渲染超时，直接标记任务失败
                 SetStatus(RenderTaskStatus.Failed, "TaskStatus_TimeoutFailed");
             }
         }
@@ -905,10 +891,16 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             SetStatus(RenderTaskStatus.Running, "TaskStatus_Resuming");
 
+            // 存储当前的Blender进程实例
+            _currentBlenderProcess = blenderProcess;
+
             // 创建适配器来包装 IBlenderProcess
             _exe = new BlenderProcessAdapter(blenderProcess);
             _exe.OnOutputReceived += HandleRawOutput;
             _exe.OnErrorReceived += HandleRawError;
+            
+            // 订阅进程退出事件，用于处理进程异常退出时的重试
+            blenderProcess.OnProcessExited += OnBlenderProcessExited;
 
             _session = new RenderSession(_exe, new RenderOutputParser());
             _session.OnProgress += s => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnProgress(s));
@@ -949,16 +941,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 EnqueueLog($"恢复渲染任务超时: {ex.Message}");
 
-                // 尝试重试
-                if (_exe != null && _currentRetryAttempts < _globalMaxRetryAttempts)
-                {
-                    EnqueueLog($"检测到恢复渲染超时，尝试重试...");
-                    // 注意：重试功能需要重新设计，因为现在使用进程管理服务
-                    // 暂时跳过重试，直接标记为失败
-                    EnqueueLog($"重试功能暂不可用，任务失败");
-                }
-
-                // 重试失败或达到最大重试次数
+                // 恢复渲染超时，直接标记任务失败
                 SetStatus(RenderTaskStatus.Failed, "TaskStatus_ResumeTimeoutFailed");
             }
         }
@@ -1100,6 +1083,8 @@ public partial class RenderTaskViewModel : ViewModelBase
                 break;
             case RenderStarted rs:
                 EnqueueLog($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
+                // 重置当前帧的重试计数器
+                _currentFrameRetryAttempts = 0;
                 break;
             case RenderSaved saved:
                 EnqueueLog($"已保存: {saved.Path} (帧 {saved.Frame})");
@@ -1108,6 +1093,8 @@ public partial class RenderTaskViewModel : ViewModelBase
                 break;
             case RenderCompletedFrame done:
                 EnqueueLog($"帧 {done.Frame} 完成，用时 {done.Time}");
+                // 帧完成时重置帧重试计数器
+                _currentFrameRetryAttempts = 0;
                 break;
             case RenderCompletedAll:
                 EnqueueLog("全部帧完成");
@@ -1143,16 +1130,29 @@ public partial class RenderTaskViewModel : ViewModelBase
             case RenderError err:
                 EnqueueLog($"渲染错误: {err.Message}");
 
-                // 尝试重试
-                if (_exe != null && _currentRetryAttempts < _globalMaxRetryAttempts)
+                // 尝试帧级别的重试
+                if (_currentFrameRetryAttempts < _globalMaxRetryAttempts && _currentBlenderProcess != null)
                 {
-                    EnqueueLog($"检测到渲染错误，尝试重试...");
-                    // 注意：重试功能需要重新设计，因为现在使用进程管理服务
-                    // 暂时跳过重试，直接标记为失败
-                    EnqueueLog($"重试功能暂不可用，任务失败");
+                    _currentFrameRetryAttempts++;
+                    EnqueueLog($"检测到帧渲染错误，尝试第 {_currentFrameRetryAttempts} 次重试 (最大 {_globalMaxRetryAttempts} 次)...");
+                    
+                    try
+                    {
+                        // 等待一小段时间再重试当前帧
+                        await Task.Delay(2000);
+                        
+                        // 重新开始当前帧的渲染
+                        await ResumeRenderAsync(_currentBlenderProcess, CurrentFrame);
+                        EnqueueLog($"第 {_currentFrameRetryAttempts} 次帧重试开始成功");
+                        return; // 重试成功，继续渲染
+                    }
+                    catch (Exception ex)
+                    {
+                        EnqueueLog($"第 {_currentFrameRetryAttempts} 次帧重试失败: {ex.Message}");
+                    }
                 }
 
-                // 重试失败或达到最大重试次数
+                // 帧级别重试失败，标记任务失败
                 SetStatus(RenderTaskStatus.Failed, "TaskStatus_RenderFailed");
                 EndTime = DateTime.Now;
                 if (StartTime.HasValue)
@@ -1175,10 +1175,10 @@ public partial class RenderTaskViewModel : ViewModelBase
             CurrentFrame = StartFrame;
         }
 
-        // 当任务完成时，重置重试计数器
+        // 当任务完成时，重置帧重试计数器
         if (status == RenderTaskStatus.Completed)
         {
-            _currentRetryAttempts = 0;
+            _currentFrameRetryAttempts = 0;
         }
 
         // 通知操作权限相关属性更新
