@@ -93,7 +93,7 @@
   "SceneProperties_TimeLimit": "时间限制:",
   "SceneProperties_Camera": "相机:",
   "SceneProperties_OutputPath": "输出路径:",
-  "SceneProperties_RealFramePath": "真实帧路径:",
+  "SceneProperties_RealFramePath": "帧路径:",
   "SceneProperties_OutputFormat": "输出格式:",
   "SceneProperties_FileNotLoaded": "文件未加载",
   "SceneType_Single": "单一场景",

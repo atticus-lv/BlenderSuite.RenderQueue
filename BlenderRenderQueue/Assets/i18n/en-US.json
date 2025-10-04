@@ -93,7 +93,7 @@
   "SceneProperties_TimeLimit": "Time Limit:",
   "SceneProperties_Camera": "Camera:",
   "SceneProperties_OutputPath": "Output Path:",
-  "SceneProperties_RealFramePath": "Real Frame Path:",
+  "SceneProperties_RealFramePath": "Frame Path:",
   "SceneProperties_OutputFormat": "Output Format:",
   "SceneProperties_FileNotLoaded": "File Not Loaded",
   "SceneType_Single": "Single Scene",

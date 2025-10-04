@@ -190,14 +190,14 @@
                                                  IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                             <TextBlock Grid.Column="0" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="#666"
                                        IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
-                            <Button Grid.Column="1" Classes="Flat Outlined"
-                                    Command="{Binding OpenFramePathDirectoryCommand}"
-                                    IsEnabled="{Binding CanOpenFramePathDirectory}"
-                                    Padding="4" Margin="4,0,0,0">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <avalonia:MaterialIcon Kind="FolderOpen" />
-                                </StackPanel>
-                            </Button>
+                            <!-- <Button Grid.Column="1" Classes="Flat Outlined" -->
+                            <!--         Command="{Binding OpenFramePathDirectoryCommand}" -->
+                            <!--         IsEnabled="{Binding CanOpenFramePathDirectory}" -->
+                            <!--         Padding="4" Margin="4,0,0,0"> -->
+                            <!--     <StackPanel Orientation="Horizontal" VerticalAlignment="Center"> -->
+                            <!--         <avalonia:MaterialIcon Kind="FolderOpen" /> -->
+                            <!--     </StackPanel> -->
+                            <!-- </Button> -->
                         </Grid>
 
                         <!-- 输出格式 -->
