@@ -93,7 +93,7 @@
   "SceneProperties_TimeLimit": "时间限制:",
   "SceneProperties_Camera": "相机:",
   "SceneProperties_OutputPath": "输出路径:",
-  "SceneProperties_RealFramePath": "帧路径:",
+  "SceneProperties_RealFramePath": "真实帧路径:",
   "SceneProperties_OutputFormat": "输出格式:",
   "SceneProperties_FileNotLoaded": "文件未加载",
   "SceneType_Single": "单一场景",
@@ -177,10 +177,8 @@
   "Blender_SelectExecutable": "请选择一个Blender可执行文件",
   "Blender_SelectFileDialog": "选择 Blender 可执行文件",
   "Blender_PathInvalid": "Blender路径无效",
-  "ImageSequence_Frame": "帧: {0}",
-  "ImageSequence_TotalFrames": "共 {0} 帧",
-  "ImageSequence_DoubleClickToView": "双击查看大图",
-  "ImageSequence_NoSequenceSelected": "未选择图片序列",
-  "ImageSequence_PathNotExists": "不存在: {0}",
-  "ImageSequence_LoadFailed": "加载图片序列失败: {0}"
+  "Settings_Theme": "主题",
+  "Settings_ThemeLabel": "界面主题:",
+  "Settings_ToggleTheme": "切换主题",
+  "Settings_ThemeChanged": "主题已切换"
 }

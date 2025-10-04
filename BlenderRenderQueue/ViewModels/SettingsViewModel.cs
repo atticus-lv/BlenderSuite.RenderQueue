@@ -12,6 +12,7 @@ using System.Threading;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Localizer;
+using SukiUI;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -49,6 +50,11 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _canSwitchBlender = true; // 是否可以切换Blender
+
+    [ObservableProperty]
+    private ThemeOption _baseTheme = ThemeOption.Default; // 当前主题
+
+    private readonly SukiTheme _theme;
 
     /// <summary>
     /// 检查指定的Blender是否被选中
@@ -110,6 +116,7 @@ public partial class SettingsViewModel : ViewModelBase
     // 内部状态
     private CancellationTokenSource? _versionCts;
     private readonly ISettingsPersistenceService _settingsPersistenceService = new SettingsPersistenceService();
+    private bool _isLoadingSettings = false;
 
     // 事件：当设置发生变化时通知
     public event EventHandler<SettingsChangedEventArgs>? SettingsChanged;
@@ -126,6 +133,28 @@ public partial class SettingsViewModel : ViewModelBase
     public SettingsViewModel()
     {
         // 构造函数中不进行自动检测，等待StartInitialization调用
+        _theme = new SukiTheme();
+        
+        // 订阅主题变化事件
+        _theme.OnBaseThemeChanged += variant =>
+        {
+            var themeValue = variant.ToString();
+            var themeOption = ThemeOption.FindByValue(themeValue);
+            if (themeOption != null)
+            {
+                BaseTheme = themeOption;
+            }
+            // 可以在这里添加Toast通知
+            Console.WriteLine($"[SettingsViewModel] Theme changed to: {variant}");
+        };
+        
+        // 初始化当前主题
+        var currentThemeValue = _theme.ActiveBaseTheme.ToString();
+        var currentThemeOption = ThemeOption.FindByValue(currentThemeValue);
+        if (currentThemeOption != null)
+        {
+            BaseTheme = currentThemeOption;
+        }
     }
 
     public void StartInitialization()
@@ -406,6 +435,61 @@ public partial class SettingsViewModel : ViewModelBase
 
 
     [RelayCommand]
+    private void ToggleBaseTheme()
+    {
+        _theme.SwitchBaseTheme();
+    }
+
+    partial void OnBaseThemeChanged(ThemeOption value)
+    {
+        if (value != null)
+        {
+            // 只有在用户手动更改时才应用主题，避免在加载设置时触发
+            if (!_isLoadingSettings)
+            {
+                ApplyTheme(value.Value);
+            }
+        }
+    }
+
+    private void ApplyTheme(string themeValue)
+    {
+        try
+        {
+            // 根据主题值应用相应的主题
+            switch (themeValue)
+            {
+                case "Light":
+                    // 切换到浅色主题
+                    while (_theme.ActiveBaseTheme.ToString() != "Light")
+                    {
+                        _theme.SwitchBaseTheme();
+                    }
+                    break;
+                case "Dark":
+                    // 切换到深色主题
+                    while (_theme.ActiveBaseTheme.ToString() != "Dark")
+                    {
+                        _theme.SwitchBaseTheme();
+                    }
+                    break;
+                case "Auto":
+                    // Auto主题切换到系统主题（Default）
+                    while (_theme.ActiveBaseTheme.ToString() != "Default")
+                    {
+                        _theme.SwitchBaseTheme();
+                    }
+                    break;
+            }
+            Console.WriteLine($"[SettingsViewModel] Applied theme: {themeValue}, Current: {_theme.ActiveBaseTheme}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SettingsViewModel] Error applying theme: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
     public async Task SaveSettingsCommand()
     {
         var selectedPath = SelectedBlenderExecutable?.Path ?? string.Empty;
@@ -440,7 +524,8 @@ public partial class SettingsViewModel : ViewModelBase
                 MaxRetryAttempts = MaxRetryAttempts,
                 VideoCodec = VideoCodec.Value,
                 VideoQuality = VideoQuality.Value,
-                Language = Language.Value
+                Language = Language.Value,
+                BaseTheme = BaseTheme.Value
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
@@ -467,6 +552,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
+            _isLoadingSettings = true;
             var settings = await _settingsPersistenceService.LoadSettingsAsync();
 
             // 加载Blender可执行文件列表
@@ -554,12 +640,32 @@ public partial class SettingsViewModel : ViewModelBase
                 Localizer.Localizer.Instance.LoadLanguage(LanguageOption.Default.Value);
             }
 
+            // 加载主题设置
+            if (!string.IsNullOrEmpty(settings.BaseTheme))
+            {
+                var themeOption = ThemeOption.FindByValue(settings.BaseTheme);
+                if (themeOption != null)
+                {
+                    // 先设置属性，再应用主题
+                    BaseTheme = themeOption;
+                    // 延迟应用主题，确保UI已更新
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    {
+                        ApplyTheme(settings.BaseTheme);
+                    });
+                }
+            }
+
             Console.WriteLine(
                 $"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[SettingsViewModel] ❌ Error loading settings: {ex.Message}");
+        }
+        finally
+        {
+            _isLoadingSettings = false;
         }
     }
 

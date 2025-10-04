@@ -35,6 +35,9 @@ public class SettingsData
     [JsonPropertyName("Language")]
     public string Language { get; set; } = "en-US"; // 默认英语
 
+    [JsonPropertyName("BaseTheme")]
+    public string BaseTheme { get; set; } = "Dark"; // 默认深色主题
+
     /// <summary>
     /// 获取选中的Blender可执行文件
     /// </summary>

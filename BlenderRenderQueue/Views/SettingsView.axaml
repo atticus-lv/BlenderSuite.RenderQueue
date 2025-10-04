@@ -25,7 +25,7 @@
                 <!-- 语言设置部分 -->
                 <suki:SettingsLayoutItem Header="{i18n:Localize General}">
                     <suki:SettingsLayoutItem.Content>
-                        <Grid RowDefinitions="Auto" ColumnDefinitions="Auto,*,Auto">
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
                             <!-- 语言选择 -->
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize LanguageLabel}"
@@ -36,6 +36,22 @@
                                       HorizontalAlignment="Right">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate DataType="models:LanguageOption">
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <!-- 主题选择 -->
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize Settings_ThemeLabel}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,16,8,0" />
+                            <ComboBox Grid.Row="1" Grid.Column="2" SelectedItem="{Binding BaseTheme, Mode=TwoWay}"
+                                      ItemsSource="{x:Static models:ThemeOption.AllOptions}"
+                                      HorizontalAlignment="Right"
+                                      Margin="0,16,0,0">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate DataType="models:ThemeOption">
                                         <TextBlock Text="{Binding DisplayName}"
                                                    VerticalAlignment="Center" />
                                     </DataTemplate>

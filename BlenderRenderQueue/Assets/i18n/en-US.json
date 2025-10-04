@@ -182,5 +182,9 @@
   "ImageSequence_DoubleClickToView": "Double-click to view large image",
   "ImageSequence_NoSequenceSelected": "No image sequence selected",
   "ImageSequence_PathNotExists": "Missing: {0}",
-  "ImageSequence_LoadFailed": "Failed to load image sequence: {0}"
+  "ImageSequence_LoadFailed": "Failed to load image sequence: {0}",
+  "Settings_Theme": "Theme",
+  "Settings_ThemeLabel": "Interface Theme:",
+  "Settings_ToggleTheme": "Toggle Theme",
+  "Settings_ThemeChanged": "Theme Changed"
 }
