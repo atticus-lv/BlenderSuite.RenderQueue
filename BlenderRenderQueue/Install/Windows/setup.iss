@@ -1,6 +1,6 @@
 ; 定义应用程序信息
 #define MyAppName "BlenderRenderQueue"
-#define MyAppVersion "0.3.6"
+#define MyAppVersion "0.3.7"
 #define MyAppPublisher "Atticus"
 #define MyAppExeName "BlenderRenderQueue.exe"
 
