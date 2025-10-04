@@ -40,6 +40,7 @@
         <PackageReference Include="SukiUI" Version="6.0.3" />
         <PackageReference Include="Xaml.Behaviors.Interactions.Draggable" Version="11.3.6.2" />
         <PackageReference Include="Xaml.Behaviors.Interactivity" Version="11.3.6.2" />
+        <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc6.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -69,6 +70,12 @@
       </Compile>
       <Compile Update="Views\BlenderSelectionView.axaml.cs">
         <DependentUpon>BlenderSelectionView.axaml</DependentUpon>
+      </Compile>
+      <Compile Update="Views\HardwareChartView.axaml.cs">
+        <DependentUpon>HardwareChartView.axaml</DependentUpon>
+      </Compile>
+      <Compile Update="Views\Test\HardwareChartTestWindow.axaml.cs">
+        <DependentUpon>HardwareChartTestWindow.axaml</DependentUpon>
       </Compile>
     </ItemGroup>
 

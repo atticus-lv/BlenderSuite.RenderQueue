@@ -21,6 +21,7 @@ public class ViewLocator : IDataTemplate
         { typeof(BlendScenePropertiesViewModel), () => new BlendScenePropertiesView() },
         { typeof(ImagePreviewWindowViewModel), () => new ImagePreviewWindow() },
         { typeof(SettingsViewModel), () => new SettingsView() },
+        { typeof(HardwareChartViewModel), () => new HardwareChartView() },
         // 测试视图
         { typeof(TestRenderViewModel), () => new TestRenderView() },
     };

@@ -5,6 +5,7 @@ using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using BlenderRenderQueue.ViewModels;
 using BlenderRenderQueue.Views;
+using BlenderRenderQueue.Views.Test;
 
 namespace BlenderRenderQueue;
 
@@ -26,6 +27,11 @@ public partial class App : Application
             {
                 DataContext = new MainWindowViewModel(),
             };
+            var hardwareWindow = new HardwareChartTestWindow
+            {
+                DataContext = new HardwareChartViewModel(),
+            };
+            hardwareWindow.Show();
         }
 
         base.OnFrameworkInitializationCompleted();

@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+             xmlns:vm="using:BlenderRenderQueue.ViewModels"
+             xmlns:skiaSharpView="clr-namespace:LiveChartsCore.SkiaSharpView;assembly=LiveChartsCore.SkiaSharpView"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="BlenderRenderQueue.Views.HardwareChartView"
+             x:DataType="vm:HardwareChartViewModel">
+    
+    <Design.DataContext>
+        <vm:HardwareChartViewModel/>
+    </Design.DataContext>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- CPU使用率图表 -->
+        <Border Grid.Column="0" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
+                Margin="4" Padding="8" CornerRadius="4">
+            <lvc:CartesianChart SyncContext="{Binding Sync}"
+                               AnimationsSpeed="0:0:0.1">
+                <lvc:CartesianChart.Series>
+                    <lvc:XamlLineSeries Values="{Binding CpuLoadValues}" 
+                                       Fill="{x:Null}"
+                                       GeometryFill="{x:Null}"
+                                       GeometryStroke="{x:Null}"
+                                       Stroke="#0000FF" />
+                </lvc:CartesianChart.Series>
+                
+                <lvc:CartesianChart.XAxes>
+                    <skiaSharpView:Axis IsVisible="False"/>
+                </lvc:CartesianChart.XAxes>
+                
+                <lvc:CartesianChart.YAxes>
+                    <skiaSharpView:Axis MinLimit="0" MaxLimit="100"/>
+                </lvc:CartesianChart.YAxes>
+            </lvc:CartesianChart>
+        </Border>
+        
+        <!-- GPU使用率图表 -->
+        <Border Grid.Column="1" Background="{DynamicResource SystemControlBackgroundBaseLowBrush}" 
+                Margin="4" Padding="8" CornerRadius="4">
+            <lvc:CartesianChart SyncContext="{Binding Sync}"
+                               AnimationsSpeed="0:0:0.1">
+                <lvc:CartesianChart.Series>
+                    <lvc:XamlLineSeries Values="{Binding GpuLoadValues}" 
+                                       Fill="{x:Null}"
+                                       GeometryFill="{x:Null}"
+                                       GeometryStroke="{x:Null}"
+                                       Stroke="#FF0000" />
+                </lvc:CartesianChart.Series>
+                
+                <lvc:CartesianChart.XAxes>
+                    <skiaSharpView:Axis IsVisible="False"/>
+                </lvc:CartesianChart.XAxes>
+                
+                <lvc:CartesianChart.YAxes>
+                    <skiaSharpView:Axis MinLimit="0" MaxLimit="100"/>
+                </lvc:CartesianChart.YAxes>
+            </lvc:CartesianChart>
+        </Border>
+    </Grid>
+</UserControl>
