@@ -23,7 +23,6 @@
 
 
     <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
-
         <Grid Row="0" ColumnDefinitions="*,Auto,Auto,Auto">
             <suki:GlassCard Margin="8 4 4 4">
                 <Grid ColumnDefinitions="*,Auto">
@@ -110,7 +109,7 @@
                 </MultiBinding>
             </SplitView.IsPaneOpen>
             <SplitView.Pane>
-                <!-- 右侧任务详情 -->
+                <!-- 任务详情 -->
                 <Border Grid.Column="0" Margin="4">
                     <Panel>
                         <suki:GlassCard IsAnimated="False">
@@ -130,7 +129,9 @@
                 </Border>
             </SplitView.Pane>
             <SplitView.Content>
-                <views:RenderQueueTaskListView DataContext="{Binding}" />
+                <suki:GlassCard Padding="0" Margin="4">
+                    <views:RenderQueueTaskListView DataContext="{Binding}" Margin="4" />
+                </suki:GlassCard>
             </SplitView.Content>
         </SplitView>
 
