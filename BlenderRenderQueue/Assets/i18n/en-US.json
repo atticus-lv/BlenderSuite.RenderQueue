@@ -191,5 +191,6 @@
   "Settings_ToggleTheme": "Toggle Theme",
   "Restart": "Restart",
   "RestartApplication": "Restart Application",
-  "Settings_ThemeChanged": "Theme Changed"
+  "Settings_ThemeChanged": "Theme Changed",
+  "RenderTask_SettingsLocked": "Settings are locked while the task is running"
 }

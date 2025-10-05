@@ -65,9 +65,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// <summary>
     /// 判断覆写场景是否与默认场景相同
     /// </summary>
-    public bool IsOverrideSceneSameAsDefault => OverrideScene && 
-        !string.IsNullOrEmpty(SelectedSceneName) && 
-        SelectedSceneName == ScenePropertiesView.ActiveSceneName;
+    public bool IsOverrideSceneSameAsDefault => OverrideScene &&
+                                                !string.IsNullOrEmpty(SelectedSceneName) &&
+                                                SelectedSceneName == ScenePropertiesView.ActiveSceneName;
 
     partial void OnEnableChanged(bool value)
     {
@@ -154,12 +154,12 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// <summary>
     /// 是否可以修改任务的Enable属性
     /// </summary>
-    public bool CanModifyEnable => Status == RenderTaskStatus.Pending;
+    public bool CanModifyEnable => Status is RenderTaskStatus.Pending;
 
     /// <summary>
     /// 是否可以修改任务的覆写属性（帧范围、场景等）
     /// </summary>
-    public bool CanModifyOverride => Status == RenderTaskStatus.Pending;
+    public bool CanModifyOverride => Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed;
 
     /// <summary>
     /// 是否可以删除任务
@@ -169,7 +169,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// <summary>
     /// 是否应该显示进度条
     /// </summary>
-    public bool ShouldShowProgress => Status == RenderTaskStatus.Running || Status == RenderTaskStatus.Paused;
+    public bool ShouldShowProgress => Status is RenderTaskStatus.Running or RenderTaskStatus.Paused;
 
     /// <summary>
     /// 设置全局渲染超时时间
@@ -760,7 +760,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             _exe = new BlenderProcessAdapter(blenderProcess);
             _exe.OnOutputReceived += HandleRawOutput;
             _exe.OnErrorReceived += HandleRawError;
-            
+
             // 订阅进程退出事件，用于处理进程异常退出时的重试
             blenderProcess.OnProcessExited += OnBlenderProcessExited;
 
@@ -907,7 +907,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             _exe = new BlenderProcessAdapter(blenderProcess);
             _exe.OnOutputReceived += HandleRawOutput;
             _exe.OnErrorReceived += HandleRawError;
-            
+
             // 订阅进程退出事件，用于处理进程异常退出时的重试
             blenderProcess.OnProcessExited += OnBlenderProcessExited;
 
@@ -1144,12 +1144,12 @@ public partial class RenderTaskViewModel : ViewModelBase
                 {
                     _currentFrameRetryAttempts++;
                     EnqueueLog($"检测到帧渲染错误，尝试第 {_currentFrameRetryAttempts} 次重试 (最大 {_globalMaxRetryAttempts} 次)...");
-                    
+
                     try
                     {
                         // 等待一小段时间再重试当前帧
                         await Task.Delay(2000);
-                        
+
                         // 重新开始当前帧的渲染
                         await ResumeRenderAsync(_currentBlenderProcess, CurrentFrame);
                         EnqueueLog($"第 {_currentFrameRetryAttempts} 次帧重试开始成功");

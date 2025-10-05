@@ -256,17 +256,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         _videoQuality = quality;
     }
 
-    public bool CanModifyTasks
-    {
-        get
-        {
-            // 队列空闲或完成时，可以修改所有任务（不需要任务级别权限控制）
-            // 队列运行时，需要任务级别权限控制
-            var result = QueueState == QueueState.Running || QueueState == QueueState.Paused;
-            // Console.WriteLine($"[RenderQueueViewModel] CanModifyTasks: {result} (QueueState: {QueueState})");
-            return result;
-        }
-    }
+    public bool CanModifyTasks => QueueState is QueueState.Running or QueueState.Paused;
 
     // 内部状态
     private readonly List<Task> _runningTasks = new();

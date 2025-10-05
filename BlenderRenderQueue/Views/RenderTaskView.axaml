@@ -9,6 +9,7 @@
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
+             xmlns:conv="using:Avalonia.Data.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BlenderRenderQueue.Views.RenderTaskView"
              x:DataType="vm:RenderTaskViewModel">
@@ -97,6 +98,22 @@
                     <TabItem Header="{i18n:Localize RenderTask_RenderSettings}">
                         <!-- 渲染设置 -->
                         <StackPanel Spacing="12" Margin="8 4">
+                            <StackPanel.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                    <Binding
+                                        Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
+                                        Converter="{x:Static BoolConverters.Not}" />
+                                    <MultiBinding
+                                        Converter="{x:Static BoolConverters.And}">
+                                        <Binding
+                                            Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks" />
+                                        <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                            <Binding Path="CanModifyEnable" />
+                                            <Binding Path="Status" Converter="{x:Static conv:ObjectConverters.Equal}" ConverterParameter="Completed" />
+                                        </MultiBinding>
+                                    </MultiBinding>
+                                </MultiBinding>
+                            </StackPanel.IsVisible>
                             <!-- 动画渲染设置 -->
                             <StackPanel Spacing="8">
                                 <CheckBox Content="{i18n:Localize RenderTask_RenderAnimation}" IsChecked="{Binding Animation}" />
@@ -105,7 +122,7 @@
                                         <CheckBox.IsEnabled>
                                             <MultiBinding Converter="{x:Static BoolConverters.Or}">
                                                 <Binding
-                                                    Path="$parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
+                                                    Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
                                                     Converter="{x:Static BoolConverters.Not}" />
                                                 <Binding Path="CanModifyOverride" />
                                             </MultiBinding>
@@ -120,7 +137,7 @@
                                                 <NumericUpDown.IsEnabled>
                                                     <MultiBinding Converter="{x:Static BoolConverters.Or}">
                                                         <Binding
-                                                            Path="$parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
+                                                            Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
                                                             Converter="{x:Static BoolConverters.Not}" />
                                                         <Binding Path="CanModifyOverride" />
                                                     </MultiBinding>
@@ -133,7 +150,7 @@
                                                 <NumericUpDown.IsEnabled>
                                                     <MultiBinding Converter="{x:Static BoolConverters.Or}">
                                                         <Binding
-                                                            Path="$parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
+                                                            Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
                                                             Converter="{x:Static BoolConverters.Not}" />
                                                         <Binding Path="CanModifyOverride" />
                                                     </MultiBinding>
@@ -150,7 +167,7 @@
                                     <CheckBox.IsEnabled>
                                         <MultiBinding Converter="{x:Static BoolConverters.Or}">
                                             <Binding
-                                                Path="$parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
+                                                Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
                                                 Converter="{x:Static BoolConverters.Not}" />
                                             <Binding Path="CanModifyOverride" />
                                         </MultiBinding>
@@ -167,7 +184,7 @@
                                             <ComboBox.IsEnabled>
                                                 <MultiBinding Converter="{x:Static BoolConverters.Or}">
                                                     <Binding
-                                                        Path="$parent[UserControl].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
+                                                        Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
                                                         Converter="{x:Static BoolConverters.Not}" />
                                                     <Binding Path="CanModifyOverride" />
                                                 </MultiBinding>

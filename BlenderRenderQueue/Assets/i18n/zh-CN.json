@@ -185,5 +185,7 @@
   "Settings_ToggleTheme": "切换主题",
   "Restart": "重启",
   "RestartApplication": "重启应用程序",
-  "Settings_ThemeChanged": "主题已切换"
+  "Settings_ThemeChanged": "主题已切换",
+  "RenderTask_SettingsLocked": "任务正在运行,设置被锁定"
+
 }
