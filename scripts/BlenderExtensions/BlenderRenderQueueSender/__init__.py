@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from bpy.types import AddonPreferences, Operator, Panel
-from bpy.props import StringProperty, BoolProperty, IntProperty
+from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
 
 
 class RenderQueuePreferences(AddonPreferences):
@@ -16,6 +16,17 @@ class RenderQueuePreferences(AddonPreferences):
         layout = self.layout
 
 
+SCENE_ITEMS = []
+
+
+def enum_scene_items_callback(scene, context):
+    scene_items = [(s.name, s.name, "") for s in bpy.data.scenes]
+    scene_items.sort(key=lambda x: (x[0] != context.scene.name, x[0]))  # sort, the current scene is first
+    global SCENE_ITEMS
+    SCENE_ITEMS = scene_items
+    return scene_items
+
+
 class RENDERQUEUE_OT_submit_scene(Operator):
     """提交当前场景到渲染队列"""
     bl_idname = "renderqueue.submit_scene"
@@ -23,22 +34,21 @@ class RENDERQUEUE_OT_submit_scene(Operator):
     bl_description = "Submit current scene to BlenderRenderQueue"
     bl_options = {'REGISTER', 'UNDO'}
 
+    scene_name: EnumProperty(name="Scene", items=enum_scene_items_callback)
+
     override_frame_range: BoolProperty(
-        name="Override Frame Range",
-        description="Override scene frame range",
+        name="Override",
         default=False
     )
 
     start_frame: IntProperty(
         name="Start Frame",
-        description="Start frame for rendering",
         default=1,
         min=1
     )
 
     end_frame: IntProperty(
         name="End Frame",
-        description="End frame for rendering",
         default=250,
         min=1
     )
@@ -56,7 +66,6 @@ class RENDERQUEUE_OT_submit_scene(Operator):
         scene = context.scene
         blend_file_path = bpy.data.filepath
         blend_filename = os.path.basename(blend_file_path)
-        current_scene_name = scene.name
 
         new_task = {
             "RenderTask": {
@@ -74,12 +83,15 @@ class RENDERQUEUE_OT_submit_scene(Operator):
                 "OverrideFrameRange": {
                     "StartFrame": self.start_frame,
                     "EndFrame": self.end_frame
+                },
+                "OverrideScene": {
+                    "SceneName": self.scene_name
                 }
             }
         else:
             new_task["RenderTask"]["Override"] = {
                 "OverrideScene": {
-                    "SceneName": current_scene_name
+                    "SceneName": self.scene_name
                 }
             }
 
@@ -87,18 +99,15 @@ class RENDERQUEUE_OT_submit_scene(Operator):
             data = {
                 "Software": "BlenderRenderQueue",
                 "Version": "0.0.1",
-                "Settings": {
-                    "BlenderPath": "",
-                    "FfmpegPath": ""
-                },
                 "RenderQueue": [new_task]
             }
 
             # 写入文件
             with open(data_json_path, 'w', encoding='utf-8') as f:
+                # clean up the json file and write new data
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
-            self.report({'INFO'}, f"Scene '{current_scene_name}' submitted to queue successfully!")
+            self.report({'INFO'}, f"Scene '{self.scene_name}' submitted to queue successfully!")
             return {'FINISHED'}
 
         except Exception as e:
@@ -115,18 +124,23 @@ class RENDERQUEUE_OT_submit_scene(Operator):
 
     def draw(self, context):
         layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
         blend_file_path = bpy.data.filepath
-
         layout.label(text=f"{os.path.basename(blend_file_path)}", icon='FILE_BLEND')
-        layout.label(text=f"{context.scene.name}", icon='SCENE_DATA')
-        if not self.override_frame_range:
-            layout.label(text=f"{context.scene.frame_start}-{context.scene.frame_end}", icon="PREVIEW_RANGE")
+        layout.prop(self, "scene_name", icon='SCENE_DATA')
 
-        layout.prop(self, "override_frame_range")
+        row = layout.row()
+        if not self.override_frame_range:
+            row.label(text=f"{context.scene.frame_start}-{context.scene.frame_end}", icon="PREVIEW_RANGE")
+
+        row.prop(self, "override_frame_range")
+
         if self.override_frame_range:
-            col = layout.column()
-            col.prop(self, "start_frame")
-            col.prop(self, "end_frame")
+            row = layout.row()
+            row.prop(self, "start_frame")
+            row.prop(self, "end_frame")
 
 
 iconspreview_collections = {}
