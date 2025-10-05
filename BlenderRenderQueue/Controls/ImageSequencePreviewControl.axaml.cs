@@ -259,6 +259,9 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         IsLoading = true;
         HasImages = false;
 
+        // 保存当前帧位置，用于在重新加载后恢复
+        var previousCurrentFrame = _currentFrame;
+
         try
         {
             Console.WriteLine($"[ImageSequencePreviewControl] LoadImageSequence: '{folderPath}'");
@@ -289,15 +292,20 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             {
                 HasImages = true;
                 MaxFrame = _imageFiles.Count - 1;
-                CurrentFrame = 0;
+                
+                // 尝试恢复到之前的帧位置，如果无效则使用0
+                var targetFrame = (previousCurrentFrame >= 0 && previousCurrentFrame < _imageFiles.Count) 
+                    ? previousCurrentFrame 
+                    : 0;
+                CurrentFrame = targetFrame;
 
                 // 初始化图片缓存
                 _imageCache = new Bitmap?[_imageFiles.Count];
 
-                Console.WriteLine($"[ImageSequencePreviewControl] Successfully loaded {_imageFiles.Count} images");
+                Console.WriteLine($"[ImageSequencePreviewControl] Successfully loaded {_imageFiles.Count} images, restored to frame {targetFrame}");
 
-                // 预加载第一张图片
-                await LoadImageAsync(0);
+                // 预加载目标帧的图片
+                await LoadImageAsync(targetFrame);
             }
             else
             {
