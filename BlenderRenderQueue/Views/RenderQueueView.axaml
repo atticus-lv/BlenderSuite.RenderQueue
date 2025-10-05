@@ -80,8 +80,6 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                    <views:HardwareChartView Grid.Column="1" Width="200" />
-
                 </Grid>
 
             </suki:GlassCard>
@@ -89,6 +87,11 @@
                 <views:RenderTaskProgressPreviewView DataContext="{Binding CurrentRenderingTask}"
                                                      IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                                      Margin="16  0 " />
+            </suki:GlassCard>
+            <suki:GlassCard Grid.Column="2" Margin="4" Padding="16 0">
+                <Viewbox Height="100">
+                    <views:HardwareChartView Width="200" />
+                </Viewbox>
             </suki:GlassCard>
             <!-- 队列按钮部分 -->
             <suki:GlassCard Grid.Column="3" Margin="4 4 8 4"
