@@ -85,7 +85,7 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                    <ContentControl Grid.Column="1" Width="200" Content="{Binding HardwareChartViewModel}"  />
+                    <views:HardwareChartView Grid.Column="1" Width="200" />
 
                 </Grid>
 
