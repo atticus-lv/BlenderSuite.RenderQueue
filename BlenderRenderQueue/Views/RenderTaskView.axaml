@@ -226,7 +226,7 @@
                             <StackPanel Orientation="Horizontal" Spacing="8" Margin="8 0">
                                 <Button Content="{i18n:Localize RenderTask_ClearLog}" Command="{Binding ClearLogCommand}"
                                         Classes="Flat Outlined" />
-                                <Button Content="{Binding LogPauseButtonText}"
+                                <Button Content="{Binding LogPauseButtonText, Converter={StaticResource LocalizeConverter}}"
                                         Command="{Binding ToggleLogPauseCommand}"
                                         Classes="Flat Outlined" />
                             </StackPanel>

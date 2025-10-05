@@ -412,7 +412,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private bool _isLogPaused = false;
 
     [ObservableProperty]
-    private string _logPauseButtonText = "暂停日志";
+    private string _logPauseButtonText = "Stop Log";
 
     // 全局超时设置（从SettingsViewModel获取）
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
@@ -982,7 +982,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private void ToggleLogPause()
     {
         IsLogPaused = !IsLogPaused;
-        LogPauseButtonText = IsLogPaused ? "继续日志" : "暂停日志";
+        LogPauseButtonText = IsLogPaused ? "Resume Log" : "Stop Log";
     }
 
     [RelayCommand]

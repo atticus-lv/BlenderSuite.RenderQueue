@@ -58,7 +58,7 @@ public partial class TestRenderViewModel : ViewModelBase
 	private bool _isLogPaused = false;
 	
 	[ObservableProperty]
-	private string _logPauseButtonText = "暂停日志";
+	private string _logPauseButtonText = "Stop Log";
 
 	[ObservableProperty]
 	private int _renderTimeoutSeconds = 300; // 默认5分钟无活动超时
