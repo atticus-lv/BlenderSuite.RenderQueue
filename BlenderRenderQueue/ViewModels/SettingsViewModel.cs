@@ -6,12 +6,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using BlenderRenderQueue.Services.BlenderService;
 using Avalonia.Platform.Storage;
 using System.Threading;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Localizer;
+using BlenderRenderQueue.Services.Business.BlenderService;
+using BlenderRenderQueue.Services.Business.Persistence;
+using BlenderRenderQueue.Services.UI;
 using SukiUI;
 
 namespace BlenderRenderQueue.ViewModels;

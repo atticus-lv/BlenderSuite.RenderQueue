@@ -9,10 +9,11 @@
              xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
+             xmlns:ui="clr-namespace:BlenderRenderQueue.Services.UI"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.MainRenderView"
              x:DataType="vm:MainRenderViewModel"
-             services1:ToplevelService.Register="{Binding}">
+             ui:ToplevelService.Register="{Binding}">
 
     <Grid RowDefinitions="*,Auto" Margin="0 0 0 0">
 

@@ -11,10 +11,11 @@
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
+             xmlns:ui="clr-namespace:BlenderRenderQueue.Services.UI"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.SettingsView"
              x:DataType="vm:SettingsViewModel"
-             services:ToplevelService.Register="{Binding}">
+             ui:ToplevelService.Register="{Binding}">
 
 
     <Grid RowDefinitions="*,Auto">

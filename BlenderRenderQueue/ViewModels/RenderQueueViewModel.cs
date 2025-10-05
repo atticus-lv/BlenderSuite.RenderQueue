@@ -16,8 +16,10 @@ using Avalonia.Threading;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services;
-using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Localizer;
+using BlenderRenderQueue.Services.Business.BlenderService;
+using BlenderRenderQueue.Services.Business.Persistence;
+using BlenderRenderQueue.Services.UI;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 

@@ -5,8 +5,6 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BlenderRenderQueue.Services;
-using BlenderRenderQueue.Services.BlenderService;
-using BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
 using System.Collections.Concurrent;
 using System.Threading;
 using BlenderRenderQueue.ViewModels;
@@ -18,7 +16,9 @@ using System.IO;
 using System.Linq;
 using BlenderRenderQueue.Views;
 using BlenderRenderQueue.Converters;
-using BlenderRenderQueue.Services.BlenderService.BlenderProcess;
+using BlenderRenderQueue.Services.Business.BlenderService;
+using BlenderRenderQueue.Services.Business.BlenderService.BlenderProcess;
+using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser;
 
 namespace BlenderRenderQueue.ViewModels;
 

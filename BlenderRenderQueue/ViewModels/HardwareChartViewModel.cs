@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Services;
+using BlenderRenderQueue.Services.Business.Monitoring;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LiveChartsCore.Defaults;
 

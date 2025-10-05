@@ -10,8 +10,9 @@ using Avalonia.Threading;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services;
-using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Localizer;
+using BlenderRenderQueue.Services.Business.BlenderService;
+using BlenderRenderQueue.Services.UI;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SukiUI.Dialogs;
@@ -690,7 +691,7 @@ public partial class MainRenderViewModel : ViewModelBase
             if (_settingsViewModel != null) await _settingsViewModel.LoadSettingsFromFileAsync();
 
             // 等待BlenderService初始化完成后再加载队列数据
-            Console.WriteLine("[MainRenderViewModel] Waiting for BlenderService initialization...");
+            Console.WriteLine("[MainRenderViewModel] Waiting for Blender initialization...");
 
             // 等待BlenderService初始化（最多等待10秒）
             var maxWaitTime = TimeSpan.FromSeconds(10);
@@ -701,7 +702,7 @@ public partial class MainRenderViewModel : ViewModelBase
                 // 检查BlenderService是否已初始化
                 if (RenderQueue.IsBlenderServiceReady())
                 {
-                    Console.WriteLine("[MainRenderViewModel] BlenderService is ready, loading queue data...");
+                    Console.WriteLine("[MainRenderViewModel] Blender is ready, loading queue data...");
                     await RenderQueue.LoadQueueDataAsync();
                     break;
                 }
@@ -713,7 +714,7 @@ public partial class MainRenderViewModel : ViewModelBase
             if (DateTime.UtcNow - startTime >= maxWaitTime)
             {
                 Console.WriteLine(
-                    "[MainRenderViewModel] ⚠️ BlenderService initialization timeout, loading queue data anyway...");
+                    "[MainRenderViewModel] ⚠️ Blender initialization timeout, loading queue data anyway...");
                 await RenderQueue.LoadQueueDataAsync();
             }
 

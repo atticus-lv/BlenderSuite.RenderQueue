@@ -1,5 +1,6 @@
 using System;
 using System.Text.Json.Serialization;
+using BlenderRenderQueue.Services.Business.BlenderService;
 
 namespace BlenderRenderQueue.Models;
 
@@ -169,7 +170,7 @@ public class BlenderExecutable
     /// <summary>
     /// 从BlenderVersionInfo更新信息
     /// </summary>
-    public void UpdateFromVersionInfo(BlenderRenderQueue.Services.BlenderService.BlenderVersionInfo versionInfo)
+    public void UpdateFromVersionInfo(BlenderVersionInfo versionInfo)
     {
         Version = versionInfo.Version ?? string.Empty;
         Platform = versionInfo.Platform ?? string.Empty;

@@ -14,6 +14,7 @@ using BlenderRenderQueue.Views;
 using BlenderRenderQueue.ViewModels;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Services;
+using BlenderRenderQueue.Services.UI;
 
 namespace BlenderRenderQueue.Controls;
 

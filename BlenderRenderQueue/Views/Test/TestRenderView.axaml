@@ -5,11 +5,12 @@
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels.Test"
              xmlns:services="clr-namespace:BlenderRenderQueue.Services"
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
+             xmlns:ui="clr-namespace:BlenderRenderQueue.Services.UI"
              mc:Ignorable="d"
              Width="800" Height="600"
              x:Class="BlenderRenderQueue.Views.Test.TestRenderView"
              x:DataType="vm:TestRenderViewModel"
-             services:ToplevelService.Register="{Binding}">
+             ui:ToplevelService.Register="{Binding}">
     <StackPanel>
         <Grid ColumnDefinitions="*,Auto">
             <StackPanel Orientation="Horizontal">

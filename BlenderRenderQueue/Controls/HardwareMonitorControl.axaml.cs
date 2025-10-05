@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using BlenderRenderQueue.Services;
+using BlenderRenderQueue.Services.Business.Monitoring;
 
 namespace BlenderRenderQueue.Controls;
 

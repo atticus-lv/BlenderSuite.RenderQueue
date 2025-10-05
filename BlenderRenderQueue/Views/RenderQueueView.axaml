@@ -12,10 +12,11 @@
              xmlns:services="clr-namespace:BlenderRenderQueue.Services"
              xmlns:animations="clr-namespace:SukiUI.Animations;assembly=SukiUI"
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
+             xmlns:ui="clr-namespace:BlenderRenderQueue.Services.UI"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
              x:Class="BlenderRenderQueue.Views.RenderQueueView"
              x:DataType="viewModels:RenderQueueViewModel"
-             services:ToplevelService.Register="{Binding}">
+             ui:ToplevelService.Register="{Binding}">
 
     <Design.DataContext>
         <design:DesignTimeRenderQueueViewModel />
