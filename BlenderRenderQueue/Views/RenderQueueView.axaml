@@ -26,60 +26,58 @@
         <Grid Row="0" ColumnDefinitions="*,Auto,Auto,Auto">
             <suki:GlassCard Margin="8 4 4 4">
                 <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Orientation="Horizontal">
-                        <Viewbox Width="80"
-                                 Height="80"
-                                 HorizontalAlignment="Center"
-                                 VerticalAlignment="Center"
-                                 IsVisible="{Binding IsQueueRunning}">
-                            <suki:CircleProgressBar Value="{Binding OverallQueueProgressInt}">
-                                <TextBlock Margin="1,1,0,0"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           FontSize="32"
-                                           FontWeight="Bold"
-                                           Text="{Binding OverallQueueProgressInt,StringFormat={}{0}%}" />
-                            </suki:CircleProgressBar>
-                        </Viewbox>
-                        <StackPanel Margin="24 0 0 0" VerticalAlignment="Center">
-                            <!-- 进度信息 -->
-                            <StackPanel Spacing="4"
-                                        VerticalAlignment="Center">
-                                <TextBlock
-                                    Text="{Binding QueueStatusText, Converter={StaticResource LocalizeConverter}}"
-                                    FontWeight="Bold" />
+                    <StackPanel Margin="24 0 0 0" VerticalAlignment="Center">
+                        <!-- 进度信息 -->
+                        <StackPanel Spacing="4"
+                                    VerticalAlignment="Center">
+                            <TextBlock
+                                Text="{Binding QueueStatusText, Converter={StaticResource LocalizeConverter}}"
+                                FontWeight="Bold" />
 
-                                <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
-                                    <TextBlock.Text>
-                                        <MultiBinding Converter="{StaticResource LocalizeConverter}">
-                                            <Binding Source="{}Success: {0} | Failed: {1}" />
-                                            <Binding Path="CompletedTaskCount" />
-                                            <Binding Path="FailedTaskCount" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                                <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
-                                <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
-                                    <TextBlock.Text>
-                                        <MultiBinding Converter="{StaticResource LocalizeConverter}">
-                                            <Binding Source="{}Frames: {0} | {1}" />
-                                            <Binding Path="CompletedFrames" />
-                                            <Binding Path="TotalFrames" />
-                                        </MultiBinding>
-                                    </TextBlock.Text>
-                                </TextBlock>
-                                <!-- 剩余时间显示 -->
-                                <TextBlock FontSize="16"
-                                           FontFamily="Foran"
-                                           FontWeight="Bold"
-                                           IsVisible="{Binding IsQueueRunning}"
-                                           Foreground="{DynamicResource SukiAccentColor}"
-                                           Text="{Binding RemainingTimeText, Converter={StaticResource LocalizeConverter}}"
-                                           VerticalAlignment="Center">
-                                </TextBlock>
-                            </StackPanel>
+                            <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizeConverter}">
+                                        <Binding Source="{}Success: {0} | Failed: {1}" />
+                                        <Binding Path="CompletedTaskCount" />
+                                        <Binding Path="FailedTaskCount" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
+                            <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizeConverter}">
+                                        <Binding Source="{}Frames: {0} | {1}" />
+                                        <Binding Path="CompletedFrames" />
+                                        <Binding Path="TotalFrames" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <!-- 剩余时间显示 -->
+                            <TextBlock FontSize="16"
+                                       FontFamily="Foran"
+                                       FontWeight="Bold"
+                                       IsVisible="{Binding IsQueueRunning}"
+                                       Foreground="{DynamicResource SukiAccentColor}"
+                                       Text="{Binding RemainingTimeText, Converter={StaticResource LocalizeConverter}}"
+                                       VerticalAlignment="Center">
+                            </TextBlock>
                         </StackPanel>
                     </StackPanel>
+                    <Viewbox Grid.Column="1" Width="80"
+                             Height="80"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             IsVisible="{Binding IsQueueRunning}">
+                        <suki:CircleProgressBar Value="{Binding OverallQueueProgressInt}">
+                            <TextBlock Margin="1,1,0,0"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="32"
+                                       FontWeight="Bold"
+                                       Text="{Binding OverallQueueProgressInt,StringFormat={}{0}%}" />
+                        </suki:CircleProgressBar>
+                    </Viewbox>
                 </Grid>
 
             </suki:GlassCard>
@@ -88,9 +86,9 @@
                                                      IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                                      Margin="16  0 " />
             </suki:GlassCard>
-            <suki:GlassCard Grid.Column="2" Margin="4" Padding="16 0"  MaxWidth="250">
+            <suki:GlassCard Grid.Column="2" Margin="4" Padding="16 0" MaxWidth="250">
                 <Viewbox Height="100">
-                    <views:HardwareChartView  Width="200"/>
+                    <views:HardwareChartView Width="200" />
                 </Viewbox>
             </suki:GlassCard>
             <!-- 队列按钮部分 -->
