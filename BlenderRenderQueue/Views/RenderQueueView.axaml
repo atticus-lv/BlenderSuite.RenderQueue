@@ -83,7 +83,7 @@
                 </Grid>
 
             </suki:GlassCard>
-            <suki:GlassCard Grid.Column="1" Margin="4" IsVisible="{Binding IsQueueRunning}">
+            <suki:GlassCard Grid.Column="1" Margin="4" Padding="16 8" IsVisible="{Binding IsQueueRunning}">
                 <views:RenderTaskProgressPreviewView DataContext="{Binding CurrentRenderingTask}"
                                                      IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                                      Margin="16  0 " />
