@@ -91,8 +91,8 @@
                                Margin="0 0 0 0"
                                IsPaneOpen="True">
                         <SplitView.Pane>
-                            <!-- <ContentControl Content="{Binding HardwareChartViewModel}"  /> -->
-                            <controls:HardwareMonitorControl />
+                            <ContentControl Content="{Binding HardwareChartViewModel}"  />
+                            <!-- <controls:HardwareMonitorControl /> -->
                         </SplitView.Pane>
                         <SplitView.Content>
                             <Button Click="ToggleDeviceInfoPane" Classes="Basic" Padding="8 0 0 0 ">

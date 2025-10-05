@@ -5,6 +5,7 @@
              xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
              xmlns:vm="using:BlenderRenderQueue.ViewModels"
              xmlns:skiaSharpView="clr-namespace:LiveChartsCore.SkiaSharpView;assembly=LiveChartsCore.SkiaSharpView"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BlenderRenderQueue.Views.HardwareChartView"
              x:DataType="vm:HardwareChartViewModel">
@@ -14,14 +15,26 @@
     </Design.DataContext>
 
     <Grid ColumnDefinitions="Auto,*,Auto,*">
-        <StackPanel Orientation="Vertical" VerticalAlignment="Center" Margin="4">
+        <suki:Loading LoadingStyle="Simple" IsVisible="{Binding IsLoading}" Width="40" Height="40"/>
+
+        <!-- 正常状态显示 -->
+        <StackPanel Grid.Column="0" Orientation="Vertical" 
+                    VerticalAlignment="Center" 
+                    Margin="4"
+                    IsVisible="{Binding !IsLoading}">
             <TextBlock Text="C" FontWeight="Bold" FontSize="16" />
             <TextBlock Text="P" FontWeight="Bold" FontSize="16" />
             <TextBlock Text="U" FontWeight="Bold" FontSize="16" />
         </StackPanel>
 
-        <Border Grid.Column="1" Background="{DynamicResource ControlSukiGlassCardBackground}"
-                Margin="0 0  10 0 " Padding="0" CornerRadius="4" IsHitTestVisible="False" ClipToBounds="True" >
+        <Border Grid.Column="1" 
+                Background="{DynamicResource ControlSukiGlassCardBackground}"
+                Margin="0 0  10 0 " 
+                Padding="0" 
+                CornerRadius="4" 
+                IsHitTestVisible="False" 
+                ClipToBounds="True"
+                IsVisible="{Binding !IsLoading}">
             <lvc:CartesianChart SyncContext="{Binding Sync}" 
                                 AnimationsSpeed="0:0:0.1">
                 <lvc:CartesianChart.Series>
@@ -48,15 +61,25 @@
             </lvc:CartesianChart>
         </Border>
 
-        <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center" Margin="4">
+        <StackPanel Grid.Column="2" 
+                    Orientation="Vertical" 
+                    VerticalAlignment="Center" 
+                    Margin="4"
+                    IsVisible="{Binding !IsLoading}">
             <TextBlock Text="G" FontWeight="Bold" FontSize="16" />
             <TextBlock Text="P" FontWeight="Bold" FontSize="16" />
             <TextBlock Text="U" FontWeight="Bold" FontSize="16" />
         </StackPanel>
 
         <!-- GPU使用率图表 -->
-        <Border Grid.Column="3" Background="{DynamicResource ControlSukiGlassCardBackground}"
-                Margin="0" Padding="0" CornerRadius="4" IsHitTestVisible="False" ClipToBounds="True">
+        <Border Grid.Column="3" 
+                Background="{DynamicResource ControlSukiGlassCardBackground}"
+                Margin="0" 
+                Padding="0" 
+                CornerRadius="4" 
+                IsHitTestVisible="False" 
+                ClipToBounds="True"
+                IsVisible="{Binding !IsLoading}">
             <lvc:CartesianChart SyncContext="{Binding Sync}" 
                                 AnimationsSpeed="0:0:0.1">
                 <lvc:CartesianChart.Series>
