@@ -17,7 +17,6 @@ using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.BlenderService;
-using BlenderRenderQueue.Services.BlenderVideoService;
 using BlenderRenderQueue.Localizer;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;

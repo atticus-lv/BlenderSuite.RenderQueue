@@ -7,12 +7,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
-using BlenderRenderQueue.Services.BlenderService;
-using BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.BlenderService.BlenderProcess;
+using BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
 
-namespace BlenderRenderQueue.Services.BlenderVideoService;
+namespace BlenderRenderQueue.Services.BlenderService;
 
 /// <summary>
 /// 视频渲染输出解析器

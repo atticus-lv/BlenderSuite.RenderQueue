@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BlenderRenderQueue.Services.BlenderVideoService;
+namespace BlenderRenderQueue.Services.BlenderService;
 
 /// <summary>
 /// Blender视频生成服务接口
