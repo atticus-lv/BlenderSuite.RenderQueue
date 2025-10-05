@@ -118,7 +118,7 @@ class RENDERQUEUE_OT_submit_scene(Operator):
         blend_file_path = bpy.data.filepath
 
         layout.label(text=f"{os.path.basename(blend_file_path)}", icon='FILE_BLEND')
-        layout.label(text=f"{context.scene}", icon='SCENE_DATA')
+        layout.label(text=f"{context.scene.name}", icon='SCENE_DATA')
         if not self.override_frame_range:
             layout.label(text=f"{context.scene.frame_start}-{context.scene.frame_end}", icon="PREVIEW_RANGE")
 
