@@ -44,7 +44,7 @@
   "Queue_AddTasks": "Add Tasks",
   "Queue_GenerateVideo": "Generate Video",
   "Queue_DragFilesHere": "Drag .blend files here",
-  "Queue_Loading": "Loading...",
+  "Loading": "Loading...",
   "Queue_FileInvalid": "File Invalid",
   "Queue_OpenInBlender": "Open in Blender",
   "Queue_OpenFolder": "Open Folder",

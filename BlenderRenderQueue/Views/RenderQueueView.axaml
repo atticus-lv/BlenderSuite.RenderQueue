@@ -88,9 +88,9 @@
                                                      IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                                      Margin="16  0 " />
             </suki:GlassCard>
-            <suki:GlassCard Grid.Column="2" Margin="4" Padding="16 0">
+            <suki:GlassCard Grid.Column="2" Margin="4" Padding="16 0"  MaxWidth="250">
                 <Viewbox Height="100">
-                    <views:HardwareChartView Width="200" />
+                    <views:HardwareChartView  Width="200"/>
                 </Viewbox>
             </suki:GlassCard>
             <!-- 队列按钮部分 -->
