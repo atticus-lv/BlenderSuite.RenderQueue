@@ -28,13 +28,13 @@
         </StackPanel>
 
         <Border Grid.Column="1" 
-                Background="{DynamicResource ControlSukiGlassCardBackground}"
+                Background="{DynamicResource SukiPrimaryColor10}"
                 Padding="0" 
                 CornerRadius="8" 
                 IsHitTestVisible="False" 
                 ClipToBounds="True"
                 IsVisible="{Binding !IsLoading}">
-            <lvc:CartesianChart SyncContext="{Binding Sync}" Padding="-10 0"
+            <lvc:CartesianChart SyncContext="{Binding Sync}" Padding="-10 0" Height="80"
                                 Background="{Binding ChartBackgroundColor}"
                                 AnimationsSpeed="0:0:0.1">
                 <lvc:CartesianChart.Series>
@@ -73,14 +73,14 @@
 
         <!-- GPU使用率图表 -->
         <Border Grid.Column="3" 
-                Background="{DynamicResource ControlSukiGlassCardBackground}"
+                Background="{DynamicResource SukiPrimaryColor10}"
                 Margin="0" 
                 Padding="0" 
                 CornerRadius="8" 
                 IsHitTestVisible="False" 
                 ClipToBounds="True"
                 IsVisible="{Binding !IsLoading}">
-            <lvc:CartesianChart SyncContext="{Binding Sync}"  Padding="-10 0"
+            <lvc:CartesianChart SyncContext="{Binding Sync}"  Padding="-10 0" Height="80"
                                 Background="{Binding ChartBackgroundColor}"
                                 AnimationsSpeed="0:0:0.1">
                 <lvc:CartesianChart.Series>
