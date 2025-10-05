@@ -260,7 +260,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     // 内部状态
     private readonly List<Task> _runningTasks = new();
-    private BlenderExeService? _blenderService;
+    private BlenderProcessService? _blenderProcessService;
     private BlenderVideoService? _blenderVideoService;
     private BlenderProcessService? _processService; // 新的进程管理服务
     private string? _blenderPath; // 存储Blender路径，不创建长期运行的服务
@@ -631,9 +631,9 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         if (!CanStopQueue) return;
 
-        // 停止所有运行中的任务
-        foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running)) task.StopRender();
+        Console.WriteLine("[RenderQueueViewModel] Stopping queue...");
 
+        // 立即更新UI状态，提供即时反馈
         QueueState = QueueState.Idle;
         QueueStatusText = "Queue_Stopped";
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Stopped"));
@@ -653,10 +653,27 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 清除暂停状态记录
         _pausedTask = null;
         _pausedFrame = 0;
+
+        // 异步停止所有运行中的任务，不阻塞UI
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running)) 
+                {
+                    task.StopRender();
+                }
+                Console.WriteLine("[RenderQueueViewModel] Queue stopped successfully");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RenderQueueViewModel] Error stopping queue: {ex.Message}");
+            }
+        });
     }
 
     [RelayCommand]
-    private async Task PauseQueue()
+    private void PauseQueue()
     {
         if (!CanPauseQueue) return;
 
@@ -671,10 +688,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 $"[RenderQueueViewModel] Paused at task: {Path.GetFileName(_pausedTask.BlendFilePath)}, frame: {_pausedFrame}");
         }
 
-        // 停止所有运行中的任务
-        foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
-            await task.PauseRenderAsync();
-
+        // 立即更新UI状态，提供即时反馈
         QueueState = QueueState.Paused;
         QueueStatusText = "Queue_Paused";
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Paused"));
@@ -682,7 +696,22 @@ public partial class RenderQueueViewModel : ViewModelBase
         // 停止剩余时间更新定时器
         _remainingTimeTimer?.Stop();
 
-        Console.WriteLine("[RenderQueueViewModel] Queue paused successfully");
+        // 异步停止所有运行中的任务，不阻塞UI
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
+                {
+                    await task.PauseRenderAsync();
+                }
+                Console.WriteLine("[RenderQueueViewModel] Queue paused successfully");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RenderQueueViewModel] Error pausing queue: {ex.Message}");
+            }
+        });
     }
 
     [RelayCommand]
@@ -860,24 +889,24 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 
-    public void SetBlenderService(BlenderExeService? blenderService)
+    public void SetBlenderService(BlenderProcessService? blenderProcessService)
     {
-        // 先释放旧的Blender服务（如果存在）
-        if (_blenderService != null)
+        // 先释放旧的Blender进程服务（如果存在）
+        if (_blenderProcessService != null)
         {
             Console.WriteLine(
-                $"[RenderQueueViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
-            _blenderService.Dispose();
+                $"[RenderQueueViewModel] Disposing old Blender process service");
+            _blenderProcessService.Dispose();
         }
 
-        _blenderService = blenderService;
+        _blenderProcessService = blenderProcessService;
         // 注意：BlenderVideoService现在需要IBlenderProcess，这里暂时设为null
         // 视频生成时会创建临时的BlenderVideoService
         _blenderVideoService = null;
         
-        if (blenderService != null)
+        if (blenderProcessService != null)
         {
-            Console.WriteLine($"[RenderQueueViewModel] BlenderService set successfully - ID: {blenderService.ServiceId}");
+            Console.WriteLine($"[RenderQueueViewModel] BlenderProcessService set successfully");
             // 重新初始化文件监控，因为现在有了Blender路径
             InitializeBlenderDataWatcher();
         }
@@ -895,11 +924,11 @@ public partial class RenderQueueViewModel : ViewModelBase
     public void SetBlenderPath(string blenderPath)
     {
         // 先释放旧的服务（如果存在）
-        if (_blenderService != null)
+        if (_blenderProcessService != null)
         {
             Console.WriteLine(
-                $"[RenderQueueViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
-            _blenderService.Dispose();
+                $"[RenderQueueViewModel] Disposing old Blender process service");
+            _blenderProcessService.Dispose();
         }
 
         if (_processService != null)
@@ -909,7 +938,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
 
         _blenderPath = blenderPath;
-        _blenderVideoService = null; // 视频服务需要BlenderExeService实例，暂时设为null
+        _blenderVideoService = null; // 视频服务需要Blender进程实例，暂时设为null
 
         // 创建新的进程管理服务
         _processService = new BlenderProcessService(blenderPath);
@@ -1417,9 +1446,9 @@ public partial class RenderQueueViewModel : ViewModelBase
             var timeout = TimeSpan.FromSeconds(5);
             var startTime = DateTime.Now;
 
-            while (_blenderService == null && DateTime.Now - startTime < timeout) await Task.Delay(100); // 每100ms检查一次
+            while (_blenderProcessService == null && DateTime.Now - startTime < timeout) await Task.Delay(100); // 每100ms检查一次
 
-            if (_blenderService == null)
+            if (_blenderProcessService == null)
             {
                 Console.WriteLine("[DEBUG] 等待 Blender 服务超时，跳过添加测试任务");
                 return;
@@ -1865,8 +1894,8 @@ public partial class RenderQueueViewModel : ViewModelBase
         _processService = null;
 
         // 清理Blender服务
-        _blenderService?.Dispose();
-        _blenderService = null;
+        _blenderProcessService?.Dispose();
+        _blenderProcessService = null;
 
         foreach (var task in RenderTasks)
         {

@@ -476,7 +476,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     // 内部状态
     private IRenderSession? _session;
-    private BlenderExeService? _exe;
+    private IBlenderProcess? _exe;
     private readonly ConcurrentQueue<string> _logQueue = new();
     private readonly System.Timers.Timer _logTimer;
     private const int MaxLogLines = 1000;
@@ -757,8 +757,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 存储当前的Blender进程实例
             _currentBlenderProcess = blenderProcess;
 
-            // 创建适配器来包装 IBlenderProcess
-            _exe = new BlenderProcessAdapter(blenderProcess);
+            // 直接使用 IBlenderProcess
+            _exe = blenderProcess;
             _exe.OnOutputReceived += HandleRawOutput;
             _exe.OnErrorReceived += HandleRawError;
 
@@ -774,7 +774,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 为渲染任务设置可配置的超时时间
             // 使用来自SettingsViewModel的超时设置，但确保有合理的最小值
             var renderTimeout = Math.Max(_globalRenderTimeoutSeconds, 300); // 最少5分钟
-            _exe.Timeout = renderTimeout;
+            // 注意：新架构中，超时管理由RenderTaskViewModel自己处理，不需要设置到IBlenderProcess
 
             // 根据覆写设置决定是否传递帧范围和场景参数
             string? sceneName = OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) ? SelectedSceneName : null;
@@ -831,7 +831,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public void StopRender()
     {
-        // 只停止渲染会话，不释放BlenderExeService
+        // 停止渲染会话和进程
         try
         {
             _session?.Dispose();
@@ -841,12 +841,21 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         _session = null;
 
-        // 取消事件订阅，但不释放_exe服务
+        // 停止Blender进程
         if (_exe is not null)
         {
             _exe.OnOutputReceived -= HandleRawOutput;
             _exe.OnErrorReceived -= HandleRawError;
-            // 注意：不释放_exe，因为它可能被其他任务使用
+            
+            // 停止进程，但不释放，因为它可能被其他任务使用
+            try
+            {
+                Task.Run(async () => await _exe.StopAsync()).Wait(5000); // 5秒超时
+            }
+            catch
+            {
+                // 忽略停止进程时的异常
+            }
         }
 
         SetStatus(RenderTaskStatus.Cancelled, "TaskStatus_Stopped");
@@ -865,22 +874,33 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             EnqueueLog("正在暂停渲染...");
 
+            // 立即更新状态，提供即时反馈
+            SetStatus(RenderTaskStatus.Paused, "TaskStatus_Paused");
+            EnqueueLog($"渲染已暂停，当前帧: {CurrentFrame}");
+
             // 停止渲染会话
             _session?.Dispose();
             _session = null;
 
-            // 取消事件订阅，但不释放_exe服务
+            // 异步停止Blender进程，不阻塞状态更新
             if (_exe is not null)
             {
                 _exe.OnOutputReceived -= HandleRawOutput;
                 _exe.OnErrorReceived -= HandleRawError;
+                
+                // 异步停止进程，不等待完成
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _exe.StopAsync();
+                    }
+                    catch
+                    {
+                        // 忽略停止进程时的异常
+                    }
+                });
             }
-
-            SetStatus(RenderTaskStatus.Paused, "TaskStatus_Paused");
-            EnqueueLog($"渲染已暂停，当前帧: {CurrentFrame}");
-
-            // 添加一个小的延迟以确保状态更新完成
-            await Task.Delay(1);
         }
         catch (Exception ex)
         {
@@ -904,8 +924,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 存储当前的Blender进程实例
             _currentBlenderProcess = blenderProcess;
 
-            // 创建适配器来包装 IBlenderProcess
-            _exe = new BlenderProcessAdapter(blenderProcess);
+            // 直接使用 IBlenderProcess
+            _exe = blenderProcess;
             _exe.OnOutputReceived += HandleRawOutput;
             _exe.OnErrorReceived += HandleRawError;
 
@@ -921,7 +941,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 为渲染任务设置可配置的超时时间
             // 使用来自SettingsViewModel的超时设置，但确保有合理的最小值
             var renderTimeout = Math.Max(_globalRenderTimeoutSeconds, 300); // 最少5分钟
-            _exe.Timeout = renderTimeout;
+            // 注意：新架构中，超时管理由RenderTaskViewModel自己处理，不需要设置到IBlenderProcess
 
             // 根据覆写设置决定是否传递帧范围和场景参数
             string? sceneName = OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) ? SelectedSceneName : null;

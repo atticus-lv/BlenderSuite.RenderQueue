@@ -60,7 +60,7 @@ public partial class MainRenderViewModel : ViewModelBase
     private SettingsViewModel? _settingsViewModel;
 
     // 内部状态
-    private BlenderExeService? _blenderService;
+    private BlenderProcessService? _blenderProcessService;
     private CancellationTokenSource? _versionCts;
 
     // 视频生成进度 Toast 相关
@@ -147,12 +147,12 @@ public partial class MainRenderViewModel : ViewModelBase
                 BlenderValidationMessage = string.Empty;
                 StatusMessage = $"Blender {info.Version} 已就绪";
 
-                // 先释放旧的Blender服务（如果存在）
-                if (_blenderService != null)
+                // 先释放旧的Blender进程服务（如果存在）
+                if (_blenderProcessService != null)
                 {
                     Console.WriteLine(
-                        $"[MainRenderViewModel] Disposing old Blender service - ID: {_blenderService.ServiceId}");
-                    _blenderService.Dispose();
+                        $"[MainRenderViewModel] Disposing old Blender process service");
+                    _blenderProcessService.Dispose();
                 }
 
                 // 设置Blender路径到渲染队列（不创建长期运行的服务）
@@ -162,15 +162,15 @@ public partial class MainRenderViewModel : ViewModelBase
                 // 只有在验证成功时才创建临时服务用于视频生成
                 try
                 {
-                    _blenderService = new BlenderExeService(blenderExecutable.Path);
+                    _blenderProcessService = new BlenderProcessService(blenderExecutable.Path);
                     Console.WriteLine(
-                        $"[MainRenderViewModel] Temporary Blender service created for video generation - ID: {_blenderService.ServiceId}");
+                        $"[MainRenderViewModel] Temporary Blender process service created for video generation");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[MainRenderViewModel] Failed to create Blender service: {ex.Message}");
+                    Console.WriteLine($"[MainRenderViewModel] Failed to create Blender process service: {ex.Message}");
                     // 即使服务创建失败，我们仍然认为Blender路径是有效的，因为版本信息获取成功了
-                    _blenderService = null;
+                    _blenderProcessService = null;
                 }
             });
         }
@@ -201,15 +201,15 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void CleanupBlenderService()
     {
-        // 正确释放旧的Blender服务
-        if (_blenderService != null)
+        // 正确释放旧的Blender进程服务
+        if (_blenderProcessService != null)
         {
             Console.WriteLine(
-                $"[MainRenderViewModel] Disposing Blender service due to invalid path - ID: {_blenderService.ServiceId}");
-            _blenderService.Dispose();
+                $"[MainRenderViewModel] Disposing Blender process service due to invalid path");
+            _blenderProcessService.Dispose();
         }
 
-        _blenderService = null;
+        _blenderProcessService = null;
         RenderQueue.SetBlenderService(null!);
     }
 
@@ -819,6 +819,6 @@ public partial class MainRenderViewModel : ViewModelBase
         DismissVideoGenerationToast();
 
         RenderQueue.Dispose();
-        _blenderService?.Dispose();
+        _blenderProcessService?.Dispose();
     }
 }

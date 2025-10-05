@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.BlenderService.BlenderProcess;
 
 namespace BlenderRenderQueue.Services.BlenderService;
 
@@ -30,7 +31,7 @@ public sealed class BlenderQueryService : IBlenderQueryService
                 Console.WriteLine($"[BlenderQueryService] Raw result received: {result}");
                 
                 // 查找包含 [BRQ] 前缀的行
-                var lines = result.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                var lines = result.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
                 string? jsonLine = null;
                 
                 for (int i = lines.Length - 1; i >= 0; i--)
@@ -94,10 +95,10 @@ public sealed class BlenderQueryService : IBlenderQueryService
                             : sceneInfo.GetProperty("cycles_time_limit").GetDouble(),
                         ReferencedScenes = sceneInfo.GetProperty("referenced_scenes").ValueKind == JsonValueKind.Null
                             ? null
-                            : sceneInfo.GetProperty("referenced_scenes").EnumerateArray().Select(x => x.GetString()!).Where(x => x != null).ToList(),
+                            : sceneInfo.GetProperty("referenced_scenes").EnumerateArray().Select(x => x.GetString()!).Where(_ => true).ToList(),
                         TimelineCameras = sceneInfo.GetProperty("timeline_cameras").ValueKind == JsonValueKind.Null
                             ? null
-                            : sceneInfo.GetProperty("timeline_cameras").EnumerateArray().Select(x => x.GetString()!).Where(x => x != null).ToList()
+                            : sceneInfo.GetProperty("timeline_cameras").EnumerateArray().Select(x => x.GetString()!).Where(_ => true).ToList()
                     };
                 }
                 
@@ -171,7 +172,7 @@ except Exception as e:
 ";
     }
 
-    public async Task<(string ActiveScene, Dictionary<string, BlendSceneProperties> SceneData)> GetAllFilePropertiesAsync(BasePythonProcessService process,
+    public async Task<(string ActiveScene, Dictionary<string, BlendSceneProperties> SceneData)> GetAllFilePropertiesAsync(IBlenderProcess process,
         string blendFilePath,
         CancellationToken cancellationToken = default)
     {
@@ -216,10 +217,10 @@ except Exception as e:
                             : sceneInfo.GetProperty("cycles_time_limit").GetDouble(),
                         ReferencedScenes = sceneInfo.GetProperty("referenced_scenes").ValueKind == JsonValueKind.Null
                             ? null
-                            : sceneInfo.GetProperty("referenced_scenes").EnumerateArray().Select(x => x.GetString()!).Where(x => x != null).ToList(),
+                            : sceneInfo.GetProperty("referenced_scenes").EnumerateArray().Select(x => x.GetString()!).Where(_ => true).ToList(),
                         TimelineCameras = sceneInfo.GetProperty("timeline_cameras").ValueKind == JsonValueKind.Null
                             ? null
-                            : sceneInfo.GetProperty("timeline_cameras").EnumerateArray().Select(x => x.GetString()!).Where(x => x != null).ToList()
+                            : sceneInfo.GetProperty("timeline_cameras").EnumerateArray().Select(x => x.GetString()!).Where(_ => true).ToList()
                     };
                 }
                 
@@ -229,7 +230,7 @@ except Exception as e:
     }
 
     private async Task<T> QueryAsync<T>(
-        BasePythonProcessService process,
+        IBlenderProcess process,
         string blendFilePath,
         string cmd,
         string? dataPythonDictLiteral,
@@ -338,14 +339,14 @@ except Exception as e:
 ";
         }
 
-        var res = await process.ExecuteScript(script, cmd, cancellationToken);
-        return ParseResult<T>(res.Output, cmd, onOk);
+        var output = await process.ExecuteScriptAsync(script, cancellationToken);
+        return ParseResult(output, cmd, onOk);
     }
 
     private static T ParseResult<T>(string output, string cmd, Func<JsonElement, T> onOk)
     {
-        var lines = output.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-        for (int i = lines.Length - 1; i >= 0; i--)
+        var lines = output.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
+        for (var i = lines.Length - 1; i >= 0; i--)
         {
             var line = lines[i].Trim();
             if (!line.StartsWith(Prefix)) continue;
@@ -355,11 +356,9 @@ except Exception as e:
             {
                 return onOk(root);
             }
-            else
-            {
-                var err = root.TryGetProperty("err", out var eProp) ? eProp.GetString() : "unknown error";
-                throw new InvalidOperationException($"{cmd} failed: {err}");
-            }
+
+            var err = root.TryGetProperty("err", out var eProp) ? eProp.GetString() : "unknown error";
+            throw new InvalidOperationException($"{cmd} failed: {err}");
         }
 
         throw new InvalidOperationException($"No [BRQ] result found for {cmd}");

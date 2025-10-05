@@ -64,7 +64,7 @@ public partial class TestRenderViewModel : ViewModelBase
 	private int _renderTimeoutSeconds = 300; // 默认5分钟无活动超时
 
 	private IRenderSession? _session;
-	private BlenderExeService? _exe;
+	private BlenderProcessService? _processService;
 
 	[ObservableProperty]
 	private BlendScenePropertiesViewModel _scenePropertiesViewModel = new();
@@ -170,7 +170,7 @@ public partial class TestRenderViewModel : ViewModelBase
 			// 选择完文件后，通过FilePropertiesViewModel加载所有属性
 			try
 			{
-				_exe ??= new BlenderExeService(BlenderPath);
+				_processService ??= new BlenderProcessService(BlenderPath);
 				EnqueueLog("[QUERY] 开始加载文件属性...");
 				void TmpOut(string line) => EnqueueLog($"[QOUT] {line}");
 				void TmpErr(string line) => EnqueueLog($"[QERR] {line}");
@@ -179,7 +179,7 @@ public partial class TestRenderViewModel : ViewModelBase
 
 				try
 				{
-					await ScenePropertiesViewModel.LoadPropertiesAsync(_exe.BlenderPath, BlendFilePath);
+					await ScenePropertiesViewModel.LoadPropertiesAsync(BlenderPath, BlendFilePath);
 					
 					// 从FilePropertiesViewModel获取帧范围信息
 					StartFrame = ScenePropertiesViewModel.SceneProperties.FrameStart;
@@ -188,8 +188,8 @@ public partial class TestRenderViewModel : ViewModelBase
 				}
 				finally
 				{
-					_exe.OnOutputReceived -= TmpOut;
-					_exe.OnErrorReceived -= TmpErr;
+					// _processService.OnOutputReceived -= TmpOut;
+					// _processService.OnErrorReceived -= TmpErr;
 				}
 			}
 			catch (Exception ex)
@@ -226,11 +226,14 @@ public partial class TestRenderViewModel : ViewModelBase
 		}
 
 		DisposeSession();
-		_exe = new BlenderExeService(BlenderPath);
-		_exe.OnOutputReceived += HandleRawOutput;
-		_exe.OnErrorReceived += HandleRawError;
+		_processService = new BlenderProcessService(BlenderPath);
+		// 注意：新架构中，事件处理由RenderSession负责
+		// _processService.OnOutputReceived += HandleRawOutput;
+		// _processService.OnErrorReceived += HandleRawError;
 
-		_session = new RenderSession(_exe, new RenderOutputParser());
+		// 创建渲染进程并获取会话
+		var renderProcess = await _processService.CreateRenderProcessAsync();
+		_session = new RenderSession(renderProcess, new RenderOutputParser());
 		_session.OnProgress += s => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnProgress(s));
 		_session.OnEvent += e => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(e));
 
@@ -239,10 +242,11 @@ public partial class TestRenderViewModel : ViewModelBase
 		try
 		{
 			// 为渲染任务设置可配置的超时时间
-			_exe.Timeout = RenderTimeoutSeconds;
-			
+			// 注意：新架构中，超时管理由RenderTaskViewModel处理
+			// _processService.Timeout = RenderTimeoutSeconds;
+
 			EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {RenderTimeoutSeconds}秒)");
-			await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, StartFrame, EndFrame);
+			await cmd.StartRenderAsync(renderProcess, BlendFilePath, Animation, StartFrame, EndFrame);
 			EnqueueLog($"渲染指令已发送完成");
 		}
 		catch (TaskCanceledException ex)
@@ -444,13 +448,13 @@ public partial class TestRenderViewModel : ViewModelBase
 	private void DisposeSession()
 	{
 		try { _session?.Dispose(); } catch { }
-		if (_exe is not null)
+		if (_processService is not null)
 		{
-			_exe.OnOutputReceived -= HandleRawOutput;
-			_exe.OnErrorReceived -= HandleRawError;
-			try { _exe.Dispose(); } catch { }
+			// _processService.OnOutputReceived -= HandleRawOutput;
+			// _processService.OnErrorReceived -= HandleRawError;
+			try { _processService.Dispose(); } catch { }
 		}
 		_session = null;
-		_exe = null;
+		_processService = null;
 	}
 } 

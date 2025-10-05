@@ -1,12 +1,13 @@
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Services.BlenderService.BlenderProcess;
 
 namespace BlenderRenderQueue.Services.BlenderService;
 
 public sealed class BlenderCommandService : IBlenderCommandService
 {
-    public async Task StartRenderAsync(BasePythonProcessService process,
+    public async Task StartRenderAsync(IBlenderProcess process,
         string blendFilePath,
         bool animation,
         int? startFrame = null,
@@ -44,7 +45,7 @@ public sealed class BlenderCommandService : IBlenderCommandService
             sb.AppendLine(renderCommand);
         }
 
-        await process.ExecuteScript(sb.ToString(), "render_start", cancellationToken);
+        await process.ExecuteScriptAsync(sb.ToString(), cancellationToken);
     }
 
     /// <summary>
