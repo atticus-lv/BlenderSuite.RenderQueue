@@ -213,6 +213,7 @@
                             <Border BorderThickness="2" CornerRadius="8"
                                     MinHeight="60"
                                     DragDrop.AllowDrop="True">
+                                
                                 <i:Interaction.Behaviors>
                                     <behaviors:BorderFilesDropBehavior
                                         Command="{Binding AddDroppedFilesCommand}"
@@ -274,6 +275,7 @@
                                                 </Setter>
                                             </Style>
                                             <Style Selector="ListBoxItem:not(:dragging)">
+                                                <Setter Property="BorderThickness" Value="1" />
                                                 <Setter Property="Transitions">
                                                     <Setter.Value>
                                                         <Transitions>
