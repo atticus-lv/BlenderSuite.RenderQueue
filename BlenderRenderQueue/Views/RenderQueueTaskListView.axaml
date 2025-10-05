@@ -125,6 +125,23 @@
                                                     </MultiBinding>
                                                 </Border.IsVisible>
                                             </Border>
+                                            <!--completed but disabled icon -->
+                                            <Border Width="16" Height="16"
+                                                    VerticalAlignment="Top"
+                                                    Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
+                                                    CornerRadius="8"
+                                                    Opacity="0.5">
+                                                <Border.IsVisible>
+                                                    <MultiBinding
+                                                        Converter="{StaticResource StatusToIconVisibilityConverter}"
+                                                        ConverterParameter="CompletedButDisabled">
+                                                        <Binding Path="IsValid" />
+                                                        <Binding Path="Enable" />
+                                                        <Binding Path="ScenePropertiesView.IsLoading" />
+                                                        <Binding Path="Status" />
+                                                    </MultiBinding>
+                                                </Border.IsVisible>
+                                            </Border>
                                             <!--not render icon -->
                                             <Border Width="16" Height="16"
                                                     VerticalAlignment="Top"
@@ -132,10 +149,12 @@
                                                     CornerRadius="8">
                                                 <Border.IsVisible>
                                                     <MultiBinding
-                                                        Converter="{x:Static BoolConverters.And}">
+                                                        Converter="{StaticResource StatusToIconVisibilityConverter}"
+                                                        ConverterParameter="NotRender">
                                                         <Binding Path="IsValid" />
-                                                        <Binding Path="!Enable" />
-                                                        <Binding Path="!ScenePropertiesView.IsLoading" />
+                                                        <Binding Path="Enable" />
+                                                        <Binding Path="ScenePropertiesView.IsLoading" />
+                                                        <Binding Path="Status" />
                                                     </MultiBinding>
                                                 </Border.IsVisible>
                                             </Border>
