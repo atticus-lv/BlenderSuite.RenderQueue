@@ -54,12 +54,22 @@
             </StackPanel>
         </Button>
 
-        <Button Grid.Row="0" Grid.Column="2" Command="{Binding AddMultipleTasksCommand}"
-                Classes="Flat Rounded" Margin="4 0" >
+        <!-- Add Tasks Button: Full width when no tasks -->
+        <Button Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Command="{Binding AddMultipleTasksCommand}"
+                Classes="Flat Rounded" Margin="4 0" 
+                IsVisible="{Binding HasNoTasks}">
             <StackPanel Orientation="Horizontal" Spacing="4">
                 <material:MaterialIcon Kind="AddBold" Width="24" Height="24" />
-                <TextBlock Text="{i18n:Localize Queue_AddTasks}" VerticalAlignment="Center"
-                           IsVisible="{Binding HasNoTasks}" />
+                <TextBlock Text="{i18n:Localize Queue_AddTasks}" VerticalAlignment="Center" />
+            </StackPanel>
+        </Button>
+
+        <!-- Add Tasks Button: Normal width when tasks exist -->
+        <Button Grid.Row="0" Grid.Column="2" Command="{Binding AddMultipleTasksCommand}"
+                Classes="Flat Rounded" Margin="4 0" 
+                IsVisible="{Binding !HasNoTasks}">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+                <material:MaterialIcon Kind="AddBold" Width="24" Height="24" />
             </StackPanel>
         </Button>
         <!-- Generate Video Button: Disable when pressed, showing a progress bar -->
