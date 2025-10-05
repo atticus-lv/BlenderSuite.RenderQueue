@@ -9,14 +9,14 @@ namespace BlenderRenderQueue.Services.BlenderService;
 /// </summary>
 public class BlenderProcessAdapter : BlenderExeService
 {
-    private readonly IBlenderProcess _process;
+    private new readonly IBlenderProcess _process;
 
     public BlenderProcessAdapter(IBlenderProcess process) : base(process.BlenderPath)
     {
         _process = process;
     }
 
-    public string ServiceId => _process.ProcessId;
+    public new string ServiceId => _process.ProcessId;
 
     public async Task<ScriptExecutionResult> ExecuteScript(string script, string operationName, CancellationToken cancellationToken = default)
     {
