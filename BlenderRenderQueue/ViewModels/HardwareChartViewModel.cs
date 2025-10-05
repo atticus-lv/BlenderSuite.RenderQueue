@@ -27,6 +27,10 @@ public partial class HardwareChartViewModel : ViewModelBase
     // 加载状态属性
     [ObservableProperty]
     private bool _isLoading = true;
+    
+    // 图表背景颜色属性
+    [ObservableProperty]
+    private string _chartBackgroundColor = "#00000000"; // 默认透明
 
 
     public HardwareChartViewModel()

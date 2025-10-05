@@ -85,23 +85,8 @@
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
-                    <SplitView Grid.Column="1" PanePlacement="Left" OpenPaneLength="200" Name="DeviceInfoSplitView"
-                               CompactPaneLength="0" DisplayMode="Inline"
-                               VerticalAlignment="Center"
-                               Margin="0 0 0 0"
-                               IsPaneOpen="True">
-                        <SplitView.Pane>
-                            <ContentControl Content="{Binding HardwareChartViewModel}"  />
-                            <!-- <controls:HardwareMonitorControl /> -->
-                        </SplitView.Pane>
-                        <SplitView.Content>
-                            <Button Click="ToggleDeviceInfoPane" Classes="Basic" Padding="8 0 0 0 ">
-                                <Button.Content>
-                                    <material:MaterialIcon Kind="Gpu"></material:MaterialIcon>
-                                </Button.Content>
-                            </Button>
-                        </SplitView.Content>
-                    </SplitView>
+                    <ContentControl Grid.Column="1" Width="200" Content="{Binding HardwareChartViewModel}"  />
+
                 </Grid>
 
             </suki:GlassCard>
