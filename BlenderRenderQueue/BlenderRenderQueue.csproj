@@ -77,6 +77,9 @@
       <Compile Update="Views\Test\HardwareChartTestWindow.axaml.cs">
         <DependentUpon>HardwareChartTestWindow.axaml</DependentUpon>
       </Compile>
+      <Compile Update="Views\RenderQueueTaskListView.axaml.cs">
+        <DependentUpon>TaskListView.axaml</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>
