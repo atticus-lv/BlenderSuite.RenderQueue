@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Services.BlenderService.ProcessOutputParser.Core;
 
 namespace BlenderRenderQueue.Services.BlenderService.BlenderProcess;
 
@@ -13,7 +14,7 @@ public class BlenderRenderProcess : BaseBlenderProcess
     public override BlenderProcessType ProcessType => BlenderProcessType.Render;
 
     public BlenderRenderProcess(string blenderPath) 
-        : base(blenderPath, BlenderProcessConfig.CreateRenderConfig())
+        : base(blenderPath, BlenderProcessConfig.CreateRenderConfig(), ParsePipelineFactory.CreateForRender())
     {
     }
 
