@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using BlenderRenderQueue.Services.BlenderService.BlenderProcess;
 
-namespace BlenderRenderQueue.Services.BlenderService;
+namespace BlenderRenderQueue.Services.BlenderService.BlenderProcess;
 
 /// <summary>
 /// Blender进程管理器 - 统一管理所有Blender进程

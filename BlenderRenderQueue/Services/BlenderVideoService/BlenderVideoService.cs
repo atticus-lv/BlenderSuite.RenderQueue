@@ -10,6 +10,7 @@ using Avalonia.Media.Imaging;
 using BlenderRenderQueue.Services.BlenderService;
 using BlenderRenderQueue.Services.BlenderService.ServiceOutputParser;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.BlenderService.BlenderProcess;
 
 namespace BlenderRenderQueue.Services.BlenderVideoService;
 
