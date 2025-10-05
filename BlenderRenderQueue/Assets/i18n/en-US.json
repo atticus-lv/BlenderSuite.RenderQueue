@@ -115,6 +115,7 @@
   "RenderTask_OverrideScene": "Override Scene",
   "RenderTask_Scene": "Scene:",
   "RenderTask_SceneOverrideWarning": "Selected scene does not exist in current file, will use default scene for rendering",
+  "RenderTask_SameAsDefaultScene": "Same as default scene",
   "RenderTask_Size": "Size:",
   "RenderTask_Created": "Created:",
   "RenderTask_Modified": "Modified:",

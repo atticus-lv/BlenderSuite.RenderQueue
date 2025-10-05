@@ -157,7 +157,7 @@
                                     </CheckBox.IsEnabled>
                                 </CheckBox>
                                 <StackPanel IsVisible="{Binding OverrideScene}" Spacing="8" Margin="16,0,0,0">
-                                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
                                         <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize RenderTask_Scene}"
                                                    VerticalAlignment="Center" />
                                         <ComboBox Grid.Row="0" Grid.Column="1"
@@ -173,10 +173,17 @@
                                                 </MultiBinding>
                                             </ComboBox.IsEnabled>
                                         </ComboBox>
+                                        <TextBlock Grid.Row="0" Grid.Column="2" 
+                                                   Text="{i18n:Localize RenderTask_SameAsDefaultScene}"
+                                                   VerticalAlignment="Center" 
+                                                   Foreground="{DynamicResource SukiAccentColor}"
+                                                   FontSize="12"
+                                                   Margin="8,0,0,0"
+                                                   IsVisible="{Binding IsOverrideSceneSameAsDefault}" />
                                     </Grid>
 
                                     <!-- 场景选择警告 -->
-                                    <Border Grid.Row="1" Grid.ColumnSpan="2"
+                                    <Border Grid.Row="1" Grid.ColumnSpan="3"
                                             Background="#FFF3CD" BorderBrush="#FFEAA7" BorderThickness="1"
                                             CornerRadius="4" Padding="8" Margin="0,4,0,0"
                                             IsVisible="{Binding ShowSceneOverrideWarning}">

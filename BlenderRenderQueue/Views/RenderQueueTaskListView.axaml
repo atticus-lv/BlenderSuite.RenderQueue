@@ -164,16 +164,38 @@
                                             <!-- 正常状态显示 -->
                                             <StackPanel Orientation="Horizontal" Spacing="8"
                                                         IsVisible="{Binding !ScenePropertiesView.IsLoading}">
-                                                <!-- 场景覆写信息 -->
+                                                <!-- 场景覆写信息 - 当与默认场景不同时显示强调色 -->
                                                 <TextBlock FontSize="12"
                                                            Foreground="{DynamicResource SukiAccentColor}"
-                                                           IsVisible="{Binding OverrideScene}"
                                                            VerticalAlignment="Center">
                                                     <TextBlock.Text>
                                                         <MultiBinding StringFormat="{}{0}">
                                                             <Binding Path="SelectedSceneName" />
                                                         </MultiBinding>
                                                     </TextBlock.Text>
+                                                    <TextBlock.IsVisible>
+                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                            <Binding Path="IsValid" />
+                                                            <Binding Path="OverrideScene" />
+                                                            <Binding Path="!IsOverrideSceneSameAsDefault" />
+                                                        </MultiBinding>
+                                                    </TextBlock.IsVisible>
+                                                </TextBlock>
+                                                <!-- 场景覆写信息 - 当与默认场景相同时显示普通色 -->
+                                                <TextBlock FontSize="12"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.Text>
+                                                        <MultiBinding StringFormat="{}{0}">
+                                                            <Binding Path="SelectedSceneName" />
+                                                        </MultiBinding>
+                                                    </TextBlock.Text>
+                                                    <TextBlock.IsVisible>
+                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                            <Binding Path="IsValid" />
+                                                            <Binding Path="OverrideScene" />
+                                                            <Binding Path="IsOverrideSceneSameAsDefault" />
+                                                        </MultiBinding>
+                                                    </TextBlock.IsVisible>
                                                 </TextBlock>
                                                 <!-- 默认场景信息 -->
                                                 <TextBlock FontSize="12" VerticalAlignment="Center">
@@ -211,7 +233,10 @@
                                                             <MultiBinding
                                                                 Converter="{x:Static conv:BoolConverters.Or}">
                                                                 <Binding Path="OverrideFrameRange" />
-                                                                <Binding Path="OverrideScene" />
+                                                                <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
+                                                                    <Binding Path="OverrideScene" />
+                                                                    <Binding Path="!IsOverrideSceneSameAsDefault" />
+                                                                </MultiBinding>
                                                             </MultiBinding>
                                                         </TextBlock.IsVisible>
                                                     </TextBlock>

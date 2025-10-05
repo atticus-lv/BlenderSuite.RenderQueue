@@ -115,6 +115,7 @@
   "RenderTask_OverrideScene": "覆写场景",
   "RenderTask_Scene": "场景:",
   "RenderTask_SceneOverrideWarning": "选择的场景在当前文件中不存在，将使用默认场景渲染",
+  "RenderTask_SameAsDefaultScene": "与默认场景相同",
   "RenderTask_Size": "大小:",
   "RenderTask_Created": "创建:",
   "RenderTask_Modified": "修改:",

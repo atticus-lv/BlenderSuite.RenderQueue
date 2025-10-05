@@ -62,6 +62,13 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public bool ShowSceneOverrideWarning => OverrideScene && !HasValidSceneSelection;
 
+    /// <summary>
+    /// 判断覆写场景是否与默认场景相同
+    /// </summary>
+    public bool IsOverrideSceneSameAsDefault => OverrideScene && 
+        !string.IsNullOrEmpty(SelectedSceneName) && 
+        SelectedSceneName == ScenePropertiesView.ActiveSceneName;
+
     partial void OnEnableChanged(bool value)
     {
         // 当 Enable 属性变化时，触发父级保存数据
@@ -248,6 +255,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         // 触发相关属性更新
         OnPropertyChanged(nameof(HasValidSceneSelection));
         OnPropertyChanged(nameof(ShowSceneOverrideWarning));
+        OnPropertyChanged(nameof(IsOverrideSceneSameAsDefault));
         OnPropertyChanged(nameof(RealStartFrame));
         OnPropertyChanged(nameof(RealEndFrame));
         OnPropertyChanged(nameof(RealTotalFrames));
@@ -263,6 +271,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         // 触发相关属性更新
         OnPropertyChanged(nameof(HasValidSceneSelection));
         OnPropertyChanged(nameof(ShowSceneOverrideWarning));
+        OnPropertyChanged(nameof(IsOverrideSceneSameAsDefault));
         OnPropertyChanged(nameof(RealStartFrame));
         OnPropertyChanged(nameof(RealEndFrame));
         OnPropertyChanged(nameof(RealTotalFrames));
@@ -705,8 +714,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             }
 
             // 更新场景名称列表, 排除默认场景
-            AvailableSceneNames = ScenePropertiesView.SceneNames.Where(s => s != ScenePropertiesView.ActiveSceneName)
-                .ToList();
+            AvailableSceneNames = ScenePropertiesView.SceneNames.ToList();
 
             // 如果没有覆写场景，设置默认场景名称
             if (!OverrideScene && string.IsNullOrEmpty(SelectedSceneName))
@@ -720,6 +728,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             OnPropertyChanged(nameof(DisplayTotalFrames));
             OnPropertyChanged(nameof(HasValidSceneSelection));
             OnPropertyChanged(nameof(ShowSceneOverrideWarning));
+            OnPropertyChanged(nameof(IsOverrideSceneSameAsDefault));
 
             // 触发最终场景相关属性更新
             OnPropertyChanged(nameof(FinalSceneProperties));
