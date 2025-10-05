@@ -15,7 +15,7 @@
     </Design.DataContext>
 
     <Grid ColumnDefinitions="Auto,*,Auto,*">
-        <suki:Loading LoadingStyle="Simple" IsVisible="{Binding IsLoading}" Width="40" Height="40"/>
+        <suki:Loading LoadingStyle="Simple" IsVisible="{Binding IsLoading}" Width="40"/>
 
         <!-- 正常状态显示 -->
         <StackPanel Grid.Column="0" Orientation="Vertical" 
@@ -35,7 +35,7 @@
                 IsHitTestVisible="False" 
                 ClipToBounds="True"
                 IsVisible="{Binding !IsLoading}">
-            <lvc:CartesianChart SyncContext="{Binding Sync}" 
+            <lvc:CartesianChart SyncContext="{Binding Sync}" Padding="-10 0"
                                 AnimationsSpeed="0:0:0.1">
                 <lvc:CartesianChart.Series>
                     <lvc:XamlLineSeries Values="{Binding CpuLoadValues}"
@@ -80,7 +80,7 @@
                 IsHitTestVisible="False" 
                 ClipToBounds="True"
                 IsVisible="{Binding !IsLoading}">
-            <lvc:CartesianChart SyncContext="{Binding Sync}" 
+            <lvc:CartesianChart SyncContext="{Binding Sync}"  Padding="-10 0"
                                 AnimationsSpeed="0:0:0.1">
                 <lvc:CartesianChart.Series>
                     <lvc:XamlLineSeries Values="{Binding GpuLoadValues}"
