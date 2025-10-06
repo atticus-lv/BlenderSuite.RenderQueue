@@ -24,22 +24,22 @@ public class SettingsData
     public int DefaultRenderTimeoutSeconds { get; set; } = 300; // Default five minutes
 
     [JsonPropertyName("MaxRetryAttempts")]
-    public int MaxRetryAttempts { get; set; } = 3; 
+    public int MaxRetryAttempts { get; set; } = 3;
 
     [JsonPropertyName("VideoCodec")]
-    public string VideoCodec { get; set; } = "H264"; 
+    public string VideoCodec { get; set; } = "H264";
 
     [JsonPropertyName("VideoQuality")]
-    public string VideoQuality { get; set; } = "PERC_LOSSLESS"; 
+    public string VideoQuality { get; set; } = "PERC_LOSSLESS";
 
     [JsonPropertyName("Language")]
-    public string Language { get; set; } = "en-US"; 
+    public string Language { get; set; } = "en-US";
 
     [JsonPropertyName("BaseTheme")]
     public string BaseTheme { get; set; } = "Dark";
 
-    [JsonPropertyName("HardwareAcceleration")]
-    public bool HardwareAcceleration { get; set; } = false; 
+    [JsonPropertyName("Vulkan")]
+    public bool Vulkan { get; set; } = true;
 
 
     public BlenderExecutable? GetSelectedBlender()

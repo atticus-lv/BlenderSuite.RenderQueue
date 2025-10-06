@@ -72,7 +72,7 @@ public partial class SettingsViewModel : ViewModelBase
     /// </summary>
     public bool IsBlenderSelected(BlenderExecutable blender)
     {
-        return SelectedBlenderExecutable != null && 
+        return SelectedBlenderExecutable != null &&
                SelectedBlenderExecutable.Path == blender.Path;
     }
 
@@ -83,7 +83,8 @@ public partial class SettingsViewModel : ViewModelBase
     {
         // 与开始队列按钮逻辑保持一致：只有在队列空闲或完成时才允许切换Blender
         CanSwitchBlender = !hasRunningTasks;
-        Console.WriteLine($"[SettingsViewModel] 更新运行任务状态 - HasRunningTasks: {hasRunningTasks}, CanSwitchBlender: {CanSwitchBlender}");
+        Console.WriteLine(
+            $"[SettingsViewModel] 更新运行任务状态 - HasRunningTasks: {hasRunningTasks}, CanSwitchBlender: {CanSwitchBlender}");
     }
 
     /// <summary>
@@ -93,7 +94,8 @@ public partial class SettingsViewModel : ViewModelBase
     {
         // 只有在队列空闲或完成时才允许切换Blender
         CanSwitchBlender = queueState == QueueState.Idle || queueState == QueueState.Completed;
-        Console.WriteLine($"[SettingsViewModel] 更新队列状态 - QueueState: {queueState}, CanSwitchBlender: {CanSwitchBlender}");
+        Console.WriteLine(
+            $"[SettingsViewModel] 更新队列状态 - QueueState: {queueState}, CanSwitchBlender: {CanSwitchBlender}");
     }
 
     partial void OnLanguageChanged(LanguageOption value)
@@ -104,7 +106,7 @@ public partial class SettingsViewModel : ViewModelBase
             var language = value.Value;
             Localizer.Localizer.Instance.LoadLanguage(language);
         }
-        
+
         // 标记有未保存的更改
         if (!_isLoadingSettings)
         {
@@ -115,7 +117,7 @@ public partial class SettingsViewModel : ViewModelBase
     partial void OnSelectedBlenderExecutableChanged(BlenderExecutable? value)
     {
         Console.WriteLine($"[SettingsViewModel] SelectedBlenderExecutable changed: {value?.Path ?? "NULL"}");
-        
+
         if (value != null)
         {
             // 验证选中的Blender
@@ -128,7 +130,7 @@ public partial class SettingsViewModel : ViewModelBase
             BlenderValidationMessage = "Blender_SelectExecutable";
             NotifyBlenderValidationChanged();
         }
-        
+
         // 标记有未保存的更改
         if (!_isLoadingSettings)
         {
@@ -157,7 +159,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         // 构造函数中不进行自动检测，等待StartInitialization调用
         _theme = new SukiTheme();
-        
+
         // 订阅主题变化事件
         _theme.OnBaseThemeChanged += variant =>
         {
@@ -167,10 +169,11 @@ public partial class SettingsViewModel : ViewModelBase
             {
                 BaseTheme = themeOption;
             }
+
             // 可以在这里添加Toast通知
             Console.WriteLine($"[SettingsViewModel] Theme changed to: {variant}");
         };
-        
+
         // 初始化当前主题
         var currentThemeValue = _theme.ActiveBaseTheme.ToString();
         var currentThemeOption = ThemeOption.FindByValue(currentThemeValue);
@@ -194,7 +197,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             // 首先加载保存的设置
             await LoadSettingsFromFileAsync();
-            
+
             // 验证已保存的Blender
             if (SelectedBlenderExecutable != null)
             {
@@ -210,7 +213,7 @@ public partial class SettingsViewModel : ViewModelBase
                     SelectedBlenderExecutable = null;
                 }
             }
-            
+
             // 如果没有有效的Blender，尝试自动检测（但不自动选中）
             if (SelectedBlenderExecutable == null)
             {
@@ -293,7 +296,7 @@ public partial class SettingsViewModel : ViewModelBase
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 blender.UpdateValidationStatus(false, DateTime.UtcNow);
-                
+
                 // 触发集合更改通知，让UI更新
                 var index = BlenderExecutables.IndexOf(blender);
                 if (index >= 0)
@@ -301,7 +304,8 @@ public partial class SettingsViewModel : ViewModelBase
                     BlenderExecutables[index] = blender;
                 }
 
-                Console.WriteLine($"[SettingsViewModel] ❌ Auto-validation failed for Blender: {blender.Path} - {ex.Message}");
+                Console.WriteLine(
+                    $"[SettingsViewModel] ❌ Auto-validation failed for Blender: {blender.Path} - {ex.Message}");
             });
         }
     }
@@ -388,12 +392,12 @@ public partial class SettingsViewModel : ViewModelBase
                             {
                                 var blender = BlenderExecutable.CreateDefault(blenderPath);
                                 BlenderExecutables.Add(blender);
-                                
+
                                 // 立即验证新添加的Blender
                                 _ = Task.Run(async () => await ValidateBlenderAsync(blender));
                             }
                         }
-                        
+
                         // 只有在autoSelect为true且当前没有选中的Blender时才自动选择
                         if (autoSelect && SelectedBlenderExecutable == null && BlenderExecutables.Any())
                         {
@@ -408,7 +412,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             // 忽略错误
         }
-        
+
         return Task.FromResult(false);
     }
 
@@ -470,23 +474,17 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void RestartApplication()
+    private void SaveAndRestartApp()
     {
         try
         {
             // 先保存设置
             _ = Task.Run(async () => await SaveSettingsToFileAsync());
-            
             // 使用FileSystemHelper重启应用程序
             var success = BlenderRenderQueue.Helpers.FileSystemHelper.RestartApplication();
-            if (success)
-            {
-                Console.WriteLine("[SettingsViewModel] ✅ Application restart initiated");
-            }
-            else
-            {
-                Console.WriteLine("[SettingsViewModel] ❌ Failed to restart application");
-            }
+            Console.WriteLine(success
+                ? "[SettingsViewModel] ✅ Application restart initiated"
+                : "[SettingsViewModel] ❌ Failed to restart application");
         }
         catch (Exception ex)
         {
@@ -568,6 +566,7 @@ public partial class SettingsViewModel : ViewModelBase
                     {
                         _theme.SwitchBaseTheme();
                     }
+
                     break;
                 case "Dark":
                     // 切换到深色主题
@@ -575,6 +574,7 @@ public partial class SettingsViewModel : ViewModelBase
                     {
                         _theme.SwitchBaseTheme();
                     }
+
                     break;
                 case "Auto":
                     // Auto主题切换到系统主题（Default）
@@ -582,8 +582,10 @@ public partial class SettingsViewModel : ViewModelBase
                     {
                         _theme.SwitchBaseTheme();
                     }
+
                     break;
             }
+
             Console.WriteLine($"[SettingsViewModel] Applied theme: {themeValue}, Current: {_theme.ActiveBaseTheme}");
         }
         catch (Exception ex)
@@ -604,7 +606,7 @@ public partial class SettingsViewModel : ViewModelBase
 
         // 保存设置到文件
         await SaveSettingsToFileAsync();
-        
+
         // 标记已保存，清除未保存更改标记
         HasUnsavedChanges = false;
         // 清除硬件加速变更标记
@@ -634,7 +636,7 @@ public partial class SettingsViewModel : ViewModelBase
                 VideoQuality = VideoQuality.Value,
                 Language = Language.Value,
                 BaseTheme = BaseTheme.Value,
-                HardwareAcceleration = HardwareAcceleration
+                Vulkan = HardwareAcceleration
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
@@ -668,13 +670,13 @@ public partial class SettingsViewModel : ViewModelBase
             if (settings.BlenderExecutables != null && settings.BlenderExecutables.Any())
             {
                 BlenderExecutables.Clear();
-                
+
                 // 去重：只保留每个路径的最新版本
                 var uniqueBlenders = settings.BlenderExecutables
                     .GroupBy(b => b.Path)
                     .Select(g => g.OrderByDescending(b => b.LastValidated).First())
                     .ToList();
-                
+
                 foreach (var blender in uniqueBlenders)
                 {
                     BlenderExecutables.Add(blender);
@@ -687,8 +689,9 @@ public partial class SettingsViewModel : ViewModelBase
                 {
                     SelectedBlenderExecutable =
                         BlenderExecutables.FirstOrDefault(b => b.Path == settings.SelectedBlenderPath);
-                    
-                    Console.WriteLine($"[SettingsViewModel] Selected Blender: {SelectedBlenderExecutable?.Path ?? "NOT FOUND"}");
+
+                    Console.WriteLine(
+                        $"[SettingsViewModel] Selected Blender: {SelectedBlenderExecutable?.Path ?? "NOT FOUND"}");
                 }
             }
 
@@ -758,15 +761,12 @@ public partial class SettingsViewModel : ViewModelBase
                     // 先设置属性，再应用主题
                     BaseTheme = themeOption;
                     // 延迟应用主题，确保UI已更新
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                    {
-                        ApplyTheme(settings.BaseTheme);
-                    });
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { ApplyTheme(settings.BaseTheme); });
                 }
             }
 
             // 加载硬件加速设置
-            HardwareAcceleration = settings.HardwareAcceleration;
+            HardwareAcceleration = settings.Vulkan;
 
             Console.WriteLine(
                 $"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
@@ -789,8 +789,6 @@ public partial class SettingsViewModel : ViewModelBase
         return new[] { new FilePickerFileType("Blender") { Patterns = new[] { "blender", "*blender*" } } };
 #endif
     }
-
-
 
 
     public void Dispose()

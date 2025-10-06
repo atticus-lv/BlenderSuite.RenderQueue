@@ -4,7 +4,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
-             xmlns:services="clr-namespace:BlenderRenderQueue.Services"
              xmlns:objectModel="using:System.Collections.ObjectModel"
              xmlns:models="clr-namespace:BlenderRenderQueue.Models"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
@@ -19,257 +18,260 @@
 
 
     <Grid RowDefinitions="*,Auto">
-        <suki:SettingsLayout >
-        <suki:SettingsLayout.Items>
-            <objectModel:ObservableCollection x:TypeArguments="suki:SettingsLayoutItem">
+        <suki:SettingsLayout>
+            <suki:SettingsLayout.Items>
+                <objectModel:ObservableCollection x:TypeArguments="suki:SettingsLayoutItem">
 
-                <!-- 语言设置部分 -->
-                <suki:SettingsLayoutItem Header="{i18n:Localize General}">
-                    <suki:SettingsLayoutItem.Content>
-                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+                    <!-- 语言设置部分 -->
+                    <suki:SettingsLayoutItem Header="{i18n:Localize General}">
+                        <suki:SettingsLayoutItem.Content>
+                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
-                            <!-- 语言选择 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize LanguageLabel}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0" />
-                            <ComboBox Grid.Row="0" Grid.Column="2" SelectedItem="{Binding Language, Mode=TwoWay}"
-                                      ItemsSource="{x:Static models:LanguageOption.AllOptions}"
-                                      HorizontalAlignment="Right">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate DataType="models:LanguageOption">
-                                        <TextBlock Text="{Binding DisplayName}"
-                                                   VerticalAlignment="Center" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+                                <!-- 语言选择 -->
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize LanguageLabel}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0" />
+                                <ComboBox Grid.Row="0" Grid.Column="2" SelectedItem="{Binding Language, Mode=TwoWay}"
+                                          ItemsSource="{x:Static models:LanguageOption.AllOptions}"
+                                          HorizontalAlignment="Right">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate DataType="models:LanguageOption">
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       VerticalAlignment="Center" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
 
-                            <!-- 主题选择 -->
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize Settings_ThemeLabel}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,16,8,0" />
-                            <ComboBox Grid.Row="1" Grid.Column="2" SelectedItem="{Binding BaseTheme, Mode=TwoWay}"
-                                      ItemsSource="{x:Static models:ThemeOption.AllOptions}"
-                                      HorizontalAlignment="Right"
-                                      Margin="0,16,0,0">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate DataType="models:ThemeOption">
-                                        <TextBlock Text="{Binding DisplayName,Converter={StaticResource LocalizeConverter}}"
-                                                   VerticalAlignment="Center" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                            
-                            <!-- 硬件加速选择 -->
-                                <!-- <StackPanel Grid.Row="2" Grid.Column="0"> -->
-                                <!--     <TextBlock -->
-                                <!--         Text="{i18n:Localize Settings_HardwareAccelerationLabel}" -->
-                                <!--         VerticalAlignment="Center" -->
-                                <!--         Margin="0,16,8,0" /> -->
-                                <!--     ~1~ 硬件加速重启提示 @1@ -->
-                                <!--     <StackPanel Orientation="Horizontal" Spacing="8" -->
-                                <!--                 IsVisible="{Binding HardwareAccelerationChanged}"> -->
-                                <!--         <avalonia:MaterialIcon Kind="Information" -->
-                                <!--                                Width="16" -->
-                                <!--                                Height="16" /> -->
-                                <!--         <TextBlock -->
-                                <!--             Text="{i18n:Localize Settings_HardwareAccelerationRestartWarning}" -->
-                                <!--             VerticalAlignment="Center" /> -->
-                                <!--         <Button Command="{Binding RestartApplicationCommand}" -->
-                                <!--                 Classes="Flat Rounded Accent" -->
-                                <!--                 Margin="8,0,0,0" -->
-                                <!--                 MinWidth="80"> -->
-                                <!--             <StackPanel Orientation="Horizontal" Spacing="4"> -->
-                                <!--                 <avalonia:MaterialIcon Kind="Restart" Width="14" Height="14" /> -->
-                                <!--                 <TextBlock Text="{i18n:Localize Restart}" /> -->
-                                <!--             </StackPanel> -->
-                                <!--         </Button> -->
-                                <!--     </StackPanel> -->
-                                <!-- </StackPanel> -->
-                                <!-- -->
-                                <!-- <ToggleSwitch Grid.Row="2" Grid.Column="2" -->
-                                <!--               IsChecked="{Binding HardwareAcceleration, Mode=TwoWay}" -->
-                                <!--               HorizontalAlignment="Right" -->
-                                <!--               Margin="0,16,0,0" /> -->
-                                <!-- -->
-                                <!-- -->
-                        </Grid>
-                    </suki:SettingsLayoutItem.Content>
-                </suki:SettingsLayoutItem>
+                                <!-- 主题选择 -->
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize Settings_ThemeLabel}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,16,8,0" />
+                                <ComboBox Grid.Row="1" Grid.Column="2" SelectedItem="{Binding BaseTheme, Mode=TwoWay}"
+                                          ItemsSource="{x:Static models:ThemeOption.AllOptions}"
+                                          HorizontalAlignment="Right"
+                                          Margin="0,16,0,0">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate DataType="models:ThemeOption">
+                                            <TextBlock
+                                                Text="{Binding DisplayName,Converter={StaticResource LocalizeConverter}}"
+                                                VerticalAlignment="Center" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
 
-                <!-- Blender 设置部分 -->
-                <suki:SettingsLayoutItem Header="{i18n:Localize Blender}">
-                    <suki:SettingsLayoutItem.Content>
-                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
-
-                            <!-- 运行任务提示 -->
-                            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
-                                    Background="{DynamicResource SukiWarningDarkColor}"
-                                    BorderBrush="{DynamicResource SukiWarningColor}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Padding="8,4"
-                                    Margin="0,16,0,8"
-                                    IsVisible="{Binding !CanSwitchBlender}">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <avalonia:MaterialIcon Kind="Warning"
-                                                           Width="16"
-                                                           Height="16"
-                                                           Foreground="{DynamicResource SukiWarningColor}" />
-                                    <TextBlock Text="{i18n:Localize Settings_QueueRunningWarning}"
-                                               Foreground="{DynamicResource SukiWarningColor}"
-                                               VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Blender选择卡片区域 -->
-                            <views:BlenderSelectionView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
-                                                        IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanSwitchBlender}"
-                                                        DataContext="{Binding}" />
-
-                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8"
-                                        HorizontalAlignment="Right"
-                                        IsVisible="{Binding CanSwitchBlender}">
-                                <Button Command="{Binding BrowseBlenderCommand}"
-                                        Classes="Outlined"
-                                        ToolTip.Tip="{i18n:Localize Settings_AddBlenderTooltip}">
-                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <avalonia:MaterialIcon Kind="Add" Width="16" Height="16" />
-                                        <TextBlock Text="{i18n:Localize Settings_AddBlender}" />
-                                    </StackPanel>
-                                </Button>
-                                <Button Command="{Binding RemoveBlenderCommand}"
-                                        Classes="Outlined Danger"
-                                        ToolTip.Tip="{i18n:Localize Settings_RemoveSelectedTooltip}"
-                                        IsEnabled="{Binding SelectedBlenderExecutable, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <avalonia:MaterialIcon Kind="Delete" Width="16" Height="16" />
-                                        <TextBlock Text="{i18n:Localize Settings_RemoveSelected}" />
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
-
-                            <!-- Blender验证状态 -->
-                            <Border Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
-                                    Background="{DynamicResource SukiDangerDarkColor}"
-                                    BorderBrush="{DynamicResource SukiDangerColor}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Padding="8,4"
-                                    Margin="0,4,0,0"
-                                    IsVisible="{Binding HasBlenderValidationError}">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <avalonia:MaterialIcon Kind="Error"
-                                                           Width="16"
-                                                           Height="16"
-                                                           Foreground="{DynamicResource SukiDangerColor}" />
-                                    <TextBlock Text="{Binding BlenderValidationMessage, Converter={StaticResource LocalizeConverter}}"
-                                               VerticalAlignment="Center" />
-                                    <ProgressBar IsIndeterminate="True" Width="16" Height="16"
-                                                 IsVisible="{Binding IsLoadingBlenderInfo}" />
-
-                                </StackPanel>
-                            </Border>
-
-
-                        </Grid>
-                    </suki:SettingsLayoutItem.Content>
-                </suki:SettingsLayoutItem>
-
-                <!-- 渲染超时设置部分 -->
-                <suki:SettingsLayoutItem Header="{i18n:Localize Render}">
-                    <suki:SettingsLayoutItem.Content>
-                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
-
-                            <!-- 渲染超时设置 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize TimeoutLabel}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0" />
-                            <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="8"
-                                        VerticalAlignment="Center" HorizontalAlignment="Right">
-                                <NumericUpDown Value="{Binding DefaultRenderTimeoutSeconds, Mode=TwoWay}"
-                                               Minimum="300" Maximum="7200"
-                                               suki:NumericUpDownExtensions.Unit="{i18n:Localize Seconds}" />
-                            </StackPanel>
-
-                            <!-- 最大重试次数设置 -->
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize MaxRetryLabel}"
-                                       VerticalAlignment="Center" HorizontalAlignment="Right"
-                                       Margin="0,16,8,0" />
-                            <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Spacing="8"
-                                        Margin="0,16,0,0" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                <NumericUpDown Value="{Binding MaxRetryAttempts, Mode=TwoWay}"
-                                               Minimum="1" Maximum="10"
-                                               suki:NumericUpDownExtensions.Unit="{i18n:Localize Times}" />
-                            </StackPanel>
-
-                        </Grid>
-                    </suki:SettingsLayoutItem.Content>
-                </suki:SettingsLayoutItem>
-
-                <!-- 视频合成设置部分 -->
-                <suki:SettingsLayoutItem Header="{i18n:Localize VideoComposition}">
-                    <suki:SettingsLayoutItem.Content>
-                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
-
-                            <!-- 视频编码 -->
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize VideoCodec}"
-                                       VerticalAlignment="Center" HorizontalAlignment="Right"
-                                       Margin="0,0,8,0" />
-                            <ComboBox Grid.Row="0" Grid.Column="2" SelectedItem="{Binding VideoCodec, Mode=TwoWay}"
-                                      ItemsSource="{x:Static models:VideoCodecOption.AllOptions}"
-                                      HorizontalAlignment="Right">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate DataType="models:VideoCodecOption">
-                                        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-
-                            <!-- 视频质量 -->
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize VideoQuality}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,16,8,0" />
-                            <ComboBox Grid.Row="1" Grid.Column="2" SelectedItem="{Binding VideoQuality, Mode=TwoWay}"
-                                      ItemsSource="{x:Static models:VideoQualityOption.AllOptions}"
-                                      HorizontalAlignment="Right" Margin="0,16,0,0">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate DataType="models:VideoQualityOption">
+                                <!-- 硬件加速选择 -->
+                                <StackPanel Grid.Row="2" Grid.Column="0">
+                                    <TextBlock
+                                        Text="{i18n:Localize Settings_HardwareVulkan}"
+                                        VerticalAlignment="Center"
+                                        Margin="0,16,8,0" />
+                                    <!-- 硬件加速重启提示 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                                IsVisible="{Binding HardwareAccelerationChanged}">
+                                        <avalonia:MaterialIcon Kind="Information"
+                                                               Width="16"
+                                                               Height="16" />
                                         <TextBlock
-                                            Text="{Binding DisplayName, Converter={StaticResource LocalizeConverter}}"
+                                            Text="{i18n:Localize Settings_HardwareVulkanRestartWarning}"
                                             VerticalAlignment="Center" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+                                        <Button Command="{Binding SaveAndRestartAppCommand}"
+                                                Classes="Flat Rounded Accent"
+                                                Margin="8,0,0,0"
+                                                MinWidth="80">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <avalonia:MaterialIcon Kind="Restart" Width="14" Height="14" />
+                                                <TextBlock Text="{i18n:Localize SaveAndRestart}" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
 
-                        </Grid>
-                    </suki:SettingsLayoutItem.Content>
-                </suki:SettingsLayoutItem>
+                                <ToggleSwitch Grid.Row="2" Grid.Column="2"
+                                              IsChecked="{Binding HardwareAcceleration, Mode=TwoWay}"
+                                              HorizontalAlignment="Right"
+                                              Margin="0,16,0,0" />
 
 
-            </objectModel:ObservableCollection>
-        </suki:SettingsLayout.Items>
+                            </Grid>
+                        </suki:SettingsLayoutItem.Content>
+                    </suki:SettingsLayoutItem>
+
+                    <!-- Blender 设置部分 -->
+                    <suki:SettingsLayoutItem Header="{i18n:Localize Blender}">
+                        <suki:SettingsLayoutItem.Content>
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+
+                                <!-- 运行任务提示 -->
+                                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3"
+                                        Background="{DynamicResource SukiWarningDarkColor}"
+                                        BorderBrush="{DynamicResource SukiWarningColor}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="8,4"
+                                        Margin="0,16,0,8"
+                                        IsVisible="{Binding !CanSwitchBlender}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <avalonia:MaterialIcon Kind="Warning"
+                                                               Width="16"
+                                                               Height="16"
+                                                               Foreground="{DynamicResource SukiWarningColor}" />
+                                        <TextBlock Text="{i18n:Localize Settings_QueueRunningWarning}"
+                                                   Foreground="{DynamicResource SukiWarningColor}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Blender选择卡片区域 -->
+                                <views:BlenderSelectionView Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                                                            IsVisible="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).CanSwitchBlender}"
+                                                            DataContext="{Binding}" />
+
+                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                            HorizontalAlignment="Right"
+                                            IsVisible="{Binding CanSwitchBlender}">
+                                    <Button Command="{Binding BrowseBlenderCommand}"
+                                            Classes="Outlined"
+                                            ToolTip.Tip="{i18n:Localize Settings_AddBlenderTooltip}">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <avalonia:MaterialIcon Kind="Add" Width="16" Height="16" />
+                                            <TextBlock Text="{i18n:Localize Settings_AddBlender}" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding RemoveBlenderCommand}"
+                                            Classes="Outlined Danger"
+                                            ToolTip.Tip="{i18n:Localize Settings_RemoveSelectedTooltip}"
+                                            IsEnabled="{Binding SelectedBlenderExecutable, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <avalonia:MaterialIcon Kind="Delete" Width="16" Height="16" />
+                                            <TextBlock Text="{i18n:Localize Settings_RemoveSelected}" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Blender验证状态 -->
+                                <Border Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
+                                        Background="{DynamicResource SukiDangerDarkColor}"
+                                        BorderBrush="{DynamicResource SukiDangerColor}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Padding="8,4"
+                                        Margin="0,4,0,0"
+                                        IsVisible="{Binding HasBlenderValidationError}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <avalonia:MaterialIcon Kind="Error"
+                                                               Width="16"
+                                                               Height="16"
+                                                               Foreground="{DynamicResource SukiDangerColor}" />
+                                        <TextBlock
+                                            Text="{Binding BlenderValidationMessage, Converter={StaticResource LocalizeConverter}}"
+                                            VerticalAlignment="Center" />
+                                        <ProgressBar IsIndeterminate="True" Width="16" Height="16"
+                                                     IsVisible="{Binding IsLoadingBlenderInfo}" />
+
+                                    </StackPanel>
+                                </Border>
+
+
+                            </Grid>
+                        </suki:SettingsLayoutItem.Content>
+                    </suki:SettingsLayoutItem>
+
+                    <!-- 渲染超时设置部分 -->
+                    <suki:SettingsLayoutItem Header="{i18n:Localize Render}">
+                        <suki:SettingsLayoutItem.Content>
+                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+
+                                <!-- 渲染超时设置 -->
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize TimeoutLabel}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0" />
+                                <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                            VerticalAlignment="Center" HorizontalAlignment="Right">
+                                    <NumericUpDown Value="{Binding DefaultRenderTimeoutSeconds, Mode=TwoWay}"
+                                                   Minimum="300" Maximum="7200"
+                                                   suki:NumericUpDownExtensions.Unit="{i18n:Localize Seconds}" />
+                                </StackPanel>
+
+                                <!-- 最大重试次数设置 -->
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize MaxRetryLabel}"
+                                           VerticalAlignment="Center" HorizontalAlignment="Right"
+                                           Margin="0,16,8,0" />
+                                <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                            Margin="0,16,0,0" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                    <NumericUpDown Value="{Binding MaxRetryAttempts, Mode=TwoWay}"
+                                                   Minimum="1" Maximum="10"
+                                                   suki:NumericUpDownExtensions.Unit="{i18n:Localize Times}" />
+                                </StackPanel>
+
+                            </Grid>
+                        </suki:SettingsLayoutItem.Content>
+                    </suki:SettingsLayoutItem>
+
+                    <!-- 视频合成设置部分 -->
+                    <suki:SettingsLayoutItem Header="{i18n:Localize VideoComposition}">
+                        <suki:SettingsLayoutItem.Content>
+                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+
+                                <!-- 视频编码 -->
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize VideoCodec}"
+                                           VerticalAlignment="Center" HorizontalAlignment="Right"
+                                           Margin="0,0,8,0" />
+                                <ComboBox Grid.Row="0" Grid.Column="2" SelectedItem="{Binding VideoCodec, Mode=TwoWay}"
+                                          ItemsSource="{x:Static models:VideoCodecOption.AllOptions}"
+                                          HorizontalAlignment="Right">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate DataType="models:VideoCodecOption">
+                                            <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <!-- 视频质量 -->
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize VideoQuality}"
+                                           VerticalAlignment="Center"
+                                           Margin="0,16,8,0" />
+                                <ComboBox Grid.Row="1" Grid.Column="2"
+                                          SelectedItem="{Binding VideoQuality, Mode=TwoWay}"
+                                          ItemsSource="{x:Static models:VideoQualityOption.AllOptions}"
+                                          HorizontalAlignment="Right" Margin="0,16,0,0">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate DataType="models:VideoQualityOption">
+                                            <TextBlock
+                                                Text="{Binding DisplayName, Converter={StaticResource LocalizeConverter}}"
+                                                VerticalAlignment="Center" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                            </Grid>
+                        </suki:SettingsLayoutItem.Content>
+                    </suki:SettingsLayoutItem>
+
+
+                </objectModel:ObservableCollection>
+            </suki:SettingsLayout.Items>
         </suki:SettingsLayout>
 
-    <!-- 底部保存按钮区域 -->
-    <Border Grid.Row="1" 
-            Background="{DynamicResource SukiBackgroundColor}" 
-            BorderBrush="{DynamicResource SukiBorderColor}" 
-            BorderThickness="0,1,0,0"
-            Padding="16,12"
-            IsVisible="{Binding HasUnsavedChanges}">
-        <StackPanel Orientation="Horizontal" 
-                    HorizontalAlignment="Right" 
-                    Spacing="12">
-            <Button Command="{Binding SaveSettingsCommand}"
-                    Classes="Flat Accent Rounded"
-                    MinWidth="100">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <avalonia:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
-                    <TextBlock Text="{i18n:Localize Save}" />
-                </StackPanel>
-            </Button>
-        </StackPanel>
-    </Border>
+        <!-- 底部保存按钮区域 -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource SukiBackgroundColor}"
+                BorderBrush="{DynamicResource SukiBorderColor}"
+                BorderThickness="0,1,0,0"
+                Padding="16,12"
+                IsVisible="{Binding HasUnsavedChanges}">
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Spacing="12">
+                <Button Command="{Binding SaveSettingsCommand}"
+                        Classes="Flat Accent Rounded"
+                        MinWidth="100">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <avalonia:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
+                        <TextBlock Text="{i18n:Localize Save}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
 
     </Grid>
 </UserControl>

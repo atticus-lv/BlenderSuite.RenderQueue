@@ -50,8 +50,8 @@ sealed class Program
 
             if (!File.Exists(settingsFilePath))
             {
-                Console.WriteLine("[Program] Settings file not found, using default hardware acceleration (WGL)");
-                return Win32RenderingMode.Wgl;
+                Console.WriteLine("[Program] Settings file not found, using default hardware acceleration (AngleEgl)");
+                return Win32RenderingMode.AngleEgl;
             }
 
             var json = File.ReadAllText(settingsFilePath);
@@ -60,21 +60,19 @@ sealed class Program
                 TypeInfoResolver = SettingsJsonContext.Default
             });
 
-            if (settings?.HardwareAcceleration == true)
+            if (settings?.Vulkan == true)
             {
                 Console.WriteLine("[Program] Hardware acceleration enabled, using WGL rendering");
-                return Win32RenderingMode.Wgl;
+                return Win32RenderingMode.Vulkan;
             }
-            else
-            {
-                Console.WriteLine("[Program] Hardware acceleration disabled, using Angle EGL rendering");
-                return Win32RenderingMode.AngleEgl;
-            }
+
+            Console.WriteLine("[Program] Hardware acceleration disabled, using Angle EGL rendering");
+            return Win32RenderingMode.AngleEgl;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[Program] Error reading settings, using default hardware acceleration (WGL): {ex.Message}");
-            return Win32RenderingMode.Wgl;
+            return Win32RenderingMode.AngleEgl;
         }
     }
 }
