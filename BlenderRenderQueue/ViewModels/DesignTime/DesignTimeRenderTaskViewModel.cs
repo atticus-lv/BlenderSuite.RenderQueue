@@ -27,7 +27,6 @@ public class DesignTimeRenderTaskViewModel : RenderTaskViewModel
         
         // 设置渲染状态
         Status = RenderTaskStatus.Running;
-        StatusText = "渲染中";
         Progress01 = 0.65; // 当前帧进度 65%
         OverallProgress01 = 0.45; // 整体进度 45%
         Engine = "CYCLES";

@@ -608,7 +608,6 @@ public partial class RenderQueueViewModel : ViewModelBase
 
             // 重置启用的任务状态为等待中，从头开始
             task.Status = RenderTaskStatus.Pending;
-            task.StatusText = "TaskStatus_Pending";
             // 重置进度信息
             task.ResetProgress();
         }

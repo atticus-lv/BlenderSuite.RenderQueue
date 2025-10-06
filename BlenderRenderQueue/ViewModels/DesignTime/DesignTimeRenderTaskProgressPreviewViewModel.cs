@@ -29,7 +29,6 @@ public class DesignTimeRenderTaskProgressPreviewViewModel : RenderTaskViewModel
         
         // 设置渲染状态
         Status = RenderTaskStatus.Running;
-        StatusText = "渲染中";
         
         // 设置进度信息
         CompletedFrames = 45;

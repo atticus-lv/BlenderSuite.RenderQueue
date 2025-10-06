@@ -29,6 +29,39 @@ public enum RenderEngine
     Workbench
 }
 
+public static class RenderTaskStatusExtensions
+{
+    public static string GetLocalizationKey(this RenderTaskStatus status)
+    {
+        return status switch
+        {
+            RenderTaskStatus.Pending => "TaskStatus_Pending",
+            RenderTaskStatus.Running => "TaskStatus_Running",
+            RenderTaskStatus.Paused => "TaskStatus_Paused",
+            RenderTaskStatus.Completed => "TaskStatus_Completed",
+            RenderTaskStatus.Failed => "TaskStatus_Failed",
+            RenderTaskStatus.Cancelled => "TaskStatus_Cancelled",
+            _ => "TaskStatus_Unknown"
+        };
+    }
+}
+
+public static class QueueStateExtensions
+{
+    public static string GetLocalizationKey(this QueueState state)
+    {
+        return state switch
+        {
+            QueueState.Idle => "Queue_Idle",
+            QueueState.Running => "Queue_Running",
+            QueueState.Paused => "Queue_Paused",
+            QueueState.Completed => "Queue_Completed",
+            QueueState.Error => "Queue_Error",
+            _ => "Queue_Unknown"
+        };
+    }
+}
+
 public sealed record RenderProgress
 {
     public int CurrentFrame { get; init; }

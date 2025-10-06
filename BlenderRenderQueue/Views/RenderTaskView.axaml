@@ -34,7 +34,7 @@
                         <Border
                             Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
                             CornerRadius="4" Padding="8,4">
-                            <TextBlock Text="{Binding StatusText, Converter={StaticResource LocalizeConverter}}" FontSize="12" FontWeight="Bold" />
+                            <TextBlock Text="{Binding Status, Converter={StaticResource StatusToLocalizedTextConverter}}" FontSize="12" FontWeight="Bold" />
                         </Border>
                         <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}"
                                    VerticalAlignment="Center" FontSize="14" />

@@ -16,7 +16,6 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         var task1 = new DesignTimeRenderTaskViewModel();
         task1.BlendFilePath = @"C:\Users\Design\Documents\Blender\Animation1.blend";
         task1.Status = RenderTaskStatus.Running;
-        task1.StatusText = "渲染中";
         task1.Progress01 = 0.75;
         task1.OverallProgress01 = 0.60;
         task1.CurrentFrame = 180;
@@ -27,7 +26,6 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         var task2 = new DesignTimeRenderTaskViewModel();
         task2.BlendFilePath = @"C:\Users\Design\Documents\Blender\Animation2.blend";
         task2.Status = RenderTaskStatus.Pending;
-        task2.StatusText = "等待中";
         task2.Progress01 = 0.0;
         task2.OverallProgress01 = 0.0;
         task2.CurrentFrame = 0;
@@ -38,7 +36,6 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         var task3 = new DesignTimeRenderTaskViewModel();
         task3.BlendFilePath = @"C:\Users\Design\Documents\Blender\Animation3.blend";
         task3.Status = RenderTaskStatus.Completed;
-        task3.StatusText = "已完成";
         task3.Progress01 = 1.0;
         task3.OverallProgress01 = 1.0;
         task3.CurrentFrame = 250;
@@ -49,7 +46,6 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         var task4 = new DesignTimeRenderTaskViewModel();
         task4.BlendFilePath = @"C:\Users\Design\Documents\Blender\LoadingFile.blend";
         task4.Status = RenderTaskStatus.Pending;
-        task4.StatusText = "加载中";
         task4.IsValid = true;
         task4.OverrideScene = false;
         // 设置加载状态
@@ -58,7 +54,6 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         var task5 = new DesignTimeRenderTaskViewModel();
         task5.BlendFilePath = @"C:\Users\Design\Documents\Blender\Animation5.blend";
         task5.Status = RenderTaskStatus.Failed;
-        task5.StatusText = "渲染失败";
         task5.Progress01 = 0.0;
         task5.OverallProgress01 = 0.0;
         task5.OverrideScene = true;

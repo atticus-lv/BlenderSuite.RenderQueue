@@ -18,6 +18,8 @@
             <converters:StatusToColorConverter x:Key="StatusToColorConverter" />
             <converters:ObjectEqualMultiConverter x:Key="ObjectEqualMultiConverter" />
             <converters:StatusToIconVisibilityConverter x:Key="StatusToIconVisibilityConverter" />
+            <converters:StatusToLocalizedTextConverter x:Key="StatusToLocalizedTextConverter" />
+            <converters:QueueStateToLocalizedTextConverter x:Key="QueueStateToLocalizedTextConverter" />
             <localizer:LocalizeConverter x:Key="LocalizeConverter" />
         </ResourceDictionary>
     </Application.Resources>

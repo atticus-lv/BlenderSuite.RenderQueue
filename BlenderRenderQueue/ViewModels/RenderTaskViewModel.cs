@@ -74,6 +74,20 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         // 当 Enable 属性变化时，触发父级保存数据
         EnableChanged?.Invoke(this, EventArgs.Empty);
+        // 更新状态相关的属性
+        UpdateStatusDependentProperties();
+    }
+
+    partial void OnStatusChanged(RenderTaskStatus value)
+    {
+        // 更新状态相关的属性
+        UpdateStatusDependentProperties();
+    }
+
+    partial void OnIsValidChanged(bool value)
+    {
+        // 更新状态相关的属性
+        UpdateStatusDependentProperties();
     }
 
     [ObservableProperty]
@@ -155,22 +169,39 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// <summary>
     /// 是否可以修改任务的Enable属性
     /// </summary>
-    public bool CanModifyEnable => Status is RenderTaskStatus.Pending;
+    public bool CanModifyEnable => IsValid && Enable && Status == RenderTaskStatus.Pending;
 
     /// <summary>
     /// 是否可以修改任务的覆写属性（帧范围、场景等）
     /// </summary>
-    public bool CanModifyOverride => Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed;
+    public bool CanModifyOverride => IsValid && Enable && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed;
 
     /// <summary>
     /// 是否可以删除任务
     /// </summary>
-    public bool CanDelete => Status == RenderTaskStatus.Pending;
+    public bool CanDelete => IsValid && Status == RenderTaskStatus.Pending;
 
     /// <summary>
     /// 是否应该显示进度条
     /// </summary>
-    public bool ShouldShowProgress => Status is RenderTaskStatus.Running or RenderTaskStatus.Paused;
+    public bool ShouldShowProgress => IsValid && Status is RenderTaskStatus.Running or RenderTaskStatus.Paused;
+
+    /// <summary>
+    /// 获取状态对应的本地化文本键名
+    /// </summary>
+    public string StatusText => Status.GetLocalizationKey();
+
+    /// <summary>
+    /// 统一更新状态相关的属性通知
+    /// </summary>
+    private void UpdateStatusDependentProperties()
+    {
+        OnPropertyChanged(nameof(CanModifyEnable));
+        OnPropertyChanged(nameof(CanModifyOverride));
+        OnPropertyChanged(nameof(CanDelete));
+        OnPropertyChanged(nameof(ShouldShowProgress));
+        OnPropertyChanged(nameof(StatusText));
+    }
 
     /// <summary>
     /// 设置全局渲染超时时间
@@ -207,7 +238,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         // 进程异常退出，直接标记任务失败（不进行重试）
         if (exitCode != 0)
         {
-            SetStatus(RenderTaskStatus.Failed, "TaskStatus_ProcessExited");
+            SetStatus(RenderTaskStatus.Failed);
             EndTime = DateTime.Now;
             if (StartTime.HasValue)
             {
@@ -423,9 +454,6 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     [ObservableProperty]
     private RenderTaskStatus _status = RenderTaskStatus.Pending;
-
-    [ObservableProperty]
-    private string _statusText = "TaskStatus_Pending";
 
     [ObservableProperty]
     private DateTime? _startTime;
@@ -751,7 +779,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         try
         {
-            SetStatus(RenderTaskStatus.Running, "TaskStatus_Starting");
+            SetStatus(RenderTaskStatus.Running);
             StartTime = DateTime.Now;
 
             // 存储当前的Blender进程实例
@@ -807,25 +835,25 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (ex.CancellationToken.IsCancellationRequested)
             {
                 EnqueueLog("渲染任务被用户取消");
-                SetStatus(RenderTaskStatus.Cancelled, "TaskStatus_Cancelled");
+                SetStatus(RenderTaskStatus.Cancelled);
             }
             else
             {
                 EnqueueLog($"渲染任务超时: {ex.Message}");
 
                 // 渲染超时，直接标记任务失败
-                SetStatus(RenderTaskStatus.Failed, "TaskStatus_TimeoutFailed");
+                SetStatus(RenderTaskStatus.Failed);
             }
         }
         catch (OperationCanceledException ex)
         {
             EnqueueLog($"渲染操作被取消: {ex.Message}");
-            SetStatus(RenderTaskStatus.Cancelled, "已取消");
+            SetStatus(RenderTaskStatus.Cancelled);
         }
         catch (Exception ex)
         {
             EnqueueLog($"渲染启动失败: {ex.Message}");
-            SetStatus(RenderTaskStatus.Failed, "TaskStatus_StartFailed");
+            SetStatus(RenderTaskStatus.Failed);
         }
     }
 
@@ -858,7 +886,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             }
         }
 
-        SetStatus(RenderTaskStatus.Cancelled, "TaskStatus_Stopped");
+        SetStatus(RenderTaskStatus.Cancelled);
         EndTime = DateTime.Now;
         if (StartTime.HasValue)
         {
@@ -875,7 +903,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             EnqueueLog("正在暂停渲染...");
 
             // 立即更新状态，提供即时反馈
-            SetStatus(RenderTaskStatus.Paused, "TaskStatus_Paused");
+            SetStatus(RenderTaskStatus.Paused);
             EnqueueLog($"渲染已暂停，当前帧: {CurrentFrame}");
 
             // 停止渲染会话
@@ -905,7 +933,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         catch (Exception ex)
         {
             EnqueueLog($"暂停渲染失败: {ex.Message}");
-            SetStatus(RenderTaskStatus.Failed, "TaskStatus_PauseFailed");
+            SetStatus(RenderTaskStatus.Failed);
         }
     }
 
@@ -919,7 +947,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         try
         {
-            SetStatus(RenderTaskStatus.Running, "TaskStatus_Resuming");
+            SetStatus(RenderTaskStatus.Running);
 
             // 存储当前的Blender进程实例
             _currentBlenderProcess = blenderProcess;
@@ -965,25 +993,25 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (ex.CancellationToken.IsCancellationRequested)
             {
                 EnqueueLog("恢复渲染任务被用户取消");
-                SetStatus(RenderTaskStatus.Cancelled, "TaskStatus_Cancelled");
+                SetStatus(RenderTaskStatus.Cancelled);
             }
             else
             {
                 EnqueueLog($"恢复渲染任务超时: {ex.Message}");
 
                 // 恢复渲染超时，直接标记任务失败
-                SetStatus(RenderTaskStatus.Failed, "TaskStatus_ResumeTimeoutFailed");
+                SetStatus(RenderTaskStatus.Failed);
             }
         }
         catch (OperationCanceledException ex)
         {
             EnqueueLog($"恢复渲染操作被取消: {ex.Message}");
-            SetStatus(RenderTaskStatus.Cancelled, "已取消");
+            SetStatus(RenderTaskStatus.Cancelled);
         }
         catch (Exception ex)
         {
             EnqueueLog($"恢复渲染启动失败: {ex.Message}");
-            SetStatus(RenderTaskStatus.Failed, "TaskStatus_ResumeFailed");
+            SetStatus(RenderTaskStatus.Failed);
         }
     }
 
@@ -1109,7 +1137,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             case RenderSessionStarted s:
                 EnqueueLog(s.IsAnimation ? $"开始动画渲染: {s.StartFrame}..{s.EndFrame}" : $"开始单帧渲染");
-                SetStatus(RenderTaskStatus.Running, "TaskStatus_Running");
+                SetStatus(RenderTaskStatus.Running);
                 break;
             case RenderStarted rs:
                 EnqueueLog($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
@@ -1131,7 +1159,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 OverallProgress01 = 1;
 
                 // 先设置状态，确保状态变化事件被触发
-                SetStatus(RenderTaskStatus.Completed, "TaskStatus_Completed");
+                SetStatus(RenderTaskStatus.Completed);
                 EndTime = DateTime.Now;
                 if (StartTime.HasValue)
                 {
@@ -1183,7 +1211,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 }
 
                 // 帧级别重试失败，标记任务失败
-                SetStatus(RenderTaskStatus.Failed, "TaskStatus_RenderFailed");
+                SetStatus(RenderTaskStatus.Failed);
                 EndTime = DateTime.Now;
                 if (StartTime.HasValue)
                 {
@@ -1194,10 +1222,9 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
     }
 
-    private void SetStatus(RenderTaskStatus status, string statusText)
+    private void SetStatus(RenderTaskStatus status)
     {
         Status = status;
-        StatusText = statusText;
 
         // 当任务开始运行时，初始化CurrentFrame为StartFrame
         if (status == RenderTaskStatus.Running && CurrentFrame == 0)
@@ -1211,13 +1238,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             _currentFrameRetryAttempts = 0;
         }
 
-        // 通知操作权限相关属性更新
-        OnPropertyChanged(nameof(CanModifyEnable));
-        OnPropertyChanged(nameof(CanModifyOverride));
-        OnPropertyChanged(nameof(CanDelete));
-        OnPropertyChanged(nameof(ShouldShowProgress));
-
-        StatusChanged?.Invoke(this, new RenderTaskStatusChangedEventArgs(status, statusText));
+        // 触发状态变化事件
+        StatusChanged?.Invoke(this, new RenderTaskStatusChangedEventArgs(status, StatusText));
     }
 
     private void EnqueueLog(string line)
