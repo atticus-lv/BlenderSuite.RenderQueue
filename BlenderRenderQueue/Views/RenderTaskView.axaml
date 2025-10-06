@@ -64,7 +64,8 @@
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <MenuItem Header="{i18n:Localize Queue_Refresh}"
-                                          Command="{Binding RefreshFileInfoCommand}">
+                                          Command="{Binding RefreshFileInfoCommand}"
+                                          IsEnabled="{Binding CanRefresh}">
                                     <MenuItem.Icon>
                                         <avalonia:MaterialIcon Kind="Refresh" Width="16"
                                                                Height="16" />
@@ -77,6 +78,7 @@
                     <Button Command="{Binding RefreshFileInfoCommand}"
                             Classes="Rounded Danger"
                             IsVisible="{Binding !IsValid}"
+                            IsEnabled="{Binding CanRefresh}"
                             FontSize="12">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <avalonia:MaterialIcon Kind="Refresh" />

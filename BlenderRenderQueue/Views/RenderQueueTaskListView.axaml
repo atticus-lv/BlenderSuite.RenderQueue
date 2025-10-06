@@ -76,7 +76,8 @@
                                             </MenuItem.Icon>
                                         </MenuItem>
                                         <MenuItem Header="{i18n:Localize Queue_Refresh}"
-                                                  Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).RefreshFileInfoCommand}">
+                                                  Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).RefreshFileInfoCommand}"
+                                                  IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).CanRefresh}">
                                             <MenuItem.Icon>
                                                 <material:MaterialIcon Kind="Refresh" Width="16"
                                                                        Height="16" />

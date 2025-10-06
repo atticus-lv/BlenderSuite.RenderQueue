@@ -99,6 +99,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isPendingDeletion = false;
 
+    // 队列运行状态（由RenderQueueViewModel设置）
+    private bool _isQueueRunning = false;
+
 
     [ObservableProperty]
     private double _progress01; // 当前帧进度
@@ -182,6 +185,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     public bool CanDelete => IsValid && Status == RenderTaskStatus.Pending;
 
     /// <summary>
+    /// 是否可以刷新任务（当任务正在渲染或队列正在运行时不可用）
+    /// </summary>
+    public bool CanRefresh => IsValid && Status != RenderTaskStatus.Running && !_isQueueRunning;
+
+    /// <summary>
     /// 是否应该显示进度条
     /// </summary>
     public bool ShouldShowProgress => IsValid && Status is RenderTaskStatus.Running or RenderTaskStatus.Paused;
@@ -199,6 +207,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanModifyEnable));
         OnPropertyChanged(nameof(CanModifyOverride));
         OnPropertyChanged(nameof(CanDelete));
+        OnPropertyChanged(nameof(CanRefresh));
         OnPropertyChanged(nameof(ShouldShowProgress));
         OnPropertyChanged(nameof(StatusText));
     }
@@ -219,6 +228,20 @@ public partial class RenderTaskViewModel : ViewModelBase
     public void SetGlobalMaxRetryAttempts(int maxRetryAttempts)
     {
         _globalMaxRetryAttempts = maxRetryAttempts;
+    }
+
+    /// <summary>
+    /// 设置队列运行状态，影响刷新功能的可用性
+    /// </summary>
+    /// <param name="isQueueRunning">队列是否正在运行</param>
+    public void SetQueueRunningState(bool isQueueRunning)
+    {
+        if (_isQueueRunning != isQueueRunning)
+        {
+            _isQueueRunning = isQueueRunning;
+            OnPropertyChanged(nameof(CanRefresh));
+            Console.WriteLine($"[RenderTaskViewModel] Queue running state changed to: {isQueueRunning}, CanRefresh: {CanRefresh}");
+        }
     }
 
     /// <summary>
@@ -395,6 +418,78 @@ public partial class RenderTaskViewModel : ViewModelBase
         catch (Exception ex)
         {
             EnqueueLog($"[ERROR] Failed to request refresh: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 刷新任务的文件属性，不销毁任务实例
+    /// </summary>
+    /// <param name="blenderPath">Blender路径</param>
+    public async Task RefreshFilePropertiesAsync(string blenderPath)
+    {
+        if (string.IsNullOrWhiteSpace(BlendFilePath) || !System.IO.File.Exists(BlendFilePath))
+        {
+            EnqueueLog("文件路径无效或文件不存在，无法刷新");
+            return;
+        }
+
+        try
+        {
+            EnqueueLog("[REFRESH] 开始刷新文件属性...");
+
+            // 保存当前的覆写状态
+            var currentOverrideFrameRange = OverrideFrameRange;
+            var currentStartFrame = StartFrame;
+            var currentEndFrame = EndFrame;
+            var currentOverrideScene = OverrideScene;
+            var currentSelectedSceneName = SelectedSceneName;
+            var currentEnable = Enable;
+
+            Console.WriteLine($"[RenderTaskViewModel] Refreshing file properties - preserving overrides: FrameRange={currentOverrideFrameRange} ({currentStartFrame}-{currentEndFrame}), Scene={currentOverrideScene} ({currentSelectedSceneName}), Enable={currentEnable}");
+
+            // 重新加载文件属性
+            await ScenePropertiesView.LoadPropertiesAsync(blenderPath, BlendFilePath);
+
+            // 恢复覆写状态
+            OverrideFrameRange = currentOverrideFrameRange;
+            StartFrame = currentStartFrame;
+            EndFrame = currentEndFrame;
+            OverrideScene = currentOverrideScene;
+            SelectedSceneName = currentSelectedSceneName;
+            Enable = currentEnable;
+
+            // 更新场景名称列表
+            AvailableSceneNames = ScenePropertiesView.SceneNames.ToList();
+
+            // 如果没有覆写场景且场景名称为空，设置默认场景名称
+            if (!OverrideScene && string.IsNullOrEmpty(SelectedSceneName))
+            {
+                SelectedSceneName = ScenePropertiesView.ActiveSceneName;
+            }
+
+            // 触发相关属性更新
+            OnPropertyChanged(nameof(DisplayStartFrame));
+            OnPropertyChanged(nameof(DisplayEndFrame));
+            OnPropertyChanged(nameof(DisplayTotalFrames));
+            OnPropertyChanged(nameof(RealStartFrame));
+            OnPropertyChanged(nameof(RealEndFrame));
+            OnPropertyChanged(nameof(RealTotalFrames));
+            OnPropertyChanged(nameof(HasValidSceneSelection));
+            OnPropertyChanged(nameof(ShowSceneOverrideWarning));
+            OnPropertyChanged(nameof(IsOverrideSceneSameAsDefault));
+            OnPropertyChanged(nameof(FinalSceneProperties));
+            OnPropertyChanged(nameof(FramePathDirectory));
+
+            // 重新加载文件信息
+            LoadFileInfo();
+
+            EnqueueLog("[REFRESH] 文件属性刷新完成");
+            Console.WriteLine($"[RenderTaskViewModel] ✅ File properties refreshed successfully - overrides preserved");
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"[REFRESH] 刷新文件属性失败: {ex.Message}");
+            Console.WriteLine($"[RenderTaskViewModel] ❌ Failed to refresh file properties: {ex.Message}");
         }
     }
 

@@ -407,6 +407,9 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 订阅任务事件
             SubscribeToTaskEvents(task);
 
+            // 设置队列运行状态，影响CanRefresh属性
+            task.SetQueueRunningState(QueueState == QueueState.Running);
+
             StatusMessageChanged?.Invoke(this,
                 string.Format(Localizer.Localizer.Instance["Toast_TaskAdded"], Path.GetFileName(blendFilePath)));
 
@@ -1099,38 +1102,27 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         try
         {
-            // 保存当前选中任务的索引和文件路径
-            var currentIndex = RenderTasks.IndexOf(task);
-            var filePath = task.BlendFilePath;
-            var wasSelected = SelectedTask == task; // 保存是否被选中的状态
-
             // 停止当前任务（如果正在运行）
-            if (task.Status == RenderTaskStatus.Running) task.StopRender();
+            if (task.Status == RenderTaskStatus.Running) 
+            {
+                task.StopRender();
+                Console.WriteLine($"[RenderQueueViewModel] Stopped running task before refresh");
+            }
 
-            // 取消订阅事件并释放资源
-            UnsubscribeFromTaskEvents(task);
-            task.Dispose();
+            // 使用新的刷新方法，不销毁任务实例
+            await task.RefreshFilePropertiesAsync(_blenderPath!);
 
-            // 创建新的任务实例
-            var newTask = new RenderTaskViewModel(filePath, 1, 1);
-
-            // 重新加载文件属性
-            await newTask.LoadFilePropertiesAsync(_blenderPath!);
-
-            // 替换原任务
-            RenderTasks[currentIndex] = newTask;
-
-            // 重新订阅事件
-            SubscribeToTaskEvents(newTask);
-
-            // 如果这是之前选中的任务，重新选中新任务
-            if (wasSelected) SelectedTask = newTask;
+            // 更新队列统计信息
+            UpdateQueueStatistics();
 
             StatusMessageChanged?.Invoke(this,
-                string.Format(Localizer.Localizer.Instance["Toast_TaskReloaded"], Path.GetFileName(filePath)));
+                string.Format(Localizer.Localizer.Instance["Toast_TaskReloaded"], Path.GetFileName(task.BlendFilePath)));
+            
+            Console.WriteLine($"[RenderQueueViewModel] ✅ Task refreshed successfully without recreation");
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Task refresh failed: {ex.Message}");
             StatusMessageChanged?.Invoke(this,
                 string.Format(Localizer.Localizer.Instance["Toast_TaskReloadFailed"], ex.Message));
         }
@@ -1401,6 +1393,13 @@ public partial class RenderQueueViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanPauseQueue));
         OnPropertyChanged(nameof(CanResumeQueue));
         OnPropertyChanged(nameof(CanModifyTasks));
+
+        // 通知所有任务更新队列运行状态，影响CanRefresh属性
+        var isQueueRunning = QueueState == QueueState.Running;
+        foreach (var task in RenderTasks)
+        {
+            task.SetQueueRunningState(isQueueRunning);
+        }
     }
 
     private async Task<string> SelectBlendFile()
@@ -1578,6 +1577,9 @@ public partial class RenderQueueViewModel : ViewModelBase
 
                 RenderTasks.Add(task);
                 SubscribeToTaskEvents(task);
+
+                // 设置队列运行状态，影响CanRefresh属性
+                task.SetQueueRunningState(QueueState == QueueState.Running);
 
                 // 异步加载文件属性，不等待完成
                 if (IsBlenderServiceReady())
@@ -1809,6 +1811,9 @@ public partial class RenderQueueViewModel : ViewModelBase
                         // 添加到队列
                         RenderTasks.Add(task);
                         SubscribeToTaskEvents(task);
+
+                        // 设置队列运行状态，影响CanRefresh属性
+                        task.SetQueueRunningState(QueueState == QueueState.Running);
 
                         // 异步加载文件属性
                         if (IsBlenderServiceReady())
