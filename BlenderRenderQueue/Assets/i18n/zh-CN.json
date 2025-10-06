@@ -185,6 +185,8 @@
   "Restart": "重启",
   "RestartApplication": "重启应用程序",
   "Settings_ThemeChanged": "主题已切换",
+  "Settings_HardwareAccelerationLabel": "硬件加速:",
+  "Settings_HardwareAccelerationRestartWarning": "需要重启应用程序才能生效",
   "RenderTask_SettingsLocked": "任务正在运行,设置被锁定",
   "Stop Log": "停止日志",
   "Resume Log": "恢复日志",

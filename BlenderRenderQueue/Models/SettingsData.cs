@@ -36,7 +36,10 @@ public class SettingsData
     public string Language { get; set; } = "en-US"; 
 
     [JsonPropertyName("BaseTheme")]
-    public string BaseTheme { get; set; } = "Dark"; 
+    public string BaseTheme { get; set; } = "Dark";
+
+    [JsonPropertyName("HardwareAcceleration")]
+    public bool HardwareAcceleration { get; set; } = true; 
 
 
     public BlenderExecutable? GetSelectedBlender()

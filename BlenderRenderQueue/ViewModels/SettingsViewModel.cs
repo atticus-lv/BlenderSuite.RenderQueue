@@ -59,6 +59,12 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasUnsavedChanges; // 是否有未保存的更改
 
+    [ObservableProperty]
+    private bool _hardwareAcceleration = true; // 硬件加速设置，默认为开启
+
+    [ObservableProperty]
+    private bool _hardwareAccelerationChanged = false; // 硬件加速是否已更改
+
     private readonly SukiTheme _theme;
 
     /// <summary>
@@ -463,6 +469,31 @@ public partial class SettingsViewModel : ViewModelBase
         _theme.SwitchBaseTheme();
     }
 
+    [RelayCommand]
+    private void RestartApplication()
+    {
+        try
+        {
+            // 先保存设置
+            _ = Task.Run(async () => await SaveSettingsToFileAsync());
+            
+            // 使用FileSystemHelper重启应用程序
+            var success = BlenderRenderQueue.Helpers.FileSystemHelper.RestartApplication();
+            if (success)
+            {
+                Console.WriteLine("[SettingsViewModel] ✅ Application restart initiated");
+            }
+            else
+            {
+                Console.WriteLine("[SettingsViewModel] ❌ Failed to restart application");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SettingsViewModel] ❌ Error restarting application: {ex.Message}");
+        }
+    }
+
     partial void OnBaseThemeChanged(ThemeOption value)
     {
         if (value != null)
@@ -510,6 +541,17 @@ public partial class SettingsViewModel : ViewModelBase
         if (!_isLoadingSettings)
         {
             HasUnsavedChanges = true;
+        }
+    }
+
+    partial void OnHardwareAccelerationChanged(bool value)
+    {
+        // 标记有未保存的更改
+        if (!_isLoadingSettings)
+        {
+            HasUnsavedChanges = true;
+            // 标记硬件加速已更改，需要重启
+            HardwareAccelerationChanged = true;
         }
     }
 
@@ -565,6 +607,8 @@ public partial class SettingsViewModel : ViewModelBase
         
         // 标记已保存，清除未保存更改标记
         HasUnsavedChanges = false;
+        // 清除硬件加速变更标记
+        HardwareAccelerationChanged = false;
     }
 
     /// <summary>
@@ -589,7 +633,8 @@ public partial class SettingsViewModel : ViewModelBase
                 VideoCodec = VideoCodec.Value,
                 VideoQuality = VideoQuality.Value,
                 Language = Language.Value,
-                BaseTheme = BaseTheme.Value
+                BaseTheme = BaseTheme.Value,
+                HardwareAcceleration = HardwareAcceleration
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
@@ -719,6 +764,9 @@ public partial class SettingsViewModel : ViewModelBase
                     });
                 }
             }
+
+            // 加载硬件加速设置
+            HardwareAcceleration = settings.HardwareAcceleration;
 
             Console.WriteLine(
                 $"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");

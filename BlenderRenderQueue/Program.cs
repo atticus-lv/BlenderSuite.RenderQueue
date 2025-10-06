@@ -1,5 +1,9 @@
 ﻿using Avalonia;
 using System;
+using System.IO;
+using System.Text.Json;
+using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Business.Persistence;
 
 namespace BlenderRenderQueue;
 
@@ -14,8 +18,63 @@ sealed class Program
 
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
+    {
+        var appBuilder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();
+
+        // 根据设置选择渲染模式
+        var renderingMode = GetRenderingModeFromSettings();
+        appBuilder = appBuilder.With(new Win32PlatformOptions
+        {
+            RenderingMode = [renderingMode]
+        });
+
+        return appBuilder;
+    }
+
+    /// <summary>
+    /// 从设置文件中读取硬件加速设置，决定使用哪种渲染模式
+    /// </summary>
+    /// <returns>渲染模式</returns>
+    private static Win32RenderingMode GetRenderingModeFromSettings()
+    {
+        try
+        {
+            var settingsFilePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "BlenderRenderQueue",
+                "settings.json"
+            );
+
+            if (!File.Exists(settingsFilePath))
+            {
+                Console.WriteLine("[Program] Settings file not found, using default hardware acceleration (WGL)");
+                return Win32RenderingMode.Wgl;
+            }
+
+            var json = File.ReadAllText(settingsFilePath);
+            var settings = JsonSerializer.Deserialize<SettingsData>(json, new JsonSerializerOptions
+            {
+                TypeInfoResolver = SettingsJsonContext.Default
+            });
+
+            if (settings?.HardwareAcceleration == true)
+            {
+                Console.WriteLine("[Program] Hardware acceleration enabled, using WGL rendering");
+                return Win32RenderingMode.Wgl;
+            }
+            else
+            {
+                Console.WriteLine("[Program] Hardware acceleration disabled, using Angle EGL rendering");
+                return Win32RenderingMode.AngleEgl;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Program] Error reading settings, using default hardware acceleration (WGL): {ex.Message}");
+            return Win32RenderingMode.Wgl;
+        }
+    }
 }
