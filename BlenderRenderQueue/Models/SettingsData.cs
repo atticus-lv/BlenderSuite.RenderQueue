@@ -39,7 +39,7 @@ public class SettingsData
     public string BaseTheme { get; set; } = "Dark";
 
     [JsonPropertyName("HardwareAcceleration")]
-    public bool HardwareAcceleration { get; set; } = true; 
+    public bool HardwareAcceleration { get; set; } = false; 
 
 
     public BlenderExecutable? GetSelectedBlender()
