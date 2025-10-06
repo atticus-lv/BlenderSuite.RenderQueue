@@ -28,13 +28,7 @@ public partial class App : Application
                 DataContext = new MainWindowViewModel(),
             };
             
-            // 订阅应用程序关闭事件，清理共享资源
             desktop.ShutdownRequested += OnShutdownRequested;
-            
-            // desktop.MainWindow = new HardwareChartTestWindow
-            // {
-            //     DataContext = new HardwareChartViewModel(),
-            // };
         }
 
         base.OnFrameworkInitializationCompleted();
