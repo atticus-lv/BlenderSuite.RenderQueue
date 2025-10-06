@@ -1,4 +1,4 @@
-namespace BlenderRenderQueue.Services.Business.BlenderService.BlenderProcess;
+namespace BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 
 /// <summary>
 /// Blender进程配置

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Business;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Business;
 
 /// <summary>
 /// 业务解析器接口 - 面向具体业务场景的解析器

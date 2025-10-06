@@ -2,9 +2,9 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.BlenderProcess;
+namespace BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 
 /// <summary>
 /// Blender视频生成进程 - 用于生成视频

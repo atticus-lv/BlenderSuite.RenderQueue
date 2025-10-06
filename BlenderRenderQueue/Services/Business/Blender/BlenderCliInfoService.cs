@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService;
+namespace BlenderRenderQueue.Services.Business.Blender;
 
 public sealed class BlenderCliInfoService : IBlenderCliInfoService
 {

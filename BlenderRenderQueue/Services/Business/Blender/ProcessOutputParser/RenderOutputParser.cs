@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using BlenderRenderQueue.Models;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 
 public sealed class RenderOutputParser : IRenderOutputParser
 {

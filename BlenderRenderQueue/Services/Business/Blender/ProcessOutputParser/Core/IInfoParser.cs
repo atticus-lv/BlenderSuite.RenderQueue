@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
 /// <summary>
 /// 信息解析器接口

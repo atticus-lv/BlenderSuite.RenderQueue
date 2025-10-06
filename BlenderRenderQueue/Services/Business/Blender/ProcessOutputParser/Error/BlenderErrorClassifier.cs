@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Error;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Error;
 
 /// <summary>
 /// Blender错误分类器

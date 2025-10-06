@@ -1,6 +1,6 @@
 using System;
 using System.Text.Json.Serialization;
-using BlenderRenderQueue.Services.Business.BlenderService;
+using BlenderRenderQueue.Services.Business.Blender;
 
 namespace BlenderRenderQueue.Models;
 

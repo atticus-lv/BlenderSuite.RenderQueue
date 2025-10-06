@@ -3,9 +3,9 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.BlenderProcess;
+namespace BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 
 /// <summary>
 /// Blender进程基类 - 包含所有进程的公共逻辑

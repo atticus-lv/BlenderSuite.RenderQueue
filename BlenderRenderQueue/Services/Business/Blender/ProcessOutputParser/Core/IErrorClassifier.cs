@@ -1,4 +1,4 @@
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
 /// <summary>
 /// 错误分类器接口

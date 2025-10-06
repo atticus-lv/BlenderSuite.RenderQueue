@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using BlenderRenderQueue.Models;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Info;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Info;
 
 /// <summary>
 /// 渲染进度解析器

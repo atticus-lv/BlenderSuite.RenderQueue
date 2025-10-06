@@ -1,6 +1,6 @@
 using System;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService;
+namespace BlenderRenderQueue.Services.Business.Blender;
 
 public sealed class BlenderVersionInfo
 {

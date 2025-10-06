@@ -8,10 +8,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using BlenderRenderQueue.Models;
-using BlenderRenderQueue.Services.Business.BlenderService.BlenderProcess;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser;
+using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService;
+namespace BlenderRenderQueue.Services.Business.Blender;
 
 /// <summary>
 /// 视频渲染输出解析器

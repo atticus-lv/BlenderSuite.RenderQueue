@@ -1,9 +1,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using BlenderRenderQueue.Services.Business.BlenderService.BlenderProcess;
+using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService;
+namespace BlenderRenderQueue.Services.Business.Blender;
 
 /// <summary>
 /// Blender进程服务 - 简化进程管理的服务包装器

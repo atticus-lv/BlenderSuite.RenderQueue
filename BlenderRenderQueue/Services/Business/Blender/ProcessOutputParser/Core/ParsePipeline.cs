@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
 /// <summary>
 /// 解析管道

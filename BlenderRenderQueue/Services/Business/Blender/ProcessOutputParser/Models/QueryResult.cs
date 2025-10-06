@@ -1,4 +1,4 @@
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Models;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Models;
 
 /// <summary>
 /// 查询结果信息

@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService;
+namespace BlenderRenderQueue.Services.Business.Blender;
 
 public interface IBlenderCliInfoService
 {

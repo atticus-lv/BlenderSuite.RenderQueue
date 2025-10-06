@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.BlenderProcess;
+namespace BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 
 /// <summary>
 /// Blender进程接口

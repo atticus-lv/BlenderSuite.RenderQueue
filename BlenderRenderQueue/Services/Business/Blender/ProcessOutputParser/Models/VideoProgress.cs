@@ -1,6 +1,6 @@
 using System;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Models;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Models;
 
 /// <summary>
 /// 视频进度信息

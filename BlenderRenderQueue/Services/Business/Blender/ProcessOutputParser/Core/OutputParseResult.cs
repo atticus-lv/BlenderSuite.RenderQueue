@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using BlenderRenderQueue.Models;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Models;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Models;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
 /// <summary>
 /// 输出解析结果

@@ -16,9 +16,9 @@ using System.IO;
 using System.Linq;
 using BlenderRenderQueue.Views;
 using BlenderRenderQueue.Converters;
-using BlenderRenderQueue.Services.Business.BlenderService;
-using BlenderRenderQueue.Services.Business.BlenderService.BlenderProcess;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser;
+using BlenderRenderQueue.Services.Business.Blender;
+using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 
 namespace BlenderRenderQueue.ViewModels;
 

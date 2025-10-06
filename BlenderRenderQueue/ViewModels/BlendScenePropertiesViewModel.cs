@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Helpers;
-using BlenderRenderQueue.Services.Business.BlenderService;
+using BlenderRenderQueue.Services.Business.Blender;
 using CommunityToolkit.Mvvm.Input;
 
 namespace BlenderRenderQueue.ViewModels;

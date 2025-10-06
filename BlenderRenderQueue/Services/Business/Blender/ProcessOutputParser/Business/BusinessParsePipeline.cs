@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Business;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Business;
 
 /// <summary>
 /// 业务解析管道 - 组合基础解析器和业务解析器

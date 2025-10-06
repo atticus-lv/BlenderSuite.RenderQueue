@@ -1,7 +1,7 @@
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Error;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Info;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Error;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Info;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
 /// <summary>
 /// 解析管道工厂

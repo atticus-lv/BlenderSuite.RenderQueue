@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using BlenderRenderQueue.Models;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Business;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Business;
 
 /// <summary>
 /// 渲染业务解析器 - 将基础解析结果转换为渲染业务事件

@@ -10,8 +10,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using BlenderRenderQueue.Models;
-using BlenderRenderQueue.Services.Business.BlenderService;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser;
+using BlenderRenderQueue.Services.Business.Blender;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 using BlenderRenderQueue.Services.UI;
 using BlenderRenderQueue.ViewModels;
 

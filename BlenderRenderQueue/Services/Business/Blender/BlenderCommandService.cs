@@ -1,9 +1,9 @@
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using BlenderRenderQueue.Services.Business.BlenderService.BlenderProcess;
+using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService;
+namespace BlenderRenderQueue.Services.Business.Blender;
 
 public sealed class BlenderCommandService : IBlenderCommandService
 {

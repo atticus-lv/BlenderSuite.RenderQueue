@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using BlenderRenderQueue.Models;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Error;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Info;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Error;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Info;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Business;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Business;
 
 /// <summary>
 /// 业务解析管道工厂

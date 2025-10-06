@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Core;
-using BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Models;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
+using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Models;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser.Info;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Info;
 
 /// <summary>
 /// 查询结果解析器

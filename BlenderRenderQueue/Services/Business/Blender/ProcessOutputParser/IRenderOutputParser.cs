@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using BlenderRenderQueue.Models;
 
-namespace BlenderRenderQueue.Services.Business.BlenderService.ProcessOutputParser;
+namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 
 public interface IRenderOutputParser
 {
