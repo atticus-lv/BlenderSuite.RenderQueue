@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using Avalonia.Controls.Notifications;
@@ -24,6 +25,16 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace BlenderRenderQueue.ViewModels;
+
+/// <summary>
+/// 队列渲染结束后的行为选项
+/// </summary>
+public enum PostRenderBehavior
+{
+    None,
+    Shutdown,
+    Restart
+}
 
 public partial class RenderQueueViewModel : ViewModelBase
 {
@@ -54,6 +65,9 @@ public partial class RenderQueueViewModel : ViewModelBase
     [ObservableProperty]
     private bool _autoStartNext = true; // 自动开始下一个任务
 
+    [ObservableProperty]
+    private PostRenderBehavior _postRenderBehavior = PostRenderBehavior.None; // 队列渲染结束后的行为
+
     
     // 硬件监控现在由HardwareChartView直接管理，不再需要在这里维护
     
@@ -67,7 +81,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     // 剩余时间计算相关
     private readonly Queue<TimeSpan> _recentFrameRenderTimes = new(); // 最近帧渲染时间队列
     private const int MaxRecentFrames = 3; // 最多记录3帧
-    private Timer? _remainingTimeTimer; // 剩余时间更新定时器
+    private System.Timers.Timer? _remainingTimeTimer; // 剩余时间更新定时器
 
     [ObservableProperty]
     private string _remainingTimeText = string.Empty; // 剩余时间文本
@@ -215,6 +229,23 @@ public partial class RenderQueueViewModel : ViewModelBase
     public bool CanResumeQueue => QueueState == QueueState.Paused;
 
     /// <summary>
+    /// 获取当前后渲染行为的图标
+    /// </summary>
+    public string PostRenderBehaviorIcon
+    {
+        get
+        {
+            return PostRenderBehavior switch
+            {
+                PostRenderBehavior.None => "Close",
+                PostRenderBehavior.Shutdown => "Power",
+                PostRenderBehavior.Restart => "Restart",
+                _ => "Close"
+            };
+        }
+    }
+
+    /// <summary>
     ///     设置全局渲染超时时间
     /// </summary>
     /// <param name="timeoutSeconds">超时时间（秒）</param>
@@ -273,7 +304,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     public RenderQueueViewModel()
     {
         // 初始化剩余时间更新定时器
-        _remainingTimeTimer = new Timer(1000); // 每秒更新一次
+        _remainingTimeTimer = new System.Timers.Timer(1000); // 每秒更新一次
         _remainingTimeTimer.Elapsed += OnRemainingTimeTimerElapsed;
         _remainingTimeTimer.AutoReset = true;
 
@@ -310,6 +341,11 @@ public partial class RenderQueueViewModel : ViewModelBase
                 OnPropertyChanged(nameof(CanPauseQueue));
                 OnPropertyChanged(nameof(CanResumeQueue));
                 OnPropertyChanged(nameof(CanModifyTasks));
+            }
+            
+            if (e.PropertyName == nameof(PostRenderBehavior))
+            {
+                OnPropertyChanged(nameof(PostRenderBehaviorIcon));
             }
         };
 
@@ -767,6 +803,17 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         var index = RenderTasks.IndexOf(SelectedTask);
         if (index < RenderTasks.Count - 1) RenderTasks.Move(index, RenderTasks.Count - 1);
+    }
+
+    [RelayCommand]
+    private void SetPostRenderBehavior(string behavior)
+    {
+        if (Enum.TryParse<PostRenderBehavior>(behavior, out var parsedBehavior))
+        {
+            PostRenderBehavior = parsedBehavior;
+            OnPropertyChanged(nameof(PostRenderBehaviorIcon));
+            Console.WriteLine($"[RenderQueueViewModel] Post-render behavior set to: {parsedBehavior}");
+        }
     }
 
     [RelayCommand]
@@ -1295,7 +1342,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 
-    private void UpdateQueueStatistics()
+    private async void UpdateQueueStatistics()
     {
         ActiveTaskCount = RenderTasks.Count(t => t.Status == RenderTaskStatus.Running);
         CompletedTaskCount = RenderTasks.Count(t => t.Status == RenderTaskStatus.Completed);
@@ -1330,6 +1377,9 @@ public partial class RenderQueueViewModel : ViewModelBase
                     this.ShowSuccessToast(
                         Localizer.Localizer.Instance["Queue_Completed"],
                         string.Format(Localizer.Localizer.Instance["Queue_AllTasksCompleted"], completedTasks, totalTasks));
+
+                    // 处理队列完成后的行为
+                    await HandlePostRenderBehaviorAsync();
                 }
                 else
                 {
@@ -1871,6 +1921,73 @@ public partial class RenderQueueViewModel : ViewModelBase
         catch (Exception ex)
         {
             Console.WriteLine($"[RenderQueueViewModel] ❌ Error handling file change: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 处理队列完成后的行为
+    /// </summary>
+    private async Task HandlePostRenderBehaviorAsync()
+    {
+        if (PostRenderBehavior == PostRenderBehavior.None)
+            return;
+
+        try
+        {
+            string actionType;
+            bool success = false;
+
+            switch (PostRenderBehavior)
+            {
+                case PostRenderBehavior.Shutdown:
+                    actionType = Localizer.Localizer.Instance["SystemControl_Shutdown"];
+                    break;
+                case PostRenderBehavior.Restart:
+                    actionType = Localizer.Localizer.Instance["SystemControl_Restart"];
+                    break;
+                default:
+                    return;
+            }
+
+            // 显示倒计时对话框
+            var isCancelled = await SystemControlHelper.ShowCountdownDialogAsync(actionType, 60);
+            
+            if (!isCancelled)
+            {
+                // 用户没有取消，执行系统操作
+                if (PostRenderBehavior == PostRenderBehavior.Shutdown)
+                {
+                    success = await SystemControlHelper.ShutdownAsync(60, CancellationToken.None);
+                }
+                else if (PostRenderBehavior == PostRenderBehavior.Restart)
+                {
+                    success = await SystemControlHelper.RestartAsync(60, CancellationToken.None);
+                }
+                
+                if (success)
+                {
+                    Console.WriteLine($"[RenderQueueViewModel] ✅ {actionType} scheduled successfully");
+                }
+                else
+                {
+                    Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to schedule {actionType}");
+                    StatusMessageChanged?.Invoke(this, 
+                        string.Format(Localizer.Localizer.Instance["SystemControl_ActionFailed"], actionType));
+                }
+            }
+            else
+            {
+                // 用户取消了操作
+                Console.WriteLine($"[RenderQueueViewModel] ⚠️ {actionType} cancelled by user");
+                StatusMessageChanged?.Invoke(this, 
+                    string.Format(Localizer.Localizer.Instance["SystemControl_ActionCancelled"], actionType));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Error handling post-render behavior: {ex.Message}");
+            StatusMessageChanged?.Invoke(this, 
+                string.Format(Localizer.Localizer.Instance["SystemControl_ActionError"], ex.Message));
         }
     }
 

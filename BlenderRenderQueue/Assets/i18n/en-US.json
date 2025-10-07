@@ -212,5 +212,15 @@
   "VideoGeneration_LogStarting": "[VIDEO] Starting video generation: {0}",
   "VideoGeneration_LogSuccess": "[VIDEO] ✅ Video generation successful: {0}",
   "VideoGeneration_LogFailed": "[VIDEO] ❌ Video generation failed",
-  "VideoGeneration_LogError": "[VIDEO] ❌ Video generation error: {0}"
+  "VideoGeneration_LogError": "[VIDEO] ❌ Video generation error: {0}",
+  "SystemControl_PostRenderBehavior": "Post-Render Behavior",
+  "SystemControl_None": "None",
+  "SystemControl_Shutdown": "Shutdown",
+  "SystemControl_Restart": "Restart",
+  "SystemControl_CountdownTitle": "System Action",
+  "SystemControl_CountdownMessage": "The system will {0} in:",
+  "SystemControl_Cancel": "Cancel",
+  "SystemControl_ActionFailed": "Failed to schedule {0}",
+  "SystemControl_ActionCancelled": "{0} cancelled by user",
+  "SystemControl_ActionError": "Error during system action: {0}"
 }

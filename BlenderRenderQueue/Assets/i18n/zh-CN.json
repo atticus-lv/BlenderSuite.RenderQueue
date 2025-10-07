@@ -212,5 +212,15 @@
   "VideoGeneration_LogStarting": "[VIDEO] 开始生成视频: {0}",
   "VideoGeneration_LogSuccess": "[VIDEO] ✅ 视频生成成功: {0}",
   "VideoGeneration_LogFailed": "[VIDEO] ❌ 视频生成失败",
-  "VideoGeneration_LogError": "[VIDEO] ❌ 视频生成错误: {0}"
+  "VideoGeneration_LogError": "[VIDEO] ❌ 视频生成错误: {0}",
+  "SystemControl_PostRenderBehavior": "渲染完成后行为",
+  "SystemControl_None": "无",
+  "SystemControl_Shutdown": "关机",
+  "SystemControl_Restart": "重启",
+  "SystemControl_CountdownTitle": "系统操作",
+  "SystemControl_CountdownMessage": "系统将在以下时间后{0}:",
+  "SystemControl_Cancel": "取消",
+  "SystemControl_ActionFailed": "计划{0}失败",
+  "SystemControl_ActionCancelled": "用户取消了{0}",
+  "SystemControl_ActionError": "系统操作时出错: {0}"
 }
