@@ -85,6 +85,35 @@ public partial class RenderQueueViewModel : ViewModelBase
             };
             return $"{prefix}: {action}";
         }
+    }
+
+    /// <summary>
+    /// 后渲染行为图标颜色
+    /// </summary>
+    public Avalonia.Media.IBrush PostRenderBehaviorIconColor
+    {
+        get
+        {
+            return PostRenderBehavior switch
+            {
+                PostRenderBehavior.None => GetResourceBrush("SukiTextColor") ?? Avalonia.Media.Brushes.Gray,
+                PostRenderBehavior.Shutdown => GetResourceBrush("SukiDangerColor") ?? Avalonia.Media.Brushes.Red,
+                PostRenderBehavior.Restart => GetResourceBrush("SukiWarningColor") ?? Avalonia.Media.Brushes.Orange,
+                _ => GetResourceBrush("SukiTextColor") ?? Avalonia.Media.Brushes.Gray
+            };
+        }
+    }
+
+    /// <summary>
+    /// 获取资源画笔
+    /// </summary>
+    private Avalonia.Media.IBrush? GetResourceBrush(string resourceKey)
+    {
+        if (Avalonia.Application.Current?.TryGetResource(resourceKey, Avalonia.Styling.ThemeVariant.Default, out var resource) == true)
+        {
+            return resource as Avalonia.Media.IBrush;
+        }
+        return null;
     } // 队列渲染结束后的行为
 
     
@@ -366,6 +395,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(PostRenderBehaviorIcon));
                 OnPropertyChanged(nameof(PostRenderBehaviorText));
+                OnPropertyChanged(nameof(PostRenderBehaviorIconColor));
             }
         };
 
