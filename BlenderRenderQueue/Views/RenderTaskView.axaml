@@ -74,7 +74,9 @@
                                                                Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
-                                <MenuItem></MenuItem>
+                                
+                                <Separator />
+                                
                                 <MenuItem Header="{i18n:Localize Queue_Refresh}"
                                           Command="{Binding RefreshFileInfoCommand}"
                                           IsEnabled="{Binding CanRefresh}">

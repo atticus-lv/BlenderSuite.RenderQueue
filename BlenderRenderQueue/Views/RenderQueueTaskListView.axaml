@@ -83,7 +83,20 @@
                                                                Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
-
+                                <Separator />
+                                
+                                <MenuItem Header="{i18n:Localize Queue_CopyTask}"
+                                          Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CopyTaskCommand}"
+                                          CommandParameter="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext)}"
+                                          IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).IsValid}">
+                                    <MenuItem.Icon>
+                                        <material:MaterialIcon Kind="ContentCopy" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                
+                                <Separator />
+                                
                                 <MenuItem Header="{i18n:Localize Queue_Refresh}"
                                           Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).RefreshFileInfoCommand}"
                                           IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).CanRefresh}">

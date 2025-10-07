@@ -769,6 +769,90 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (index < RenderTasks.Count - 1) RenderTasks.Move(index, RenderTasks.Count - 1);
     }
 
+    [RelayCommand]
+    private void CopyTask(RenderTaskViewModel? taskToCopy)
+    {
+        if (taskToCopy == null) return;
+
+        try
+        {
+            // 创建新任务，复制所有属性
+            var newTask = new RenderTaskViewModel(
+                taskToCopy.BlendFilePath,
+                taskToCopy.StartFrame,
+                taskToCopy.EndFrame,
+                taskToCopy.AutoStart,
+                taskToCopy.OverrideFrameRange);
+
+            // 复制所有设置
+            newTask.Enable = taskToCopy.Enable;
+            
+            // 保存场景覆写设置，稍后在文件属性加载完成后设置
+            var savedOverrideScene = taskToCopy.OverrideScene;
+            var savedSelectedSceneName = taskToCopy.SelectedSceneName;
+            
+            // 设置全局参数
+            newTask.SetGlobalRenderTimeout(_globalRenderTimeoutSeconds);
+            newTask.SetGlobalMaxRetryAttempts(_globalMaxRetryAttempts);
+            newTask.SetVideoCodec(_videoCodec);
+            newTask.SetVideoQuality(_videoQuality);
+            newTask.SetProcessService(_processService);
+
+            // 添加到队列
+            RenderTasks.Add(newTask);
+
+            // 订阅任务事件
+            SubscribeToTaskEvents(newTask);
+
+            // 设置队列运行状态
+            newTask.SetQueueRunningState(QueueState == QueueState.Running);
+
+            // 选择新复制的任务
+            SelectedTask = newTask;
+
+            // 异步加载文件属性
+            if (IsBlenderServiceReady())
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await newTask.LoadFilePropertiesAsync(_blenderPath!);
+                        
+                        // 文件属性加载完成后，设置场景覆写属性
+                        if (savedOverrideScene && !string.IsNullOrEmpty(savedSelectedSceneName))
+                        {
+                            // 在UI线程上设置场景覆写
+                            Dispatcher.UIThread.Post(() =>
+                            {
+                                newTask.OverrideScene = savedOverrideScene;
+                                newTask.SelectedSceneName = savedSelectedSceneName;
+                                Console.WriteLine($"[RenderQueueViewModel] ✅ Scene override restored: {savedSelectedSceneName}");
+                            });
+                        }
+                        
+                        Console.WriteLine($"[RenderQueueViewModel] ✅ Copied task file properties loaded: {Path.GetFileName(newTask.BlendFilePath)}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to load file properties for copied task {Path.GetFileName(newTask.BlendFilePath)}: {ex.Message}");
+                    }
+                });
+            }
+
+            StatusMessageChanged?.Invoke(this,
+                string.Format(Localizer.Localizer.Instance["Toast_TaskCopied"], Path.GetFileName(taskToCopy.BlendFilePath)));
+
+            Console.WriteLine($"[RenderQueueViewModel] ✅ Task copied successfully: {Path.GetFileName(taskToCopy.BlendFilePath)}");
+        }
+        catch (Exception ex)
+        {
+            StatusMessageChanged?.Invoke(this,
+                string.Format(Localizer.Localizer.Instance["Toast_TaskCopyFailed"], ex.Message));
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to copy task: {ex.Message}");
+        }
+    }
+
 
 
     public void SetBlenderService(BlenderProcessService? blenderProcessService)
