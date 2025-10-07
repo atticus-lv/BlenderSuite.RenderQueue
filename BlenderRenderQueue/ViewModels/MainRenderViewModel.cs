@@ -470,87 +470,8 @@ public partial class MainRenderViewModel : ViewModelBase
         }
     }
 
-    /// <summary>
-    /// 显示视频生成成功 Toast，并自动打开视频所在位置
-    /// </summary>
-    /// <param name="statusMessage">状态消息，包含视频路径信息</param>
-    private void ShowVideoGenerationSuccessToast(string statusMessage)
-    {
-        try
-        {
-            // 从状态消息中提取视频路径
-            var videoPath = ExtractVideoPathFromStatusMessage(statusMessage);
 
-            // 显示简单的成功通知
-            ShowToast(Localizer.Localizer.Instance["VideoGeneration_SuccessTitle"], 
-                     Localizer.Localizer.Instance["VideoGeneration_SuccessMessage"], 
-                     NotificationType.Success);
 
-            // 自动打开视频所在位置
-            if (!string.IsNullOrEmpty(videoPath))
-            {
-                // 延迟一点时间再打开，让用户看到toast通知
-                Task.Delay(1000).ContinueWith(_ =>
-                {
-                    Dispatcher.UIThread.Invoke(() => { OpenVideoLocation(videoPath); });
-                });
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[MainRenderViewModel] Error showing video generation success toast: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// 显示视频生成进度 Toast
-    /// </summary>
-    private void ShowVideoGenerationProgressToast()
-    {
-        try
-        {
-            var toastManager = GetToastManager();
-            if (toastManager == null) return;
-            // 创建进度条
-            _videoGenerationProgressBar = new ProgressBar
-            {
-                Value = 0,
-                ShowProgressText = true,
-                Minimum = 0,
-                Maximum = 100
-            };
-
-            // 创建进度 Toast
-            _videoGenerationToast = toastManager.CreateToast()
-                .WithTitle(Localizer.Localizer.Instance["VideoGeneration_ToastTitle"])
-                .WithContent(_videoGenerationProgressBar)
-                .OfType(NotificationType.Information)
-                .Queue();
-
-            // 订阅渲染队列的进度更新事件
-            RenderQueue.PropertyChanged += OnRenderQueueProgressChanged;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[MainRenderViewModel] Error showing video generation progress toast: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// 监听渲染队列进度变化，更新 Toast 进度条
-    /// </summary>
-    private void OnRenderQueueProgressChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(RenderQueueViewModel.VideoGenerationProgress) &&
-            _videoGenerationProgressBar != null)
-        {
-            Dispatcher.UIThread.Invoke(() =>
-            {
-                // BlenderVideoService 已经将帧数转换为百分比 (0-100)，直接使用
-                _videoGenerationProgressBar.Value = RenderQueue.VideoGenerationProgress;
-            });
-        }
-    }
 
     private void OnRenderQueuePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
@@ -584,8 +505,6 @@ public partial class MainRenderViewModel : ViewModelBase
                 _videoGenerationProgressBar = null;
             }
 
-            // 取消订阅进度更新事件
-            RenderQueue.PropertyChanged -= OnRenderQueueProgressChanged;
         }
         catch (Exception ex)
         {
@@ -598,24 +517,6 @@ public partial class MainRenderViewModel : ViewModelBase
     /// </summary>
     /// <param name="statusMessage">状态消息</param>
     /// <returns>视频路径</returns>
-    private string ExtractVideoPathFromStatusMessage(string statusMessage)
-    {
-        try
-        {
-            // 状态消息格式通常是 "视频生成完成: C:\path\to\video.mp4"
-            var successPrefix = Localizer.Localizer.Instance["VideoGeneration_SuccessPrefix"];
-            if (statusMessage.Contains(successPrefix))
-            {
-                return statusMessage.Substring(statusMessage.IndexOf(successPrefix) + successPrefix.Length);
-            }
-
-            return string.Empty;
-        }
-        catch
-        {
-            return string.Empty;
-        }
-    }
 
     /// <summary>
     /// 播放视频
@@ -630,32 +531,6 @@ public partial class MainRenderViewModel : ViewModelBase
         }
     }
 
-    /// <summary>
-    /// 打开视频所在位置
-    /// </summary>
-    /// <param name="videoPath">视频路径</param>
-    private void OpenVideoLocation(string videoPath)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(videoPath))
-            {
-                ShowToast("打开失败", "视频路径为空", NotificationType.Error);
-                return;
-            }
-
-            var success = FileSystemHelper.OpenFileDirectory(videoPath);
-            if (!success)
-            {
-                ShowToast("打开失败", "无法打开视频所在位置", NotificationType.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[MainRenderViewModel] ❌ Error opening video location: {ex.Message}");
-            ShowToast("打开失败", $"无法打开位置: {ex.Message}", NotificationType.Error);
-        }
-    }
 
     private void OnConfirmDialogRequested(object? sender, ConfirmDialogRequestedEventArgs e)
     {
@@ -729,28 +604,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnQueueStatusChanged(object? sender, QueueStatusChangedEventArgs e)
     {
-        // 检查是否是视频生成相关的状态消息，显示 Toast 提示
-        if (e.StatusMessage.Contains("Toast_VideoGenerationStarted"))
-        {
-            ShowVideoGenerationProgressToast();
-            StatusMessage = Localizer.Localizer.Instance[e.StatusMessage];
-        }
-        else if (e.StatusMessage.Contains("Toast_VideoGenerationCompleted") || 
-                 e.StatusMessage.Contains(Localizer.Localizer.Instance["VideoGeneration_SuccessPrefix"]))
-        {
-            DismissVideoGenerationToast();
-            ShowVideoGenerationSuccessToast(e.StatusMessage);
-            StatusMessage = e.StatusMessage;
-        }
-        else if (e.StatusMessage.Contains("Toast_VideoGenerationFailed") || e.StatusMessage.Contains("Toast_VideoGenerationError"))
-        {
-            DismissVideoGenerationToast();
-            ShowToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], 
-                     Localizer.Localizer.Instance[e.StatusMessage], 
-                     NotificationType.Error);
-            StatusMessage = Localizer.Localizer.Instance[e.StatusMessage];
-        }
-        else
+        // 视频生成相关的状态消息现在在任务级别处理，这里不再需要特殊处理
         {
             try
             {
@@ -806,7 +660,6 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.StatusMessageChanged -= OnRenderQueueStatusMessageChanged;
         RenderQueue.ConfirmDialogRequested -= OnConfirmDialogRequested;
         RenderQueue.ToastRequested -= OnToastRequested;
-        RenderQueue.PropertyChanged -= OnRenderQueueProgressChanged;
         RenderQueue.PropertyChanged -= OnRenderQueuePropertyChanged;
 
         if (_settingsViewModel != null)

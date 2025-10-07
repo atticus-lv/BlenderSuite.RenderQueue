@@ -80,9 +80,6 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         
         // 设置其他属性
         AutoStartNext = true;
-        IsGeneratingVideo = false;
-        VideoGenerationProgress = 0.0;
-        VideoGenerationStatus = string.Empty;
         
         // 设置模拟的剩余时间
         RemainingTimeText = "00:05:30";

@@ -90,6 +90,11 @@ public partial class RenderTaskViewModel : ViewModelBase
         UpdateStatusDependentProperties();
     }
 
+    partial void OnIsGeneratingVideoChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanGenerateVideo));
+    }
+
     [ObservableProperty]
     private bool _isDropTarget = false;
 
@@ -195,6 +200,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     public bool ShouldShowProgress => IsValid && Status is RenderTaskStatus.Running or RenderTaskStatus.Paused;
 
     /// <summary>
+    /// 是否可以生成视频
+    /// </summary>
+    public bool CanGenerateVideo => IsValid && !IsGeneratingVideo && !string.IsNullOrEmpty(FinalSceneProperties.FramePath) && _processService != null;
+
+    /// <summary>
     /// 获取状态对应的本地化文本键名
     /// </summary>
     public string StatusText => Status.GetLocalizationKey();
@@ -209,6 +219,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanDelete));
         OnPropertyChanged(nameof(CanRefresh));
         OnPropertyChanged(nameof(ShouldShowProgress));
+        OnPropertyChanged(nameof(CanGenerateVideo));
         OnPropertyChanged(nameof(StatusText));
     }
 
@@ -242,6 +253,33 @@ public partial class RenderTaskViewModel : ViewModelBase
             OnPropertyChanged(nameof(CanRefresh));
             Console.WriteLine($"[RenderTaskViewModel] Queue running state changed to: {isQueueRunning}, CanRefresh: {CanRefresh}");
         }
+    }
+
+    /// <summary>
+    /// 设置视频编码器
+    /// </summary>
+    /// <param name="codec">编码器名称</param>
+    public void SetVideoCodec(string codec)
+    {
+        _videoCodec = codec;
+    }
+
+    /// <summary>
+    /// 设置视频质量
+    /// </summary>
+    /// <param name="quality">质量设置</param>
+    public void SetVideoQuality(string quality)
+    {
+        _videoQuality = quality;
+    }
+
+    /// <summary>
+    /// 设置进程管理服务
+    /// </summary>
+    /// <param name="processService">进程管理服务</param>
+    public void SetProcessService(BlenderProcessService? processService)
+    {
+        _processService = processService;
     }
 
     /// <summary>
@@ -533,6 +571,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// </summary>
     public event EventHandler? FrameRangeChanged;
 
+    /// <summary>
+    /// 视频生成状态变化事件
+    /// </summary>
+    public event EventHandler<string>? VideoGenerationStatusChanged;
+
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 
     [ObservableProperty]
@@ -541,11 +584,26 @@ public partial class RenderTaskViewModel : ViewModelBase
     [ObservableProperty]
     private string _logPauseButtonText = "Stop Log";
 
+    // 视频生成相关属性
+    [ObservableProperty]
+    private bool _isGeneratingVideo; // 是否正在生成视频
+
+    [ObservableProperty]
+    private double _videoGenerationProgress; // 视频生成进度
+
+    [ObservableProperty]
+    private string _videoGenerationStatus = string.Empty; // 视频生成状态
+
     // 全局超时设置（从SettingsViewModel获取）
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
     private int _globalMaxRetryAttempts = 3; // 默认最大重试3次
     private int _currentFrameRetryAttempts = 0; // 当前帧的重试次数
     private IBlenderProcess? _currentBlenderProcess; // 存储当前的Blender进程实例
+
+    // 视频生成相关设置
+    private string _videoCodec = "H264"; // 默认使用H264编码
+    private string _videoQuality = "PERC_LOSSLESS"; // 默认感知无损质量
+    private BlenderProcessService? _processService; // 进程管理服务
 
     [ObservableProperty]
     private RenderTaskStatus _status = RenderTaskStatus.Pending;
@@ -1166,6 +1224,119 @@ public partial class RenderTaskViewModel : ViewModelBase
         catch (Exception ex)
         {
             EnqueueLog($"[ERROR] 打开文件夹失败: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task GenerateVideo()
+    {
+        try
+        {
+            // 检查 Blender 是否可用
+            if (_processService == null)
+            {
+                EnqueueLog("[ERROR] Blender 服务不可用，无法生成视频");
+                VideoGenerationStatusChanged?.Invoke(this, "Blender 服务不可用");
+                return;
+            }
+
+            // 获取帧路径目录
+            var framePath = FinalSceneProperties.FramePath;
+            if (string.IsNullOrEmpty(framePath))
+            {
+                EnqueueLog("[ERROR] 未找到帧路径，无法生成视频");
+                VideoGenerationStatusChanged?.Invoke(this, "未找到帧路径");
+                return;
+            }
+
+            var frameDirectory = Path.GetDirectoryName(framePath);
+            if (string.IsNullOrEmpty(frameDirectory) || !Directory.Exists(frameDirectory))
+            {
+                EnqueueLog($"[ERROR] 帧路径目录不存在: {frameDirectory}");
+                VideoGenerationStatusChanged?.Invoke(this, $"帧路径目录不存在: {frameDirectory}");
+                return;
+            }
+
+            // 检查目录中是否有图片文件
+            var supportedExtensions = new[] { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff", "*.tga" };
+            var hasImages = supportedExtensions.Any(ext =>
+                Directory.GetFiles(frameDirectory, ext, SearchOption.TopDirectoryOnly).Length > 0);
+
+            if (!hasImages)
+            {
+                EnqueueLog($"[ERROR] 帧路径目录中没有找到图片文件: {frameDirectory}");
+                VideoGenerationStatusChanged?.Invoke(this, $"帧路径目录中没有找到图片文件: {frameDirectory}");
+                return;
+            }
+
+            // 获取帧率
+            var fps = FinalSceneProperties.Fps ?? 24.0; // 默认 24fps
+
+            // 生成输出视频路径：与输入目录同名，放在同一层级
+            var inputDirectoryName = Path.GetFileName(frameDirectory);
+            var parentDirectory = Path.GetDirectoryName(frameDirectory);
+            var outputVideoPath = Path.Combine(parentDirectory ?? "", $"{inputDirectoryName}.mp4");
+
+            // 开始生成视频
+            IsGeneratingVideo = true;
+            VideoGenerationProgress = 0.0;
+            VideoGenerationStatus = "开始生成视频...";
+            EnqueueLog($"[VIDEO] 开始生成视频: {outputVideoPath}");
+            VideoGenerationStatusChanged?.Invoke(this, "开始生成视频");
+
+            // 使用进程管理服务创建视频生成进程
+            var videoProcess = await _processService.CreateVideoProcessAsync();
+            var success = false;
+
+            try
+            {
+                // 创建视频服务
+                var tempVideoService = new BlenderVideoService(videoProcess);
+
+                // 使用Blender生成视频
+                success = await tempVideoService.GenerateVideoFromImagesAsync(
+                    frameDirectory,
+                    outputVideoPath,
+                    fps,
+                    _videoCodec,
+                    _videoQuality,
+                    progress =>
+                    {
+                        // 更新进度
+                        VideoGenerationProgress = progress;
+                        VideoGenerationStatus = "正在生成视频...";
+                    });
+            }
+            finally
+            {
+                // 视频生成完成后停止并释放进程
+                await videoProcess.StopAsync();
+                _processService.UnregisterProcess(videoProcess.ProcessId);
+                videoProcess.Dispose();
+            }
+
+            if (success)
+            {
+                VideoGenerationStatus = "视频生成完成";
+                EnqueueLog($"[VIDEO] ✅ 视频生成成功: {outputVideoPath}");
+                VideoGenerationStatusChanged?.Invoke(this, $"视频生成成功: {outputVideoPath}");
+            }
+            else
+            {
+                VideoGenerationStatus = "视频生成失败";
+                EnqueueLog("[VIDEO] ❌ 视频生成失败");
+                VideoGenerationStatusChanged?.Invoke(this, "视频生成失败");
+            }
+        }
+        catch (Exception ex)
+        {
+            VideoGenerationStatus = $"视频生成错误: {ex.Message}";
+            EnqueueLog($"[VIDEO] ❌ 视频生成错误: {ex.Message}");
+            VideoGenerationStatusChanged?.Invoke(this, $"视频生成错误: {ex.Message}");
+        }
+        finally
+        {
+            IsGeneratingVideo = false;
         }
     }
 

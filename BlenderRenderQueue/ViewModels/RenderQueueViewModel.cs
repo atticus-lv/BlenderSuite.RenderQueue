@@ -54,14 +54,6 @@ public partial class RenderQueueViewModel : ViewModelBase
     [ObservableProperty]
     private bool _autoStartNext = true; // 自动开始下一个任务
 
-    [ObservableProperty]
-    private bool _isGeneratingVideo; // 是否正在生成视频
-
-    [ObservableProperty]
-    private double _videoGenerationProgress; // 视频生成进度
-
-    [ObservableProperty]
-    private string _videoGenerationStatus = string.Empty; // 视频生成状态
     
     // 硬件监控现在由HardwareChartView直接管理，不再需要在这里维护
     
@@ -400,6 +392,11 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 设置全局超时和重试次数
             task.SetGlobalRenderTimeout(_globalRenderTimeoutSeconds);
             task.SetGlobalMaxRetryAttempts(_globalMaxRetryAttempts);
+
+            // 设置视频生成相关参数
+            task.SetVideoCodec(_videoCodec);
+            task.SetVideoQuality(_videoQuality);
+            task.SetProcessService(_processService);
 
             // 先添加到队列，显示加载状态
             RenderTasks.Add(task);
@@ -774,123 +771,6 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
 
-    [RelayCommand]
-    private async Task GenerateVideoFromSelectedTask()
-    {
-        if (SelectedTask == null) return;
-
-        try
-        {
-            // 检查 Blender 是否可用
-            if (!IsBlenderServiceReady())
-            {
-                QueueStatusChanged?.Invoke(this,
-                    new QueueStatusChangedEventArgs(Localizer.Localizer.Instance["Toast_BlenderUnavailable"]));
-                return;
-            }
-
-            // 获取帧路径目录
-            var framePath = SelectedTask.ScenePropertiesView.SceneProperties.FramePath;
-            if (string.IsNullOrEmpty(framePath))
-            {
-                QueueStatusChanged?.Invoke(this,
-                    new QueueStatusChangedEventArgs(Localizer.Localizer.Instance["Toast_NoFramePath"]));
-                return;
-            }
-
-            var frameDirectory = Path.GetDirectoryName(framePath);
-            if (string.IsNullOrEmpty(frameDirectory) || !Directory.Exists(frameDirectory))
-            {
-                QueueStatusChanged?.Invoke(this,
-                    new QueueStatusChangedEventArgs(
-                        string.Format(Localizer.Localizer.Instance["Toast_FramePathNotExists"], frameDirectory)));
-                return;
-            }
-
-            // 检查目录中是否有图片文件
-            var supportedExtensions = new[] { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff", "*.tga" };
-            var hasImages = supportedExtensions.Any(ext =>
-                Directory.GetFiles(frameDirectory, ext, SearchOption.TopDirectoryOnly).Length > 0);
-
-            if (!hasImages)
-            {
-                QueueStatusChanged?.Invoke(this,
-                    new QueueStatusChangedEventArgs(
-                        string.Format(Localizer.Localizer.Instance["Toast_NoImagesInFramePath"], frameDirectory)));
-                return;
-            }
-
-            // 获取帧率
-            var fps = SelectedTask.ScenePropertiesView.SceneProperties.Fps ?? 24.0; // 默认 24fps
-
-            // 生成输出视频路径：与输入目录同名，放在同一层级
-            var inputDirectoryName = Path.GetFileName(frameDirectory);
-            var parentDirectory = Path.GetDirectoryName(frameDirectory);
-            var outputVideoPath = Path.Combine(parentDirectory ?? "", $"{inputDirectoryName}.mp4");
-
-            // 开始生成视频
-            IsGeneratingVideo = true;
-            VideoGenerationProgress = 0.0;
-            VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Starting"];
-            QueueStatusChanged?.Invoke(this,
-                new QueueStatusChangedEventArgs("Toast_VideoGenerationStarted"));
-
-            // 使用新的进程管理服务创建视频生成进程
-            var videoProcess = await _processService!.CreateVideoProcessAsync();
-            var success = false;
-
-            try
-            {
-                // 创建视频服务（需要适配新的进程接口）
-                var tempVideoService = new BlenderVideoService(videoProcess);
-
-                // 使用Blender生成视频
-                success = await tempVideoService.GenerateVideoFromImagesAsync(
-                    frameDirectory,
-                    outputVideoPath,
-                    fps,
-                    _videoCodec,
-                    _videoQuality,
-                    progress =>
-                    {
-                        // 更新进度
-                        VideoGenerationProgress = progress;
-                        VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Generating"];
-                    });
-            }
-            finally
-            {
-                // 视频生成完成后停止并释放进程
-                await videoProcess.StopAsync();
-                _processService.UnregisterProcess(videoProcess.ProcessId);
-                videoProcess.Dispose();
-            }
-
-            if (success)
-            {
-                VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Completed"];
-                var statusMessage = $"{Localizer.Localizer.Instance["VideoGeneration_SuccessPrefix"]}{outputVideoPath}";
-                QueueStatusChanged?.Invoke(this,
-                    new QueueStatusChangedEventArgs(statusMessage));
-            }
-            else
-            {
-                VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Failed"];
-                QueueStatusChanged?.Invoke(this,
-                    new QueueStatusChangedEventArgs("Toast_VideoGenerationFailed"));
-            }
-        }
-        catch (Exception ex)
-        {
-            VideoGenerationStatus = string.Format(Localizer.Localizer.Instance["VideoGeneration_Error"], ex.Message);
-            QueueStatusChanged?.Invoke(this,
-                new QueueStatusChangedEventArgs("Toast_VideoGenerationError"));
-        }
-        finally
-        {
-            IsGeneratingVideo = false;
-        }
-    }
 
     public void SetBlenderService(BlenderProcessService? blenderProcessService)
     {
@@ -1058,6 +938,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.FrameRangeChanged += OnTaskFrameRangeChanged;
         task.OpenInBlenderRequested += OnTaskOpenInBlenderRequested;
         task.OpenFileDirectoryRequested += OnTaskOpenFileDirectoryRequested;
+        task.VideoGenerationStatusChanged += OnTaskVideoGenerationStatusChanged;
     }
 
     private void UnsubscribeFromTaskEvents(RenderTaskViewModel task)
@@ -1072,6 +953,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.FrameRangeChanged -= OnTaskFrameRangeChanged;
         task.OpenInBlenderRequested -= OnTaskOpenInBlenderRequested;
         task.OpenFileDirectoryRequested -= OnTaskOpenFileDirectoryRequested;
+        task.VideoGenerationStatusChanged -= OnTaskVideoGenerationStatusChanged;
     }
 
     private void OnTaskStatusChanged(object? sender, RenderTaskStatusChangedEventArgs e)
@@ -1243,6 +1125,34 @@ public partial class RenderQueueViewModel : ViewModelBase
         catch (Exception ex)
         {
             Console.WriteLine($"[RenderQueueViewModel] ❌ Error opening file directory: {ex.Message}");
+        }
+    }
+
+    private void OnTaskVideoGenerationStatusChanged(object? sender, string statusMessage)
+    {
+        try
+        {
+            var task = sender as RenderTaskViewModel;
+            if (task == null) return;
+
+            Console.WriteLine($"[RenderQueueViewModel] Video generation status changed for task {Path.GetFileName(task.BlendFilePath)}: {statusMessage}");
+
+            // 转发状态消息到主视图模型
+            StatusMessageChanged?.Invoke(this, statusMessage);
+
+            // 如果是完成或失败状态，显示 Toast 通知
+            if (statusMessage.Contains("视频生成成功") || statusMessage.Contains("视频生成失败") || statusMessage.Contains("视频生成错误"))
+            {
+                var notificationType = statusMessage.Contains("视频生成成功") ? NotificationType.Success : NotificationType.Error;
+                ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
+                    "视频生成",
+                    statusMessage,
+                    notificationType));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Error handling video generation status change: {ex.Message}");
         }
     }
 
@@ -1566,6 +1476,11 @@ public partial class RenderQueueViewModel : ViewModelBase
                 // 设置 Enable 属性
                 task.Enable = taskInfo.Enable;
 
+                // 设置视频生成相关参数
+                task.SetVideoCodec(_videoCodec);
+                task.SetVideoQuality(_videoQuality);
+                task.SetProcessService(_processService);
+
                 // 保存场景覆写数据，稍后在文件属性加载完成后设置
                 var savedOverrideScene = taskInfo.Override?.OverrideScene;
 
@@ -1804,6 +1719,11 @@ public partial class RenderQueueViewModel : ViewModelBase
 
                         // 设置Enable属性
                         task.Enable = taskInfo.Enable;
+
+                        // 设置视频生成相关参数
+                        task.SetVideoCodec(_videoCodec);
+                        task.SetVideoQuality(_videoQuality);
+                        task.SetProcessService(_processService);
 
                         // 保存场景覆写数据
                         var savedOverrideScene = taskInfo.Override?.OverrideScene;

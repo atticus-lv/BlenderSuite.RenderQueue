@@ -72,25 +72,6 @@
                 <material:MaterialIcon Kind="AddBold" Width="24" Height="24" />
             </StackPanel>
         </Button>
-        <!-- Generate Video Button: Disable when pressed, showing a progress bar -->
-        <Button Grid.Row="1" Grid.ColumnSpan="3" Grid.Column="0" Classes="Rounded" Margin="4 8"
-                Command="{Binding GenerateVideoFromSelectedTaskCommand}"
-                suki:ButtonExtensions.ShowProgress="{Binding IsGeneratingVideo}"
-                ToolTip.Tip="为选中的任务生成 H.265 视频（需要设置有效的 FFmpeg 路径和帧路径目录中有图片文件）">
-            <Button.IsEnabled>
-                <MultiBinding Converter="{x:Static BoolConverters.And}">
-                    <Binding Path="SelectedTask"
-                             Converter="{x:Static conv:ObjectConverters.IsNotNull}" />
-                    <Binding Path="!IsGeneratingVideo" />
-                </MultiBinding>
-            </Button.IsEnabled>
-            <Button.Content>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="🎬" VerticalAlignment="Center" />
-                    <TextBlock Text="{i18n:Localize Queue_GenerateVideo}" VerticalAlignment="Center" />
-                </StackPanel>
-            </Button.Content>
-        </Button>
     </Grid>
     </StackPanel>
 
