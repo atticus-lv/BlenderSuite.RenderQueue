@@ -14,11 +14,14 @@ using BlenderRenderQueue.Models;
 using Avalonia.Media.Imaging;
 using System.IO;
 using System.Linq;
+using Avalonia.Controls;
 using BlenderRenderQueue.Views;
 using BlenderRenderQueue.Converters;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
+using BlenderRenderQueue.Services.UI;
+using BlenderRenderQueue.Helpers;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -571,15 +574,6 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// </summary>
     public event EventHandler? FrameRangeChanged;
 
-    /// <summary>
-    /// 视频生成状态变化事件
-    /// </summary>
-    public event EventHandler<string>? VideoGenerationStatusChanged;
-
-    /// <summary>
-    /// 视频生成进度变化事件
-    /// </summary>
-    public event EventHandler<double>? VideoGenerationProgressChanged;
 
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 
@@ -1054,7 +1048,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         EnqueueLog("渲染已停止");
     }
 
-    public async Task PauseRenderAsync()
+    public Task PauseRenderAsync()
     {
         try
         {
@@ -1093,6 +1087,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             EnqueueLog($"暂停渲染失败: {ex.Message}");
             SetStatus(RenderTaskStatus.Failed);
         }
+        
+        return Task.CompletedTask;
     }
 
     public async Task ResumeRenderAsync(IBlenderProcess blenderProcess, int resumeFromFrame)
@@ -1260,7 +1256,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (_processService == null)
             {
                 EnqueueLog("[ERROR] Blender 服务不可用，无法生成视频");
-                VideoGenerationStatusChanged?.Invoke(this, "Blender 服务不可用");
+                this.ShowErrorToast("视频生成失败", "Blender 服务不可用，无法生成视频");
                 return;
             }
 
@@ -1269,7 +1265,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (string.IsNullOrEmpty(framePath))
             {
                 EnqueueLog("[ERROR] 未找到帧路径，无法生成视频");
-                VideoGenerationStatusChanged?.Invoke(this, "未找到帧路径");
+                this.ShowErrorToast("视频生成失败", "未找到帧路径，无法生成视频");
                 return;
             }
 
@@ -1277,7 +1273,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (string.IsNullOrEmpty(frameDirectory) || !Directory.Exists(frameDirectory))
             {
                 EnqueueLog($"[ERROR] 帧路径目录不存在: {frameDirectory}");
-                VideoGenerationStatusChanged?.Invoke(this, $"帧路径目录不存在: {frameDirectory}");
+                this.ShowErrorToast("视频生成失败", $"帧路径目录不存在: {frameDirectory}");
                 return;
             }
 
@@ -1289,7 +1285,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (!hasImages)
             {
                 EnqueueLog($"[ERROR] 帧路径目录中没有找到图片文件: {frameDirectory}");
-                VideoGenerationStatusChanged?.Invoke(this, $"帧路径目录中没有找到图片文件: {frameDirectory}");
+                this.ShowErrorToast("视频生成失败", $"帧路径目录中没有找到图片文件: {frameDirectory}");
                 return;
             }
 
@@ -1306,7 +1302,16 @@ public partial class RenderTaskViewModel : ViewModelBase
             VideoGenerationProgress = 0.0;
             VideoGenerationStatus = "开始生成视频...";
             EnqueueLog($"[VIDEO] 开始生成视频: {outputVideoPath}");
-            VideoGenerationStatusChanged?.Invoke(this, "开始生成视频");
+            
+            // 显示进度 Toast
+            var progressBar = new ProgressBar
+            {
+                Value = 0,
+                ShowProgressText = true,
+                Minimum = 0,
+                Maximum = 100
+            };
+            var progressToast = this.ShowProgressToast($"正在为 {Path.GetFileName(BlendFilePath)} 生成视频", progressBar);
 
             // 使用进程管理服务创建视频生成进程
             var videoProcess = await _processService.CreateVideoProcessAsync();
@@ -1330,8 +1335,8 @@ public partial class RenderTaskViewModel : ViewModelBase
                         VideoGenerationProgress = progress;
                         VideoGenerationStatus = "正在生成视频...";
                         
-                        // 触发进度变化事件
-                        VideoGenerationProgressChanged?.Invoke(this, progress);
+                        // 更新进度 Toast
+                        progressToast?.UpdateProgressToast(progress);
                     });
             }
             finally
@@ -1346,20 +1351,60 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 VideoGenerationStatus = "视频生成完成";
                 EnqueueLog($"[VIDEO] ✅ 视频生成成功: {outputVideoPath}");
-                VideoGenerationStatusChanged?.Invoke(this, $"视频生成成功: {outputVideoPath}");
+                
+                // 在UI线程上处理Toast显示
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    // 关闭进度 Toast
+                    this.DismissToast(progressToast);
+                    
+                    // 显示成功 Toast
+                    this.ShowSuccessToast("视频生成成功", $"任务 {Path.GetFileName(BlendFilePath)} 的视频已生成完成");
+                });
+                
+                // 自动打开视频所在位置
+                if (!string.IsNullOrEmpty(outputVideoPath) && File.Exists(outputVideoPath))
+                {
+                    // 延迟一点时间再打开，让用户看到toast通知
+                    _ = Task.Delay(1000).ContinueWith(_ =>
+                    {
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() => 
+                        { 
+                            var success = FileSystemHelper.OpenFileDirectory(outputVideoPath);
+                            if (!success)
+                            {
+                                this.ShowErrorToast("打开失败", "无法打开视频所在位置");
+                            }
+                        });
+                    });
+                }
             }
             else
             {
                 VideoGenerationStatus = "视频生成失败";
                 EnqueueLog("[VIDEO] ❌ 视频生成失败");
-                VideoGenerationStatusChanged?.Invoke(this, "视频生成失败");
+                
+                // 在UI线程上处理Toast显示
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    // 关闭进度 Toast
+                    this.DismissToast(progressToast);
+                    
+                    // 显示失败 Toast
+                    this.ShowErrorToast("视频生成失败", "视频生成过程中出现错误");
+                });
             }
         }
         catch (Exception ex)
         {
             VideoGenerationStatus = $"视频生成错误: {ex.Message}";
             EnqueueLog($"[VIDEO] ❌ 视频生成错误: {ex.Message}");
-            VideoGenerationStatusChanged?.Invoke(this, $"视频生成错误: {ex.Message}");
+            
+            // 在UI线程上处理Toast显示
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                this.ShowErrorToast("视频生成错误", $"视频生成过程中出现错误: {ex.Message}");
+            });
         }
         finally
         {

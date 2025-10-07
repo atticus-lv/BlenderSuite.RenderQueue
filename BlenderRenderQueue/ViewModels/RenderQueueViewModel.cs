@@ -269,7 +269,6 @@ public partial class RenderQueueViewModel : ViewModelBase
     public event EventHandler<TaskCompletedEventArgs>? TaskCompleted;
     public event EventHandler<string>? StatusMessageChanged;
     public event EventHandler<ConfirmDialogRequestedEventArgs>? ConfirmDialogRequested;
-    public event EventHandler<ToastRequestedEventArgs>? ToastRequested;
 
     public RenderQueueViewModel()
     {
@@ -938,8 +937,6 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.FrameRangeChanged += OnTaskFrameRangeChanged;
         task.OpenInBlenderRequested += OnTaskOpenInBlenderRequested;
         task.OpenFileDirectoryRequested += OnTaskOpenFileDirectoryRequested;
-        task.VideoGenerationStatusChanged += OnTaskVideoGenerationStatusChanged;
-        task.VideoGenerationProgressChanged += OnTaskVideoGenerationProgressChanged;
     }
 
     private void UnsubscribeFromTaskEvents(RenderTaskViewModel task)
@@ -954,8 +951,6 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.FrameRangeChanged -= OnTaskFrameRangeChanged;
         task.OpenInBlenderRequested -= OnTaskOpenInBlenderRequested;
         task.OpenFileDirectoryRequested -= OnTaskOpenFileDirectoryRequested;
-        task.VideoGenerationStatusChanged -= OnTaskVideoGenerationStatusChanged;
-        task.VideoGenerationProgressChanged -= OnTaskVideoGenerationProgressChanged;
     }
 
     private void OnTaskStatusChanged(object? sender, RenderTaskStatusChangedEventArgs e)
@@ -1129,71 +1124,6 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 
-    private void OnTaskVideoGenerationStatusChanged(object? sender, string statusMessage)
-    {
-        try
-        {
-            var task = sender as RenderTaskViewModel;
-            if (task == null) return;
-
-            Console.WriteLine($"[RenderQueueViewModel] Video generation status changed for task {Path.GetFileName(task.BlendFilePath)}: {statusMessage}");
-
-            // 转发状态消息到主视图模型
-            StatusMessageChanged?.Invoke(this, statusMessage);
-
-            // 处理特殊的控制消息
-            if (statusMessage == "开始生成视频")
-            {
-                // 请求显示进度 Toast
-                ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
-                    "SHOW_VIDEO_PROGRESS_TOAST",
-                    task.BlendFilePath,
-                    NotificationType.Information));
-            }
-            else if (statusMessage.Contains("视频生成成功"))
-            {
-                // 视频生成成功，提取视频路径
-                var videoPath = ExtractVideoPathFromStatusMessage(statusMessage);
-                ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
-                    "VIDEO_GENERATION_SUCCESS",
-                    $"{task.BlendFilePath}|{videoPath}",
-                    NotificationType.Success));
-            }
-            else if (statusMessage.Contains("视频生成失败") || statusMessage.Contains("视频生成错误"))
-            {
-                // 视频生成失败或错误
-                ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
-                    "VIDEO_GENERATION_FAILED",
-                    $"{task.BlendFilePath}|{statusMessage}",
-                    NotificationType.Error));
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[RenderQueueViewModel] ❌ Error handling video generation status change: {ex.Message}");
-        }
-    }
-
-    private void OnTaskVideoGenerationProgressChanged(object? sender, double progress)
-    {
-        try
-        {
-            var task = sender as RenderTaskViewModel;
-            if (task == null) return;
-
-            Console.WriteLine($"[RenderQueueViewModel] Video generation progress changed for task {Path.GetFileName(task.BlendFilePath)}: {progress}%");
-
-            // 转发进度更新到主视图模型
-            ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
-                "UPDATE_VIDEO_PROGRESS",
-                $"{task.BlendFilePath}|{progress}",
-                NotificationType.Information));
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[RenderQueueViewModel] ❌ Error handling video generation progress change: {ex.Message}");
-        }
-    }
 
     /// <summary>
     /// 从状态消息中提取视频路径
@@ -1313,10 +1243,9 @@ public partial class RenderQueueViewModel : ViewModelBase
                     var completedTasks = RenderTasks
                         .Where(t => t.Enable && t.IsValid && t.Status == RenderTaskStatus.Completed).Count();
                     var totalTasks = RenderTasks.Where(t => t.Enable && t.IsValid).Count();
-                    ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
+                    this.ShowSuccessToast(
                         Localizer.Localizer.Instance["Queue_Completed"],
-                        string.Format(Localizer.Localizer.Instance["Queue_AllTasksCompleted"], completedTasks, totalTasks),
-                        NotificationType.Success));
+                        string.Format(Localizer.Localizer.Instance["Queue_AllTasksCompleted"], completedTasks, totalTasks));
                 }
                 else
                 {
@@ -1838,10 +1767,9 @@ public partial class RenderQueueViewModel : ViewModelBase
                     StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPluginDetected"]);
 
                     // 显示成功toast
-                    ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
+                    this.ShowSuccessToast(
                         Localizer.Localizer.Instance["Toast_TaskAddSuccess"],
-                        Localizer.Localizer.Instance["Toast_BlenderPluginDetected"],
-                        NotificationType.Information));
+                        Localizer.Localizer.Instance["Toast_BlenderPluginDetected"]);
                 }
                 catch (Exception ex)
                 {
@@ -1850,10 +1778,9 @@ public partial class RenderQueueViewModel : ViewModelBase
                         string.Format(Localizer.Localizer.Instance["Toast_BlenderDataProcessError"], ex.Message));
 
                     // 显示错误toast
-                    ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
+                    this.ShowErrorToast(
                         Localizer.Localizer.Instance["Toast_TaskAddFailedTitle"],
-                        string.Format(Localizer.Localizer.Instance["Toast_BlenderDataProcessError"], ex.Message),
-                        NotificationType.Error));
+                        string.Format(Localizer.Localizer.Instance["Toast_BlenderDataProcessError"], ex.Message));
                 }
             });
         }
@@ -1935,20 +1862,5 @@ public class ConfirmDialogRequestedEventArgs : EventArgs
         CancelButtonText = cancelButtonText;
         ConfirmButtonText = confirmButtonText;
         ConfirmAction = confirmAction;
-    }
-}
-
-// Toast请求事件参数
-public class ToastRequestedEventArgs : EventArgs
-{
-    public string Title { get; }
-    public string Content { get; }
-    public NotificationType Type { get; }
-
-    public ToastRequestedEventArgs(string title, string content, NotificationType type)
-    {
-        Title = title;
-        Content = content;
-        Type = type;
     }
 }
