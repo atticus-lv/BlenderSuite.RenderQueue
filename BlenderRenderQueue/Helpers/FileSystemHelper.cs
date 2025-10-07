@@ -24,9 +24,10 @@ public static class FileSystemHelper
                 Console.WriteLine("[FileSystemHelper] ❌ File path is null or empty");
                 return false;
             }
+            // if filepath is a file, get its directory, else use the path directly
+            var directory =
+                Directory.Exists(filePath) ? filePath : Path.GetDirectoryName(filePath);
 
-            // 获取文件所在的目录
-            var directory = Path.GetDirectoryName(filePath);
 
             if (string.IsNullOrEmpty(directory))
             {
@@ -123,7 +124,7 @@ public static class FileSystemHelper
         {
             // 获取当前应用程序的可执行文件路径
             var currentExecutable = Environment.ProcessPath;
-            
+
             if (string.IsNullOrEmpty(currentExecutable))
             {
                 Console.WriteLine("[FileSystemHelper] ❌ Cannot get current executable path");
@@ -146,14 +147,14 @@ public static class FileSystemHelper
 
             Process.Start(startInfo);
             Console.WriteLine($"[FileSystemHelper] ✅ Restarting application: {currentExecutable}");
-            
+
             // 延迟退出，让UI有时间处理命令
             Task.Run(async () =>
             {
                 await Task.Delay(100); // 等待1秒
                 Environment.Exit(0);
             });
-            
+
             return true;
         }
         catch (Exception ex)

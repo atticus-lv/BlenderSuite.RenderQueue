@@ -48,6 +48,7 @@
   "Queue_FileInvalid": "文件无效",
   "Queue_OpenInBlender": "在Blender中打开",
   "Queue_OpenFolder": "打开所在文件夹",
+  "Queue_FramePathDirectory": "打开帧路径文件夹",
   "Queue_Refresh": "刷新",
   "Queue_DeleteTask": "删除此任务",
   "Queue_EnableDisable": "启用/禁用此任务",

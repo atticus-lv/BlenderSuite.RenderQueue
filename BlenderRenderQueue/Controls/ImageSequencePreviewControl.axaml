@@ -11,7 +11,7 @@
 
     <Grid RowDefinitions="Auto,Auto,Auto">
         <!-- Slider 控制区域 -->
-        <Grid Grid.Row="1" Margin="10,5" IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
+        <Grid Grid.Row="0" Margin="10,5" IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
               ColumnDefinitions="Auto,*,Auto">
 
             <!-- 当前帧数显示 -->
@@ -19,8 +19,7 @@
                        Text="{Binding CurrentFrameText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
                        VerticalAlignment="Center"
                        Margin="0,0,10,0"
-                       FontSize="12"
-                       Foreground="#FF666666" />
+                       FontSize="12" />
 
             <!-- 滑动条 -->
             <Slider Grid.Column="1"
@@ -40,41 +39,33 @@
                        FontSize="12" />
         </Grid>
         <!-- 文件夹路径显示 -->
-        <StackPanel Grid.Row="0" Spacing="10" Orientation="Horizontal">
-            <Button Grid.Column="0" Classes="Outlined Small"
-                    Click="Button_OnClick" VerticalAlignment="Center"
-                    IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
-                    Padding="4" Margin="4,0,0,0">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <avalonia:MaterialIcon Kind="FolderOpen" />
-                </StackPanel>
-            </Button>
+        <StackPanel Grid.Row="2" Spacing="10" Orientation="Horizontal">
             <SelectableTextBlock
                 Text="{Binding ErrorMessage,RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Foreground="{DynamicResource SukiDangerDarkColor}"
                 FontSize="16"
-                TextWrapping="Wrap"
+                TextWrapping="NoWrap"
                 IsVisible="{Binding $parent[controls:ImageSequencePreviewControl].HasError}" />
 
             <SelectableTextBlock IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
                 Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
                 FontSize="14"
-                TextWrapping="Wrap"
+                TextWrapping="NoWrap"
+                Opacity="0.5"
                 VerticalAlignment="Center" />
 
         </StackPanel>
 
         <!-- 图片预览区域 -->
-        <Border Grid.Row="2"
-                Margin="5" MaxHeight="400"
+        <Border Grid.Row="1"
+                Margin="5" MaxHeight="400" CornerRadius="8" ClipToBounds="True"
                 IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}">
 
             <Panel>
                 <!-- 普通图片控件 -->
                 <Image x:Name="PreviewImage"
-                       Margin="8"
                        Source="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
                        Stretch="Uniform"
                        HorizontalAlignment="Center"
@@ -95,7 +86,6 @@
                 <TextBlock Text="{i18n:Localize ImageSequence_NoSequenceSelected}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
-                           Foreground="#FF999999"
                            FontSize="16"
                            IsVisible="{Binding HasImages, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}, Converter={x:Static conv:BoolConverters.Not}}" />
 

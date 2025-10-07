@@ -1105,7 +1105,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
     }
 
-    private void OnTaskOpenFileDirectoryRequested(object? sender, OpenFileDirectoryRequestedEventArgs e)
+    private void OnTaskOpenFileDirectoryRequested(object? sender, OpenSysDirectoryRequestedEventArgs e)
     {
         try
         {
@@ -1115,12 +1115,11 @@ public partial class RenderQueueViewModel : ViewModelBase
                 return;
             }
 
-            // 使用FileSystemHelper打开文件所在文件夹
+            
             var success = FileSystemHelper.OpenFileDirectory(e.FilePath);
-            if (success)
-                Console.WriteLine($"[RenderQueueViewModel] ✅ Opened file directory: {e.FilePath}");
-            else
-                Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to open file directory: {e.FilePath}");
+            Console.WriteLine(success
+                ? $"[RenderQueueViewModel] ✅ Opened file directory: {e.FilePath}"
+                : $"[RenderQueueViewModel] ❌ Failed to open file directory: {e.FilePath}");
         }
         catch (Exception ex)
         {

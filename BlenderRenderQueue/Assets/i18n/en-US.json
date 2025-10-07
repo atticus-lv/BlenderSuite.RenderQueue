@@ -48,6 +48,7 @@
   "Queue_FileInvalid": "File Invalid",
   "Queue_OpenInBlender": "Open in Blender",
   "Queue_OpenFolder": "Open Folder",
+  "Queue_FramePathDirectory": "Open Frame Path Folder",
   "Queue_Refresh": "Refresh",
   "Queue_DeleteTask": "Delete Task",
   "Queue_EnableDisable": "Enable/Disable this task",

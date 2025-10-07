@@ -65,6 +65,13 @@
                                                                Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
+                                <MenuItem Header="{i18n:Localize Queue_FramePathDirectory}"
+                                          Command="{Binding OpenFramePathDirectoryCommand}">
+                                    <MenuItem.Icon>
+                                        <avalonia:MaterialIcon Kind="Image" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
                                 <MenuItem Header="{i18n:Localize Queue_Refresh}"
                                           Command="{Binding RefreshFileInfoCommand}"
                                           IsEnabled="{Binding CanRefresh}">

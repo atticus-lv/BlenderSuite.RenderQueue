@@ -549,7 +549,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// <summary>
     /// 请求打开文件所在文件夹事件
     /// </summary>
-    public event EventHandler<OpenFileDirectoryRequestedEventArgs>? OpenFileDirectoryRequested;
+    public event EventHandler<OpenSysDirectoryRequestedEventArgs>? OpenFileDirectoryRequested;
 
     /// <summary>
     /// 覆写帧范围状态变化事件
@@ -1219,7 +1219,26 @@ public partial class RenderTaskViewModel : ViewModelBase
             }
 
             // 触发事件，请求父级打开文件所在文件夹
-            OpenFileDirectoryRequested?.Invoke(this, new OpenFileDirectoryRequestedEventArgs(BlendFilePath));
+            OpenFileDirectoryRequested?.Invoke(this, new OpenSysDirectoryRequestedEventArgs(BlendFilePath));
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"[ERROR] 打开文件夹失败: {ex.Message}");
+        }
+    }
+    [RelayCommand]
+    private void OpenFramePathDirectory()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(FramePathDirectory))
+            {
+                EnqueueLog("[ERROR] 文件路径为空，无法打开所在文件夹");
+                return;
+            }
+
+            // 触发事件，请求父级打开文件所在文件夹
+            OpenFileDirectoryRequested?.Invoke(this, new OpenSysDirectoryRequestedEventArgs(FramePathDirectory));
         }
         catch (Exception ex)
         {
@@ -1675,12 +1694,7 @@ public class OpenInBlenderRequestedEventArgs : EventArgs
 }
 
 // 请求打开文件所在文件夹事件参数
-public class OpenFileDirectoryRequestedEventArgs : EventArgs
+public class OpenSysDirectoryRequestedEventArgs(string filePath) : EventArgs
 {
-    public string FilePath { get; }
-
-    public OpenFileDirectoryRequestedEventArgs(string filePath)
-    {
-        FilePath = filePath;
-    }
+    public string FilePath { get; } = filePath;
 }
