@@ -28,7 +28,7 @@ public static class ToastHelper
     public static bool ShowToast(this object? context, string title, string content, 
         NotificationType type = NotificationType.Information, TimeSpan? duration = null)
     {
-        if (context == null) throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
 
         try
         {
@@ -57,36 +57,27 @@ public static class ToastHelper
         }
     }
 
-    /// <summary>
-    ///     Shows a success toast notification
-    /// </summary>
+
     public static bool ShowSuccessToast(this object? context, string title, string content, 
         TimeSpan? duration = null)
     {
         return context.ShowToast(title, content, NotificationType.Success, duration);
     }
 
-    /// <summary>
-    ///     Shows an error toast notification
-    /// </summary>
+
     public static bool ShowErrorToast(this object? context, string title, string content, 
         TimeSpan? duration = null)
     {
         return context.ShowToast(title, content, NotificationType.Error, duration);
     }
 
-    /// <summary>
-    ///     Shows a warning toast notification
-    /// </summary>
+
     public static bool ShowWarningToast(this object? context, string title, string content, 
         TimeSpan? duration = null)
     {
         return context.ShowToast(title, content, NotificationType.Warning, duration);
     }
-
-    /// <summary>
-    ///     Shows an information toast notification
-    /// </summary>
+    
     public static bool ShowInfoToast(this object? context, string title, string content, 
         TimeSpan? duration = null)
     {
@@ -104,7 +95,7 @@ public static class ToastHelper
     public static ISukiToast? ShowProgressToast(this object? context, string title, 
         ProgressBar progressBar, NotificationType type = NotificationType.Information)
     {
-        if (context == null) throw new ArgumentNullException(nameof(context));
+        ArgumentNullException.ThrowIfNull(context);
 
         try
         {
