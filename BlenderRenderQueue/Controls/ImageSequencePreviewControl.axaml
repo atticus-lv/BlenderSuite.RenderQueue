@@ -50,16 +50,16 @@
                 IsVisible="{Binding $parent[controls:ImageSequencePreviewControl].HasError}" />
 
             <SelectableTextBlock IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
-                Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
-                FontSize="14"
-                TextWrapping="NoWrap"
-                Opacity="0.5"
-                VerticalAlignment="Center" />
+                                 Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
+                                 FontSize="14"
+                                 TextWrapping="NoWrap"
+                                 Opacity="0.5"
+                                 VerticalAlignment="Center" />
 
         </StackPanel>
 
         <!-- 图片预览区域 -->
-        <Border Grid.Row="1"
+        <Border Grid.Row="1" HorizontalAlignment="Stretch"
                 Margin="5" MaxHeight="400" CornerRadius="8" ClipToBounds="True"
                 IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}">
 
@@ -71,6 +71,8 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Cursor="Hand"
+                       MaxWidth="{Binding $parent[Grid].Bounds.Width}"
+                       MaxHeight="{Binding $parent[Grid].Bounds.Width}"
                        ToolTip.Tip="{i18n:Localize ImageSequence_DoubleClickToView}"
                        DoubleTapped="PreviewImage_DoubleTapped" />
 

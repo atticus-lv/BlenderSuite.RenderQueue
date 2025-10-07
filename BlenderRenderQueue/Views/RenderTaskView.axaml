@@ -72,6 +72,7 @@
                                                                Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
+                                <MenuItem></MenuItem>
                                 <MenuItem Header="{i18n:Localize Queue_Refresh}"
                                           Command="{Binding RefreshFileInfoCommand}"
                                           IsEnabled="{Binding CanRefresh}">
@@ -255,7 +256,7 @@
 
 
                             <!-- 图片序列预览控件 -->
-                            <controls:ImageSequencePreviewControl Grid.Row="1" Margin="8"
+                            <controls:ImageSequencePreviewControl Grid.Row="1"
                                                                   FolderPath="{Binding FramePathDirectory}" />
                         </Grid>
                     </TabItem>
