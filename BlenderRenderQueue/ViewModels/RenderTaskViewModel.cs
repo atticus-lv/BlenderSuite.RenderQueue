@@ -22,6 +22,7 @@ using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 using BlenderRenderQueue.Services.UI;
 using BlenderRenderQueue.Helpers;
+using BlenderRenderQueue.Localizer;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -1255,8 +1256,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 检查 Blender 是否可用
             if (_processService == null)
             {
-                EnqueueLog("[ERROR] Blender 服务不可用，无法生成视频");
-                this.ShowErrorToast("视频生成失败", "Blender 服务不可用，无法生成视频");
+                EnqueueLog("[ERROR] " + Localizer.Localizer.Instance["VideoGeneration_ServiceUnavailable"]);
+                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], Localizer.Localizer.Instance["VideoGeneration_ServiceUnavailable"]);
                 return;
             }
 
@@ -1264,16 +1265,16 @@ public partial class RenderTaskViewModel : ViewModelBase
             var framePath = FinalSceneProperties.FramePath;
             if (string.IsNullOrEmpty(framePath))
             {
-                EnqueueLog("[ERROR] 未找到帧路径，无法生成视频");
-                this.ShowErrorToast("视频生成失败", "未找到帧路径，无法生成视频");
+                EnqueueLog("[ERROR] " + Localizer.Localizer.Instance["VideoGeneration_NoFramePath"]);
+                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], Localizer.Localizer.Instance["VideoGeneration_NoFramePath"]);
                 return;
             }
 
             var frameDirectory = Path.GetDirectoryName(framePath);
             if (string.IsNullOrEmpty(frameDirectory) || !Directory.Exists(frameDirectory))
             {
-                EnqueueLog($"[ERROR] 帧路径目录不存在: {frameDirectory}");
-                this.ShowErrorToast("视频生成失败", $"帧路径目录不存在: {frameDirectory}");
+                EnqueueLog("[ERROR] " + string.Format(Localizer.Localizer.Instance["VideoGeneration_FramePathNotExists"], frameDirectory));
+                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], string.Format(Localizer.Localizer.Instance["VideoGeneration_FramePathNotExists"], frameDirectory));
                 return;
             }
 
@@ -1284,8 +1285,8 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             if (!hasImages)
             {
-                EnqueueLog($"[ERROR] 帧路径目录中没有找到图片文件: {frameDirectory}");
-                this.ShowErrorToast("视频生成失败", $"帧路径目录中没有找到图片文件: {frameDirectory}");
+                EnqueueLog("[ERROR] " + string.Format(Localizer.Localizer.Instance["VideoGeneration_NoImagesInFramePath"], frameDirectory));
+                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], string.Format(Localizer.Localizer.Instance["VideoGeneration_NoImagesInFramePath"], frameDirectory));
                 return;
             }
 
@@ -1300,8 +1301,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 开始生成视频
             IsGeneratingVideo = true;
             VideoGenerationProgress = 0.0;
-            VideoGenerationStatus = "开始生成视频...";
-            EnqueueLog($"[VIDEO] 开始生成视频: {outputVideoPath}");
+            VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Starting"];
+            EnqueueLog(string.Format(Localizer.Localizer.Instance["VideoGeneration_LogStarting"], outputVideoPath));
             
             // 显示进度 Toast
             var progressBar = new ProgressBar
@@ -1311,7 +1312,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 Minimum = 0,
                 Maximum = 100
             };
-            var progressToast = this.ShowProgressToast($"正在为 {Path.GetFileName(BlendFilePath)} 生成视频", progressBar);
+            var progressToast = this.ShowProgressToast(string.Format(Localizer.Localizer.Instance["VideoGeneration_ToastTitle"], Path.GetFileName(BlendFilePath)), progressBar);
 
             // 使用进程管理服务创建视频生成进程
             var videoProcess = await _processService.CreateVideoProcessAsync();
@@ -1333,7 +1334,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                     {
                         // 更新进度
                         VideoGenerationProgress = progress;
-                        VideoGenerationStatus = "正在生成视频...";
+                        VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Generating"];
                         
                         // 更新进度 Toast
                         progressToast?.UpdateProgressToast(progress);
@@ -1349,8 +1350,8 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             if (success)
             {
-                VideoGenerationStatus = "视频生成完成";
-                EnqueueLog($"[VIDEO] ✅ 视频生成成功: {outputVideoPath}");
+                VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Completed"];
+                EnqueueLog(string.Format(Localizer.Localizer.Instance["VideoGeneration_LogSuccess"], outputVideoPath));
                 
                 // 在UI线程上处理Toast显示
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -1359,7 +1360,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                     this.DismissToast(progressToast);
                     
                     // 显示成功 Toast
-                    this.ShowSuccessToast("视频生成成功", $"任务 {Path.GetFileName(BlendFilePath)} 的视频已生成完成");
+                    this.ShowSuccessToast(Localizer.Localizer.Instance["VideoGeneration_SuccessTitle"], string.Format(Localizer.Localizer.Instance["VideoGeneration_SuccessMessage"], Path.GetFileName(BlendFilePath)));
                 });
                 
                 // 自动打开视频所在位置
@@ -1373,7 +1374,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                             var success = FileSystemHelper.OpenFileDirectory(outputVideoPath);
                             if (!success)
                             {
-                                this.ShowErrorToast("打开失败", "无法打开视频所在位置");
+                                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_OpenFailed"], Localizer.Localizer.Instance["VideoGeneration_CannotOpenLocation"]);
                             }
                         });
                     });
@@ -1381,8 +1382,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             }
             else
             {
-                VideoGenerationStatus = "视频生成失败";
-                EnqueueLog("[VIDEO] ❌ 视频生成失败");
+                VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Failed"];
+                EnqueueLog(Localizer.Localizer.Instance["VideoGeneration_LogFailed"]);
                 
                 // 在UI线程上处理Toast显示
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -1391,19 +1392,19 @@ public partial class RenderTaskViewModel : ViewModelBase
                     this.DismissToast(progressToast);
                     
                     // 显示失败 Toast
-                    this.ShowErrorToast("视频生成失败", "视频生成过程中出现错误");
+                    this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], Localizer.Localizer.Instance["VideoGeneration_ErrorMessage"]);
                 });
             }
         }
         catch (Exception ex)
         {
-            VideoGenerationStatus = $"视频生成错误: {ex.Message}";
-            EnqueueLog($"[VIDEO] ❌ 视频生成错误: {ex.Message}");
+            VideoGenerationStatus = string.Format(Localizer.Localizer.Instance["VideoGeneration_Error"], ex.Message);
+            EnqueueLog(string.Format(Localizer.Localizer.Instance["VideoGeneration_LogError"], ex.Message));
             
             // 在UI线程上处理Toast显示
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                this.ShowErrorToast("视频生成错误", $"视频生成过程中出现错误: {ex.Message}");
+                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], string.Format(Localizer.Localizer.Instance["VideoGeneration_ErrorMessageWithDetails"], ex.Message));
             });
         }
         finally
