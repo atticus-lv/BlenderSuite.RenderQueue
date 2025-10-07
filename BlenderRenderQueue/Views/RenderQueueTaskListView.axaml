@@ -84,7 +84,7 @@
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <Separator />
-                                
+
                                 <MenuItem Header="{i18n:Localize Queue_CopyTask}"
                                           Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CopyTaskCommand}"
                                           CommandParameter="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext)}"
@@ -94,9 +94,9 @@
                                                                Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
-                                
+
                                 <Separator />
-                                
+
                                 <MenuItem Header="{i18n:Localize Queue_Refresh}"
                                           Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).RefreshFileInfoCommand}"
                                           IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).CanRefresh}">
@@ -441,7 +441,7 @@
                         </MultiBinding>
                     </Button.IsEnabled>
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <material:MaterialIcon Kind="Trash" HorizontalAlignment="Center" />
+                        <material:MaterialIcon Kind="Trash" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
             </StackPanel>
