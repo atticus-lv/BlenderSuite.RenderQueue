@@ -60,21 +60,24 @@
 
         <!-- 图片预览区域 -->
         <Border Grid.Row="1" HorizontalAlignment="Stretch"
-                Margin="5" MaxHeight="400" CornerRadius="8" ClipToBounds="True"
+                Margin="4"
+                MaxWidth="{Binding $parent[Grid].Bounds.Width}"
+                MaxHeight="{Binding $parent[Grid].Bounds.Width}"
                 IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}">
 
             <Panel>
                 <!-- 普通图片控件 -->
-                <Image x:Name="PreviewImage"
-                       Source="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
-                       Stretch="Uniform"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Cursor="Hand"
-                       MaxWidth="{Binding $parent[Grid].Bounds.Width}"
-                       MaxHeight="{Binding $parent[Grid].Bounds.Width}"
-                       ToolTip.Tip="{i18n:Localize ImageSequence_DoubleClickToView}"
-                       DoubleTapped="PreviewImage_DoubleTapped" />
+                <Border CornerRadius="8" ClipToBounds="True">
+                    <Image x:Name="PreviewImage"
+                           Source="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                           Stretch="Uniform"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Cursor="Hand"
+                           ToolTip.Tip="{i18n:Localize ImageSequence_DoubleClickToView}"
+                           DoubleTapped="PreviewImage_DoubleTapped" />
+                </Border>
+
 
                 <!-- 加载指示器 -->
                 <ProgressBar IsIndeterminate="True"
