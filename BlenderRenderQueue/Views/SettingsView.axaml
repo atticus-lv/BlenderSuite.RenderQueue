@@ -130,7 +130,7 @@
                                             HorizontalAlignment="Right"
                                             IsVisible="{Binding CanSwitchBlender}">
                                     <Button Command="{Binding BrowseBlenderCommand}"
-                                            Classes="Outlined"
+                                            Classes="Rounded"
                                             ToolTip.Tip="{i18n:Localize Settings_AddBlenderTooltip}">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <avalonia:MaterialIcon Kind="Add" Width="16" Height="16" />
@@ -138,7 +138,7 @@
                                         </StackPanel>
                                     </Button>
                                     <Button Command="{Binding RemoveBlenderCommand}"
-                                            Classes="Outlined Danger"
+                                            Classes="Rounded Danger"
                                             ToolTip.Tip="{i18n:Localize Settings_RemoveSelectedTooltip}"
                                             IsEnabled="{Binding SelectedBlenderExecutable, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
                                         <StackPanel Orientation="Horizontal" Spacing="4">
