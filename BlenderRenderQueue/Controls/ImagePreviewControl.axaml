@@ -2,7 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:controls="clr-namespace:BlenderRenderQueue.Controls"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:controls1="clr-namespace:BlenderRenderQueue.Controls"
              xmlns:behaviors="clr-namespace:BlenderRenderQueue.Behaviors"
@@ -19,15 +18,7 @@
                 <Border.Background>
                     <VisualBrush TileMode="Tile" SourceRect="0,0,20,20" DestinationRect="0,0,20,20">
                         <VisualBrush.Visual>
-                            <Grid Width="20" Height="20">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
+                            <Grid Width="20" Height="20" RowDefinitions="*,*" ColumnDefinitions="*,*">
                                 <Rectangle Grid.Row="0" Grid.Column="0" Fill="{DynamicResource SukiPrimaryColor0}" />
                                 <Rectangle Grid.Row="1" Grid.Column="1" Fill="{DynamicResource SukiPrimaryColor0}" />
                                 <Rectangle Grid.Row="0" Grid.Column="1" Fill="{DynamicResource SukiPrimaryColor15}" />
@@ -50,7 +41,7 @@
                          VerticalAlignment="Center" />
         </Panel>
 
-        <TextBlock Text="未选择图像"
+        <TextBlock Text="Null"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    Opacity="0.5"
