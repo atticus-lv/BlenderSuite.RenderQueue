@@ -297,23 +297,23 @@
                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize RenderTask_Size}"
                                            FontWeight="Bold"
                                            VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="0" Grid.Column="2"
-                                           Text="{Binding FileInfo.FileSizeFormatted}"
-                                           VerticalAlignment="Center" />
+                                <SelectableTextBlock Grid.Row="0" Grid.Column="2"
+                                                     Text="{Binding FileInfo.FileSizeFormatted}"
+                                                     VerticalAlignment="Center" />
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize RenderTask_Created}"
                                            FontWeight="Bold"
                                            VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="1" Grid.Column="2"
-                                           Text="{Binding FileInfo.CreatedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
-                                           VerticalAlignment="Center" />
+                                <SelectableTextBlock Grid.Row="1" Grid.Column="2"
+                                                     Text="{Binding FileInfo.CreatedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                                     VerticalAlignment="Center" />
 
                                 <TextBlock Grid.Row="2" Grid.Column="0" Text="{i18n:Localize RenderTask_Modified}"
                                            FontWeight="Bold"
                                            VerticalAlignment="Center" />
-                                <TextBlock Grid.Row="2" Grid.Column="2"
-                                           Text="{Binding FileInfo.LastModifiedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
-                                           VerticalAlignment="Center" />
+                                <SelectableTextBlock Grid.Row="2" Grid.Column="2"
+                                                     Text="{Binding FileInfo.LastModifiedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                                     VerticalAlignment="Center" />
 
                                 <TextBlock Grid.Row="3" Grid.Column="0" Text="{i18n:Localize RenderTask_Path}"
                                            FontWeight="Bold"
@@ -322,16 +322,6 @@
                                                      VerticalAlignment="Center"
                                                      TextWrapping="NoWrap">
                                 </SelectableTextBlock>
-                                <Button Grid.Row="3" Grid.Column="3" Command="{Binding OpenFileDirectoryCommand}"
-                                        IsEnabled="True"
-                                        Classes="Flat Outlined"
-                                        IsVisible="{Binding IsValid}"
-                                        Padding="4"
-                                        FontSize="12">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <avalonia:MaterialIcon Kind="FolderOpen" />
-                                    </StackPanel>
-                                </Button>
                             </Grid>
 
                         </StackPanel>

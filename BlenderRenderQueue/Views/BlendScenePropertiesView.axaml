@@ -82,28 +82,28 @@
                                    VerticalAlignment="Center" />
                         <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" Spacing="5"
                                     VerticalAlignment="Center">
-                            <TextBlock Text="{Binding ActiveSceneProperties.FrameStart}" VerticalAlignment="Center" />
-                            <TextBlock Text="{i18n:Localize SceneProperties_FrameSeparator}" />
-                            <TextBlock Text="{Binding ActiveSceneProperties.FrameEnd}" VerticalAlignment="Center" />
-                            <TextBlock Text="{i18n:Localize SceneProperties_FrameStartBracket}" />
-                            <TextBlock Text="{Binding ActiveSceneProperties.TotalFrames}"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Text="{i18n:Localize SceneProperties_FrameEndBracket}" />
+                            <SelectableTextBlock Text="{Binding ActiveSceneProperties.FrameStart}" VerticalAlignment="Center" />
+                            <SelectableTextBlock Text="{i18n:Localize SceneProperties_FrameSeparator}" />
+                            <SelectableTextBlock Text="{Binding ActiveSceneProperties.FrameEnd}" VerticalAlignment="Center" />
+                            <SelectableTextBlock Text="{i18n:Localize SceneProperties_FrameStartBracket}" />
+                            <SelectableTextBlock Text="{Binding ActiveSceneProperties.TotalFrames}"
+                                                 VerticalAlignment="Center" />
+                            <SelectableTextBlock Text="{i18n:Localize SceneProperties_FrameEndBracket}" />
                         </StackPanel>
 
                         <!-- 当前帧 -->
                         <TextBlock Grid.Row="4" Grid.Column="0" Text="{i18n:Localize SceneProperties_CurrentFrame}"
                                    FontWeight="SemiBold" MinWidth="80"
                                    VerticalAlignment="Center" />
-                        <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding ActiveSceneProperties.FrameCurrent}"
-                                   VerticalAlignment="Center" />
+                        <SelectableTextBlock Grid.Row="4" Grid.Column="2" Text="{Binding ActiveSceneProperties.FrameCurrent}"
+                                             VerticalAlignment="Center" />
 
                         <!-- FPS -->
                         <TextBlock Grid.Row="5" Grid.Column="0" Text="{i18n:Localize SceneProperties_FrameRate}"
                                    FontWeight="SemiBold" MinWidth="80" />
-                        <TextBlock Grid.Row="5" Grid.Column="2"
-                                   Text="{Binding ActiveSceneProperties.Fps, StringFormat='{}{0:F2} fps'}"
-                                   IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                        <SelectableTextBlock Grid.Row="5" Grid.Column="2"
+                                             Text="{Binding ActiveSceneProperties.Fps, StringFormat='{}{0:F2} fps'}"
+                                             IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
                         <TextBlock Grid.Row="5" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
                                    Foreground="#666"
                                    IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNull}}" />
@@ -114,9 +114,9 @@
                         <!-- 渲染引擎 -->
                         <TextBlock Grid.Row="7" Grid.Column="0" Text="{i18n:Localize SceneProperties_RenderEngine}"
                                    FontWeight="SemiBold" MinWidth="80" />
-                        <TextBlock Grid.Row="7" Grid.Column="2"
-                                   Text="{Binding ActiveSceneProperties.RenderEngineDisplayName}"
-                                   IsVisible="{Binding ActiveSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                        <SelectableTextBlock Grid.Row="7" Grid.Column="2"
+                                             Text="{Binding ActiveSceneProperties.RenderEngineDisplayName}"
+                                             IsVisible="{Binding ActiveSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                         <TextBlock Grid.Row="7" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
                                    Foreground="#666"
                                    IsVisible="{Binding ActiveSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
@@ -133,16 +133,16 @@
                         <TextBlock Grid.Row="9" Grid.Column="0" Text="{i18n:Localize SceneProperties_Camera}"
                                    FontWeight="SemiBold" MinWidth="80"
                                    IsVisible="{Binding ActiveSceneProperties.IsMultiCameraScene, Converter={x:Static conv:BoolConverters.Not}}" />
-                        <TextBlock Grid.Row="9" Grid.Column="2" Text="{Binding ActiveSceneProperties.CameraName}">
-                            <TextBlock.IsVisible>
+                        <SelectableTextBlock Grid.Row="9" Grid.Column="2" Text="{Binding ActiveSceneProperties.CameraName}">
+                            <SelectableTextBlock.IsVisible>
                                 <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
                                     <Binding Path="ActiveSceneProperties.IsMultiCameraScene"
                                              Converter="{x:Static conv:BoolConverters.Not}" />
                                     <Binding Path="ActiveSceneProperties.CameraName"
                                              Converter="{x:Static conv:StringConverters.IsNotNullOrEmpty}" />
                                 </MultiBinding>
-                            </TextBlock.IsVisible>
-                        </TextBlock>
+                            </SelectableTextBlock.IsVisible>
+                        </SelectableTextBlock>
                         <TextBlock Grid.Row="9" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
                                    Foreground="#666">
                             <TextBlock.IsVisible>
@@ -192,12 +192,12 @@
                         <!-- 输出格式 -->
                         <TextBlock Grid.Row="13" Grid.Column="0" Text="{i18n:Localize SceneProperties_OutputFormat}"
                                    FontWeight="SemiBold" MinWidth="80" />
-                        <TextBlock Grid.Row="13" Grid.Column="2"
-                                   Text="{Binding ActiveSceneProperties.RenderOutputFormat}"
-                                   IsVisible="{Binding ActiveSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                        <SelectableTextBlock Grid.Row="13" Grid.Column="2"
+                                             Text="{Binding ActiveSceneProperties.RenderOutputFormat}"
+                                             IsVisible="{Binding ActiveSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                         <TextBlock Grid.Row="13" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
-                                   Foreground="#666"
-                                   IsVisible="{Binding ActiveSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+                                             Foreground="#666"
+                                             IsVisible="{Binding ActiveSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
 
                     </Grid>
                 </Border>
