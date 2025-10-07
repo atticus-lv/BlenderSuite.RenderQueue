@@ -74,9 +74,9 @@
                                                                Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
-                                
+
                                 <Separator />
-                                
+
                                 <MenuItem Header="{i18n:Localize Queue_Refresh}"
                                           Command="{Binding RefreshFileInfoCommand}"
                                           IsEnabled="{Binding CanRefresh}">
@@ -116,19 +116,9 @@
                         <StackPanel Spacing="12" Margin="8 4">
                             <StackPanel.IsVisible>
                                 <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                    <Binding
-                                        Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
-                                        Converter="{x:Static BoolConverters.Not}" />
-                                    <MultiBinding
-                                        Converter="{x:Static BoolConverters.And}">
-                                        <Binding
-                                            Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks" />
-                                        <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                            <Binding Path="CanModifyEnable" />
-                                            <Binding Path="Status" Converter="{x:Static conv:ObjectConverters.Equal}"
-                                                     ConverterParameter="Completed" />
-                                        </MultiBinding>
-                                    </MultiBinding>
+                                    <Binding Path="CanModifyEnable" />
+                                    <Binding Path="Status" Converter="{x:Static conv:ObjectConverters.Equal}"
+                                             ConverterParameter="Completed" />
                                 </MultiBinding>
                             </StackPanel.IsVisible>
                             <!-- 动画渲染设置 -->
@@ -139,12 +129,7 @@
                                     <CheckBox Content="{i18n:Localize RenderTask_OverrideFrameRange}"
                                               IsChecked="{Binding OverrideFrameRange}">
                                         <CheckBox.IsEnabled>
-                                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                                <Binding
-                                                    Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
-                                                    Converter="{x:Static BoolConverters.Not}" />
-                                                <Binding Path="CanModifyOverride" />
-                                            </MultiBinding>
+                                            <Binding Path="CanModifyOverride" />
                                         </CheckBox.IsEnabled>
                                     </CheckBox>
                                     <StackPanel IsVisible="{Binding OverrideFrameRange}" Spacing="8" Margin="16,0,0,0">
@@ -155,12 +140,7 @@
                                             <NumericUpDown Grid.Row="0" Grid.Column="1" Value="{Binding StartFrame}"
                                                            Minimum="1" Maximum="100000" Width="120">
                                                 <NumericUpDown.IsEnabled>
-                                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                                        <Binding
-                                                            Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
-                                                            Converter="{x:Static BoolConverters.Not}" />
-                                                        <Binding Path="CanModifyOverride" />
-                                                    </MultiBinding>
+                                                    <Binding Path="CanModifyOverride" />
                                                 </NumericUpDown.IsEnabled>
                                             </NumericUpDown>
                                             <TextBlock Grid.Row="0" Grid.Column="2"
@@ -170,9 +150,6 @@
                                                            Minimum="1" Maximum="100000" Width="120">
                                                 <NumericUpDown.IsEnabled>
                                                     <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                                        <Binding
-                                                            Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
-                                                            Converter="{x:Static BoolConverters.Not}" />
                                                         <Binding Path="CanModifyOverride" />
                                                     </MultiBinding>
                                                 </NumericUpDown.IsEnabled>
@@ -188,9 +165,6 @@
                                           IsChecked="{Binding OverrideScene}">
                                     <CheckBox.IsEnabled>
                                         <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                            <Binding
-                                                Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
-                                                Converter="{x:Static BoolConverters.Not}" />
                                             <Binding Path="CanModifyOverride" />
                                         </MultiBinding>
                                     </CheckBox.IsEnabled>
@@ -205,9 +179,6 @@
                                                   Width="200" HorizontalAlignment="Left">
                                             <ComboBox.IsEnabled>
                                                 <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                                    <Binding
-                                                        Path="$parent[SplitView].((vm:RenderQueueViewModel)DataContext).CanModifyTasks"
-                                                        Converter="{x:Static BoolConverters.Not}" />
                                                     <Binding Path="CanModifyOverride" />
                                                 </MultiBinding>
                                             </ComboBox.IsEnabled>

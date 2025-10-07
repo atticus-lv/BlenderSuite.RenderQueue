@@ -328,7 +328,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         _videoQuality = quality;
     }
 
-    public bool CanModifyTasks => QueueState is QueueState.Running or QueueState.Paused;
+    public bool CanClearTasks => QueueState is QueueState.Completed or QueueState.Idle;
 
     // 内部状态
     private readonly List<Task> _runningTasks = new();
@@ -388,7 +388,7 @@ public partial class RenderQueueViewModel : ViewModelBase
                 OnPropertyChanged(nameof(CanStopQueue));
                 OnPropertyChanged(nameof(CanPauseQueue));
                 OnPropertyChanged(nameof(CanResumeQueue));
-                OnPropertyChanged(nameof(CanModifyTasks));
+                OnPropertyChanged(nameof(CanClearTasks));
             }
             
             if (e.PropertyName == nameof(PostRenderBehavior))
@@ -1477,7 +1477,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanStopQueue));
         OnPropertyChanged(nameof(CanPauseQueue));
         OnPropertyChanged(nameof(CanResumeQueue));
-        OnPropertyChanged(nameof(CanModifyTasks));
+        OnPropertyChanged(nameof(CanClearTasks));
 
         // 通知所有任务更新队列运行状态，影响CanRefresh属性
         var isQueueRunning = QueueState == QueueState.Running;

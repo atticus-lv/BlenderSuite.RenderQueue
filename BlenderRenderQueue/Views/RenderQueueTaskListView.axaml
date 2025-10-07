@@ -312,16 +312,9 @@
                                               VerticalAlignment="Center"
                                               ToolTip.Tip="{i18n:Localize Queue_EnableDisable}">
                                     <ToggleSwitch.IsEnabled>
-                                        <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                            <Binding
-                                                Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks"
-                                                Converter="{x:Static BoolConverters.Not}" />
-                                            <MultiBinding
-                                                Converter="{x:Static BoolConverters.And}">
-                                                <Binding
-                                                    Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks" />
-                                                <Binding Path="CanModifyEnable" />
-                                            </MultiBinding>
+                                        <MultiBinding
+                                            Converter="{x:Static BoolConverters.And}">
+                                            <Binding Path="CanModifyEnable" />
                                         </MultiBinding>
                                     </ToggleSwitch.IsEnabled>
                                     <ToggleSwitch.IsVisible>
@@ -337,17 +330,7 @@
                                 <StackPanel Grid.Column="3" Orientation="Horizontal"
                                             Margin="4,0,0,0">
                                     <StackPanel.IsEnabled>
-                                        <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                            <Binding
-                                                Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks"
-                                                Converter="{x:Static BoolConverters.Not}" />
-                                            <MultiBinding
-                                                Converter="{x:Static BoolConverters.And}">
-                                                <Binding
-                                                    Path="$parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanModifyTasks" />
-                                                <Binding Path="CanDelete" />
-                                            </MultiBinding>
-                                        </MultiBinding>
+                                        <Binding Path="CanDelete" />
                                     </StackPanel.IsEnabled>
                                     <!-- 普通删除按钮 -->
                                     <Button
@@ -436,7 +419,7 @@
 
                     <Button.IsEnabled>
                         <MultiBinding Converter="{x:Static BoolConverters.And}">
-                            <Binding Path="CanModifyTasks"
+                            <Binding Path="CanClearTasks"
                                      Converter="{x:Static BoolConverters.Not}" />
                         </MultiBinding>
                     </Button.IsEnabled>

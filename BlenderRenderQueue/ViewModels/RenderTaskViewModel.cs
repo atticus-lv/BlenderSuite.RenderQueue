@@ -181,22 +181,24 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// <summary>
     /// 是否可以修改任务的Enable属性
     /// </summary>
-    public bool CanModifyEnable => IsValid && Enable && Status == RenderTaskStatus.Pending;
+    public bool CanModifyEnable =>
+        IsValid && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed;
 
     /// <summary>
     /// 是否可以修改任务的覆写属性（帧范围、场景等）
     /// </summary>
-    public bool CanModifyOverride => IsValid && Enable && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed;
+    public bool CanModifyOverride =>
+        IsValid && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed;
 
     /// <summary>
     /// 是否可以删除任务
     /// </summary>
-    public bool CanDelete => IsValid && Status == RenderTaskStatus.Pending;
+    public bool CanDelete => IsValid || Status == RenderTaskStatus.Pending;
 
     /// <summary>
     /// 是否可以刷新任务（当任务正在渲染或队列正在运行时不可用）
     /// </summary>
-    public bool CanRefresh => IsValid && Status != RenderTaskStatus.Running && !_isQueueRunning;
+    public bool CanRefresh => Status != RenderTaskStatus.Running && !_isQueueRunning;
 
     /// <summary>
     /// 是否应该显示进度条
@@ -206,7 +208,8 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// <summary>
     /// 是否可以生成视频
     /// </summary>
-    public bool CanGenerateVideo => IsValid && !IsGeneratingVideo && !string.IsNullOrEmpty(FinalSceneProperties.FramePath) && _processService != null;
+    public bool CanGenerateVideo => IsValid && !IsGeneratingVideo &&
+                                    !string.IsNullOrEmpty(FinalSceneProperties.FramePath) && _processService != null;
 
     /// <summary>
     /// 获取状态对应的本地化文本键名
@@ -255,7 +258,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             _isQueueRunning = isQueueRunning;
             OnPropertyChanged(nameof(CanRefresh));
-            Console.WriteLine($"[RenderTaskViewModel] Queue running state changed to: {isQueueRunning}, CanRefresh: {CanRefresh}");
+            Console.WriteLine(
+                $"[RenderTaskViewModel] Queue running state changed to: {isQueueRunning}, CanRefresh: {CanRefresh}");
         }
     }
 
@@ -487,7 +491,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             var currentSelectedSceneName = SelectedSceneName;
             var currentEnable = Enable;
 
-            Console.WriteLine($"[RenderTaskViewModel] Refreshing file properties - preserving overrides: FrameRange={currentOverrideFrameRange} ({currentStartFrame}-{currentEndFrame}), Scene={currentOverrideScene} ({currentSelectedSceneName}), Enable={currentEnable}");
+            Console.WriteLine(
+                $"[RenderTaskViewModel] Refreshing file properties - preserving overrides: FrameRange={currentOverrideFrameRange} ({currentStartFrame}-{currentEndFrame}), Scene={currentOverrideScene} ({currentSelectedSceneName}), Enable={currentEnable}");
 
             // 重新加载文件属性
             await ScenePropertiesView.LoadPropertiesAsync(blenderPath, BlendFilePath);
@@ -1027,7 +1032,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             _exe.OnOutputReceived -= HandleRawOutput;
             _exe.OnErrorReceived -= HandleRawError;
-            
+
             // 停止进程，但不释放，因为它可能被其他任务使用
             try
             {
@@ -1068,7 +1073,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 _exe.OnOutputReceived -= HandleRawOutput;
                 _exe.OnErrorReceived -= HandleRawError;
-                
+
                 // 异步停止进程，不等待完成
                 _ = Task.Run(async () =>
                 {
@@ -1088,7 +1093,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             EnqueueLog($"暂停渲染失败: {ex.Message}");
             SetStatus(RenderTaskStatus.Failed);
         }
-        
+
         return Task.CompletedTask;
     }
 
@@ -1228,6 +1233,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             EnqueueLog($"[ERROR] 打开文件夹失败: {ex.Message}");
         }
     }
+
     [RelayCommand]
     private void OpenFramePathDirectory()
     {
@@ -1257,7 +1263,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (_processService == null)
             {
                 EnqueueLog("[ERROR] " + Localizer.Localizer.Instance["VideoGeneration_ServiceUnavailable"]);
-                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], Localizer.Localizer.Instance["VideoGeneration_ServiceUnavailable"]);
+                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
+                    Localizer.Localizer.Instance["VideoGeneration_ServiceUnavailable"]);
                 return;
             }
 
@@ -1266,15 +1273,19 @@ public partial class RenderTaskViewModel : ViewModelBase
             if (string.IsNullOrEmpty(framePath))
             {
                 EnqueueLog("[ERROR] " + Localizer.Localizer.Instance["VideoGeneration_NoFramePath"]);
-                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], Localizer.Localizer.Instance["VideoGeneration_NoFramePath"]);
+                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
+                    Localizer.Localizer.Instance["VideoGeneration_NoFramePath"]);
                 return;
             }
 
             var frameDirectory = Path.GetDirectoryName(framePath);
             if (string.IsNullOrEmpty(frameDirectory) || !Directory.Exists(frameDirectory))
             {
-                EnqueueLog("[ERROR] " + string.Format(Localizer.Localizer.Instance["VideoGeneration_FramePathNotExists"], frameDirectory));
-                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], string.Format(Localizer.Localizer.Instance["VideoGeneration_FramePathNotExists"], frameDirectory));
+                EnqueueLog("[ERROR] " +
+                           string.Format(Localizer.Localizer.Instance["VideoGeneration_FramePathNotExists"],
+                               frameDirectory));
+                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
+                    string.Format(Localizer.Localizer.Instance["VideoGeneration_FramePathNotExists"], frameDirectory));
                 return;
             }
 
@@ -1285,8 +1296,11 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             if (!hasImages)
             {
-                EnqueueLog("[ERROR] " + string.Format(Localizer.Localizer.Instance["VideoGeneration_NoImagesInFramePath"], frameDirectory));
-                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], string.Format(Localizer.Localizer.Instance["VideoGeneration_NoImagesInFramePath"], frameDirectory));
+                EnqueueLog("[ERROR] " +
+                           string.Format(Localizer.Localizer.Instance["VideoGeneration_NoImagesInFramePath"],
+                               frameDirectory));
+                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
+                    string.Format(Localizer.Localizer.Instance["VideoGeneration_NoImagesInFramePath"], frameDirectory));
                 return;
             }
 
@@ -1303,7 +1317,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             VideoGenerationProgress = 0.0;
             VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Starting"];
             EnqueueLog(string.Format(Localizer.Localizer.Instance["VideoGeneration_LogStarting"], outputVideoPath));
-            
+
             // 显示进度 Toast
             var progressBar = new ProgressBar
             {
@@ -1312,7 +1326,10 @@ public partial class RenderTaskViewModel : ViewModelBase
                 Minimum = 0,
                 Maximum = 100
             };
-            var progressToast = this.ShowProgressToast(string.Format(Localizer.Localizer.Instance["VideoGeneration_ToastTitle"], Path.GetFileName(BlendFilePath)), progressBar);
+            var progressToast =
+                this.ShowProgressToast(
+                    string.Format(Localizer.Localizer.Instance["VideoGeneration_ToastTitle"],
+                        Path.GetFileName(BlendFilePath)), progressBar);
 
             // 使用进程管理服务创建视频生成进程
             var videoProcess = await _processService.CreateVideoProcessAsync();
@@ -1335,7 +1352,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                         // 更新进度
                         VideoGenerationProgress = progress;
                         VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Generating"];
-                        
+
                         // 更新进度 Toast
                         progressToast?.UpdateProgressToast(progress);
                     });
@@ -1352,29 +1369,32 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Completed"];
                 EnqueueLog(string.Format(Localizer.Localizer.Instance["VideoGeneration_LogSuccess"], outputVideoPath));
-                
+
                 // 在UI线程上处理Toast显示
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
                     // 关闭进度 Toast
                     this.DismissToast(progressToast);
-                    
+
                     // 显示成功 Toast
-                    this.ShowSuccessToast(Localizer.Localizer.Instance["VideoGeneration_SuccessTitle"], string.Format(Localizer.Localizer.Instance["VideoGeneration_SuccessMessage"], Path.GetFileName(BlendFilePath)));
+                    this.ShowSuccessToast(Localizer.Localizer.Instance["VideoGeneration_SuccessTitle"],
+                        string.Format(Localizer.Localizer.Instance["VideoGeneration_SuccessMessage"],
+                            Path.GetFileName(BlendFilePath)));
                 });
-                
+
                 // 自动打开视频所在位置
                 if (!string.IsNullOrEmpty(outputVideoPath) && File.Exists(outputVideoPath))
                 {
                     // 延迟一点时间再打开，让用户看到toast通知
                     _ = Task.Delay(1000).ContinueWith(_ =>
                     {
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() => 
-                        { 
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        {
                             var success = FileSystemHelper.OpenFileDirectory(outputVideoPath);
                             if (!success)
                             {
-                                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_OpenFailed"], Localizer.Localizer.Instance["VideoGeneration_CannotOpenLocation"]);
+                                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_OpenFailed"],
+                                    Localizer.Localizer.Instance["VideoGeneration_CannotOpenLocation"]);
                             }
                         });
                     });
@@ -1384,15 +1404,16 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Failed"];
                 EnqueueLog(Localizer.Localizer.Instance["VideoGeneration_LogFailed"]);
-                
+
                 // 在UI线程上处理Toast显示
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 {
                     // 关闭进度 Toast
                     this.DismissToast(progressToast);
-                    
+
                     // 显示失败 Toast
-                    this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], Localizer.Localizer.Instance["VideoGeneration_ErrorMessage"]);
+                    this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
+                        Localizer.Localizer.Instance["VideoGeneration_ErrorMessage"]);
                 });
             }
         }
@@ -1400,11 +1421,13 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             VideoGenerationStatus = string.Format(Localizer.Localizer.Instance["VideoGeneration_Error"], ex.Message);
             EnqueueLog(string.Format(Localizer.Localizer.Instance["VideoGeneration_LogError"], ex.Message));
-            
+
             // 在UI线程上处理Toast显示
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"], string.Format(Localizer.Localizer.Instance["VideoGeneration_ErrorMessageWithDetails"], ex.Message));
+                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
+                    string.Format(Localizer.Localizer.Instance["VideoGeneration_ErrorMessageWithDetails"],
+                        ex.Message));
             });
         }
         finally
