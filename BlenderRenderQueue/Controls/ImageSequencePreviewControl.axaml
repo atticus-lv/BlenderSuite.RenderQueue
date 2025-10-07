@@ -6,97 +6,107 @@
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="BlenderRenderQueue.Controls.ImageSequencePreviewControl">
 
-    <Grid RowDefinitions="Auto,Auto,Auto">
-        <!-- Slider 控制区域 -->
-        <Grid Grid.Row="0" Margin="10,5" IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
-              ColumnDefinitions="Auto,*,Auto">
+    <Border Grid.Row="1" HorizontalAlignment="Stretch"
+            Margin="4"
+            MaxWidth="{Binding $parent[Grid].Bounds.Width}"
+            MaxHeight="{Binding $parent[Grid].Bounds.Width}"
+            IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}">
 
-            <!-- 当前帧数显示 -->
-            <TextBlock Grid.Column="0"
-                       Text="{Binding CurrentFrameText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
+        <Panel>
+
+
+            <Border CornerRadius="8" ClipToBounds="True">
+                <Image x:Name="PreviewImage"
+                       Source="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Center"
                        VerticalAlignment="Center"
-                       Margin="0,0,10,0"
-                       FontSize="12" />
+                       Cursor="Hand"
+                       DoubleTapped="PreviewImage_DoubleTapped" />
+            </Border>
 
-            <!-- 滑动条 -->
-            <Slider Grid.Column="1"
-                    x:Name="FrameSlider"
-                    Minimum="0"
-                    Maximum="{Binding MaxFrame, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
-                    Value="{Binding CurrentFrame, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
-                    IsEnabled="{Binding HasImages, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
-                    TickPlacement="None"
-                    VerticalAlignment="Center" />
 
-            <!-- 总帧数显示 -->
-            <TextBlock Grid.Column="2"
-                       Text="{Binding TotalFramesText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
+            <!-- 文件夹路径显示 -->
+            <StackPanel Spacing="10" Orientation="Horizontal" Margin="4,10" HorizontalAlignment="Center">
+                <SelectableTextBlock
+                    Text="{Binding ErrorMessage,RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Foreground="{DynamicResource SukiDangerDarkColor}"
+                    FontSize="16"
+                    TextWrapping="NoWrap"
+                    IsVisible="{Binding $parent[controls:ImageSequencePreviewControl].HasError}" />
+
+                <SelectableTextBlock IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
+                                     Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
+                                     FontSize="14"
+                                     TextWrapping="NoWrap"
+                                     Opacity="0.5"
+                                     VerticalAlignment="Top" />
+                <StackPanel.Effect>
+                    <DropShadowEffect Color="Gray" BlurRadius="4" OffsetX="0" OffsetY="0"></DropShadowEffect>
+                </StackPanel.Effect>
+            </StackPanel>
+
+            <!-- 加载指示器 -->
+            <ProgressBar IsIndeterminate="True"
+                         IsVisible="{Binding IsLoading, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"
+                         Width="100"
+                         Height="4" />
+
+            <!-- 无图片提示 -->
+            <TextBlock Text="{i18n:Localize ImageSequence_NoSequenceSelected}"
+                       HorizontalAlignment="Center"
                        VerticalAlignment="Center"
-                       Margin="10,0,0,0"
-                       FontSize="12" />
-        </Grid>
-        <!-- 文件夹路径显示 -->
-        <StackPanel Grid.Row="2" Spacing="10" Orientation="Horizontal">
-            <SelectableTextBlock
-                Text="{Binding ErrorMessage,RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Foreground="{DynamicResource SukiDangerDarkColor}"
-                FontSize="16"
-                TextWrapping="NoWrap"
-                IsVisible="{Binding $parent[controls:ImageSequencePreviewControl].HasError}" />
+                       FontSize="16"
+                       IsVisible="{Binding HasImages, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}, Converter={x:Static conv:BoolConverters.Not}}" />
 
-            <SelectableTextBlock IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
-                                 Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
-                                 FontSize="14"
-                                 TextWrapping="NoWrap"
-                                 Opacity="0.5"
-                                 VerticalAlignment="Center" />
+            <suki:GlassCard Margin="10 4" Padding="10 4"
+                            VerticalAlignment="Bottom"
+                            HorizontalAlignment="Stretch"
+                            CornerRadius="8"
+                            IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}">
 
-        </StackPanel>
+                <!-- Slider 控制区域 -->
+                <Grid
 
-        <!-- 图片预览区域 -->
-        <Border Grid.Row="1" HorizontalAlignment="Stretch"
-                Margin="4"
-                MaxWidth="{Binding $parent[Grid].Bounds.Width}"
-                MaxHeight="{Binding $parent[Grid].Bounds.Width}"
-                IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}">
+                    ColumnDefinitions="Auto,*,Auto">
 
-            <Panel>
-                <!-- 普通图片控件 -->
-                <Border CornerRadius="8" ClipToBounds="True">
-                    <Image x:Name="PreviewImage"
-                           Source="{Binding CurrentImage, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
-                           Stretch="Uniform"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Cursor="Hand"
-                           ToolTip.Tip="{i18n:Localize ImageSequence_DoubleClickToView}"
-                           DoubleTapped="PreviewImage_DoubleTapped" />
-                </Border>
+                    <!-- 当前帧数显示 -->
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding CurrentFrameText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0"
+                               FontSize="12" />
+
+                    <!-- 滑动条 -->
+                    <Slider Grid.Column="1"
+                            x:Name="FrameSlider"
+                            Minimum="0"
+                            Opacity="0.5"
+                            Maximum="{Binding MaxFrame, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                            Value="{Binding CurrentFrame, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                            IsEnabled="{Binding HasImages, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
+                            TickPlacement="None"
+                            VerticalAlignment="Center" />
+
+                    <!-- 总帧数显示 -->
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding TotalFramesText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
+                               VerticalAlignment="Center"
+                               Margin="10,0,0,0"
+                               FontSize="12" />
+                </Grid>
+            </suki:GlassCard>
 
 
-                <!-- 加载指示器 -->
-                <ProgressBar IsIndeterminate="True"
-                             IsVisible="{Binding IsLoading, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
-                             HorizontalAlignment="Center"
-                             VerticalAlignment="Center"
-                             Width="100"
-                             Height="4" />
-
-                <!-- 无图片提示 -->
-                <TextBlock Text="{i18n:Localize ImageSequence_NoSequenceSelected}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           FontSize="16"
-                           IsVisible="{Binding HasImages, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}, Converter={x:Static conv:BoolConverters.Not}}" />
-
-            </Panel>
-        </Border>
-
-
-    </Grid>
+        </Panel>
+    </Border>
 </UserControl>
