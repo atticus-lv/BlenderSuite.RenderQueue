@@ -37,17 +37,17 @@ class RENDERQUEUE_OT_submit_scene(Operator):
     scene_name: EnumProperty(name="Scene", items=enum_scene_items_callback)
 
     override_frame_range: BoolProperty(
-        name="Override",
+        name="Custom",
         default=False
     )
 
-    start_frame: IntProperty(
+    frame_start: IntProperty(
         name="Start Frame",
         default=1,
         min=1
     )
 
-    end_frame: IntProperty(
+    frame_end: IntProperty(
         name="End Frame",
         default=250,
         min=1
@@ -81,8 +81,8 @@ class RENDERQUEUE_OT_submit_scene(Operator):
         if self.override_frame_range:
             new_task["RenderTask"]["Override"] = {
                 "OverrideFrameRange": {
-                    "StartFrame": self.start_frame,
-                    "EndFrame": self.end_frame
+                    "StartFrame": self.frame_start,
+                    "EndFrame": self.frame_end
                 },
                 "OverrideScene": {
                     "SceneName": self.scene_name
@@ -117,30 +117,32 @@ class RENDERQUEUE_OT_submit_scene(Operator):
     def invoke(self, context, event):
         # 设置默认帧范围
         scene = context.scene
-        self.start_frame = scene.frame_start
-        self.end_frame = scene.frame_end
+        self.frame_start = scene.frame_start
+        self.frame_end = scene.frame_end
 
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        return context.window_manager.invoke_props_dialog(self, width=400, )
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        blend_file_path = bpy.data.filepath
-        layout.label(text=f"{os.path.basename(blend_file_path)}", icon='FILE_BLEND')
-        layout.prop(self, "scene_name", icon='SCENE_DATA')
-
-        row = layout.row()
+        box = layout.box()
+        box.label(text=f"{os.path.basename(bpy.data.filepath)}", icon='FILE_BLEND')
+        box.label(text=self.scene_name, icon='SCENE_DATA')
         if not self.override_frame_range:
-            row.label(text=f"{context.scene.frame_start}-{context.scene.frame_end}", icon="PREVIEW_RANGE")
+            scene = bpy.data.scenes[self.scene_name]
+            box.label(text=f"{scene.frame_start}-{scene.frame_end}", icon="PREVIEW_RANGE")
+        else:
+            box.label(text=f"{self.frame_start}-{self.frame_end}", icon="PREVIEW_RANGE")
 
-        row.prop(self, "override_frame_range")
+        layout.prop(self, "scene_name", icon='SCENE_DATA')
+        layout.prop(self, "override_frame_range")
 
         if self.override_frame_range:
             row = layout.row()
-            row.prop(self, "start_frame")
-            row.prop(self, "end_frame")
+            row.prop(self, "frame_start")
+            row.prop(self, "frame_end")
 
 
 iconspreview_collections = {}
