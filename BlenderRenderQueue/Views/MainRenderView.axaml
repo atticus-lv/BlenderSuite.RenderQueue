@@ -76,10 +76,25 @@
             </suki:SukiSideMenu.HeaderContent>
 
             <suki:SukiSideMenu.FooterContent>
-                <!-- <TextBlock Text="{Binding StatusMessage}" -->
-                <!--            FontSize="12" -->
-                <!--            Foreground="{DynamicResource SukiTextSecondaryColor}" -->
-                <!--            TextWrapping="Wrap" /> -->
+                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                    <StackPanel.Styles>
+                        <!-- <Style Selector="Button"> -->
+                        <!--     <Setter Property="Command" Value="{Binding OpenUrlCommand}" /> -->
+                        <!-- </Style> -->
+                        <Style Selector="avalonia|MaterialIcon">
+                            <Setter Property="Width" Value="25" />
+                            <Setter Property="Height" Value="25" />
+                        </Style>
+                    </StackPanel.Styles>
+                    <Button Classes="Basic"
+                            ToolTip.Tip="Open On GitHub.">
+                        <avalonia:MaterialIcon Kind="Github" />
+                    </Button>
+                    <Button Classes="Basic"
+                            ToolTip.Tip="Information About The Application.">
+                        <avalonia:MaterialIcon Kind="InfoCircleOutline" />
+                    </Button>
+                </StackPanel>
             </suki:SukiSideMenu.FooterContent>
         </suki:SukiSideMenu>
 
