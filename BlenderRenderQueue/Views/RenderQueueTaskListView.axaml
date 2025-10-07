@@ -358,8 +358,8 @@
                                         VerticalAlignment="Center"
                                         Classes="Basic Icon"
                                         ToolTip.Tip="{i18n:Localize Queue_DeleteTask}">
-                                        <material:MaterialIcon Kind="Delete" Width="24"
-                                                               Height="24" />
+                                        <material:MaterialIcon Kind="Delete" Width="20"
+                                                               Height="20" />
                                         <Button.IsVisible>
                                             <MultiBinding
                                                 Converter="{x:Static BoolConverters.And}">
@@ -379,8 +379,8 @@
                                         Padding="0"
                                         VerticalAlignment="Center"
                                         Classes="Danger Icon">
-                                        <material:MaterialIcon Kind="Delete" Width="24"
-                                                               Height="24" />
+                                        <material:MaterialIcon Kind="DeleteAlert" Width="20"
+                                                               Height="20" />
                                         <Button.IsVisible>
                                             <MultiBinding
                                                 Converter="{x:Static BoolConverters.And}">
@@ -441,7 +441,7 @@
                         </MultiBinding>
                     </Button.IsEnabled>
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <material:MaterialIcon Kind="Trash" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <material:MaterialIcon Kind="Delete" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
             </StackPanel>
