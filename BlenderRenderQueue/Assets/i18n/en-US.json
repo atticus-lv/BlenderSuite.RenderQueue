@@ -213,7 +213,7 @@
   "VideoGeneration_LogSuccess": "[VIDEO] ✅ Video generation successful: {0}",
   "VideoGeneration_LogFailed": "[VIDEO] ❌ Video generation failed",
   "VideoGeneration_LogError": "[VIDEO] ❌ Video generation error: {0}",
-  "SystemControl_PostRenderBehavior": "Post-Render Behavior",
+  "SystemControl_PostRenderBehavior": "After Rending",
   "SystemControl_None": "None",
   "SystemControl_Shutdown": "Shutdown",
   "SystemControl_Restart": "Restart",

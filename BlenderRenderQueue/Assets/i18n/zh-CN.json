@@ -213,7 +213,7 @@
   "VideoGeneration_LogSuccess": "[VIDEO] ✅ 视频生成成功: {0}",
   "VideoGeneration_LogFailed": "[VIDEO] ❌ 视频生成失败",
   "VideoGeneration_LogError": "[VIDEO] ❌ 视频生成错误: {0}",
-  "SystemControl_PostRenderBehavior": "渲染完成后行为",
+  "SystemControl_PostRenderBehavior": "渲染完成后",
   "SystemControl_None": "无",
   "SystemControl_Shutdown": "关机",
   "SystemControl_Restart": "重启",

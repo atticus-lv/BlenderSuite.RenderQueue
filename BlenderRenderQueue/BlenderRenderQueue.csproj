@@ -80,6 +80,9 @@
       <Compile Update="Views\RenderQueueTaskListView.axaml.cs">
         <DependentUpon>TaskListView.axaml</DependentUpon>
       </Compile>
+      <Compile Update="Views\SystemActionCountdownView.axaml.cs">
+        <DependentUpon>SystemActionCountdownView.axaml</DependentUpon>
+      </Compile>
     </ItemGroup>
 
     <ItemGroup>

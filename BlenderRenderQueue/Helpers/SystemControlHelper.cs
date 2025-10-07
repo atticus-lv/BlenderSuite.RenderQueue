@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Threading;
 using BlenderRenderQueue.Localizer;
+using BlenderRenderQueue.Views;
 
 namespace BlenderRenderQueue.Helpers;
 
@@ -160,114 +160,8 @@ public static class SystemControlHelper
     /// <returns>用户是否取消了操作</returns>
     public static async Task<bool> ShowCountdownDialogAsync(string actionType, int countdownSeconds, Window? parentWindow = null)
     {
-        var tcs = new TaskCompletionSource<bool>();
-        var cancellationTokenSource = new CancellationTokenSource();
-        var isCancelled = false;
-
-        // 创建倒计时对话框
-        var dialog = new Window
-        {
-            Title = Localizer.Localizer.Instance["SystemControl_CountdownTitle"],
-            Width = 400,
-            Height = 200,
-            WindowStartupLocation = WindowStartupLocation.CenterScreen,
-            CanResize = false,
-            ShowInTaskbar = true
-        };
-
-        var stackPanel = new StackPanel
-        {
-            Margin = new Avalonia.Thickness(20),
-            Spacing = 15
-        };
-
-        var titleText = new TextBlock
-        {
-            Text = string.Format(Localizer.Localizer.Instance["SystemControl_CountdownMessage"], actionType),
-            FontSize = 16,
-            FontWeight = Avalonia.Media.FontWeight.Bold,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-            TextWrapping = Avalonia.Media.TextWrapping.Wrap
-        };
-
-        var countdownText = new TextBlock
-        {
-            Text = countdownSeconds.ToString(),
-            FontSize = 24,
-            FontWeight = Avalonia.Media.FontWeight.Bold,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-            Foreground = Avalonia.Media.Brushes.Red
-        };
-
-        var buttonPanel = new StackPanel
-        {
-            Orientation = Avalonia.Layout.Orientation.Horizontal,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-            Spacing = 10
-        };
-
-        var cancelButton = new Button
-        {
-            Content = Localizer.Localizer.Instance["SystemControl_Cancel"],
-            Width = 100,
-            Height = 35
-        };
-
-        cancelButton.Click += (s, e) =>
-        {
-            isCancelled = true;
-            cancellationTokenSource.Cancel();
-            dialog.Close();
-            tcs.SetResult(true); // 返回 true 表示用户取消了操作
-        };
-
-        buttonPanel.Children.Add(cancelButton);
-        stackPanel.Children.Add(titleText);
-        stackPanel.Children.Add(countdownText);
-        stackPanel.Children.Add(buttonPanel);
-        dialog.Content = stackPanel;
-
-        // 启动倒计时任务
-        var countdownTask = Task.Run(async () =>
-        {
-            for (int i = countdownSeconds; i > 0 && !cancellationTokenSource.Token.IsCancellationRequested; i--)
-            {
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    countdownText.Text = i.ToString();
-                });
-                
-                try
-                {
-                    await Task.Delay(1000, cancellationTokenSource.Token);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-            }
-
-            if (!cancellationTokenSource.Token.IsCancellationRequested)
-            {
-                // 倒计时结束，关闭对话框
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    dialog.Close();
-                    tcs.SetResult(false); // 返回 false 表示倒计时结束，没有取消
-                });
-            }
-        });
-
-        // 显示对话框
-        if (parentWindow != null)
-        {
-            await dialog.ShowDialog(parentWindow);
-        }
-        else
-        {
-            dialog.Show();
-        }
-
-        return await tcs.Task;
+        var dialog = new SystemActionCountdownView(actionType, countdownSeconds);
+        return await dialog.ShowDialogAsync(parentWindow, countdownSeconds);
     }
 }
+

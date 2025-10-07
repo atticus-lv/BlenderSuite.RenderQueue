@@ -66,7 +66,26 @@ public partial class RenderQueueViewModel : ViewModelBase
     private bool _autoStartNext = true; // 自动开始下一个任务
 
     [ObservableProperty]
-    private PostRenderBehavior _postRenderBehavior = PostRenderBehavior.None; // 队列渲染结束后的行为
+    private PostRenderBehavior _postRenderBehavior = PostRenderBehavior.None;
+
+    /// <summary>
+    /// 后渲染行为显示文字
+    /// </summary>
+    public string PostRenderBehaviorText
+    {
+        get
+        {
+            var prefix = Localizer.Localizer.Instance["SystemControl_PostRenderBehavior"]; // "渲染完成后"
+            var action = PostRenderBehavior switch
+            {
+                PostRenderBehavior.None => Localizer.Localizer.Instance["SystemControl_None"],
+                PostRenderBehavior.Shutdown => Localizer.Localizer.Instance["SystemControl_Shutdown"],
+                PostRenderBehavior.Restart => Localizer.Localizer.Instance["SystemControl_Restart"],
+                _ => Localizer.Localizer.Instance["SystemControl_None"]
+            };
+            return $"{prefix}: {action}";
+        }
+    } // 队列渲染结束后的行为
 
     
     // 硬件监控现在由HardwareChartView直接管理，不再需要在这里维护
@@ -237,10 +256,10 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             return PostRenderBehavior switch
             {
-                PostRenderBehavior.None => "Close",
+                PostRenderBehavior.None => "ArrowRight",
                 PostRenderBehavior.Shutdown => "Power",
                 PostRenderBehavior.Restart => "Restart",
-                _ => "Close"
+                _ => "ArrowRight"
             };
         }
     }
@@ -346,6 +365,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             if (e.PropertyName == nameof(PostRenderBehavior))
             {
                 OnPropertyChanged(nameof(PostRenderBehaviorIcon));
+                OnPropertyChanged(nameof(PostRenderBehaviorText));
             }
         };
 
@@ -1935,7 +1955,6 @@ public partial class RenderQueueViewModel : ViewModelBase
         try
         {
             string actionType;
-            bool success = false;
 
             switch (PostRenderBehavior)
             {
@@ -1949,38 +1968,44 @@ public partial class RenderQueueViewModel : ViewModelBase
                     return;
             }
 
-            // 显示倒计时对话框
-            var isCancelled = await SystemControlHelper.ShowCountdownDialogAsync(actionType, 60);
-            
-            if (!isCancelled)
+            // 立即发送60秒的系统操作指令
+            bool success = false;
+            if (PostRenderBehavior == PostRenderBehavior.Shutdown)
             {
-                // 用户没有取消，执行系统操作
-                if (PostRenderBehavior == PostRenderBehavior.Shutdown)
+                success = await SystemControlHelper.ShutdownAsync(60, CancellationToken.None);
+            }
+            else if (PostRenderBehavior == PostRenderBehavior.Restart)
+            {
+                success = await SystemControlHelper.RestartAsync(60, CancellationToken.None);
+            }
+            
+            if (success)
+            {
+                // 确保在UI线程中执行对话框显示
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
                 {
-                    success = await SystemControlHelper.ShutdownAsync(60, CancellationToken.None);
-                }
-                else if (PostRenderBehavior == PostRenderBehavior.Restart)
-                {
-                    success = await SystemControlHelper.RestartAsync(60, CancellationToken.None);
-                }
-                
-                if (success)
-                {
-                    Console.WriteLine($"[RenderQueueViewModel] ✅ {actionType} scheduled successfully");
-                }
-                else
-                {
-                    Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to schedule {actionType}");
-                    StatusMessageChanged?.Invoke(this, 
-                        string.Format(Localizer.Localizer.Instance["SystemControl_ActionFailed"], actionType));
-                }
+                    // 显示60秒倒计时对话框，让用户有足够时间取消
+                    var isCancelled = await SystemControlHelper.ShowCountdownDialogAsync(actionType, 60);
+                    
+                    if (isCancelled)
+                    {
+                        // 用户取消了操作，取消系统指令
+                        await SystemControlHelper.CancelShutdownAsync();
+                        Console.WriteLine($"[RenderQueueViewModel] ⚠️ {actionType} cancelled by user");
+                        StatusMessageChanged?.Invoke(this, 
+                            string.Format(Localizer.Localizer.Instance["SystemControl_ActionCancelled"], actionType));
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[RenderQueueViewModel] ✅ {actionType} will execute in 60 seconds");
+                    }
+                });
             }
             else
             {
-                // 用户取消了操作
-                Console.WriteLine($"[RenderQueueViewModel] ⚠️ {actionType} cancelled by user");
+                Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to schedule {actionType}");
                 StatusMessageChanged?.Invoke(this, 
-                    string.Format(Localizer.Localizer.Instance["SystemControl_ActionCancelled"], actionType));
+                    string.Format(Localizer.Localizer.Instance["SystemControl_ActionFailed"], actionType));
             }
         }
         catch (Exception ex)
