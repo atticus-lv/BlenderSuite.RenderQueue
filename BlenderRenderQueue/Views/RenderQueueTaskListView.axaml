@@ -149,12 +149,12 @@
                                         </Border.IsVisible>
                                     </Border>
                                     <!--completed but disabled icon -->
-                                    <Border Width="16" Height="16"
-                                            VerticalAlignment="Top"
-                                            Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
-                                            CornerRadius="8"
-                                            Opacity="0.5">
-                                        <Border.IsVisible>
+                                    <PathIcon Data="{x:Static suki:Icons.CircleOutlineCheck}" Width="16" Height="16"
+                                              VerticalAlignment="Top"
+                                              Foreground="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
+                                              CornerRadius="8"
+                                              Opacity="0.5">
+                                        <PathIcon.IsVisible>
                                             <MultiBinding
                                                 Converter="{StaticResource StatusToIconVisibilityConverter}"
                                                 ConverterParameter="CompletedButDisabled">
@@ -163,8 +163,8 @@
                                                 <Binding Path="ScenePropertiesView.IsLoading" />
                                                 <Binding Path="Status" />
                                             </MultiBinding>
-                                        </Border.IsVisible>
-                                    </Border>
+                                        </PathIcon.IsVisible>
+                                    </PathIcon>
                                     <!--not render icon -->
                                     <Border Width="16" Height="16"
                                             VerticalAlignment="Top"
