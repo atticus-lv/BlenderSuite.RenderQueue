@@ -487,6 +487,158 @@ public partial class MainRenderViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// 显示视频生成进度 Toast
+    /// </summary>
+    /// <param name="taskPath">任务文件路径</param>
+    private void ShowVideoGenerationProgressToast(string taskPath)
+    {
+        try
+        {
+            var toastManager = GetToastManager();
+            if (toastManager == null) return;
+
+            // 创建进度条
+            _videoGenerationProgressBar = new ProgressBar
+            {
+                Value = 0,
+                ShowProgressText = true,
+                Minimum = 0,
+                Maximum = 100
+            };
+
+            // 创建进度 Toast
+            _videoGenerationToast = toastManager.CreateToast()
+                .WithTitle($"正在为 {Path.GetFileName(taskPath)} 生成视频")
+                .WithContent(_videoGenerationProgressBar)
+                .OfType(NotificationType.Information)
+                .Queue();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainRenderViewModel] Error showing video generation progress toast: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 更新视频生成进度
+    /// </summary>
+    /// <param name="progressInfo">进度信息，格式为 "taskPath|progress"</param>
+    private void UpdateVideoGenerationProgress(string progressInfo)
+    {
+        try
+        {
+            var parts = progressInfo.Split('|');
+            if (parts.Length >= 2 && double.TryParse(parts[1], out var progress))
+            {
+                Console.WriteLine($"[MainRenderViewModel] Updating video generation progress: {progress}%");
+                
+                if (_videoGenerationProgressBar != null)
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        _videoGenerationProgressBar.Value = progress;
+                        Console.WriteLine($"[MainRenderViewModel] Progress bar updated to: {_videoGenerationProgressBar.Value}%");
+                    });
+                }
+                else
+                {
+                    Console.WriteLine("[MainRenderViewModel] Progress bar is null, cannot update");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"[MainRenderViewModel] Failed to parse progress info: {progressInfo}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainRenderViewModel] Error updating video generation progress: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 显示视频生成成功 Toast
+    /// </summary>
+    /// <param name="successInfo">成功信息，格式为 "taskPath|videoPath"</param>
+    private void ShowVideoGenerationSuccessToast(string successInfo)
+    {
+        try
+        {
+            var parts = successInfo.Split('|');
+            if (parts.Length >= 2)
+            {
+                var taskPath = parts[0];
+                var videoPath = string.Join("|", parts.Skip(1));
+
+                // 先关闭进度 Toast
+                DismissVideoGenerationToast();
+
+                // 显示成功通知
+                ShowToast("视频生成成功", 
+                         $"任务 {Path.GetFileName(taskPath)} 的视频已生成完成", 
+                         NotificationType.Success);
+
+                // 自动打开视频所在位置
+                if (!string.IsNullOrEmpty(videoPath))
+                {
+                    // 延迟一点时间再打开，让用户看到toast通知
+                    Task.Delay(1000).ContinueWith(_ =>
+                    {
+                        Dispatcher.UIThread.Invoke(() => { OpenVideoLocation(videoPath); });
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainRenderViewModel] Error showing video generation success toast: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 打开视频所在位置
+    /// </summary>
+    /// <param name="videoPath">视频路径</param>
+    private void OpenVideoLocation(string videoPath)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(videoPath))
+            {
+                Console.WriteLine("[MainRenderViewModel] ❌ Video path is null or empty");
+                ShowToast("打开失败", "视频路径为空", NotificationType.Error);
+                return;
+            }
+
+            Console.WriteLine($"[MainRenderViewModel] Attempting to open video location: {videoPath}");
+
+            // 检查文件是否存在
+            if (!File.Exists(videoPath))
+            {
+                Console.WriteLine($"[MainRenderViewModel] ❌ Video file does not exist: {videoPath}");
+                ShowToast("打开失败", "视频文件不存在", NotificationType.Error);
+                return;
+            }
+
+            var success = FileSystemHelper.OpenFileDirectory(videoPath);
+            if (success)
+            {
+                Console.WriteLine($"[MainRenderViewModel] ✅ Successfully opened video location: {videoPath}");
+            }
+            else
+            {
+                Console.WriteLine($"[MainRenderViewModel] ❌ Failed to open video location: {videoPath}");
+                ShowToast("打开失败", "无法打开视频所在位置", NotificationType.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MainRenderViewModel] ❌ Error opening video location: {ex.Message}");
+            ShowToast("打开失败", $"无法打开位置: {ex.Message}", NotificationType.Error);
+        }
+    }
+
+    /// <summary>
     /// 关闭视频生成进度 Toast
     /// </summary>
     private void DismissVideoGenerationToast()
@@ -547,7 +699,28 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void OnToastRequested(object? sender, ToastRequestedEventArgs e)
     {
-        ShowToast(e.Title, e.Content, e.Type);
+        // 处理视频生成相关的特殊 Toast 请求
+        if (e.Title == "SHOW_VIDEO_PROGRESS_TOAST")
+        {
+            ShowVideoGenerationProgressToast(e.Content);
+        }
+        else if (e.Title == "UPDATE_VIDEO_PROGRESS")
+        {
+            UpdateVideoGenerationProgress(e.Content);
+        }
+        else if (e.Title == "VIDEO_GENERATION_SUCCESS")
+        {
+            ShowVideoGenerationSuccessToast(e.Content);
+        }
+        else if (e.Title == "VIDEO_GENERATION_FAILED")
+        {
+            ShowToast("视频生成失败", e.Content, NotificationType.Error);
+        }
+        else
+        {
+            // 处理普通的 Toast 请求
+            ShowToast(e.Title, e.Content, e.Type);
+        }
     }
 
     /// <summary>

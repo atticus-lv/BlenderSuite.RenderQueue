@@ -939,6 +939,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.OpenInBlenderRequested += OnTaskOpenInBlenderRequested;
         task.OpenFileDirectoryRequested += OnTaskOpenFileDirectoryRequested;
         task.VideoGenerationStatusChanged += OnTaskVideoGenerationStatusChanged;
+        task.VideoGenerationProgressChanged += OnTaskVideoGenerationProgressChanged;
     }
 
     private void UnsubscribeFromTaskEvents(RenderTaskViewModel task)
@@ -954,6 +955,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         task.OpenInBlenderRequested -= OnTaskOpenInBlenderRequested;
         task.OpenFileDirectoryRequested -= OnTaskOpenFileDirectoryRequested;
         task.VideoGenerationStatusChanged -= OnTaskVideoGenerationStatusChanged;
+        task.VideoGenerationProgressChanged -= OnTaskVideoGenerationProgressChanged;
     }
 
     private void OnTaskStatusChanged(object? sender, RenderTaskStatusChangedEventArgs e)
@@ -1139,19 +1141,80 @@ public partial class RenderQueueViewModel : ViewModelBase
             // 转发状态消息到主视图模型
             StatusMessageChanged?.Invoke(this, statusMessage);
 
-            // 如果是完成或失败状态，显示 Toast 通知
-            if (statusMessage.Contains("视频生成成功") || statusMessage.Contains("视频生成失败") || statusMessage.Contains("视频生成错误"))
+            // 处理特殊的控制消息
+            if (statusMessage == "开始生成视频")
             {
-                var notificationType = statusMessage.Contains("视频生成成功") ? NotificationType.Success : NotificationType.Error;
+                // 请求显示进度 Toast
                 ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
-                    "视频生成",
-                    statusMessage,
-                    notificationType));
+                    "SHOW_VIDEO_PROGRESS_TOAST",
+                    task.BlendFilePath,
+                    NotificationType.Information));
+            }
+            else if (statusMessage.Contains("视频生成成功"))
+            {
+                // 视频生成成功，提取视频路径
+                var videoPath = ExtractVideoPathFromStatusMessage(statusMessage);
+                ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
+                    "VIDEO_GENERATION_SUCCESS",
+                    $"{task.BlendFilePath}|{videoPath}",
+                    NotificationType.Success));
+            }
+            else if (statusMessage.Contains("视频生成失败") || statusMessage.Contains("视频生成错误"))
+            {
+                // 视频生成失败或错误
+                ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
+                    "VIDEO_GENERATION_FAILED",
+                    $"{task.BlendFilePath}|{statusMessage}",
+                    NotificationType.Error));
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[RenderQueueViewModel] ❌ Error handling video generation status change: {ex.Message}");
+        }
+    }
+
+    private void OnTaskVideoGenerationProgressChanged(object? sender, double progress)
+    {
+        try
+        {
+            var task = sender as RenderTaskViewModel;
+            if (task == null) return;
+
+            Console.WriteLine($"[RenderQueueViewModel] Video generation progress changed for task {Path.GetFileName(task.BlendFilePath)}: {progress}%");
+
+            // 转发进度更新到主视图模型
+            ToastRequested?.Invoke(this, new ToastRequestedEventArgs(
+                "UPDATE_VIDEO_PROGRESS",
+                $"{task.BlendFilePath}|{progress}",
+                NotificationType.Information));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Error handling video generation progress change: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 从状态消息中提取视频路径
+    /// </summary>
+    /// <param name="statusMessage">状态消息</param>
+    /// <returns>视频路径</returns>
+    private string ExtractVideoPathFromStatusMessage(string statusMessage)
+    {
+        try
+        {
+            // 状态消息格式通常是 "视频生成成功: C:\path\to\video.mp4"
+            if (statusMessage.Contains("视频生成成功: "))
+            {
+                return statusMessage.Substring(statusMessage.IndexOf("视频生成成功: ") + "视频生成成功: ".Length);
+            }
+
+            return string.Empty;
+        }
+        catch
+        {
+            return string.Empty;
         }
     }
 

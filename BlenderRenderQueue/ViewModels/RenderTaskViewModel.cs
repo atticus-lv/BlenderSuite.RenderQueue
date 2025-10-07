@@ -576,6 +576,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// </summary>
     public event EventHandler<string>? VideoGenerationStatusChanged;
 
+    /// <summary>
+    /// 视频生成进度变化事件
+    /// </summary>
+    public event EventHandler<double>? VideoGenerationProgressChanged;
+
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 
     [ObservableProperty]
@@ -1324,6 +1329,9 @@ public partial class RenderTaskViewModel : ViewModelBase
                         // 更新进度
                         VideoGenerationProgress = progress;
                         VideoGenerationStatus = "正在生成视频...";
+                        
+                        // 触发进度变化事件
+                        VideoGenerationProgressChanged?.Invoke(this, progress);
                     });
             }
             finally
