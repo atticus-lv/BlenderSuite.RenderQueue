@@ -210,25 +210,6 @@
                     </TabItem>
                     <TabItem Header="{i18n:Localize RenderTask_OutputPreview}">
                         <Grid RowDefinitions="Auto,*">
-                            <!-- 生成视频按钮 -->
-                            <StackPanel Grid.Row="0">
-                                <Button Classes="Rounded" Margin="4"
-                                        Command="{Binding GenerateVideoCommand}"
-                                        HorizontalAlignment="Right"
-                                        suki:ButtonExtensions.ShowProgress="{Binding IsGeneratingVideo}"
-                                        IsEnabled="{Binding CanGenerateVideo}">
-
-                                    <Button.Content>
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <TextBlock Text="🎬" VerticalAlignment="Center" />
-                                            <TextBlock Text="{i18n:Localize Queue_GenerateVideo}"
-                                                       VerticalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button.Content>
-                                </Button>
-                            </StackPanel>
-
-
                             <!-- 图片序列预览控件 -->
                             <controls:ImageSequencePreviewControl Grid.Row="1"
                                                                   FolderPath="{Binding FramePathDirectory}" />

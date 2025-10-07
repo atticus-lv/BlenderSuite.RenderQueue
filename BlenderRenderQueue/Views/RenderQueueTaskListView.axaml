@@ -59,6 +59,48 @@
                         </Setter>
                         <Setter Property="ContextMenu">
                             <ContextMenu>
+
+
+                                <MenuItem Header="{i18n:Localize Queue_CopyTask}"
+                                          Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CopyTaskCommand}"
+                                          CommandParameter="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext)}"
+                                          IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).IsValid}">
+                                    <MenuItem.Icon>
+                                        <material:MaterialIcon Kind="ContentCopy" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+
+                                <MenuItem Header="{i18n:Localize Queue_Refresh}"
+                                          Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).RefreshFileInfoCommand}"
+                                          IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).CanRefresh}">
+                                    <MenuItem.Icon>
+                                        <material:MaterialIcon Kind="Refresh" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+
+                                <Separator />
+
+                                <MenuItem Header="{i18n:Localize Queue_GenerateVideo}"
+                                          Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).GenerateVideoCommand}"
+                                          IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).CanGenerateVideo}">
+                                    <MenuItem.Icon>
+                                        <Panel>
+                                            <material:MaterialIcon Kind="Videocam" Width="16"
+                                                                   IsVisible="{Binding !$parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).IsGeneratingVideo}"
+                                                                   Height="16" />
+                                            <suki:Loading LoadingStyle="Pellets" Width="16" Height="16"
+                                                          IsVisible="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).IsGeneratingVideo}" />
+                                        </Panel>
+
+
+                                    </MenuItem.Icon>
+                                </MenuItem>
+
+                                <Separator />
+
+
                                 <MenuItem Header="{i18n:Localize Queue_OpenInBlender}"
                                           Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).OpenInBlenderCommand}"
                                           IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).IsValid}">
@@ -83,28 +125,8 @@
                                                                Height="16" />
                                     </MenuItem.Icon>
                                 </MenuItem>
-                                <Separator />
 
-                                <MenuItem Header="{i18n:Localize Queue_CopyTask}"
-                                          Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CopyTaskCommand}"
-                                          CommandParameter="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext)}"
-                                          IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).IsValid}">
-                                    <MenuItem.Icon>
-                                        <material:MaterialIcon Kind="ContentCopy" Width="16"
-                                                               Height="16" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
 
-                                <Separator />
-
-                                <MenuItem Header="{i18n:Localize Queue_Refresh}"
-                                          Command="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).RefreshFileInfoCommand}"
-                                          IsEnabled="{Binding $parent[ListBoxItem].((viewModels:RenderTaskViewModel)DataContext).CanRefresh}">
-                                    <MenuItem.Icon>
-                                        <material:MaterialIcon Kind="Refresh" Width="16"
-                                                               Height="16" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
                             </ContextMenu>
                         </Setter>
                     </Style>
