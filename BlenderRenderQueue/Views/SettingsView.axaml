@@ -62,7 +62,7 @@
                                 <!-- 硬件加速选择 -->
                                 <StackPanel Grid.Row="2" Grid.Column="0">
                                     <TextBlock
-                                        Text="{i18n:Localize Settings_HardwareVulkan}"
+                                        Text="{i18n:Localize Settings_UseGpu}"
                                         VerticalAlignment="Center"
                                         Margin="0,16,8,0" />
                                     <!-- 硬件加速重启提示 -->
@@ -72,7 +72,7 @@
                                                                Width="16"
                                                                Height="16" />
                                         <TextBlock
-                                            Text="{i18n:Localize Settings_HardwareVulkanRestartWarning}"
+                                            Text="{i18n:Localize Settings_HardwareRestartWarning}"
                                             VerticalAlignment="Center" />
                                         <Button Command="{Binding SaveAndRestartAppCommand}"
                                                 Classes="Flat Rounded Accent"

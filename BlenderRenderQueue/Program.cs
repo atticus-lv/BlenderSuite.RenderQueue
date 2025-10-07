@@ -60,19 +60,19 @@ sealed class Program
                 TypeInfoResolver = SettingsJsonContext.Default
             });
 
-            if (settings?.Vulkan == true)
+            if (settings?.UseGpu == true)
             {
                 Console.WriteLine("[Program] Hardware acceleration enabled, using WGL rendering");
-                return Win32RenderingMode.Vulkan;
+                return Win32RenderingMode.AngleEgl;
             }
 
             Console.WriteLine("[Program] Hardware acceleration disabled, using Angle EGL rendering");
-            return Win32RenderingMode.AngleEgl;
+            return Win32RenderingMode.Software;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[Program] Error reading settings, using default hardware acceleration (WGL): {ex.Message}");
-            return Win32RenderingMode.AngleEgl;
+            return Win32RenderingMode.Software;
         }
     }
 }

@@ -38,8 +38,8 @@ public class SettingsData
     [JsonPropertyName("BaseTheme")]
     public string BaseTheme { get; set; } = "Dark";
 
-    [JsonPropertyName("Vulkan")]
-    public bool Vulkan { get; set; } = true;
+    [JsonPropertyName("UseGpu")]
+    public bool UseGpu { get; set; } = true;
 
 
     public BlenderExecutable? GetSelectedBlender()

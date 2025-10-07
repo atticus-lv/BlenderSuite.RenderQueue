@@ -636,7 +636,7 @@ public partial class SettingsViewModel : ViewModelBase
                 VideoQuality = VideoQuality.Value,
                 Language = Language.Value,
                 BaseTheme = BaseTheme.Value,
-                Vulkan = HardwareAcceleration
+                UseGpu = HardwareAcceleration
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
@@ -766,7 +766,7 @@ public partial class SettingsViewModel : ViewModelBase
             }
 
             // 加载硬件加速设置
-            HardwareAcceleration = settings.Vulkan;
+            HardwareAcceleration = settings.UseGpu;
 
             Console.WriteLine(
                 $"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
