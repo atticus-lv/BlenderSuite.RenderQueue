@@ -31,18 +31,30 @@
                     <Image Source="{Binding RenderedImage}"
                            Stretch="UniformToFill"
                            VerticalAlignment="Center" HorizontalAlignment="Center"
-                           IsVisible="{Binding HasRenderedImage}"
                            Name="RenderedImageControl"
                            Cursor="Hand"
-                           DoubleTapped="OnRenderedImageDoubleTapped" />
+                           DoubleTapped="OnRenderedImageDoubleTapped">
+                        <Image.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                <Binding Path="HasRenderedImage" />
+                                <Binding Path="RenderedImage" Converter="{x:Static ObjectConverters.IsNotNull}" />
+                            </MultiBinding>
+                        </Image.IsVisible>
+                    </Image>
                 </Border>
 
                 <!-- 文件缩略图 (备选) -->
                 <Border CornerRadius="8" ClipToBounds="True">
                     <Image Source="{Binding FileInfo.Thumbnail}"
                            Stretch="UniformToFill"
-                           VerticalAlignment="Center" HorizontalAlignment="Center"
-                           IsVisible="{Binding HasRenderedImage, Converter={x:Static BoolConverters.Not}}" />
+                           VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Image.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                <Binding Path="HasRenderedImage" Converter="{x:Static BoolConverters.Not}" />
+                                <Binding Path="FileInfo.Thumbnail" Converter="{x:Static ObjectConverters.IsNotNull}" />
+                            </MultiBinding>
+                        </Image.IsVisible>
+                    </Image>
                 </Border>
 
                 <!-- 占位符 -->
