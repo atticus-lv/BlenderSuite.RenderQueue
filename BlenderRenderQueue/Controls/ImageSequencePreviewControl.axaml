@@ -42,15 +42,19 @@
                     TextWrapping="NoWrap"
                     IsVisible="{Binding $parent[controls:ImageSequencePreviewControl].HasError}" />
 
+
                 <SelectableTextBlock IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}"
                                      Text="{Binding $parent[controls:ImageSequencePreviewControl].FolderPath}"
-                                     FontSize="14"
-                                     TextWrapping="NoWrap"
-                                     Opacity="0.5"
-                                     VerticalAlignment="Top" />
-                <StackPanel.Effect>
-                    <DropShadowEffect Color="Gray" BlurRadius="4" OffsetX="0" OffsetY="0"></DropShadowEffect>
-                </StackPanel.Effect>
+                                     FontSize="12"
+                                     FontWeight="Bold"
+                                     TextWrapping="WrapWithOverflow"
+                                     HorizontalAlignment="Center"
+                                     Opacity="1"
+                                     VerticalAlignment="Top">
+                    <SelectableTextBlock.Effect>
+                        <DropShadowEffect Color="Black" BlurRadius="4" OffsetX="0" OffsetY="0"></DropShadowEffect>
+                    </SelectableTextBlock.Effect>
+                </SelectableTextBlock>
             </StackPanel>
 
             <!-- 加载指示器 -->
@@ -84,13 +88,18 @@
                                Text="{Binding CurrentFrameText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
                                VerticalAlignment="Center"
                                Margin="0,0,10,0"
-                               FontSize="12" />
+                               FontWeight="Bold"
+                               FontSize="12">
+                        <TextBlock.Effect>
+                            <DropShadowEffect Color="Black" BlurRadius="4" OffsetX="0" OffsetY="0"></DropShadowEffect>
+                        </TextBlock.Effect>
+                    </TextBlock>
 
                     <!-- 滑动条 -->
                     <Slider Grid.Column="1"
                             x:Name="FrameSlider"
                             Minimum="0"
-                            Opacity="0.5"
+                            Opacity="0.7"
                             Maximum="{Binding MaxFrame, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
                             Value="{Binding CurrentFrame, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
                             IsEnabled="{Binding HasImages, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl}}"
@@ -102,7 +111,12 @@
                                Text="{Binding TotalFramesText, RelativeSource={RelativeSource AncestorType=controls:ImageSequencePreviewControl},Converter={StaticResource LocalizeConverter}}"
                                VerticalAlignment="Center"
                                Margin="10,0,0,0"
-                               FontSize="12" />
+                               FontWeight="Bold"
+                               FontSize="12">
+                        <TextBlock.Effect>
+                            <DropShadowEffect Color="Black" BlurRadius="4" OffsetX="0" OffsetY="0"></DropShadowEffect>
+                        </TextBlock.Effect>
+                    </TextBlock>
                 </Grid>
             </suki:GlassCard>
 
