@@ -880,8 +880,6 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RenderTaskViewModel] ❌ Exception in LoadFilePropertiesAsync: {ex.Message}");
-            Console.WriteLine($"[RenderTaskViewModel] ❌ Stack trace: {ex.StackTrace}");
             EnqueueLog($"[QUERY] 加载文件属性失败: {ex.Message}");
         }
     }

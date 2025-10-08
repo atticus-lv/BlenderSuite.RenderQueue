@@ -36,7 +36,6 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowEmptyState));
         OnPropertyChanged(nameof(SortedScenes));
 
-        Console.WriteLine($"[BlendScenePropertiesViewModel] AllScenes changed, count: {value?.Count ?? 0}");
     }
 
     [ObservableProperty] private BlendSceneProperties _selectedScene = new();
@@ -129,17 +128,9 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
             return;
         }
 
-        Console.WriteLine(
-            $"[BlendScenePropertiesViewModel] Starting LoadPropertiesAsync for: {Path.GetFileName(blendFilePath)}");
-        Console.WriteLine(
-            $"[BlendScenePropertiesViewModel] Initial state - IsLoading: {IsLoading}, IsLoaded: {SelectedSceneProperties?.IsLoaded ?? false}, ShowEmptyState: {ShowEmptyState}");
-
         IsLoading = true;
         ErrorMessage = string.Empty;
         LoadingMessage = "SceneProperties_LoadingFileProperties";
-
-        Console.WriteLine(
-            $"[BlendScenePropertiesViewModel] After setting IsLoading=true - IsLoading: {IsLoading}, ShowEmptyState: {ShowEmptyState}");
 
         try
         {
@@ -152,30 +143,20 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
                     cancellationToken);
 
             AllScenes = sceneData;
-            Console.WriteLine($"[BlendScenePropertiesViewModel] Loaded {sceneData.Count} scenes");
-            foreach (var scene in sceneData)
-            {
-                Console.WriteLine($"[BlendScenePropertiesViewModel] Scene: {scene.Key}, IsDefaultScene: {scene.Value.IsDefaultScene}");
-            }
             
             // 设置默认选择的场景（默认场景）
             var defaultScene = sceneData.Values.FirstOrDefault(scene => scene.IsDefaultScene);
             if (defaultScene != null)
             {
                 SelectedScene = defaultScene;
-                Console.WriteLine($"[BlendScenePropertiesViewModel] Selected default scene: {defaultScene.SceneName}");
             }
             else
             {
                 // 如果没有找到默认场景，选择第一个场景
                 SelectedScene = sceneData.Values.FirstOrDefault() ?? new BlendSceneProperties();
-                Console.WriteLine($"[BlendScenePropertiesViewModel] No default scene found, selected first: {SelectedScene.SceneName}");
             }
             SceneProperties = SelectedSceneProperties; // 保持向后兼容
             LoadingMessage = "SceneProperties_LoadingComplete";
-
-            Console.WriteLine(
-                $"[BlendScenePropertiesViewModel] Properties loaded successfully - SelectedScene: {SelectedScene.SceneName}, ScenesCount: {AllScenes.Count}, IsLoaded: {SelectedSceneProperties.IsLoaded}");
 
             // 通知UI更新计算属性
             OnPropertyChanged(nameof(HasErrorMessage));
@@ -190,8 +171,6 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[BlendScenePropertiesViewModel] ❌ Exception in LoadPropertiesAsync: {ex.Message}");
-            Console.WriteLine($"[BlendScenePropertiesViewModel] ❌ Stack trace: {ex.StackTrace}");
             ErrorMessage = $"加载文件属性失败: {ex.Message}";
             OnPropertyChanged(nameof(HasErrorMessage));
             OnPropertyChanged(nameof(ShowEmptyState));
@@ -200,8 +179,6 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
         {
             IsLoading = false;
             OnPropertyChanged(nameof(ShowEmptyState));
-            Console.WriteLine(
-                $"[BlendScenePropertiesViewModel] Finally block - IsLoading: {IsLoading}, IsLoaded: {SelectedSceneProperties.IsLoaded}, ShowEmptyState: {ShowEmptyState}");
         }
     }
 
