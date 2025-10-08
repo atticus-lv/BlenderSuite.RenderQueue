@@ -1584,45 +1584,30 @@ public partial class RenderTaskViewModel : ViewModelBase
 }
 
 // 状态变化事件参数
-public class RenderTaskStatusChangedEventArgs : EventArgs
+public class RenderTaskStatusChangedEventArgs(RenderTaskStatus status, string statusText) : EventArgs
 {
-    public RenderTaskStatus Status { get; }
-    public string StatusText { get; }
-
-    public RenderTaskStatusChangedEventArgs(RenderTaskStatus status, string statusText)
-    {
-        Status = status;
-        StatusText = statusText;
-    }
+    public RenderTaskStatus Status { get; } = status;
+    public string StatusText { get; } = statusText;
 }
 
 // 进度变化事件参数
-public class RenderTaskProgressEventArgs : EventArgs
+public class RenderTaskProgressEventArgs(
+    double overallProgress,
+    double currentFrameProgress,
+    int currentFrame,
+    TimeSpan frameRenderTime)
+    : EventArgs
 {
-    public double OverallProgress { get; }
-    public double CurrentFrameProgress { get; }
-    public int CurrentFrame { get; }
-    public TimeSpan FrameRenderTime { get; }
-
-    public RenderTaskProgressEventArgs(double overallProgress, double currentFrameProgress, int currentFrame,
-        TimeSpan frameRenderTime)
-    {
-        OverallProgress = overallProgress;
-        CurrentFrameProgress = currentFrameProgress;
-        CurrentFrame = currentFrame;
-        FrameRenderTime = frameRenderTime;
-    }
+    public double OverallProgress { get; } = overallProgress;
+    public double CurrentFrameProgress { get; } = currentFrameProgress;
+    public int CurrentFrame { get; } = currentFrame;
+    public TimeSpan FrameRenderTime { get; } = frameRenderTime;
 }
 
 // 请求在Blender中打开文件事件参数
-public class OpenInBlenderRequestedEventArgs : EventArgs
+public class OpenInBlenderRequestedEventArgs(string filePath) : EventArgs
 {
-    public string FilePath { get; }
-
-    public OpenInBlenderRequestedEventArgs(string filePath)
-    {
-        FilePath = filePath;
-    }
+    public string FilePath { get; } = filePath;
 }
 
 // 请求打开文件所在文件夹事件参数
