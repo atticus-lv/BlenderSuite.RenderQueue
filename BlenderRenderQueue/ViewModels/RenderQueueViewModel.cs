@@ -1070,12 +1070,14 @@ public partial class RenderQueueViewModel : ViewModelBase
     private void OnTaskOverrideSceneChanged(object? sender, EventArgs e)
     {
         AutoSaveQueueData();
+        UpdateQueueStatistics();
         Console.WriteLine("[RenderQueueViewModel] Task override scene state changed, auto-saving data");
     }
 
     private void OnTaskSceneSelectionChanged(object? sender, EventArgs e)
     {
         AutoSaveQueueData();
+        UpdateQueueStatistics();
         Console.WriteLine("[RenderQueueViewModel] Task scene selection changed, auto-saving data");
     }
 
