@@ -70,7 +70,6 @@ public class DesignTimeBlendScenePropertiesViewModel : BlendScenePropertiesViewM
 
         // 设置当前激活场景
         ActiveSceneName = "Scene";
-        DefaultSceneName = "Scene";
         
         // 设置场景属性
         SceneProperties = scene1;

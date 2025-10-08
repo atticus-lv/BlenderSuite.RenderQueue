@@ -28,39 +28,28 @@ namespace BlenderRenderQueue.ViewModels;
 
 public partial class RenderTaskViewModel : ViewModelBase
 {
-    [ObservableProperty]
-    private string _blendFilePath = string.Empty;
+    [ObservableProperty] private string _blendFilePath = string.Empty;
 
-    [ObservableProperty]
-    private int _startFrame = 1;
+    [ObservableProperty] private int _startFrame = 1;
 
-    [ObservableProperty]
-    private int _endFrame = 1;
+    [ObservableProperty] private int _endFrame = 1;
 
-    [ObservableProperty]
-    private bool _animation = true;
+    [ObservableProperty] private bool _animation = true;
 
-    [ObservableProperty]
-    private bool _overrideFrameRange = false;
+    [ObservableProperty] private bool _overrideFrameRange = false;
 
-    [ObservableProperty]
-    private bool _overrideScene = false;
+    [ObservableProperty] private bool _overrideScene = false;
 
-    [ObservableProperty]
-    private string _selectedSceneName = string.Empty;
+    [ObservableProperty] private string _selectedSceneName = string.Empty;
 
-    [ObservableProperty]
-    private bool _autoStart = true;
+    [ObservableProperty] private bool _autoStart = true;
 
-    [ObservableProperty]
-    private bool _enable = true;
+    [ObservableProperty] private bool _enable = true;
 
-    [ObservableProperty]
-    private bool _isValid = true;
+    [ObservableProperty] private bool _isValid = true;
 
     // 场景覆写相关属性
-    [ObservableProperty]
-    private List<string> _availableSceneNames = [];
+    [ObservableProperty] private List<string> _availableSceneNames = [];
 
     public bool HasValidSceneSelection =>
         !string.IsNullOrEmpty(SelectedSceneName) && ScenePropertiesView.SceneNames.Contains(SelectedSceneName);
@@ -99,33 +88,25 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanGenerateVideo));
     }
 
-    [ObservableProperty]
-    private bool _isDropTarget = false;
+    [ObservableProperty] private bool _isDropTarget = false;
 
-    [ObservableProperty]
-    private bool _isDragTarget = false;
+    [ObservableProperty] private bool _isDragTarget = false;
 
-    [ObservableProperty]
-    private bool _isPendingDeletion = false;
+    [ObservableProperty] private bool _isPendingDeletion = false;
 
     // 队列运行状态（由RenderQueueViewModel设置）
     private bool _isQueueRunning = false;
 
 
-    [ObservableProperty]
-    private double _progress01; // 当前帧进度
+    [ObservableProperty] private double _progress01; // 当前帧进度
 
-    [ObservableProperty]
-    private double _overallProgress01; // 整体进度
+    [ObservableProperty] private double _overallProgress01; // 整体进度
 
-    [ObservableProperty]
-    private string _engine = string.Empty;
+    [ObservableProperty] private string _engine = string.Empty;
 
-    [ObservableProperty]
-    private int _currentFrame;
+    [ObservableProperty] private int _currentFrame;
 
-    [ObservableProperty]
-    private int _completedFrames;
+    [ObservableProperty] private int _completedFrames;
 
     public int TotalFrames => Math.Max(0, EndFrame - StartFrame + 1);
 
@@ -383,17 +364,13 @@ public partial class RenderTaskViewModel : ViewModelBase
         SceneSelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    [ObservableProperty]
-    private string _sampleText = string.Empty;
+    [ObservableProperty] private string _sampleText = string.Empty;
 
-    [ObservableProperty]
-    private string _savedPath = string.Empty;
+    [ObservableProperty] private string _savedPath = string.Empty;
 
-    [ObservableProperty]
-    private string _outputLog = string.Empty;
+    [ObservableProperty] private string _outputLog = string.Empty;
 
-    [ObservableProperty]
-    private BlendScenePropertiesViewModel _scenePropertiesView = new();
+    [ObservableProperty] private BlendScenePropertiesViewModel _scenePropertiesView = new();
 
     partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel value)
     {
@@ -405,7 +382,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         if (value == null) return;
         value.PropertyChanged += (sender, args) =>
         {
-            if (args.PropertyName == nameof(value.ActiveSceneProperties) ||
+            if (args.PropertyName == nameof(value.SelectedSceneProperties) ||
                 args.PropertyName == nameof(value.SceneProperties) ||
                 args.PropertyName == nameof(value.AllScenes))
             {
@@ -415,17 +392,13 @@ public partial class RenderTaskViewModel : ViewModelBase
         };
     }
 
-    [ObservableProperty]
-    private BlendFileInfo _fileInfo = new();
+    [ObservableProperty] private BlendFileInfo _fileInfo = new();
 
-    [ObservableProperty]
-    private Bitmap? _renderedImage;
+    [ObservableProperty] private Bitmap? _renderedImage;
 
-    [ObservableProperty]
-    private string _renderedImagePath = string.Empty;
+    [ObservableProperty] private string _renderedImagePath = string.Empty;
 
-    [ObservableProperty]
-    private bool _hasRenderedImage = false;
+    [ObservableProperty] private bool _hasRenderedImage = false;
 
     [RelayCommand]
     private void OpenImagePreview()
@@ -583,21 +556,16 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public string BlendFileName => System.IO.Path.GetFileName(BlendFilePath);
 
-    [ObservableProperty]
-    private bool _isLogPaused = false;
+    [ObservableProperty] private bool _isLogPaused = false;
 
-    [ObservableProperty]
-    private string _logPauseButtonText = "Stop Log";
+    [ObservableProperty] private string _logPauseButtonText = "Stop Log";
 
     // 视频生成相关属性
-    [ObservableProperty]
-    private bool _isGeneratingVideo; // 是否正在生成视频
+    [ObservableProperty] private bool _isGeneratingVideo; // 是否正在生成视频
 
-    [ObservableProperty]
-    private double _videoGenerationProgress; // 视频生成进度
+    [ObservableProperty] private double _videoGenerationProgress; // 视频生成进度
 
-    [ObservableProperty]
-    private string _videoGenerationStatus = string.Empty; // 视频生成状态
+    [ObservableProperty] private string _videoGenerationStatus = string.Empty; // 视频生成状态
 
     // 全局超时设置（从SettingsViewModel获取）
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
@@ -610,20 +578,15 @@ public partial class RenderTaskViewModel : ViewModelBase
     private string _videoQuality = "PERC_LOSSLESS"; // 默认感知无损质量
     private BlenderProcessService? _processService; // 进程管理服务
 
-    [ObservableProperty]
-    private RenderTaskStatus _status = RenderTaskStatus.Pending;
+    [ObservableProperty] private RenderTaskStatus _status = RenderTaskStatus.Pending;
 
-    [ObservableProperty]
-    private DateTime? _startTime;
+    [ObservableProperty] private DateTime? _startTime;
 
-    [ObservableProperty]
-    private DateTime? _endTime;
+    [ObservableProperty] private DateTime? _endTime;
 
-    [ObservableProperty]
-    private TimeSpan? _duration;
+    [ObservableProperty] private TimeSpan? _duration;
 
-    [ObservableProperty]
-    private BlendScenePropertiesViewModel _scenePropertiesViewModel = new();
+    [ObservableProperty] private BlendScenePropertiesViewModel _scenePropertiesViewModel = new();
 
     /// <summary>
     /// 获取最终渲染场景的属性（考虑场景覆写设置）
@@ -640,7 +603,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             }
 
             // 否则使用默认场景
-            return ScenePropertiesView.ActiveSceneProperties;
+            return ScenePropertiesView.SelectedSceneProperties;
         }
     }
 
@@ -1023,7 +986,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             _session?.Dispose();
         }
         catch
-        { }
+        {
+        }
 
         _session = null;
 
@@ -1182,7 +1146,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         _logLineCount = 0;
         // 清空队列中的待处理日志
         while (_logQueue.TryDequeue(out _))
-        { }
+        {
+        }
 
         EnqueueLog("日志已清空");
     }
@@ -1697,7 +1662,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             _session?.Dispose();
         }
         catch
-        { }
+        {
+        }
 
         if (_exe is not null)
         {
