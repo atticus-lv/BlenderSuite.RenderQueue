@@ -101,7 +101,7 @@
   "SceneProperties_OutputFormat": "Output Format:",
   "SceneProperties_FileNotLoaded": "File Not Loaded",
   "SceneType_Single": "Single Scene",
-  "SceneType_Composite": "Composite Scene ({0})",
+  "SceneType_Multi": "Multi ({0})",
   "CameraType_Single": "Single Camera",
   "CameraType_Timeline": "Timeline Camera ({0})",
   "RenderTask_Open": "Open",

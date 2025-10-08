@@ -46,14 +46,14 @@ public class BlendSceneProperties
     {
         get
         {
-            if (ReferencedScenes == null || !ReferencedScenes.Any())
+            if (ReferencedScenes == null || ReferencedScenes.Count == 0)
             {
                 return "SceneType_Single";
             }
             else
             {
                 var sceneNames = string.Join(", ", ReferencedScenes);
-                return $"SceneType_Composite:{sceneNames}";
+                return $"SceneType_Multi:{sceneNames}";
             }
         }
     }
@@ -61,7 +61,7 @@ public class BlendSceneProperties
     /// <summary>
     /// 是否为复合场景
     /// </summary>
-    public bool IsCompositeScene => ReferencedScenes != null && ReferencedScenes.Any();
+    public bool IsCompositeScene => ReferencedScenes != null && ReferencedScenes.Count != 0;
 
     /// <summary>
     /// 相机类型显示文本
@@ -87,24 +87,5 @@ public class BlendSceneProperties
     /// </summary>
     public bool IsMultiCameraScene => TimelineCameras != null && TimelineCameras.Any();
 
-    /// <summary>
-    /// 从另一个BlendFileProperties对象加载属性
-    /// </summary>
-    public void LoadFrom(BlendSceneProperties source)
-    {
-        FilePath = source.FilePath;
-        FrameStart = source.FrameStart;
-        FrameEnd = source.FrameEnd;
-        FrameCurrent = source.FrameCurrent;
-        CameraName = source.CameraName;
-        RenderOutputPath = source.RenderOutputPath;
-        RenderOutputFormat = source.RenderOutputFormat;
-        RenderEngine = source.RenderEngine;
-        SceneName = source.SceneName;
-        Fps = source.Fps;
-        FramePath = source.FramePath;
-        CyclesTimeLimit = source.CyclesTimeLimit;
-        ReferencedScenes = source.ReferencedScenes;
-        TimelineCameras = source.TimelineCameras;
-    }
+
 }

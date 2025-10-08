@@ -101,7 +101,7 @@
   "SceneProperties_OutputFormat": "输出格式:",
   "SceneProperties_FileNotLoaded": "文件未加载",
   "SceneType_Single": "单一场景",
-  "SceneType_Composite": "复合场景 ({0})",
+  "SceneType_Multi": "多场景 ({0})",
   "CameraType_Single": "单一相机",
   "CameraType_Timeline": "时间线相机 ({0})",
   "RenderTask_Open": "打开",
