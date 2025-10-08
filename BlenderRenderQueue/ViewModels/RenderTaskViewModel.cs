@@ -486,6 +486,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             OnPropertyChanged(nameof(RealStartFrame));
             OnPropertyChanged(nameof(RealEndFrame));
             OnPropertyChanged(nameof(RealTotalFrames));
+            OnPropertyChanged(nameof(AvailableSceneNames));
             OnPropertyChanged(nameof(HasValidSceneSelection));
             OnPropertyChanged(nameof(ShowSceneOverrideWarning));
             OnPropertyChanged(nameof(IsOverrideSceneSameAsDefault));
@@ -868,6 +869,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             OnPropertyChanged(nameof(DisplayStartFrame));
             OnPropertyChanged(nameof(DisplayEndFrame));
             OnPropertyChanged(nameof(DisplayTotalFrames));
+            OnPropertyChanged(nameof(AvailableSceneNames));
             OnPropertyChanged(nameof(HasValidSceneSelection));
             OnPropertyChanged(nameof(ShowSceneOverrideWarning));
             OnPropertyChanged(nameof(IsOverrideSceneSameAsDefault));
@@ -878,6 +880,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"[RenderTaskViewModel] ❌ Exception in LoadFilePropertiesAsync: {ex.Message}");
+            Console.WriteLine($"[RenderTaskViewModel] ❌ Stack trace: {ex.StackTrace}");
             EnqueueLog($"[QUERY] 加载文件属性失败: {ex.Message}");
         }
     }

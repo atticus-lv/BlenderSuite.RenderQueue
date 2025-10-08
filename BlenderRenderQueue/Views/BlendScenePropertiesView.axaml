@@ -244,11 +244,16 @@
                 </Border>
 
                 <!-- 空状态 -->
-                <Border CornerRadius="4" IsVisible="{Binding ShowEmptyState}">
+                <Border CornerRadius="4">
+                    <Border.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="ShowEmptyState" />
+                            <Binding Path="!IsLoading" />
+                        </MultiBinding>
+                    </Border.IsVisible>
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                         <TextBlock Text="📄" FontSize="24" HorizontalAlignment="Center" />
-                        <TextBlock Text="{i18n:Localize SceneProperties_FileNotLoaded}" HorizontalAlignment="Center"
-                                   Foreground="#666" FontStyle="Italic" />
+                        <TextBlock Text="{i18n:Localize SceneProperties_FileNotLoaded}" HorizontalAlignment="Center" FontStyle="Italic" />
                     </StackPanel>
                 </Border>
 

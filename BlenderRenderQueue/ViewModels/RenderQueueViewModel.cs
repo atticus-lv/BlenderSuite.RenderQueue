@@ -908,8 +908,10 @@ public partial class RenderQueueViewModel : ViewModelBase
             SelectedTask = newTask;
 
             // 异步加载文件属性
+            Console.WriteLine($"[RenderQueueViewModel] Checking if Blender service is ready for copied task: {IsBlenderServiceReady()}");
             if (IsBlenderServiceReady())
             {
+                Console.WriteLine($"[RenderQueueViewModel] Starting LoadFilePropertiesAsync for copied task: {Path.GetFileName(newTask.BlendFilePath)}");
                 _ = Task.Run(async () =>
                 {
                     try
@@ -935,6 +937,10 @@ public partial class RenderQueueViewModel : ViewModelBase
                         Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to load file properties for copied task {Path.GetFileName(newTask.BlendFilePath)}: {ex.Message}");
                     }
                 });
+            }
+            else
+            {
+                Console.WriteLine($"[RenderQueueViewModel] ❌ Blender service not ready, skipping file properties loading for copied task: {Path.GetFileName(newTask.BlendFilePath)}");
             }
 
             StatusMessageChanged?.Invoke(this,
