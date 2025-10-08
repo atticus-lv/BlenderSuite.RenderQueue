@@ -241,7 +241,7 @@
                                                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                                                     <Binding Path="IsValid" />
                                                     <Binding Path="OverrideScene" />
-                                                    <Binding Path="!IsOverrideSceneSameAsDefault" />
+                                                    <Binding Path="!IsOverrideSceneIsDefaultScene" />
                                                 </MultiBinding>
                                             </TextBlock.IsVisible>
                                         </TextBlock>
@@ -257,7 +257,7 @@
                                                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                                                     <Binding Path="IsValid" />
                                                     <Binding Path="OverrideScene" />
-                                                    <Binding Path="IsOverrideSceneSameAsDefault" />
+                                                    <Binding Path="IsOverrideSceneIsDefaultScene" />
                                                 </MultiBinding>
                                             </TextBlock.IsVisible>
                                         </TextBlock>
@@ -299,7 +299,7 @@
                                                         <Binding Path="OverrideFrameRange" />
                                                         <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
                                                             <Binding Path="OverrideScene" />
-                                                            <Binding Path="!IsOverrideSceneSameAsDefault" />
+                                                            <Binding Path="!IsOverrideSceneIsDefaultScene" />
                                                         </MultiBinding>
                                                     </MultiBinding>
                                                 </TextBlock.IsVisible>
@@ -321,7 +321,7 @@
                                                 Converter="{x:Static BoolConverters.And}">
                                                 <Binding Path="IsValid" />
                                                 <Binding Path="!ScenePropertiesView.IsLoading" />
-                                                <Binding Path="ShouldShowProgress" />
+                                                <Binding Path="ShowProgress" />
                                             </MultiBinding>
                                         </ProgressBar.IsVisible>
                                     </ProgressBar>

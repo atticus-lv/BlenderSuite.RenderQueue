@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
-using BlenderRenderQueue.Models;
 
 namespace BlenderRenderQueue.ViewModels;
 

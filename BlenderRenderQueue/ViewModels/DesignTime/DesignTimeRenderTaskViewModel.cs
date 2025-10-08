@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using BlenderRenderQueue.Models;
-using BlenderRenderQueue.Views;
 
 namespace BlenderRenderQueue.ViewModels.DesignTime;
 

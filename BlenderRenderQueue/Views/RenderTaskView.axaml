@@ -186,7 +186,7 @@
                                                        Foreground="{DynamicResource SukiAccentColor}"
                                                        FontSize="12"
                                                        Margin="8,0,0,0"
-                                                       IsVisible="{Binding IsOverrideSceneSameAsDefault}" />
+                                                       IsVisible="{Binding IsOverrideSceneIsDefaultScene}" />
                                         </Grid>
 
                                         <!-- 场景选择警告 -->

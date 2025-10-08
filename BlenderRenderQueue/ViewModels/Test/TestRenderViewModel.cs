@@ -3,7 +3,6 @@ using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using BlenderRenderQueue.Services;
 using System.Collections.Concurrent;
 using Avalonia.Platform.Storage;
 using System.Collections.Generic;
@@ -13,7 +12,6 @@ using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 using BlenderRenderQueue.Services.UI;
-using BlenderRenderQueue.ViewModels;
 
 namespace BlenderRenderQueue.ViewModels.Test;
 
