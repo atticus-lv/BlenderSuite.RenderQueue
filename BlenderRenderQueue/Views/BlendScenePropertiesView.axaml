@@ -52,6 +52,17 @@
                          SelectionMode="Single"
                          MaxHeight="40">
                     <ListBox.Styles>
+                        <!-- <Style Selector="ListBoxItem /template/ Border"> -->
+                        <!--     <Setter Property="Background" -->
+                        <!--             Value="Transparent" /> -->
+                        <!--     <Setter Property="Transitions"> -->
+                        <!--         <Setter.Value> -->
+                        <!--             <Transitions> -->
+                        <!--                 <BrushTransition Property="Background" Duration="0:0:0.1" /> -->
+                        <!--             </Transitions> -->
+                        <!--         </Setter.Value> -->
+                        <!--     </Setter> -->
+                        <!-- </Style> -->
                         <Style Selector="ListBoxItem:pointerover /template/ Border">
                             <Setter Property="Background"
                                     Value="{DynamicResource SukiPrimaryColor10}" />
