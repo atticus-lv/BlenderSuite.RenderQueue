@@ -14,6 +14,8 @@ public class DesignTimeBlendScenePropertiesViewModel : BlendScenePropertiesViewM
         var scene1 = new BlendSceneProperties
         {
             FilePath = @"C:\Users\Design\Documents\Blender\MyAnimation.blend",
+            SceneName = "DefaultScene",
+            IsDefaultScene = true,
             FrameStart = 1,
             FrameEnd = 250,
             FrameCurrent = 125,
@@ -31,6 +33,7 @@ public class DesignTimeBlendScenePropertiesViewModel : BlendScenePropertiesViewM
         var scene2 = new BlendSceneProperties
         {
             FilePath = @"C:\Users\Design\Documents\Blender\Animation2.blend",
+            SceneName = "Animation",
             FrameStart = 1,
             FrameEnd = 100,
             FrameCurrent = 50,
@@ -53,6 +56,7 @@ public class DesignTimeBlendScenePropertiesViewModel : BlendScenePropertiesViewM
             { "Render_Scene", new BlendSceneProperties
             {
                 FilePath = @"C:\Users\Design\Documents\Blender\RenderScene.blend",
+                SceneName = "Render_Scene",
                 FrameStart = 1,
                 FrameEnd = 500,
                 FrameCurrent = 250,
