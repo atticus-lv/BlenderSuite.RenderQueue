@@ -37,6 +37,7 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
         OnPropertyChanged(nameof(ActiveSceneProperties));
         OnPropertyChanged(nameof(CanOpenFramePathDirectory));
         OnPropertyChanged(nameof(ShowEmptyState));
+        OnPropertyChanged(nameof(SortedSceneNames));
         
         Console.WriteLine($"[BlendScenePropertiesViewModel] AllScenes changed, count: {value?.Count ?? 0}");
     }
@@ -51,6 +52,7 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
     {
         // 当默认场景名称改变时，触发IsNotDefaultScene的通知
         OnPropertyChanged(nameof(IsNotDefaultScene));
+        OnPropertyChanged(nameof(SortedSceneNames));
         Console.WriteLine($"[BlendScenePropertiesViewModel] DefaultSceneName changed to: {value}");
     }
 
@@ -107,6 +109,29 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
 
     [ObservableProperty]
     private List<string> _sceneNames = new();
+
+    /// <summary>
+    /// 排序后的场景名称列表，默认场景排在第一个
+    /// </summary>
+    public List<string> SortedSceneNames
+    {
+        get
+        {
+            if (SceneNames == null || !SceneNames.Any())
+                return new List<string>();
+
+            var sortedList = new List<string>(SceneNames);
+            
+            // 如果有默认场景且不在第一位，将其移到第一位
+            if (!string.IsNullOrEmpty(DefaultSceneName) && sortedList.Contains(DefaultSceneName))
+            {
+                sortedList.Remove(DefaultSceneName);
+                sortedList.Insert(0, DefaultSceneName);
+            }
+            
+            return sortedList;
+        }
+    }
 
     /// <summary>
     /// 当前场景是否不是默认场景
