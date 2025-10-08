@@ -175,7 +175,8 @@ except Exception as e:
             var sceneInfo = sceneProperty.Value;
             
             sceneData[sceneName] = new BlendSceneProperties
-            {
+            {   
+                IsDefaultScene = activeScene == sceneName,
                 FilePath = blendFilePath,
                 FrameStart = sceneInfo.GetProperty("frame_start").GetInt32(),
                 FrameEnd = sceneInfo.GetProperty("frame_end").GetInt32(),

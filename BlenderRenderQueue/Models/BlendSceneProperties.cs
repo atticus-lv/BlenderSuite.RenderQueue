@@ -10,6 +10,7 @@ namespace BlenderRenderQueue.Models;
 /// </summary>
 public class BlendSceneProperties
 {
+    public bool IsDefaultScene { get; set; }
     public string FilePath { get; set; } = string.Empty;
     public int FrameStart { get; set; }
     public int FrameEnd { get; set; }
@@ -38,7 +39,7 @@ public class BlendSceneProperties
     public string FileName => IsLoaded ? Path.GetFileName(FilePath) : string.Empty;
     public bool IsCyclesEngine => RenderEngine == "CYCLES";
     public bool HasCyclesTimeLimit => IsCyclesEngine && CyclesTimeLimit.HasValue && CyclesTimeLimit.Value > 0;
-    
+
     /// <summary>
     /// 场景类型显示文本
     /// </summary>
@@ -86,6 +87,4 @@ public class BlendSceneProperties
     /// 是否为时间线相机场景
     /// </summary>
     public bool IsMultiCameraScene => TimelineCameras != null && TimelineCameras.Any();
-
-
 }
