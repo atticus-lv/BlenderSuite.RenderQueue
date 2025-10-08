@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -18,61 +17,55 @@ namespace BlenderRenderQueue.ViewModels;
 /// </summary>
 public partial class BlendScenePropertiesViewModel : ViewModelBase
 {
-    [ObservableProperty]
-    private BlendSceneProperties _sceneProperties = new();
+    [ObservableProperty] private BlendSceneProperties _sceneProperties = new();
 
-    [ObservableProperty]
-    private Dictionary<string, BlendSceneProperties> _allScenes = new();
+    [ObservableProperty] private Dictionary<string, BlendSceneProperties> _allScenes = new();
 
     partial void OnAllScenesChanged(Dictionary<string, BlendSceneProperties> value)
     {
         // 更新场景名称列表
-        SceneNames = value?.Keys.ToList() ?? new List<string>();
-        
+        SceneNames = value?.Keys.ToList() ?? [];
+
         // 当场景数据改变时，更新当前激活场景的属性
         _selectedSceneProperties = SelectedSceneProperties;
         SceneProperties = _selectedSceneProperties;
-        
+
         // 触发相关属性通知
         OnPropertyChanged(nameof(SelectedSceneProperties));
         OnPropertyChanged(nameof(CanOpenFramePathDirectory));
         OnPropertyChanged(nameof(ShowEmptyState));
         OnPropertyChanged(nameof(SortedSceneNames));
-        
+
         Console.WriteLine($"[BlendScenePropertiesViewModel] AllScenes changed, count: {value?.Count ?? 0}");
     }
 
-    [ObservableProperty]
-    private string _activeSceneName = string.Empty;
+    [ObservableProperty] private string _selectedSceneName = string.Empty;
 
 
-    partial void OnActiveSceneNameChanged(string value)
+    partial void OnSelectedSceneNameChanged(string value)
     {
-        // Console.WriteLine($"[BlendScenePropertiesViewModel] ActiveSceneName changing from '{ActiveSceneName}' to '{value}'");
-        
+        // Console.WriteLine($"[BlendScenePropertiesViewModel] SelectedSceneName changing from '{SelectedSceneName}' to '{value}'");
+
         // 更新当前激活场景的属性
         _selectedSceneProperties = SelectedSceneProperties;
-        
+
         // 当激活场景改变时，更新SceneProperties以保持向后兼容
         SceneProperties = _selectedSceneProperties;
-        
+
         // 触发所有相关属性的通知
         OnPropertyChanged(nameof(SelectedSceneProperties));
         OnPropertyChanged(nameof(CanOpenFramePathDirectory));
         OnPropertyChanged(nameof(ShowEmptyState));
         OnPropertyChanged(nameof(IsNotDefaultScene));
-        
-        // Console.WriteLine($"[BlendScenePropertiesViewModel] ActiveSceneName changed to: {value}, SelectedSceneProperties.IsLoaded: {SelectedSceneProperties.IsLoaded}");
+
+        // Console.WriteLine($"[BlendScenePropertiesViewModel] SelectedSceneName changed to: {value}, SelectedSceneProperties.IsLoaded: {SelectedSceneProperties.IsLoaded}");
     }
 
-    [ObservableProperty]
-    private bool _isLoading;
+    [ObservableProperty] private bool _isLoading;
 
-    [ObservableProperty]
-    private string _loadingMessage = string.Empty;
+    [ObservableProperty] private string _loadingMessage = string.Empty;
 
-    [ObservableProperty]
-    private string _errorMessage = string.Empty;
+    [ObservableProperty] private string _errorMessage = string.Empty;
 
     /// <summary>
     /// 是否有错误信息
@@ -88,17 +81,16 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
     {
         get
         {
-            if (string.IsNullOrEmpty(ActiveSceneName) || !AllScenes.ContainsKey(ActiveSceneName))
+            if (string.IsNullOrEmpty(SelectedSceneName) || !AllScenes.ContainsKey(SelectedSceneName))
             {
                 return new BlendSceneProperties();
             }
 
-            return AllScenes[ActiveSceneName];
+            return AllScenes[SelectedSceneName];
         }
     }
 
-    [ObservableProperty]
-    private List<string> _sceneNames = new();
+    [ObservableProperty] private List<string> _sceneNames = new();
 
     /// <summary>
     /// 排序后的场景名称列表，默认场景排在第一个
@@ -122,9 +114,9 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
     /// <summary>
     /// 当前场景是否不是默认场景
     /// </summary>
-    public bool IsNotDefaultScene => !string.IsNullOrEmpty(ActiveSceneName) && 
-                                     AllScenes.ContainsKey(ActiveSceneName) && 
-                                     !AllScenes[ActiveSceneName].IsDefaultScene;
+    public bool IsNotDefaultScene => !string.IsNullOrEmpty(SelectedSceneName) &&
+                                     AllScenes.ContainsKey(SelectedSceneName) &&
+                                     !AllScenes[SelectedSceneName].IsDefaultScene;
 
     /// <summary>
     /// 是否显示空状态（文件未加载且不在加载中）
@@ -169,15 +161,16 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
             // 一次性查询所有文件属性（使用临时进程）
             LoadingMessage = "SceneProperties_GettingFileProperties";
             var (activeScene, sceneData) =
-                await queryService.GetAllFilePropertiesWithTempProcessAsync(blenderPath, blendFilePath, cancellationToken);
+                await queryService.GetAllFilePropertiesWithTempProcessAsync(blenderPath, blendFilePath,
+                    cancellationToken);
 
             AllScenes = sceneData;
-            ActiveSceneName = activeScene;
+            SelectedSceneName = activeScene;
             SceneProperties = SelectedSceneProperties; // 保持向后兼容
             LoadingMessage = "SceneProperties_LoadingComplete";
 
             Console.WriteLine(
-                $"[BlendScenePropertiesViewModel] Properties loaded successfully - ActiveScene: {ActiveSceneName}, ScenesCount: {AllScenes.Count}, IsLoaded: {SelectedSceneProperties.IsLoaded}");
+                $"[BlendScenePropertiesViewModel] Properties loaded successfully - ActiveScene: {SelectedSceneName}, ScenesCount: {AllScenes.Count}, IsLoaded: {SelectedSceneProperties.IsLoaded}");
 
             // 通知UI更新计算属性
             OnPropertyChanged(nameof(HasErrorMessage));
@@ -210,7 +203,7 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
     {
         SceneProperties = new BlendSceneProperties();
         AllScenes = new Dictionary<string, BlendSceneProperties>();
-        ActiveSceneName = string.Empty;
+        SelectedSceneName = string.Empty;
         SceneNames = new List<string>();
         ErrorMessage = string.Empty;
         LoadingMessage = string.Empty;
@@ -252,6 +245,6 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
     /// <summary>
     /// 是否可以打开帧路径文件夹
     /// </summary>
-    public bool CanOpenFramePathDirectory => !string.IsNullOrEmpty(SelectedSceneProperties.FramePath) && 
+    public bool CanOpenFramePathDirectory => !string.IsNullOrEmpty(SelectedSceneProperties.FramePath) &&
                                              FileSystemHelper.CanOpenFileDirectory(SelectedSceneProperties.FramePath);
 }

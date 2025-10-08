@@ -45,7 +45,7 @@
 
                 <ListBox ItemsSource="{Binding SortedSceneNames}"
                          IsVisible="{Binding SelectedSceneProperties.IsLoaded}"
-                         SelectedItem="{Binding ActiveSceneName}"
+                         SelectedItem="{Binding SelectedSceneName}"
                          Margin="10"
                          IsEnabled="{Binding !IsLoading}"
                          SelectionMode="Single"

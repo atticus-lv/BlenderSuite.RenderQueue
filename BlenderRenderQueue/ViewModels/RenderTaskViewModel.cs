@@ -61,7 +61,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// </summary>
     public bool IsOverrideSceneSameAsDefault => OverrideScene &&
                                                 !string.IsNullOrEmpty(SelectedSceneName) &&
-                                                SelectedSceneName == ScenePropertiesView.ActiveSceneName;
+                                                SelectedSceneName == ScenePropertiesView.SelectedSceneName;
 
     partial void OnEnableChanged(bool value)
     {
@@ -88,14 +88,14 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanGenerateVideo));
     }
 
-    [ObservableProperty] private bool _isDropTarget = false;
+    [ObservableProperty] private bool _isDropTarget;
 
-    [ObservableProperty] private bool _isDragTarget = false;
+    [ObservableProperty] private bool _isDragTarget;
 
-    [ObservableProperty] private bool _isPendingDeletion = false;
+    [ObservableProperty] private bool _isPendingDeletion;
 
     // 队列运行状态（由RenderQueueViewModel设置）
-    private bool _isQueueRunning = false;
+    private bool _isQueueRunning;
 
 
     [ObservableProperty] private double _progress01; // 当前帧进度
@@ -124,15 +124,14 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 return StartFrame;
             }
-            else if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) &&
-                     ScenePropertiesView.AllScenes.ContainsKey(SelectedSceneName))
+
+            if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) &&
+                ScenePropertiesView.AllScenes.ContainsKey(SelectedSceneName))
             {
                 return ScenePropertiesView.AllScenes[SelectedSceneName].FrameStart;
             }
-            else
-            {
-                return ScenePropertiesView.SceneProperties.FrameStart;
-            }
+
+            return ScenePropertiesView.SceneProperties.FrameStart;
         }
     }
 
@@ -144,15 +143,14 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 return EndFrame;
             }
-            else if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) &&
-                     ScenePropertiesView.AllScenes.ContainsKey(SelectedSceneName))
+
+            if (OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) &&
+                ScenePropertiesView.AllScenes.ContainsKey(SelectedSceneName))
             {
                 return ScenePropertiesView.AllScenes[SelectedSceneName].FrameEnd;
             }
-            else
-            {
-                return ScenePropertiesView.SceneProperties.FrameEnd;
-            }
+
+            return ScenePropertiesView.SceneProperties.FrameEnd;
         }
     }
 
@@ -235,13 +233,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// <param name="isQueueRunning">队列是否正在运行</param>
     public void SetQueueRunningState(bool isQueueRunning)
     {
-        if (_isQueueRunning != isQueueRunning)
-        {
-            _isQueueRunning = isQueueRunning;
-            OnPropertyChanged(nameof(CanRefresh));
-            Console.WriteLine(
-                $"[RenderTaskViewModel] Queue running state changed to: {isQueueRunning}, CanRefresh: {CanRefresh}");
-        }
+        if (_isQueueRunning == isQueueRunning) return;
+        _isQueueRunning = isQueueRunning;
+        OnPropertyChanged(nameof(CanRefresh));
+        Console.WriteLine(
+            $"[RenderTaskViewModel] Queue running state changed to: {isQueueRunning}, CanRefresh: {CanRefresh}");
     }
 
     /// <summary>
@@ -286,14 +282,12 @@ public partial class RenderTaskViewModel : ViewModelBase
         EnqueueLog($"Blender进程异常退出，退出码: {exitCode}");
 
         // 进程异常退出，直接标记任务失败（不进行重试）
-        if (exitCode != 0)
+        if (exitCode == 0) return;
+        SetStatus(RenderTaskStatus.Failed);
+        EndTime = DateTime.Now;
+        if (StartTime.HasValue)
         {
-            SetStatus(RenderTaskStatus.Failed);
-            EndTime = DateTime.Now;
-            if (StartTime.HasValue)
-            {
-                Duration = EndTime.Value - StartTime.Value;
-            }
+            Duration = EndTime.Value - StartTime.Value;
         }
     }
 
@@ -372,7 +366,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     [ObservableProperty] private BlendScenePropertiesViewModel _scenePropertiesView = new();
 
-    partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel value)
+    partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel? value)
     {
         // 当ScenePropertiesView变化时，触发相关属性通知
         OnPropertyChanged(nameof(FinalSceneProperties));
@@ -382,13 +376,11 @@ public partial class RenderTaskViewModel : ViewModelBase
         if (value == null) return;
         value.PropertyChanged += (sender, args) =>
         {
-            if (args.PropertyName == nameof(value.SelectedSceneProperties) ||
-                args.PropertyName == nameof(value.SceneProperties) ||
-                args.PropertyName == nameof(value.AllScenes))
-            {
-                OnPropertyChanged(nameof(FinalSceneProperties));
-                OnPropertyChanged(nameof(FramePathDirectory));
-            }
+            if (args.PropertyName != nameof(value.SelectedSceneProperties) &&
+                args.PropertyName != nameof(value.SceneProperties) &&
+                args.PropertyName != nameof(value.AllScenes)) return;
+            OnPropertyChanged(nameof(FinalSceneProperties));
+            OnPropertyChanged(nameof(FramePathDirectory));
         };
     }
 
@@ -484,7 +476,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 如果没有覆写场景且场景名称为空，设置默认场景名称
             if (!OverrideScene && string.IsNullOrEmpty(SelectedSceneName))
             {
-                SelectedSceneName = ScenePropertiesView.ActiveSceneName;
+                SelectedSceneName = ScenePropertiesView.SelectedSceneName;
             }
 
             // 触发相关属性更新
@@ -869,7 +861,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 如果没有覆写场景，设置默认场景名称
             if (!OverrideScene && string.IsNullOrEmpty(SelectedSceneName))
             {
-                SelectedSceneName = ScenePropertiesView.ActiveSceneName;
+                SelectedSceneName = ScenePropertiesView.SelectedSceneName;
             }
 
             // 触发显示属性更新
