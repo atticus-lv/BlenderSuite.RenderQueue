@@ -68,8 +68,8 @@ public class DesignTimeBlendScenePropertiesViewModel : BlendScenePropertiesViewM
             }}
         };
 
-        // 设置当前激活场景
-        SelectedSceneName = "Scene";
+        // 设置当前选择的场景
+        SelectedScene = scene1;
         
         // 设置场景属性
         SceneProperties = scene1;

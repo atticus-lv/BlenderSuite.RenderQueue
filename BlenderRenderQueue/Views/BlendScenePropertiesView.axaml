@@ -43,10 +43,11 @@
 
                 <!-- 场景选择器 -->
 
-                <ListBox ItemsSource="{Binding SortedSceneNames}"
+                <ListBox ItemsSource="{Binding SortedScenes}"
                          IsVisible="{Binding SelectedSceneProperties.IsLoaded}"
-                         SelectedItem="{Binding SelectedSceneName}"
-                         Margin="10"
+                         SelectedItem="{Binding SelectedScene}"
+                         Margin="0 2"
+                         Classes="WithoutCheck"
                          IsEnabled="{Binding !IsLoading}"
                          SelectionMode="Single"
                          MaxHeight="40">
@@ -68,12 +69,13 @@
                     </ListBox.ItemsPanel>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Panel>
-                                <TextBlock Text="{Binding}"
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <material:MaterialIcon Kind="Home" IsVisible="{Binding IsDefaultScene}" />
+                                <TextBlock Text="{Binding SceneName}"
                                            FontWeight="SemiBold"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
-                            </Panel>
+                            </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
