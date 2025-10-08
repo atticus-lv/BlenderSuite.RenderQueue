@@ -108,7 +108,6 @@
                                              Text="{Binding ActiveSceneProperties.Fps, StringFormat='{}{0:F2} fps'}"
                                              IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
                         <TextBlock Grid.Row="5" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
-                                   Foreground="#666"
                                    IsVisible="{Binding ActiveSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNull}}" />
 
                         <!-- 分隔线 -->
@@ -121,7 +120,6 @@
                                              Text="{Binding ActiveSceneProperties.RenderEngineDisplayName}"
                                              IsVisible="{Binding ActiveSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                         <TextBlock Grid.Row="7" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
-                                   Foreground="#666"
                                    IsVisible="{Binding ActiveSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
 
                         <!-- Cycles时间限制 -->
@@ -147,8 +145,7 @@
                                 </MultiBinding>
                             </SelectableTextBlock.IsVisible>
                         </SelectableTextBlock>
-                        <TextBlock Grid.Row="9" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
-                                   Foreground="#666">
+                        <TextBlock Grid.Row="9" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="{DynamicResource SukiDangerColor}">
                             <TextBlock.IsVisible>
                                 <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
                                     <Binding Path="ActiveSceneProperties.IsMultiCameraScene"
@@ -179,8 +176,7 @@
                                              Text="{Binding ActiveSceneProperties.RenderOutputPath}"
                                              TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
                                              IsVisible="{Binding ActiveSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
-                        <TextBlock Grid.Row="11" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
-                                   Foreground="#666"
+                        <TextBlock Grid.Row="11" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}" Foreground="{DynamicResource SukiDangerColor}"
                                    IsVisible="{Binding ActiveSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
 
                         <!-- Frame Path -->
@@ -192,7 +188,7 @@
                                              TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
                                              IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                         <TextBlock Grid.Row="12" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
-                                   Foreground="#666"
+                                   Foreground="{DynamicResource SukiDangerColor}"
                                    IsVisible="{Binding ActiveSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
 
                         <!-- 输出格式 -->
@@ -202,7 +198,7 @@
                                              Text="{Binding ActiveSceneProperties.RenderOutputFormat}"
                                              IsVisible="{Binding ActiveSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
                         <TextBlock Grid.Row="13" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
-                                   Foreground="#666"
+                                   Foreground="{DynamicResource SukiDangerColor}"
                                    IsVisible="{Binding ActiveSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
 
                     </Grid>
