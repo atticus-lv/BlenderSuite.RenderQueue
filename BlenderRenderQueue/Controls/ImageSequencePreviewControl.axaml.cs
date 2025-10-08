@@ -31,10 +31,12 @@ public class Observer<T> : IObserver<T>
     public void OnNext(T value) => _onNext(value);
 
     public void OnError(Exception error)
-    { }
+    {
+    }
 
     public void OnCompleted()
-    { }
+    {
+    }
 }
 
 public partial class ImageSequencePreviewControl : UserControl, IDisposable
@@ -278,11 +280,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
                 .ToList();
 
             Console.WriteLine($"[ImageSequencePreviewControl] Found {files.Count} image files");
-            foreach (var file in files)
-            {
-                Console.WriteLine($"[ImageSequencePreviewControl] Image file: {Path.GetFileName(file)}");
-            }
-
+            
             _imageFiles.Clear();
             foreach (var file in files)
             {
@@ -293,19 +291,17 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             {
                 HasImages = true;
                 MaxFrame = _imageFiles.Count - 1;
-                
-                // 尝试恢复到之前的帧位置，如果无效则使用0
-                var targetFrame = (previousCurrentFrame >= 0 && previousCurrentFrame < _imageFiles.Count) 
-                    ? previousCurrentFrame 
+
+                var targetFrame = (previousCurrentFrame >= 0 && previousCurrentFrame < _imageFiles.Count)
+                    ? previousCurrentFrame
                     : 0;
                 CurrentFrame = targetFrame;
 
-                // 初始化图片缓存
                 _imageCache = new Bitmap?[_imageFiles.Count];
 
-                Console.WriteLine($"[ImageSequencePreviewControl] Successfully loaded {_imageFiles.Count} images, restored to frame {targetFrame}");
+                Console.WriteLine(
+                    $"[ImageSequencePreviewControl] Successfully loaded {_imageFiles.Count} images, restored to frame {targetFrame}");
 
-                // 预加载目标帧的图片
                 await LoadImageAsync(targetFrame);
             }
             else
@@ -319,7 +315,6 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         }
         catch (Exception ex)
         {
-            // 处理加载错误
             Console.WriteLine($"加载图片序列失败: {ex.Message}");
             SetError($"ImageSequence_LoadFailed:{ex.Message}");
             ClearImages();
@@ -349,10 +344,10 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         await LoadImageAsync(_currentFrame);
     }
 
-    private async Task LoadImageAsync(int frameIndex)
+    private Task LoadImageAsync(int frameIndex)
     {
         if (frameIndex < 0 || frameIndex >= _imageFiles.Count)
-            return;
+            return Task.CompletedTask;
 
         try
         {
@@ -360,7 +355,6 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             var bitmap = new Bitmap(filePath);
             _imageCache[frameIndex] = bitmap;
 
-            // 如果是当前帧，更新显示
             if (frameIndex == _currentFrame)
             {
                 CurrentImage = bitmap;
@@ -370,13 +364,15 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         {
             Console.WriteLine($"加载图片失败 {_imageFiles[frameIndex]}: {ex.Message}");
         }
+
+        return Task.CompletedTask;
     }
 
     private void UpdateFrameTexts()
     {
         // 触发文本属性更新
-        RaisePropertyChanged(CurrentFrameTextProperty, null, CurrentFrameText);
-        RaisePropertyChanged(TotalFramesTextProperty, null, TotalFramesText);
+        RaisePropertyChanged(CurrentFrameTextProperty!, null, CurrentFrameText);
+        RaisePropertyChanged(TotalFramesTextProperty!, null, TotalFramesText);
     }
 
     private void SetError(string message)
@@ -446,24 +442,22 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
     private void StopFileWatcher()
     {
-        if (_fileWatcher != null)
+        if (_fileWatcher == null) return;
+        try
         {
-            try
-            {
-                _fileWatcher.EnableRaisingEvents = false;
-                _fileWatcher.Created -= OnFileChanged;
-                _fileWatcher.Deleted -= OnFileChanged;
-                _fileWatcher.Renamed -= OnFileRenamed;
-                _fileWatcher.Changed -= OnFileChanged;
-                _fileWatcher.Error -= OnFileWatcherError;
-                _fileWatcher.Dispose();
-                _fileWatcher = null;
-                Console.WriteLine("[ImageSequencePreviewControl] File watcher stopped");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ImageSequencePreviewControl] Error stopping file watcher: {ex.Message}");
-            }
+            _fileWatcher.EnableRaisingEvents = false;
+            _fileWatcher.Created -= OnFileChanged;
+            _fileWatcher.Deleted -= OnFileChanged;
+            _fileWatcher.Renamed -= OnFileRenamed;
+            _fileWatcher.Changed -= OnFileChanged;
+            _fileWatcher.Error -= OnFileWatcherError;
+            _fileWatcher.Dispose();
+            _fileWatcher = null;
+            Console.WriteLine("[ImageSequencePreviewControl] File watcher stopped");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ImageSequencePreviewControl] Error stopping file watcher: {ex.Message}");
         }
     }
 
