@@ -22,18 +22,16 @@ public class ApiService
     {
         var handler = new HttpClientHandler();
         
-        // Android特定配置
-        if (OperatingSystem.IsAndroid())
-        {
-            Console.WriteLine("[ApiService] Configuring HttpClient for Android platform");
+        // Android
+        if (!OperatingSystem.IsAndroid()) return new HttpClient(handler);
+        Console.WriteLine("[ApiService] Configuring HttpClient for Android platform");
             
-            // 允许不安全的HTTP连接（用于开发环境）
-            handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
+        // Allow insecure HTTP connections
+        handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
             
-            // 禁用代理
-            handler.UseProxy = false;
-        }
-        
+        // Disable proxies
+        handler.UseProxy = false;
+
         return new HttpClient(handler);
     }
 
