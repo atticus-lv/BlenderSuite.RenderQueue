@@ -22,27 +22,38 @@ namespace BlenderRenderQueue.ViewModels;
 
 public partial class RenderTaskViewModel : ViewModelBase
 {
-    [ObservableProperty] private string _blendFilePath = string.Empty;
+    [ObservableProperty]
+    private string _blendFilePath = string.Empty;
 
-    [ObservableProperty] private int _startFrame = 1;
+    [ObservableProperty]
+    private int _startFrame = 1;
 
-    [ObservableProperty] private int _endFrame = 1;
+    [ObservableProperty]
+    private int _endFrame = 1;
 
-    [ObservableProperty] private bool _animation = true;
+    [ObservableProperty]
+    private bool _animation = true;
 
-    [ObservableProperty] private bool _overrideFrameRange;
+    [ObservableProperty]
+    private bool _overrideFrameRange;
 
-    [ObservableProperty] private bool _overrideScene;
+    [ObservableProperty]
+    private bool _overrideScene;
 
-    [ObservableProperty] private string _selectedSceneName = string.Empty;
+    [ObservableProperty]
+    private string _selectedSceneName = string.Empty;
 
-    [ObservableProperty] private bool _autoStart = true;
+    [ObservableProperty]
+    private bool _autoStart = true;
 
-    [ObservableProperty] private bool _enable = true;
+    [ObservableProperty]
+    private bool _enable = true;
 
-    [ObservableProperty] private bool _isValid = true;
+    [ObservableProperty]
+    private bool _isValid = true;
 
-    [ObservableProperty] private List<string> _availableSceneNames = [];
+    [ObservableProperty]
+    private List<string> _availableSceneNames = [];
 
     public bool HasValidSceneSelection =>
         !string.IsNullOrEmpty(SelectedSceneName) && ScenePropertiesView.SceneNames.Contains(SelectedSceneName);
@@ -75,24 +86,32 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(CanGenerateVideo));
     }
 
-    [ObservableProperty] private bool _isDropTarget;
+    [ObservableProperty]
+    private bool _isDropTarget;
 
-    [ObservableProperty] private bool _isDragTarget;
+    [ObservableProperty]
+    private bool _isDragTarget;
 
-    [ObservableProperty] private bool _isPendingDeletion;
+    [ObservableProperty]
+    private bool _isPendingDeletion;
 
     private bool _isQueueRunning;
 
 
-    [ObservableProperty] private double _progress01; // The current frame progress
+    [ObservableProperty]
+    private double _progress01; // The current frame progress
 
-    [ObservableProperty] private double _overallProgress01; // Overall progress
+    [ObservableProperty]
+    private double _overallProgress01; // Overall progress
 
-    [ObservableProperty] private string _engine = string.Empty;
+    [ObservableProperty]
+    private string _engine = string.Empty;
 
-    [ObservableProperty] private int _currentFrame;
+    [ObservableProperty]
+    private int _currentFrame;
 
-    [ObservableProperty] private int _completedFrames;
+    [ObservableProperty]
+    private int _completedFrames;
 
     public int TotalFrames => Math.Max(0, EndFrame - StartFrame + 1);
 
@@ -144,11 +163,13 @@ public partial class RenderTaskViewModel : ViewModelBase
     // Attributes related to task operation permissions
 
     public bool CanModifyEnable =>
-        IsValid && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed or RenderTaskStatus.Cancelled or RenderTaskStatus.Failed;
+        IsValid && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed or RenderTaskStatus.Cancelled
+            or RenderTaskStatus.Failed;
 
 
     public bool CanModifyOverride =>
-        IsValid && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed or RenderTaskStatus.Cancelled or RenderTaskStatus.Failed;
+        IsValid && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed or RenderTaskStatus.Cancelled
+            or RenderTaskStatus.Failed;
 
     public bool CanDelete => IsValid || Status == RenderTaskStatus.Pending;
 
@@ -300,13 +321,17 @@ public partial class RenderTaskViewModel : ViewModelBase
         SceneSelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    [ObservableProperty] private string _sampleText = string.Empty;
+    [ObservableProperty]
+    private string _sampleText = string.Empty;
 
-    [ObservableProperty] private string _savedPath = string.Empty;
+    [ObservableProperty]
+    private string _savedPath = string.Empty;
 
-    [ObservableProperty] private string _outputLog = string.Empty;
+    [ObservableProperty]
+    private string _outputLog = string.Empty;
 
-    [ObservableProperty] private BlendScenePropertiesViewModel _scenePropertiesView = new();
+    [ObservableProperty]
+    private BlendScenePropertiesViewModel _scenePropertiesView = new();
 
     partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel? value)
     {
@@ -324,13 +349,17 @@ public partial class RenderTaskViewModel : ViewModelBase
         };
     }
 
-    [ObservableProperty] private BlendFileInfo _fileInfo = new();
+    [ObservableProperty]
+    private BlendFileInfo _fileInfo = new();
 
-    [ObservableProperty] private Bitmap? _renderedImage;
+    [ObservableProperty]
+    private Bitmap? _renderedImage;
 
-    [ObservableProperty] private string _renderedImagePath = string.Empty;
+    [ObservableProperty]
+    private string _renderedImagePath = string.Empty;
 
-    [ObservableProperty] private bool _hasRenderedImage = false;
+    [ObservableProperty]
+    private bool _hasRenderedImage = false;
 
     [RelayCommand]
     private void OpenImagePreview()
@@ -463,16 +492,21 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public string BlendFileName => Path.GetFileName(BlendFilePath);
 
-    [ObservableProperty] private bool _isLogPaused;
+    [ObservableProperty]
+    private bool _isLogPaused;
 
-    [ObservableProperty] private string _logPauseButtonText = "Stop Log";
+    [ObservableProperty]
+    private string _logPauseButtonText = "Stop Log";
 
     // 视频生成相关属性
-    [ObservableProperty] private bool _isGeneratingVideo; // 是否正在生成视频
+    [ObservableProperty]
+    private bool _isGeneratingVideo; // 是否正在生成视频
 
-    [ObservableProperty] private double _videoGenerationProgress; // 视频生成进度
+    [ObservableProperty]
+    private double _videoGenerationProgress; // 视频生成进度
 
-    [ObservableProperty] private string _videoGenerationStatus = string.Empty; // 视频生成状态
+    [ObservableProperty]
+    private string _videoGenerationStatus = string.Empty; // 视频生成状态
 
     // 全局超时设置（从SettingsViewModel获取）
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
@@ -485,15 +519,20 @@ public partial class RenderTaskViewModel : ViewModelBase
     private string _videoQuality = "PERC_LOSSLESS"; // 默认感知无损质量
     private BlenderProcessService? _processService; // 进程管理服务
 
-    [ObservableProperty] private RenderTaskStatus _status = RenderTaskStatus.Pending;
+    [ObservableProperty]
+    private RenderTaskStatus _status = RenderTaskStatus.Pending;
 
-    [ObservableProperty] private DateTime? _startTime;
+    [ObservableProperty]
+    private DateTime? _startTime;
 
-    [ObservableProperty] private DateTime? _endTime;
+    [ObservableProperty]
+    private DateTime? _endTime;
 
-    [ObservableProperty] private TimeSpan? _duration;
+    [ObservableProperty]
+    private TimeSpan? _duration;
 
-    [ObservableProperty] private BlendScenePropertiesViewModel _scenePropertiesViewModel = new();
+    [ObservableProperty]
+    private BlendScenePropertiesViewModel _scenePropertiesViewModel = new();
 
 
     public BlendSceneProperties FinalSceneProperties
@@ -593,11 +632,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         try
         {
-            Console.WriteLine($"[RenderTaskViewModel] Loading rendered image: {imagePath}");
+            // Console.WriteLine($"[RenderTaskViewModel] Loading rendered image: {imagePath}");
 
             if (!File.Exists(imagePath))
             {
-                Console.WriteLine($"[RenderTaskViewModel] Rendered image file does not exist: {imagePath}");
+                // Console.WriteLine($"[RenderTaskViewModel] Rendered image file does not exist: {imagePath}");
                 return;
             }
 
@@ -620,8 +659,8 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             if (bitmap != null)
             {
-                Console.WriteLine(
-                    $"[RenderTaskViewModel] Original image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
+                // Console.WriteLine(
+                //     $"[RenderTaskViewModel] Original image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
 
                 bitmap.Dispose();
 
@@ -642,13 +681,9 @@ public partial class RenderTaskViewModel : ViewModelBase
                                     RenderedImage = optimizedBitmap;
                                     RenderedImagePath = imagePath;
                                     HasRenderedImage = true;
-                                    Console.WriteLine(
-                                        $"[RenderTaskViewModel] ✅ Optimized image loaded and displayed: {optimizedBitmap.PixelSize.Width}x{optimizedBitmap.PixelSize.Height}");
                                 }
                                 else
                                 {
-                                    Console.WriteLine(
-                                        $"[RenderTaskViewModel] ⚠️ Failed to load optimized image, showing placeholder");
                                     HasRenderedImage = false;
                                 }
                             }
@@ -681,7 +716,6 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             try
             {
-                // Console.WriteLine($"[RenderTaskViewModel] Loading and optimizing image: {imagePath}");
 
                 // 重新从文件加载图片
                 using var fileStream = File.OpenRead(imagePath);
@@ -691,8 +725,6 @@ public partial class RenderTaskViewModel : ViewModelBase
                 // 如果图片已经小于目标尺寸，直接返回
                 if (originalSize.Width <= maxWidth && originalSize.Height <= maxHeight)
                 {
-                    // Console.WriteLine(
-                    //     $"[RenderTaskViewModel] Image already optimal size: {originalSize.Width}x{originalSize.Height}");
                     return originalBitmap;
                 }
 
@@ -704,9 +736,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 var newWidth = (int)(originalSize.Width * scale);
                 var newHeight = (int)(originalSize.Height * scale);
 
-                // Console.WriteLine(
-                //     $"[RenderTaskViewModel] Optimizing image from {originalSize.Width}x{originalSize.Height} to {newWidth}x{newHeight}");
-
+           
                 // 使用RenderTargetBitmap进行缩放
                 var renderTarget = new RenderTargetBitmap(new Avalonia.PixelSize(newWidth, newHeight));
                 using (var drawingContext = renderTarget.CreateDrawingContext())
@@ -720,7 +750,6 @@ public partial class RenderTaskViewModel : ViewModelBase
                 // 释放原始位图
                 originalBitmap.Dispose();
 
-                // Console.WriteLine($"[RenderTaskViewModel] Image optimization completed successfully");
                 return renderTarget;
             }
             catch (Exception ex)
@@ -1037,8 +1066,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         _logLineCount = 0;
         // 清空队列中的待处理日志
         while (_logQueue.TryDequeue(out _))
-        {
-        }
+        { }
 
         EnqueueLog("日志已清空");
     }
