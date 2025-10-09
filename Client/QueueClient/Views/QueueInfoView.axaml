@@ -30,10 +30,10 @@
                            TextWrapping="Wrap" />
             </Border>
 
-            <!-- 加载指示器 -->
-            <ProgressBar IsIndeterminate="True"
-                         IsVisible="{Binding IsLoading}"
-                         Height="8" />
+            <!-- ~1~ 加载指示器 @1@ -->
+            <!-- <ProgressBar IsIndeterminate="True" -->
+            <!--              IsVisible="{Binding IsLoading}" -->
+            <!--              Height="8" /> -->
 
             <!-- 队列状态概览 -->
             <controls:GroupBox Header="Queue Status">

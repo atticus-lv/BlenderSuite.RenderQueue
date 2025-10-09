@@ -38,37 +38,29 @@ public partial class QueueInfoViewModel : ViewModelBase
 
     private async void OnConnectionPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ConnectionViewModel.IsConnected))
+        switch (e.PropertyName)
         {
-            if (_connectionViewModel.IsConnected)
-            {
+            case nameof(ConnectionViewModel.IsConnected) when _connectionViewModel.IsConnected:
                 // 连接成功后自动刷新
                 await RefreshAsync();
                 // 启动自动刷新定时器
                 StartAutoRefresh();
-            }
-            else
-            {
+                break;
+            case nameof(ConnectionViewModel.IsConnected):
                 // 断开连接时清空数据和停止定时器
                 StopAutoRefresh();
                 QueueStatus = null;
                 ErrorMessage = "Disconnected from server";
-            }
-        }
-        else if (e.PropertyName == nameof(ConnectionViewModel.AutoRefreshEnabled))
-        {
+                break;
             // 自动刷新设置变化时重新配置定时器
-            if (_connectionViewModel.IsConnected)
-            {
-                if (_connectionViewModel.AutoRefreshEnabled)
-                {
-                    StartAutoRefresh();
-                }
-                else
-                {
-                    StopAutoRefresh();
-                }
-            }
+            case nameof(ConnectionViewModel.AutoRefreshEnabled) when !_connectionViewModel.IsConnected:
+                return;
+            case nameof(ConnectionViewModel.AutoRefreshEnabled) when _connectionViewModel.AutoRefreshEnabled:
+                StartAutoRefresh();
+                break;
+            case nameof(ConnectionViewModel.AutoRefreshEnabled):
+                StopAutoRefresh();
+                break;
         }
     }
 
@@ -80,16 +72,14 @@ public partial class QueueInfoViewModel : ViewModelBase
         {
             _refreshTimer = new Timer(async _ =>
             {
-                if (_connectionViewModel.IsConnected && !IsLoading)
+                if (!_connectionViewModel.IsConnected || IsLoading) return;
+                try
                 {
-                    try
-                    {
-                        await RefreshAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[QueueInfoViewModel] Auto refresh error: {ex.Message}");
-                    }
+                    await RefreshAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[QueueInfoViewModel] Auto refresh error: {ex.Message}");
                 }
             }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
         }
