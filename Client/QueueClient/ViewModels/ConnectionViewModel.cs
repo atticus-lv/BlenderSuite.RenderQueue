@@ -34,6 +34,9 @@ public partial class ConnectionViewModel : ViewModelBase
     [ObservableProperty]
     private bool _autoRefreshEnabled = true;
 
+    [ObservableProperty]
+    private string _errorMessage = string.Empty;
+
     public ConnectionViewModel()
     {
         _apiService = new ApiService();
@@ -47,6 +50,7 @@ public partial class ConnectionViewModel : ViewModelBase
 
         IsConnecting = true;
         ConnectionStatus = "Connecting...";
+        ErrorMessage = string.Empty; // 清除之前的错误信息
 
         try
         {
@@ -62,23 +66,27 @@ public partial class ConnectionViewModel : ViewModelBase
                     ConnectionStatus = "Connected";
                     ServerVersion = health.Version;
                     LastConnected = DateTime.Now;
+                    ErrorMessage = string.Empty; // 连接成功时清除错误信息
                 }
                 else
                 {
                     IsConnected = false;
                     ConnectionStatus = "Connected but no health info";
+                    ErrorMessage = "Server responded but health information is unavailable";
                 }
             }
             else
             {
                 IsConnected = false;
                 ConnectionStatus = "Connection failed";
+                ErrorMessage = "Unable to establish connection to the server. Please check the URL and ensure the server is running.";
             }
         }
         catch (Exception ex)
         {
             IsConnected = false;
-            ConnectionStatus = $"Error: {ex.Message}";
+            ConnectionStatus = "Connection failed";
+            ErrorMessage = $"Connection error: {ex.Message}";
         }
         finally
         {
@@ -92,6 +100,7 @@ public partial class ConnectionViewModel : ViewModelBase
         IsConnected = false;
         ConnectionStatus = "Disconnected";
         ServerVersion = string.Empty;
+        ErrorMessage = string.Empty; // 断开连接时清除错误信息
     }
 
     public ApiService GetApiService()

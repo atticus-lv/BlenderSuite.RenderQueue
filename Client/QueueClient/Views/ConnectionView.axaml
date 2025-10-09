@@ -46,7 +46,7 @@
                                       IsEnabled="{Binding IsConnected}" />
                     </Grid>
                 </StackPanel>
-                
+
             </glassMorphism:GlassCard>
 
             <glassMorphism:GlassCard Grid.Row="2" Margin="0 10">
@@ -58,6 +58,24 @@
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center" />
                     </StackPanel>
+
+                    <!-- 错误信息显示 -->
+                    <Border Background="#FFE6E6"
+                            BorderBrush="#FF9999"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="10"
+                            Margin="10,0"
+                            IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Connection Error"
+                                       FontWeight="Bold"
+                                       Foreground="#CC0000" />
+                            <SelectableTextBlock Text="{Binding ErrorMessage}"
+                                                 Foreground="#CC0000"
+                                                 TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
 
                     <StackPanel IsVisible="{Binding IsConnected}">
                         <TextBlock Text="{Binding ServerVersion, StringFormat='Version: {0}'}"
