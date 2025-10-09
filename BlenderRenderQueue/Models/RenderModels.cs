@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace BlenderRenderQueue.Models;
 
@@ -64,16 +65,37 @@ public static class QueueStateExtensions
 
 public sealed record RenderProgress
 {
+    [JsonPropertyName("currentFrame")]
     public int CurrentFrame { get; init; }
+    
+    [JsonPropertyName("startFrame")]
     public int? StartFrame { get; init; }
+    
+    [JsonPropertyName("endFrame")]
     public int? EndFrame { get; init; }
+    
+    [JsonPropertyName("sampleCurrent")]
     public int? SampleCurrent { get; init; }
+    
+    [JsonPropertyName("sampleTotal")]
     public int? SampleTotal { get; init; }
+    
+    [JsonPropertyName("engine")]
     public RenderEngine Engine { get; init; }
+    
+    [JsonPropertyName("memoryMB")]
     public double? MemoryMB { get; init; }
+    
+    [JsonPropertyName("scene")]
     public string? Scene { get; init; }
+    
+    [JsonPropertyName("viewLayer")]
     public string? ViewLayer { get; init; }
+    
+    [JsonPropertyName("savedPath")]
     public string? SavedPath { get; init; }
+    
+    [JsonPropertyName("elapsed")]
     public TimeSpan? Elapsed { get; init; }
 }
 

@@ -98,6 +98,15 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
 
             // 添加CORS服务
             builder.Services.AddCors();
+            
+            // 配置JSON序列化选项 - AOT兼容
+            builder.Services.ConfigureHttpJsonOptions(options =>
+            {
+                options.SerializerOptions.WriteIndented = true;
+                options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                options.SerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+                options.SerializerOptions.TypeInfoResolver = ApiJsonContext.Default;
+            });
 
             _app = builder.Build();
 
@@ -111,30 +120,50 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
             _app.MapGet("/api/queue/status", () =>
             {
                 Console.WriteLine($"[RenderQueueApiService] 📊 Received queue status request");
-                var currentTask = _renderQueue.CurrentRenderingTask;
-                var currentTaskInfo = currentTask?.ToCurrentTaskInfo();
-
-                var response = new QueueStatusResponse
+                try
                 {
-                    Timestamp = DateTime.UtcNow,
-                    QueueState = _renderQueue.QueueState,
-                    ActiveTaskCount = _renderQueue.ActiveTaskCount,
-                    CompletedTaskCount = _renderQueue.CompletedTaskCount,
-                    FailedTaskCount = _renderQueue.FailedTaskCount,
-                    TotalFrames = _renderQueue.TotalFrames,
-                    CompletedFrames = _renderQueue.CompletedFrames,
-                    OverallProgress = _renderQueue.OverallQueueProgress,
-                    RemainingTime = _renderQueue.RemainingTimeText,
-                    CurrentTask = currentTaskInfo
-                };
+                    var currentTask = _renderQueue.CurrentRenderingTask;
+                    var currentTaskInfo = currentTask?.ToCurrentTaskInfo();
 
-                Console.WriteLine(
-                    $"[RenderQueueApiService] 📊 Returning queue status: {response.QueueState}, Progress: {response.OverallProgress:P1}, Tasks: {response.ActiveTaskCount}");
-                return response;
+                    var response = new QueueStatusResponse
+                    {
+                        Timestamp = DateTime.UtcNow,
+                        QueueState = _renderQueue.QueueState,
+                        ActiveTaskCount = _renderQueue.ActiveTaskCount,
+                        CompletedTaskCount = _renderQueue.CompletedTaskCount,
+                        FailedTaskCount = _renderQueue.FailedTaskCount,
+                        TotalFrames = _renderQueue.TotalFrames,
+                        CompletedFrames = _renderQueue.CompletedFrames,
+                        OverallProgress = _renderQueue.OverallQueueProgress,
+                        RemainingTime = _renderQueue.RemainingTimeText,
+                        CurrentTask = currentTaskInfo
+                    };
+
+                    Console.WriteLine(
+                        $"[RenderQueueApiService] 📊 Returning queue status: {response.QueueState}, Progress: {response.OverallProgress:P1}, Tasks: {response.ActiveTaskCount}");
+                    return Results.Ok(response);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[RenderQueueApiService] ❌ Queue status error: {ex.Message}");
+                    return Results.Problem($"Queue status failed: {ex.Message}");
+                }
             });
 
             // 获取所有任务列表API
-            _app.MapGet("/api/queue/tasks", () => _renderQueue.RenderTasks.Select(task => task.ToApiResponse()));
+            _app.MapGet("/api/queue/tasks", () =>
+            {
+                try
+                {
+                    var tasks = _renderQueue.RenderTasks.Select(task => task.ToApiResponse()).ToList();
+                    return Results.Ok(tasks);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[RenderQueueApiService] ❌ Tasks list error: {ex.Message}");
+                    return Results.Problem($"Tasks list failed: {ex.Message}");
+                }
+            });
 
             // 实时进度更新流API (Server-Sent Events)
             _app.MapGet("/api/queue/progress-stream", async (HttpContext context) =>
@@ -162,10 +191,11 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
 
                     if (currentUpdates.Any())
                     {
-                        var json = JsonSerializer.Serialize(currentUpdates, new JsonSerializerOptions
+                        var options = new JsonSerializerOptions
                         {
-                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                        });
+                            TypeInfoResolver = ApiJsonContext.Default
+                        };
+                        var json = JsonSerializer.Serialize(currentUpdates, options);
                         await context.Response.WriteAsync($"data: {json}\n\n");
                         await context.Response.Body.FlushAsync();
                     }
@@ -191,9 +221,22 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
             _app.MapGet("/api/health", () =>
             {
                 Console.WriteLine($"[RenderQueueApiService] ❤️ Received health check request");
-                var response = new { status = "healthy", timestamp = DateTime.UtcNow };
-                Console.WriteLine($"[RenderQueueApiService] ❤️ Returning health status: {response.status}");
-                return response;
+                try
+                {
+                    var response = new HealthResponse
+                    {
+                        Status = "healthy",
+                        Timestamp = DateTime.UtcNow,
+                        Version = "1.0.0"
+                    };
+                    Console.WriteLine($"[RenderQueueApiService] ❤️ Returning health status: {response.Status}");
+                    return Results.Ok(response);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[RenderQueueApiService] ❌ Health check error: {ex.Message}");
+                    return Results.Problem($"Health check failed: {ex.Message}");
+                }
             });
 
             _cancellationTokenSource = new CancellationTokenSource();
