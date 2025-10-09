@@ -14,16 +14,12 @@ public partial class MainViewModel : ViewModelBase
     private QueueInfoViewModel _queueInfoViewModel;
 
     [ObservableProperty]
-    private ProgressViewModel _progressViewModel;
-
-    [ObservableProperty]
     private int _selectedTabIndex = 0;
 
     public MainViewModel()
     {
         _connectionViewModel = new ConnectionViewModel();
         _queueInfoViewModel = new QueueInfoViewModel(_connectionViewModel);
-        _progressViewModel = new ProgressViewModel(_connectionViewModel);
     }
 
     [RelayCommand]
@@ -31,14 +27,10 @@ public partial class MainViewModel : ViewModelBase
     {
         SelectedTabIndex = tabIndex;
         
-        // 当切换到队列信息或进度查看Tab时，自动刷新数据
+        // 当切换到队列信息Tab时，自动刷新数据
         if (tabIndex == 1) // 队列信息Tab
         {
             _ = QueueInfoViewModel.RefreshCommand.ExecuteAsync(null);
-        }
-        else if (tabIndex == 2) // 进度查看Tab
-        {
-            _ = ProgressViewModel.RefreshCommand.ExecuteAsync(null);
         }
     }
 
@@ -48,7 +40,6 @@ public partial class MainViewModel : ViewModelBase
         {
             ConnectionViewModel?.Dispose();
             QueueInfoViewModel?.Dispose();
-            ProgressViewModel?.Dispose();
         }
         base.Dispose(disposing);
     }

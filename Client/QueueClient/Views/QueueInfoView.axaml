@@ -9,25 +9,13 @@
              x:DataType="vm:QueueInfoViewModel">
 
     <ScrollViewer>
-        <StackPanel Margin="20" Spacing="20">
+        <StackPanel Margin="15" Spacing="15">
             
-            <!-- 标题和刷新按钮 -->
-            <StackPanel Orientation="Horizontal" Spacing="15">
-                <TextBlock Text="Queue Information" 
-                           FontSize="24" 
-                           FontWeight="Bold" 
-                           VerticalAlignment="Center" />
-                <Button Content="Refresh" 
-                        Command="{Binding RefreshCommand}"
-                        IsEnabled="{Binding !IsLoading}"
-                        Classes="Secondary" />
-                <CheckBox Content="Auto Refresh (1s)" 
-                          IsChecked="{Binding AutoRefreshEnabled}"
-                          VerticalAlignment="Center" />
-                <TextBlock Text="{Binding LastUpdateTime, StringFormat='Last Update: {0}'}" 
-                           VerticalAlignment="Center" 
-                           Opacity="0.7" />
-            </StackPanel>
+            <!-- 标题 -->
+            <TextBlock Text="Queue Information" 
+                       FontSize="20" 
+                       FontWeight="Bold" 
+                       HorizontalAlignment="Center" />
 
             <!-- 错误信息 -->
             <Border Background="#FFE6E6" 
@@ -47,36 +35,37 @@
                          Height="4" />
 
             <!-- 队列状态概览 -->
-            <controls:GroupBox Header="Queue Overview">
-                <StackPanel Spacing="15">
-                    <StackPanel Orientation="Horizontal" Spacing="20">
+            <controls:GroupBox Header="Queue Status">
+                <StackPanel Spacing="12">
+                    <!-- 状态信息 - 垂直排列适合移动端 -->
+                    <StackPanel Spacing="8">
                         <StackPanel>
-                            <TextBlock Text="Queue State" FontWeight="SemiBold" />
+                            <TextBlock Text="Queue State" FontWeight="SemiBold" FontSize="12" />
                             <TextBlock Text="{Binding QueueStateText}" FontSize="16" />
                         </StackPanel>
                         <StackPanel>
-                            <TextBlock Text="Overall Progress" FontWeight="SemiBold" />
+                            <TextBlock Text="Overall Progress" FontWeight="SemiBold" FontSize="12" />
                             <TextBlock Text="{Binding ProgressText}" FontSize="16" />
                         </StackPanel>
                         <StackPanel>
-                            <TextBlock Text="Remaining Time" FontWeight="SemiBold" />
+                            <TextBlock Text="Remaining Time" FontWeight="SemiBold" FontSize="12" />
                             <TextBlock Text="{Binding RemainingTime}" FontSize="16" />
                         </StackPanel>
                     </StackPanel>
                     
                     <!-- 整体进度条 -->
                     <StackPanel>
-                        <TextBlock Text="Overall Progress" FontWeight="SemiBold" Margin="0,0,0,5" />
+                        <TextBlock Text="Overall Progress" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,5" />
                         <ProgressBar Value="{Binding OverallProgress}" 
                                      Maximum="1.0" 
-                                     Height="20" />
+                                     Height="16" />
                     </StackPanel>
                 </StackPanel>
             </controls:GroupBox>
 
             <!-- 任务统计 -->
             <controls:GroupBox Header="Task Statistics">
-                <StackPanel Spacing="10">
+                <StackPanel Spacing="8">
                     <TextBlock Text="{Binding TaskSummary}" FontSize="14" />
                     <TextBlock Text="{Binding FrameSummary}" FontSize="14" Opacity="0.7" />
                 </StackPanel>
@@ -84,24 +73,22 @@
 
             <!-- 当前任务 -->
             <controls:GroupBox Header="Current Task">
-                <StackPanel Spacing="15">
-                    <StackPanel Orientation="Horizontal" Spacing="20">
-                        <StackPanel>
-                            <TextBlock Text="Task Name" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding CurrentTaskName}" FontSize="14" TextWrapping="Wrap" />
-                        </StackPanel>
-                        <StackPanel>
-                            <TextBlock Text="Progress" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding CurrentTaskProgressText}" FontSize="16" />
-                        </StackPanel>
+                <StackPanel Spacing="12">
+                    <StackPanel>
+                        <TextBlock Text="Task Name" FontWeight="SemiBold" FontSize="12" />
+                        <TextBlock Text="{Binding CurrentTaskName}" FontSize="14" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="Progress" FontWeight="SemiBold" FontSize="12" />
+                        <TextBlock Text="{Binding CurrentTaskProgressText}" FontSize="16" />
                     </StackPanel>
                     
                     <!-- 当前任务进度条 -->
                     <StackPanel>
-                        <TextBlock Text="Current Task Progress" FontWeight="SemiBold" Margin="0,0,0,5" />
+                        <TextBlock Text="Current Task Progress" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,5" />
                         <ProgressBar Value="{Binding CurrentTaskProgress}" 
                                      Maximum="1.0" 
-                                     Height="20" />
+                                     Height="16" />
                     </StackPanel>
                 </StackPanel>
             </controls:GroupBox>

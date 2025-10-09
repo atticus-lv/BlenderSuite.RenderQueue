@@ -62,6 +62,18 @@
                 </StackPanel>
             </controls:GroupBox>
 
+            <!-- 自动刷新设置 -->
+            <controls:GroupBox Header="Auto Refresh Settings">
+                <StackPanel Spacing="10">
+                    <CheckBox Content="Enable Auto Refresh (1 second interval)" 
+                              IsChecked="{Binding AutoRefreshEnabled}"
+                              IsEnabled="{Binding IsConnected}" />
+                    <TextBlock Text="When enabled, queue information and task progress will be automatically updated every second." 
+                               Opacity="0.7" 
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </controls:GroupBox>
+
             <!-- 使用说明 -->
             <controls:GroupBox Header="Instructions">
                 <StackPanel Spacing="8">

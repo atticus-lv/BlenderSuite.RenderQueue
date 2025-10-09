@@ -31,6 +31,9 @@ public partial class ConnectionViewModel : ViewModelBase
     [ObservableProperty]
     private DateTime _lastConnected = DateTime.MinValue;
 
+    [ObservableProperty]
+    private bool _autoRefreshEnabled = true;
+
     public ConnectionViewModel()
     {
         _apiService = new ApiService();

@@ -20,9 +20,6 @@
     <TabItem Header="Queue Info">
       <views:QueueInfoView DataContext="{Binding QueueInfoViewModel}" />
     </TabItem>
-    <TabItem Header="Progress">
-      <views:ProgressView DataContext="{Binding ProgressViewModel}" />
-    </TabItem>
     <TabItem Header="Settings">
       <views:SettingsView />
     </TabItem>

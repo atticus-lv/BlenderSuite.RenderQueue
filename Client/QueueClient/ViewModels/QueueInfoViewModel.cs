@@ -25,28 +25,7 @@ public partial class QueueInfoViewModel : ViewModelBase
     private bool _isLoading = false;
 
     [ObservableProperty]
-    private string _lastUpdateTime = string.Empty;
-
-    [ObservableProperty]
     private string _errorMessage = string.Empty;
-
-    [ObservableProperty]
-    private bool _autoRefreshEnabled = true;
-
-    partial void OnAutoRefreshEnabledChanged(bool value)
-    {
-        if (_connectionViewModel.IsConnected)
-        {
-            if (value)
-            {
-                StartAutoRefresh();
-            }
-            else
-            {
-                StopAutoRefresh();
-            }
-        }
-    }
 
     public QueueInfoViewModel(ConnectionViewModel connectionViewModel)
     {
@@ -74,7 +53,21 @@ public partial class QueueInfoViewModel : ViewModelBase
                 StopAutoRefresh();
                 QueueStatus = null;
                 ErrorMessage = "Disconnected from server";
-                LastUpdateTime = string.Empty;
+            }
+        }
+        else if (e.PropertyName == nameof(ConnectionViewModel.AutoRefreshEnabled))
+        {
+            // 自动刷新设置变化时重新配置定时器
+            if (_connectionViewModel.IsConnected)
+            {
+                if (_connectionViewModel.AutoRefreshEnabled)
+                {
+                    StartAutoRefresh();
+                }
+                else
+                {
+                    StopAutoRefresh();
+                }
             }
         }
     }
@@ -83,7 +76,7 @@ public partial class QueueInfoViewModel : ViewModelBase
     {
         StopAutoRefresh(); // 确保之前的定时器已停止
         
-        if (AutoRefreshEnabled)
+        if (_connectionViewModel.AutoRefreshEnabled)
         {
             _refreshTimer = new Timer(async _ =>
             {
@@ -126,7 +119,6 @@ public partial class QueueInfoViewModel : ViewModelBase
             if (status != null)
             {
                 QueueStatus = status;
-                LastUpdateTime = DateTime.Now.ToString("HH:mm:ss");
                 ErrorMessage = string.Empty; // 清除之前的错误
                 
                 // 手动触发计算属性更新通知
