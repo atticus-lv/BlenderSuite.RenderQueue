@@ -144,11 +144,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     // Attributes related to task operation permissions
 
     public bool CanModifyEnable =>
-        IsValid && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed;
+        IsValid && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed or RenderTaskStatus.Cancelled or RenderTaskStatus.Failed;
 
 
     public bool CanModifyOverride =>
-        IsValid && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed;
+        IsValid && Status is RenderTaskStatus.Pending or RenderTaskStatus.Completed or RenderTaskStatus.Cancelled or RenderTaskStatus.Failed;
 
     public bool CanDelete => IsValid || Status == RenderTaskStatus.Pending;
 
