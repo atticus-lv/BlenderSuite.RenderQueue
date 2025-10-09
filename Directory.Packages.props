@@ -20,6 +20,7 @@
     <!-- Additional packages -->
     <PackageVersion Include="LibreHardwareMonitorLib" Version="0.9.5-pre474" />
     <PackageVersion Include="SukiUI" Version="6.0.3" />
+    <PackageVersion Include="Material.Icons.Avalonia" Version="2.4.1" />
     <PackageVersion Include="Xaml.Behaviors.Interactions.Draggable" Version="11.3.6.4" />
     <PackageVersion Include="Xaml.Behaviors.Interactivity" Version="11.3.6.4" />
     <PackageVersion Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc6.1" />
