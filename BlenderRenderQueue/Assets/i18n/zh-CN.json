@@ -154,6 +154,7 @@
   "ConfirmClearAll_Message": "确定要清空所有任务吗？\n\n这将删除队列中的 {0} 个任务，此操作无法撤销。",
   "ConfirmClearAll_Cancel": "取消",
   "ConfirmClearAll_Confirm": "清空",
+  "ClearAllTask": "清空全部任务",
   "Settings_AddBlender": "添加",
   "Settings_AddBlenderTooltip": "添加新的Blender可执行文件",
   "Settings_RemoveSelected": "移除选中",

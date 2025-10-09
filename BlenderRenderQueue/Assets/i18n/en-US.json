@@ -154,6 +154,7 @@
   "ConfirmClearAll_Message": "Are you sure you want to clear all tasks?\n\nThis will delete {0} tasks from the queue. This action cannot be undone.",
   "ConfirmClearAll_Cancel": "Cancel",
   "ConfirmClearAll_Confirm": "Clear",
+  "ClearAllTask": "Clear All Task",
   "Settings_AddBlender": "Add",
   "Settings_AddBlenderTooltip": "Add new Blender executable",
   "Settings_RemoveSelected": "Remove Selected",
