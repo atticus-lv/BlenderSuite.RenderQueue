@@ -4,7 +4,6 @@
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <RootNamespace>BlenderSuite.RenderQueue</RootNamespace>
   </PropertyGroup>
   
   <ItemGroup>
@@ -23,6 +22,9 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="CherylUI" />
     <PackageReference Include="System.Net.Http.Json" />
-    <PackageReference Include="Material.Icons.Avalonia" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="Assets\Icons.axaml" />
   </ItemGroup>
 </Project>

@@ -11,8 +11,14 @@
     </Application.DataTemplates>
 
     <Application.Resources>
-        <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
-        <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://QueueClient/Assets/Icons.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+            
+            <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
+            <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+        </ResourceDictionary>
     </Application.Resources>
 
     <Application.Styles>
