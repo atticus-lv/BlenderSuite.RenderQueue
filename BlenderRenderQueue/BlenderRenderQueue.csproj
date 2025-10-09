@@ -41,6 +41,7 @@
         <PackageReference Include="Xaml.Behaviors.Interactions.Draggable" />
         <PackageReference Include="Xaml.Behaviors.Interactivity" />
         <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" />
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
     <ItemGroup>

@@ -63,6 +63,18 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hardwareAccelerationChanged = false; // 硬件加速是否已更改
 
+    [ObservableProperty]
+    private bool _apiEnabled = false; // API服务是否启用
+
+    [ObservableProperty]
+    private int _apiPort = 8080; // API服务端口
+
+    [ObservableProperty]
+    private bool _isApiRunning = false; // API服务是否正在运行
+
+    [ObservableProperty]
+    private string _apiUrl = string.Empty; // API服务URL
+
     private readonly SukiTheme _theme;
 
     /// <summary>
@@ -152,6 +164,9 @@ public partial class SettingsViewModel : ViewModelBase
 
     // 事件：当运行任务状态发生变化时通知
     public event EventHandler<bool>? RunningTasksStatusChanged;
+
+    // 事件：当API状态发生变化时通知
+    public event EventHandler<ApiStatusChangedEventArgs>? ApiStatusChanged;
 
     public SettingsViewModel()
     {
@@ -551,6 +566,51 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
+    partial void OnApiEnabledChanged(bool value)
+    {
+        // 更新API URL显示
+        UpdateApiUrl();
+        
+        // 标记有未保存的更改（仅在非加载设置时）
+        if (!_isLoadingSettings)
+        {
+            HasUnsavedChanges = true;
+        }
+
+        // 触发API状态变化事件（仅在非加载设置时）
+        if (!_isLoadingSettings)
+        {
+            ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
+        }
+    }
+
+    partial void OnApiPortChanged(int value)
+    {
+        // 更新API URL显示
+        UpdateApiUrl();
+        
+        // 标记有未保存的更改（仅在非加载设置时）
+        if (!_isLoadingSettings)
+        {
+            HasUnsavedChanges = true;
+        }
+
+        // 触发API状态变化事件（仅在非加载设置时）
+        if (!_isLoadingSettings)
+        {
+            ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
+        }
+    }
+
+    partial void OnIsApiRunningChanged(bool value)
+    {
+        // 更新API URL显示
+        UpdateApiUrl();
+
+        // 触发API状态变化事件
+        ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
+    }
+
     private void ApplyTheme(string themeValue)
     {
         try
@@ -589,6 +649,19 @@ public partial class SettingsViewModel : ViewModelBase
         catch (Exception ex)
         {
             Console.WriteLine($"[SettingsViewModel] Error applying theme: {ex.Message}");
+        }
+    }
+
+    public void UpdateApiUrl()
+    {
+        if (ApiEnabled)
+        {
+            // 如果API启用，显示URL（不管是否正在运行）
+            ApiUrl = $"http://localhost:{ApiPort}";
+        }
+        else
+        {
+            ApiUrl = string.Empty;
         }
     }
 
@@ -634,14 +707,16 @@ public partial class SettingsViewModel : ViewModelBase
                 VideoQuality = VideoQuality.Value,
                 Language = Language.Value,
                 BaseTheme = BaseTheme.Value,
-                UseGpu = HardwareAcceleration
+                UseGpu = HardwareAcceleration,
+                ApiEnabled = ApiEnabled,
+                ApiPort = ApiPort
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
             if (success)
             {
                 Console.WriteLine(
-                    $"[SettingsViewModel] ✅ Settings saved successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
+                    $"[SettingsViewModel] ✅ Settings saved successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}, API: {ApiEnabled}@{ApiPort}");
             }
             else
             {
@@ -766,8 +841,15 @@ public partial class SettingsViewModel : ViewModelBase
             // 加载硬件加速设置
             HardwareAcceleration = settings.UseGpu;
 
+            // 加载API设置
+            ApiEnabled = settings.ApiEnabled;
+            ApiPort = settings.ApiPort;
+            
+            // 手动触发API URL更新
+            UpdateApiUrl();
+
             Console.WriteLine(
-                $"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
+                $"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}, API: {ApiEnabled}@{ApiPort}");
         }
         catch (Exception ex)
         {
@@ -837,5 +919,20 @@ public class BlenderValidationChangedEventArgs : EventArgs
     {
         IsValid = isValid;
         Message = message;
+    }
+}
+
+// API状态变化事件参数
+public class ApiStatusChangedEventArgs : EventArgs
+{
+    public bool IsEnabled { get; }
+    public int Port { get; }
+    public bool IsRunning { get; }
+
+    public ApiStatusChangedEventArgs(bool isEnabled, int port, bool isRunning)
+    {
+        IsEnabled = isEnabled;
+        Port = port;
+        IsRunning = isRunning;
     }
 }

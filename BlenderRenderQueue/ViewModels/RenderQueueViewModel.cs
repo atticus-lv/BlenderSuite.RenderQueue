@@ -14,6 +14,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Business.Api;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Persistence;
 using BlenderRenderQueue.Services.UI;
@@ -53,6 +54,11 @@ public partial class RenderQueueViewModel : ViewModelBase
     [ObservableProperty] private bool _autoStartNext = true; // 自动开始下一个任务
 
     [ObservableProperty] private PostRenderBehavior _postRenderBehavior = PostRenderBehavior.None;
+
+    // API服务相关属性
+    [ObservableProperty] private bool _isApiEnabled = false;
+    [ObservableProperty] private int _apiPort = 8080;
+    [ObservableProperty] private bool _isApiRunning = false;
 
     /// <summary>
     /// 后渲染行为显示文字
@@ -297,6 +303,9 @@ public partial class RenderQueueViewModel : ViewModelBase
     private string _videoQuality = "PERC_LOSSLESS"; // 默认感知无损质量
     private readonly IDataPersistenceService _dataPersistenceService = new DataPersistenceService();
     private readonly object _queueLock = new();
+    
+    // API服务相关
+    private RenderQueueApiManager? _apiManager;
 
     // 事件
     public event EventHandler<QueueStatusChangedEventArgs>? QueueStatusChanged;
@@ -313,6 +322,10 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         // 初始化文件监控
         InitializeBlenderDataWatcher();
+
+        // 初始化API管理器
+        _apiManager = new RenderQueueApiManager(this);
+        _apiManager.ApiStatusChanged += OnApiStatusChanged;
 
         // 监听任务状态变化
         RenderTasks.CollectionChanged += (s, e) =>
@@ -349,6 +362,24 @@ public partial class RenderQueueViewModel : ViewModelBase
                     OnPropertyChanged(nameof(PostRenderBehaviorIcon));
                     OnPropertyChanged(nameof(PostRenderBehaviorText));
                     OnPropertyChanged(nameof(PostRenderBehaviorIconColor));
+                    break;
+                case nameof(IsApiEnabled) or nameof(ApiPort):
+                    // API配置变化时，自动更新API服务
+                    if (_apiManager != null)
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await _apiManager.SetApiConfigAsync(IsApiEnabled, ApiPort);
+                                IsApiRunning = _apiManager.IsApiRunning;
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"[RenderQueueViewModel] ⚠️ API配置更新失败: {ex.Message}");
+                            }
+                        });
+                    }
                     break;
             }
         };
@@ -751,6 +782,103 @@ public partial class RenderQueueViewModel : ViewModelBase
         PostRenderBehavior = parsedBehavior;
         OnPropertyChanged(nameof(PostRenderBehaviorIcon));
         Console.WriteLine($"[RenderQueueViewModel] Post-render behavior set to: {parsedBehavior}");
+    }
+
+    // API服务相关命令
+    [RelayCommand]
+    private async Task ToggleApi()
+    {
+        if (_apiManager == null) return;
+
+        try
+        {
+            await _apiManager.ToggleApiAsync();
+            IsApiRunning = _apiManager.IsApiRunning;
+        }
+        catch (Exception ex)
+        {
+            StatusMessageChanged?.Invoke(this, $"API服务操作失败: {ex.Message}");
+            Console.WriteLine($"[RenderQueueViewModel] ❌ API服务操作失败: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task StartApi()
+    {
+        if (_apiManager == null) return;
+
+        try
+        {
+            await _apiManager.StartApiAsync();
+            IsApiRunning = _apiManager.IsApiRunning;
+        }
+        catch (Exception ex)
+        {
+            StatusMessageChanged?.Invoke(this, $"启动API服务失败: {ex.Message}");
+            Console.WriteLine($"[RenderQueueViewModel] ❌ 启动API服务失败: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private async Task StopApi()
+    {
+        if (_apiManager == null) return;
+
+        try
+        {
+            await _apiManager.StopApiAsync();
+            IsApiRunning = _apiManager.IsApiRunning;
+        }
+        catch (Exception ex)
+        {
+            StatusMessageChanged?.Invoke(this, $"停止API服务失败: {ex.Message}");
+            Console.WriteLine($"[RenderQueueViewModel] ❌ 停止API服务失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 设置API配置
+    /// </summary>
+    /// <param name="enabled">是否启用</param>
+    /// <param name="port">端口号</param>
+    public async Task SetApiConfigAsync(bool enabled, int port)
+    {
+        if (_apiManager == null) return;
+
+        try
+        {
+            await _apiManager.SetApiConfigAsync(enabled, port);
+            IsApiEnabled = enabled;
+            ApiPort = port;
+            IsApiRunning = _apiManager.IsApiRunning;
+        }
+        catch (Exception ex)
+        {
+            StatusMessageChanged?.Invoke(this, $"设置API配置失败: {ex.Message}");
+            Console.WriteLine($"[RenderQueueViewModel] ❌ 设置API配置失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 从设置中应用API配置
+    /// </summary>
+    public async Task ApplyApiSettingsAsync(bool enabled, int port)
+    {
+        if (_apiManager == null) return;
+
+        try
+        {
+            Console.WriteLine($"[RenderQueueViewModel] 🔧 Applying API settings: Enabled={enabled}, Port={port}");
+            await _apiManager.SetApiConfigAsync(enabled, port);
+            IsApiEnabled = enabled;
+            ApiPort = port;
+            IsApiRunning = _apiManager.IsApiRunning;
+            Console.WriteLine($"[RenderQueueViewModel] ✅ API settings applied successfully");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to apply API settings: {ex.Message}");
+        }
     }
 
     [RelayCommand]
@@ -1782,6 +1910,22 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// API状态变化事件处理
+    /// </summary>
+    private void OnApiStatusChanged(object? sender, ApiServiceStatusChangedEventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            IsApiRunning = e.IsRunning;
+            StatusMessageChanged?.Invoke(this, e.Message);
+            
+            // 通知设置ViewModel API状态变化
+            // 这里可以通过事件或直接调用设置ViewModel的方法来同步状态
+            Console.WriteLine($"[RenderQueueViewModel] API status changed - Running: {e.IsRunning}, Message: {e.Message}");
+        });
+    }
+
+    /// <summary>
     /// 处理队列完成后的行为
     /// </summary>
     private async Task HandlePostRenderBehaviorAsync()
@@ -1867,6 +2011,9 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         _blenderProcessService?.Dispose();
         _blenderProcessService = null;
+
+        _apiManager?.Dispose();
+        _apiManager = null;
 
         foreach (var task in RenderTasks)
         {
