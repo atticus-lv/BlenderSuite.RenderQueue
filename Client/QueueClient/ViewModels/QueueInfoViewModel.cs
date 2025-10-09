@@ -31,7 +31,7 @@ public partial class QueueInfoViewModel : ViewModelBase
     {
         _connectionViewModel = connectionViewModel;
         _apiService = connectionViewModel.GetApiService();
-        
+
         // 监听连接状态变化
         _connectionViewModel.PropertyChanged += OnConnectionPropertyChanged;
     }
@@ -75,7 +75,7 @@ public partial class QueueInfoViewModel : ViewModelBase
     private void StartAutoRefresh()
     {
         StopAutoRefresh(); // 确保之前的定时器已停止
-        
+
         if (_connectionViewModel.AutoRefreshEnabled)
         {
             _refreshTimer = new Timer(async _ =>
@@ -120,7 +120,7 @@ public partial class QueueInfoViewModel : ViewModelBase
             {
                 QueueStatus = status;
                 ErrorMessage = string.Empty; // 清除之前的错误
-                
+
                 // 手动触发计算属性更新通知
                 OnPropertyChanged(nameof(QueueStateText));
                 OnPropertyChanged(nameof(OverallProgress));
@@ -149,29 +149,27 @@ public partial class QueueInfoViewModel : ViewModelBase
         }
     }
 
-    // 计算属性
     public string QueueStateText => QueueStatus?.QueueState.ToString() ?? "Unknown";
-    
+
     public double OverallProgress => QueueStatus?.OverallProgress ?? 0.0;
-    
+
     public string ProgressText => $"{OverallProgress:P1}";
-    
-    public int TotalTasks => (QueueStatus?.ActiveTaskCount ?? 0) + 
-                            (QueueStatus?.CompletedTaskCount ?? 0) + 
-                            (QueueStatus?.FailedTaskCount ?? 0);
-    
-    public string TaskSummary => $"Active: {QueueStatus?.ActiveTaskCount ?? 0}, " +
-                                $"Completed: {QueueStatus?.CompletedTaskCount ?? 0}, " +
-                                $"Failed: {QueueStatus?.FailedTaskCount ?? 0}";
-    
+
+    public int TotalTasks => (QueueStatus?.ActiveTaskCount ?? 0) +
+                             (QueueStatus?.CompletedTaskCount ?? 0) +
+                             (QueueStatus?.FailedTaskCount ?? 0);
+
+    public string TaskSummary => $"Completed: {QueueStatus?.CompletedTaskCount ?? 0}, " +
+                                 $"Failed: {QueueStatus?.FailedTaskCount ?? 0}";
+
     public string FrameSummary => $"{QueueStatus?.CompletedFrames ?? 0} / {QueueStatus?.TotalFrames ?? 0} frames";
-    
+
     public string RemainingTime => QueueStatus?.RemainingTime ?? "Unknown";
-    
+
     public string CurrentTaskName => QueueStatus?.CurrentTask?.FileName ?? "No active task";
-    
+
     public double CurrentTaskProgress => QueueStatus?.CurrentTask?.Progress ?? 0.0;
-    
+
     public string CurrentTaskProgressText => $"{CurrentTaskProgress:P1}";
 
     protected override void Dispose(bool disposing)
@@ -181,6 +179,7 @@ public partial class QueueInfoViewModel : ViewModelBase
             _connectionViewModel.PropertyChanged -= OnConnectionPropertyChanged;
             StopAutoRefresh();
         }
+
         base.Dispose(disposing);
     }
 }

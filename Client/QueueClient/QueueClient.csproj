@@ -23,5 +23,6 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="CherylUI" />
     <PackageReference Include="System.Net.Http.Json" />
+    <PackageReference Include="Material.Icons.Avalonia" />
   </ItemGroup>
 </Project>

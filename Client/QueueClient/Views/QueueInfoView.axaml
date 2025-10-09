@@ -33,52 +33,87 @@
             <!-- 加载指示器 -->
             <ProgressBar IsIndeterminate="True"
                          IsVisible="{Binding IsLoading}"
-                         Height="4" />
+                         Height="8" />
 
             <!-- 队列状态概览 -->
             <controls:GroupBox Header="Queue Status">
-                <StackPanel Spacing="12" Margin="10">
-                    <!-- 状态信息 - 垂直排列适合移动端 -->
+                <StackPanel Margin="10" Spacing="4">
+                    <Grid ColumnDefinitions="*,4,Auto">
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding ProgressText}"
+                                   FontSize="20"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,0,8" />
+                        <!-- Progress Bar -->
+                        <ProgressBar Grid.Column="0"
+                                     Value="{Binding OverallProgress}"
+                                     Maximum="1.0"
+                                     Height="20"
+                                     Margin="0,0,0,8" />
+                    </Grid>
                     <StackPanel Spacing="8">
-                        <TextBlock Text="{Binding QueueStateText}" FontSize="16" />
-                        <TextBlock Text="{Binding ProgressText}" FontSize="16" />
-                        <TextBlock Text="{Binding RemainingTime}" FontSize="16" />
+                        <TextBlock
+                            Text="{Binding QueueStateText}"
+                            FontSize="20"
+                            VerticalAlignment="Center" />
+                        <TextBlock
+                            Text="{Binding TaskSummary}"
+                            FontSize="20"
+                            VerticalAlignment="Center" />
+
+
+                        <TextBlock
+                            Text="{Binding FrameSummary}"
+                            FontSize="20"
+                            Opacity="0.7"
+                            VerticalAlignment="Center" />
+                        <TextBlock
+                            Text="{Binding RemainingTime,StringFormat=Remaining Time: {}}"
+                            FontSize="20"
+                            VerticalAlignment="Center" />
                     </StackPanel>
-
-                    <ProgressBar Value="{Binding OverallProgress}"
-                                 Maximum="1.0"
-                                 Height="16" />
                 </StackPanel>
+
             </controls:GroupBox>
 
-            <!-- 任务统计 -->
-            <controls:GroupBox Header="Task Statistics">
-                <StackPanel Spacing="8" Margin="10">
-                    <TextBlock Text="{Binding TaskSummary}" FontSize="14" />
-                    <TextBlock Text="{Binding FrameSummary}" FontSize="14" Opacity="0.7" />
-                </StackPanel>
-            </controls:GroupBox>
 
             <!-- 当前任务 -->
             <controls:GroupBox Header="Current Task">
-                <StackPanel Spacing="12" Margin="10">
-                    <StackPanel>
-                        <TextBlock Text="Task Name" FontWeight="SemiBold" FontSize="12" />
-                        <TextBlock Text="{Binding CurrentTaskName}" FontSize="14" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <StackPanel>
-                        <TextBlock Text="Progress" FontWeight="SemiBold" FontSize="12" />
-                        <TextBlock Text="{Binding CurrentTaskProgressText}" FontSize="16" />
-                    </StackPanel>
+                <StackPanel Margin="10" Spacing="4">
+                    <Grid ColumnDefinitions="*,4,Auto">
+                        <!-- Task Progress -->
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding CurrentTaskProgressText}"
+                                   FontSize="16"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,0,8" />
 
-                    <!-- 当前任务进度条 -->
-                    <StackPanel>
-                        <TextBlock Text="Current Task Progress" FontWeight="SemiBold" FontSize="12" Margin="0,0,0,5" />
-                        <ProgressBar Value="{Binding CurrentTaskProgress}"
+                        <ProgressBar Grid.Column="0"
+                                     Value="{Binding CurrentTaskProgress}"
                                      Maximum="1.0"
-                                     Height="16" />
-                    </StackPanel>
+                                     Height="16"
+                                     Margin="0,0,0,8" />
+                    </Grid>
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*">
+
+                        <!-- Task Name -->
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                   Text="Task Name:"
+                                   FontWeight="SemiBold"
+                                   FontSize="16"
+                                   VerticalAlignment="Top"
+                                   Margin="0,0,10,8" />
+                        <TextBlock Grid.Row="0" Grid.Column="1"
+                                   Text="{Binding CurrentTaskName}"
+                                   FontSize="16"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top"
+                                   Margin="0,0,0,8" />
+
+
+                    </Grid>
                 </StackPanel>
+
             </controls:GroupBox>
 
         </StackPanel>

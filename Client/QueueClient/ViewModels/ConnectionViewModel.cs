@@ -14,7 +14,7 @@ public partial class ConnectionViewModel : ViewModelBase
     private readonly ApiService _apiService;
 
     [ObservableProperty]
-    private string _serverUrl = "http://192.168.1.100:8080";
+    private string _serverUrl = "http://192.168.101.174:8080";
 
     [ObservableProperty]
     private bool _isConnected = false;

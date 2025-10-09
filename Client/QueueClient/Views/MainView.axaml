@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
              xmlns:views="clr-namespace:BlenderSuite.RenderQueue.Views"
+             xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BlenderSuite.RenderQueue.Views.MainView"
              x:DataType="vm:MainViewModel">
@@ -14,13 +15,31 @@
   </Design.DataContext>
 
   <TabControl SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
-    <TabItem Header="Connection">
+    <TabItem>
+      <TabItem.Header>
+        <StackPanel Orientation="Vertical" Spacing="4">
+          <material:MaterialIcon Kind="Wifi" Width="24" Height="24" />
+          <TextBlock Text="Connection" FontSize="12" />
+        </StackPanel>
+      </TabItem.Header>
       <views:ConnectionView DataContext="{Binding ConnectionViewModel}" />
     </TabItem>
-    <TabItem Header="Queue Info">
+    <TabItem>
+      <TabItem.Header>
+        <StackPanel Orientation="Vertical" Spacing="4">
+          <material:MaterialIcon Kind="Queue" Width="24" Height="24" />
+          <TextBlock Text="Queue Info" FontSize="12" />
+        </StackPanel>
+      </TabItem.Header>
       <views:QueueInfoView DataContext="{Binding QueueInfoViewModel}" />
     </TabItem>
-    <TabItem Header="Settings">
+    <TabItem>
+      <TabItem.Header>
+        <StackPanel Orientation="Vertical" Spacing="4">
+          <material:MaterialIcon Kind="Settings" Width="24" Height="24" />
+          <TextBlock Text="Settings" FontSize="12" />
+        </StackPanel>
+      </TabItem.Header>
       <views:SettingsView />
     </TabItem>
   </TabControl>
