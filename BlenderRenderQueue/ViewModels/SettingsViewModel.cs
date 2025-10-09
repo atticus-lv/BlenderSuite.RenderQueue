@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Avalonia.Platform.Storage;
 using System.Threading;
+using System.Threading.Tasks;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Persistence;
 using BlenderRenderQueue.Services.UI;
-using BlenderRenderQueue.Helpers;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using SukiUI;
 
 namespace BlenderRenderQueue.ViewModels;
@@ -26,13 +27,13 @@ public partial class SettingsViewModel : ViewModelBase
     private BlenderExecutable? _selectedBlenderExecutable;
 
     [ObservableProperty]
-    private bool _isLoadingBlenderInfo = false;
+    private bool _isLoadingBlenderInfo;
 
     [ObservableProperty]
     private string _blenderValidationMessage = string.Empty;
 
     [ObservableProperty]
-    private bool _hasBlenderValidationError = false;
+    private bool _hasBlenderValidationError;
 
     [ObservableProperty]
     private int _defaultRenderTimeoutSeconds = 300; // 默认5分钟
@@ -62,44 +63,25 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _hardwareAcceleration = true; // 硬件加速设置，默认为开启
 
     [ObservableProperty]
-    private bool _hardwareAccelerationChanged = false; // 硬件加速是否已更改
+    private bool _hardwareAccelerationChanged; // 硬件加速是否已更改
 
     [ObservableProperty]
-    private bool _apiEnabled = false; // API服务是否启用
+    private bool _apiEnabled; // API服务是否启用
 
     [ObservableProperty]
     private int _apiPort = 8080; // API服务端口
 
     [ObservableProperty]
-    private bool _isApiRunning = false; // API服务是否正在运行
+    private bool _isApiRunning; // API服务是否正在运行
 
     [ObservableProperty]
     private string _apiUrl = string.Empty; // API服务URL
 
     private readonly SukiTheme _theme;
 
-    /// <summary>
-    /// 检查指定的Blender是否被选中
-    /// </summary>
-    public bool IsBlenderSelected(BlenderExecutable blender)
-    {
-        return SelectedBlenderExecutable != null &&
-               SelectedBlenderExecutable.Path == blender.Path;
-    }
 
     /// <summary>
-    /// 更新运行任务状态
-    /// </summary>
-    public void UpdateRunningTasksStatus(bool hasRunningTasks)
-    {
-        // 与开始队列按钮逻辑保持一致：只有在队列空闲或完成时才允许切换Blender
-        CanSwitchBlender = !hasRunningTasks;
-        Console.WriteLine(
-            $"[SettingsViewModel] 更新运行任务状态 - HasRunningTasks: {hasRunningTasks}, CanSwitchBlender: {CanSwitchBlender}");
-    }
-
-    /// <summary>
-    /// 更新队列状态（与开始队列按钮逻辑保持一致）
+    ///     更新队列状态（与开始队列按钮逻辑保持一致）
     /// </summary>
     public void UpdateQueueState(QueueState queueState)
     {
@@ -119,10 +101,7 @@ public partial class SettingsViewModel : ViewModelBase
         }
 
         // 标记有未保存的更改
-        if (!_isLoadingSettings)
-        {
-            HasUnsavedChanges = true;
-        }
+        if (!_isLoadingSettings) HasUnsavedChanges = true;
     }
 
     partial void OnSelectedBlenderExecutableChanged(BlenderExecutable? value)
@@ -143,16 +122,13 @@ public partial class SettingsViewModel : ViewModelBase
         }
 
         // 标记有未保存的更改
-        if (!_isLoadingSettings)
-        {
-            HasUnsavedChanges = true;
-        }
+        if (!_isLoadingSettings) HasUnsavedChanges = true;
     }
 
     // 内部状态
     private CancellationTokenSource? _versionCts;
     private readonly ISettingsPersistenceService _settingsPersistenceService = new SettingsPersistenceService();
-    private bool _isLoadingSettings = false;
+    private bool _isLoadingSettings;
 
     // 事件：当设置发生变化时通知
     public event EventHandler<SettingsChangedEventArgs>? SettingsChanged;
@@ -179,10 +155,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             var themeValue = variant.ToString();
             var themeOption = ThemeOption.FindByValue(themeValue);
-            if (themeOption != null)
-            {
-                BaseTheme = themeOption;
-            }
+            if (themeOption != null) BaseTheme = themeOption;
 
             // 可以在这里添加Toast通知
             Console.WriteLine($"[SettingsViewModel] Theme changed to: {variant}");
@@ -191,10 +164,7 @@ public partial class SettingsViewModel : ViewModelBase
         // 初始化当前主题
         var currentThemeValue = _theme.ActiveBaseTheme.ToString();
         var currentThemeOption = ThemeOption.FindByValue(currentThemeValue);
-        if (currentThemeOption != null)
-        {
-            BaseTheme = currentThemeOption;
-        }
+        if (currentThemeOption != null) BaseTheme = currentThemeOption;
     }
 
     public void StartInitialization()
@@ -229,10 +199,7 @@ public partial class SettingsViewModel : ViewModelBase
             }
 
             // 如果没有有效的Blender，尝试自动检测（但不自动选中）
-            if (SelectedBlenderExecutable == null)
-            {
-                await TryAutoDetectBlenderAsync(false); // 不自动选中
-            }
+            if (SelectedBlenderExecutable == null) await TryAutoDetectBlenderAsync(false); // 不自动选中
         }
         catch (Exception ex)
         {
@@ -240,7 +207,7 @@ public partial class SettingsViewModel : ViewModelBase
         }
 
         // 通知初始化完成
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        Dispatcher.UIThread.Post(() =>
         {
             InitializationCompleted?.Invoke(this, new InitializationCompletedEventArgs(blenderDetected));
         });
@@ -278,7 +245,7 @@ public partial class SettingsViewModel : ViewModelBase
 
 
     /// <summary>
-    /// 验证单个Blender（用于自动检测后的验证）
+    ///     验证单个Blender（用于自动检测后的验证）
     /// </summary>
     private async Task ValidateBlenderAsync(BlenderExecutable blender)
     {
@@ -288,7 +255,7 @@ public partial class SettingsViewModel : ViewModelBase
             var info = await svc.GetVersionInfoAsync(blender.Path, CancellationToken.None);
 
             // 更新UI线程上的属性
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Post(() =>
             {
                 // 更新Blender信息
                 blender.UpdateFromVersionInfo(info);
@@ -296,10 +263,7 @@ public partial class SettingsViewModel : ViewModelBase
 
                 // 触发集合更改通知，让UI更新
                 var index = BlenderExecutables.IndexOf(blender);
-                if (index >= 0)
-                {
-                    BlenderExecutables[index] = blender;
-                }
+                if (index >= 0) BlenderExecutables[index] = blender;
 
                 Console.WriteLine($"[SettingsViewModel] ✅ Auto-validated Blender: {blender.Path} - {blender.Version}");
             });
@@ -307,16 +271,13 @@ public partial class SettingsViewModel : ViewModelBase
         catch (Exception ex)
         {
             // 验证失败，更新状态
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Post(() =>
             {
                 blender.UpdateValidationStatus(false, DateTime.UtcNow);
 
                 // 触发集合更改通知，让UI更新
                 var index = BlenderExecutables.IndexOf(blender);
-                if (index >= 0)
-                {
-                    BlenderExecutables[index] = blender;
-                }
+                if (index >= 0) BlenderExecutables[index] = blender;
 
                 Console.WriteLine(
                     $"[SettingsViewModel] ❌ Auto-validation failed for Blender: {blender.Path} - {ex.Message}");
@@ -336,7 +297,7 @@ public partial class SettingsViewModel : ViewModelBase
             if (cancellationToken.IsCancellationRequested) return;
 
             // 更新UI线程上的属性
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Post(() =>
             {
                 // 更新Blender信息
                 blender.UpdateFromVersionInfo(info);
@@ -344,10 +305,7 @@ public partial class SettingsViewModel : ViewModelBase
 
                 // 触发集合更改通知，让UI更新
                 var index = BlenderExecutables.IndexOf(blender);
-                if (index >= 0)
-                {
-                    BlenderExecutables[index] = blender;
-                }
+                if (index >= 0) BlenderExecutables[index] = blender;
 
                 IsLoadingBlenderInfo = false;
                 HasBlenderValidationError = false;
@@ -358,8 +316,7 @@ public partial class SettingsViewModel : ViewModelBase
         catch (Exception ex)
         {
             if (!cancellationToken.IsCancellationRequested)
-            {
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                Dispatcher.UIThread.Post(() =>
                 {
                     IsLoadingBlenderInfo = false;
                     blender.UpdateValidationStatus(false, DateTime.UtcNow);
@@ -367,7 +324,6 @@ public partial class SettingsViewModel : ViewModelBase
                     BlenderValidationMessage = $"Blender验证失败: {ex.Message}";
                     NotifyBlenderValidationChanged();
                 });
-            }
         }
     }
 
@@ -387,36 +343,25 @@ public partial class SettingsViewModel : ViewModelBase
             {
                 var detectedBlenders = new List<string>();
 
-                // 仅使用注册表扫描，不进行文件系统扫描
-                if (BlenderRenderQueue.Helpers.BlenderLocator.TryFindBlenderExe(out var exe))
-                {
-                    detectedBlenders.Add(exe);
-                }
+                // Only registry scanning is used, no file system scanning is performed
+                if (BlenderLocator.TryFindBlenderExe(out var exe)) detectedBlenders.Add(exe);
 
-                // 添加检测到的Blender到列表并立即验证
-                if (detectedBlenders.Any())
+                if (detectedBlenders.Count != 0)
                 {
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    Dispatcher.UIThread.Post(() =>
                     {
-                        foreach (var blenderPath in detectedBlenders)
+                        foreach (var blender in from blenderPath in detectedBlenders
+                                 let existing = BlenderExecutables.FirstOrDefault(b => b.Path == blenderPath)
+                                 where existing == null
+                                 select BlenderExecutable.CreateDefault(blenderPath))
                         {
-                            // 检查是否已存在相同路径的Blender
-                            var existing = BlenderExecutables.FirstOrDefault(b => b.Path == blenderPath);
-                            if (existing == null)
-                            {
-                                var blender = BlenderExecutable.CreateDefault(blenderPath);
-                                BlenderExecutables.Add(blender);
-
-                                // 立即验证新添加的Blender
-                                _ = Task.Run(async () => await ValidateBlenderAsync(blender));
-                            }
+                            BlenderExecutables.Add(blender);
+                            _ = Task.Run(async () => await ValidateBlenderAsync(blender));
                         }
 
-                        // 只有在autoSelect为true且当前没有选中的Blender时才自动选择
+                        // AutoSelect is automatically selected only if autoSelect is true and there is currently no Blender selected
                         if (autoSelect && SelectedBlenderExecutable == null && BlenderExecutables.Any())
-                        {
                             SelectedBlenderExecutable = BlenderExecutables.First();
-                        }
                     });
                     return Task.FromResult(true);
                 }
@@ -424,7 +369,7 @@ public partial class SettingsViewModel : ViewModelBase
         }
         catch
         {
-            // 忽略错误
+            // ignore
         }
 
         return Task.FromResult(false);
@@ -437,20 +382,16 @@ public partial class SettingsViewModel : ViewModelBase
         var path = await this.SelectFile("Blender_SelectFileDialog", GetBlenderExecutableFileTypes());
         if (!string.IsNullOrWhiteSpace(path))
         {
-            // 检查是否已存在
             var existing = BlenderExecutables.FirstOrDefault(b => b.Path == path);
             if (existing != null)
             {
-                // 如果已存在，选择它
                 SelectedBlenderExecutable = existing;
             }
             else
             {
-                // 创建新的Blender可执行文件
                 var newBlender = BlenderExecutable.CreateDefault(path);
                 BlenderExecutables.Add(newBlender);
                 SelectedBlenderExecutable = newBlender;
-                // 标记有未保存的更改
                 HasUnsavedChanges = true;
             }
         }
@@ -459,13 +400,10 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void RemoveBlender()
     {
-        if (SelectedBlenderExecutable != null)
-        {
-            BlenderExecutables.Remove(SelectedBlenderExecutable);
-            SelectedBlenderExecutable = BlenderExecutables.FirstOrDefault();
-            // 标记有未保存的更改
-            HasUnsavedChanges = true;
-        }
+        if (SelectedBlenderExecutable == null) return;
+        BlenderExecutables.Remove(SelectedBlenderExecutable);
+        SelectedBlenderExecutable = BlenderExecutables.FirstOrDefault();
+        HasUnsavedChanges = true;
     }
 
     [RelayCommand]
@@ -492,10 +430,8 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
-            // 先保存设置
             _ = Task.Run(async () => await SaveSettingsToFileAsync());
-            // 使用FileSystemHelper重启应用程序
-            var success = BlenderRenderQueue.Helpers.FileSystemHelper.RestartApplication();
+            var success = FileSystemHelper.RestartApplication();
             Console.WriteLine(success
                 ? "[SettingsViewModel] ✅ Application restart initiated"
                 : "[SettingsViewModel] ❌ Failed to restart application");
@@ -508,134 +444,85 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnBaseThemeChanged(ThemeOption value)
     {
-        if (value != null)
-        {
-            // 只有在用户手动更改时才应用主题，避免在加载设置时触发
-            if (!_isLoadingSettings)
-            {
-                ApplyTheme(value.Value);
-                // 标记有未保存的更改
-                HasUnsavedChanges = true;
-            }
-        }
+        if (value == null) return;
+        // Apply the theme only when the user changes it manually, avoiding triggering when the settings are loaded
+        if (_isLoadingSettings) return;
+        ApplyTheme(value.Value);
+        HasUnsavedChanges = true;
     }
 
     partial void OnDefaultRenderTimeoutSecondsChanged(int value)
     {
-        // 标记有未保存的更改
-        if (!_isLoadingSettings)
-        {
-            HasUnsavedChanges = true;
-        }
+        if (_isLoadingSettings) return;
+        HasUnsavedChanges = true;
     }
 
     partial void OnMaxRetryAttemptsChanged(int value)
     {
-        // 标记有未保存的更改
-        if (!_isLoadingSettings)
-        {
-            HasUnsavedChanges = true;
-        }
+        if (_isLoadingSettings) return;
+        HasUnsavedChanges = true;
     }
 
     partial void OnVideoCodecChanged(VideoCodecOption value)
     {
-        // 标记有未保存的更改
-        if (!_isLoadingSettings)
-        {
-            HasUnsavedChanges = true;
-        }
+        if (_isLoadingSettings) return;
+        HasUnsavedChanges = true;
     }
 
     partial void OnVideoQualityChanged(VideoQualityOption value)
     {
-        // 标记有未保存的更改
-        if (!_isLoadingSettings)
-        {
-            HasUnsavedChanges = true;
-        }
+        if (_isLoadingSettings) return;
+        HasUnsavedChanges = true;
     }
 
     partial void OnHardwareAccelerationChanged(bool value)
     {
-        // 标记有未保存的更改
-        if (!_isLoadingSettings)
-        {
-            HasUnsavedChanges = true;
-            // 标记硬件加速已更改，需要重启
-            HardwareAccelerationChanged = true;
-        }
+        if (_isLoadingSettings) return;
+        HasUnsavedChanges = true;
+        HardwareAccelerationChanged = true;
     }
 
     partial void OnApiEnabledChanged(bool value)
     {
-        // 更新API URL显示
         UpdateApiUrl();
-        
-        // 标记有未保存的更改（仅在非加载设置时）
-        if (!_isLoadingSettings)
-        {
-            HasUnsavedChanges = true;
-            // 触发API状态变化事件（仅在非加载设置时）
-            ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
-        }
+
+        if (_isLoadingSettings) return;
+        HasUnsavedChanges = true;
+        ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
     }
 
     partial void OnApiPortChanged(int value)
     {
-        // 更新API URL显示
         UpdateApiUrl();
-        
-        // 标记有未保存的更改（仅在非加载设置时）
-        if (!_isLoadingSettings)
-        {
-            HasUnsavedChanges = true;
-            // 触发API状态变化事件（仅在非加载设置时）
-            ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
-        }
+
+        if (_isLoadingSettings) return;
+        HasUnsavedChanges = true;
+        ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
     }
 
     partial void OnIsApiRunningChanged(bool value)
     {
-        // 更新API URL显示
         UpdateApiUrl();
-
-        // 触发API状态变化事件（仅在非加载设置时）
-        if (!_isLoadingSettings)
-        {
-            ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
-        }
+        if (_isLoadingSettings) return;
+        ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
     }
 
     private void ApplyTheme(string themeValue)
     {
         try
         {
-            // 根据主题值应用相应的主题
             switch (themeValue)
             {
                 case "Light":
-                    // 切换到浅色主题
-                    while (_theme.ActiveBaseTheme.ToString() != "Light")
-                    {
-                        _theme.SwitchBaseTheme();
-                    }
+                    while (_theme.ActiveBaseTheme.ToString() != "Light") _theme.SwitchBaseTheme();
 
                     break;
                 case "Dark":
-                    // 切换到深色主题
-                    while (_theme.ActiveBaseTheme.ToString() != "Dark")
-                    {
-                        _theme.SwitchBaseTheme();
-                    }
+                    while (_theme.ActiveBaseTheme.ToString() != "Dark") _theme.SwitchBaseTheme();
 
                     break;
                 case "Auto":
-                    // Auto主题切换到系统主题（Default）
-                    while (_theme.ActiveBaseTheme.ToString() != "Default")
-                    {
-                        _theme.SwitchBaseTheme();
-                    }
+                    while (_theme.ActiveBaseTheme.ToString() != "Default") _theme.SwitchBaseTheme();
 
                     break;
             }
@@ -652,7 +539,6 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (ApiEnabled)
         {
-            // 如果API启用，显示局域网IP地址的URL（不管是否正在运行）
             var localNetworkIp = NetworkHelper.GetLocalNetworkIpAddress();
             ApiUrl = $"http://{localNetworkIp}:{ApiPort}";
         }
@@ -665,30 +551,21 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     public async Task SaveSettingsCommand()
     {
-        var selectedPath = SelectedBlenderExecutable?.Path ?? string.Empty;
-
-        // 触发设置变化事件
         SettingsChanged?.Invoke(this,
             new SettingsChangedEventArgs(DefaultRenderTimeoutSeconds, MaxRetryAttempts, VideoCodec.Value,
                 VideoQuality.Value, Language.Value));
 
-        // 保存设置到文件
         await SaveSettingsToFileAsync();
 
-        // 标记已保存，清除未保存更改标记
         HasUnsavedChanges = false;
-        // 清除硬件加速变更标记
         HardwareAccelerationChanged = false;
     }
 
-    /// <summary>
-    /// 保存设置到文件
-    /// </summary>
+
     public async Task SaveSettingsToFileAsync()
     {
         try
         {
-            // 去重：只保留每个路径的最新版本
             var uniqueBlenders = BlenderExecutables
                 .GroupBy(b => b.Path)
                 .Select(g => g.OrderByDescending(b => b.LastValidated).First())
@@ -710,15 +587,10 @@ public partial class SettingsViewModel : ViewModelBase
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
-            if (success)
-            {
-                Console.WriteLine(
-                    $"[SettingsViewModel] ✅ Settings saved successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}, API: {ApiEnabled}@{ApiPort}");
-            }
-            else
-            {
-                Console.WriteLine($"[SettingsViewModel] ❌ Failed to save settings");
-            }
+            Console.WriteLine(
+                success
+                    ? $"[SettingsViewModel] ✅ Settings saved successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}, API: {ApiEnabled}@{ApiPort}"
+                    : "[SettingsViewModel] ❌ Failed to save settings");
         }
         catch (Exception ex)
         {
@@ -726,35 +598,27 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
-    /// <summary>
-    /// 从文件加载设置
-    /// </summary>
-    public async Task LoadSettingsFromFileAsync()
+
+    private async Task LoadSettingsFromFileAsync()
     {
         try
         {
             _isLoadingSettings = true;
             var settings = await _settingsPersistenceService.LoadSettingsAsync();
 
-            // 加载Blender可执行文件列表
-            if (settings.BlenderExecutables != null && settings.BlenderExecutables.Any())
+            if (settings.BlenderExecutables.Count != 0)
             {
                 BlenderExecutables.Clear();
 
-                // 去重：只保留每个路径的最新版本
                 var uniqueBlenders = settings.BlenderExecutables
                     .GroupBy(b => b.Path)
                     .Select(g => g.OrderByDescending(b => b.LastValidated).First())
                     .ToList();
 
-                foreach (var blender in uniqueBlenders)
-                {
-                    BlenderExecutables.Add(blender);
-                }
+                foreach (var blender in uniqueBlenders) BlenderExecutables.Add(blender);
 
                 Console.WriteLine($"[SettingsViewModel] Loaded {BlenderExecutables.Count} unique Blender executables");
 
-                // 设置选中的Blender
                 if (!string.IsNullOrEmpty(settings.SelectedBlenderPath))
                 {
                     SelectedBlenderExecutable =
@@ -766,17 +630,11 @@ public partial class SettingsViewModel : ViewModelBase
             }
 
             if (settings.DefaultRenderTimeoutSeconds > 0)
-            {
                 DefaultRenderTimeoutSeconds = settings.DefaultRenderTimeoutSeconds;
-            }
 
-            if (settings.MaxRetryAttempts > 0)
-            {
-                MaxRetryAttempts = settings.MaxRetryAttempts;
-            }
+            if (settings.MaxRetryAttempts > 0) MaxRetryAttempts = settings.MaxRetryAttempts;
 
             if (!string.IsNullOrEmpty(settings.VideoCodec))
-            {
                 VideoCodec = settings.VideoCodec switch
                 {
                     "H264" => VideoCodecOption.H264,
@@ -784,10 +642,8 @@ public partial class SettingsViewModel : ViewModelBase
                     "AV1" => VideoCodecOption.AV1,
                     _ => VideoCodecOption.H264
                 };
-            }
 
             if (!string.IsNullOrEmpty(settings.VideoQuality))
-            {
                 VideoQuality = settings.VideoQuality switch
                 {
                     "LOSSLESS" => VideoQualityOption.Lossless,
@@ -797,7 +653,6 @@ public partial class SettingsViewModel : ViewModelBase
                     "LOW" => VideoQualityOption.Low,
                     _ => VideoQualityOption.PerceptualLossless
                 };
-            }
 
             if (!string.IsNullOrEmpty(settings.Language))
             {
@@ -805,46 +660,38 @@ public partial class SettingsViewModel : ViewModelBase
                 if (languageOption != null)
                 {
                     Language = languageOption;
-                    // 加载语言设置时，立即应用语言切换
                     Localizer.Localizer.Instance.LoadLanguage(settings.Language);
                 }
                 else
                 {
-                    // 如果语言选项无效，设置为默认英文
                     Language = LanguageOption.Default;
                     Localizer.Localizer.Instance.LoadLanguage(LanguageOption.Default.Value);
                 }
             }
             else
             {
-                // 如果没有语言设置，设置为默认英文
                 Language = LanguageOption.Default;
                 Localizer.Localizer.Instance.LoadLanguage(LanguageOption.Default.Value);
             }
 
-            // 加载主题设置
             if (!string.IsNullOrEmpty(settings.BaseTheme))
             {
                 var themeOption = ThemeOption.FindByValue(settings.BaseTheme);
                 if (themeOption != null)
                 {
-                    // 先设置属性，再应用主题
+                    // Set the attributes first, then apply the theme
                     BaseTheme = themeOption;
-                    // 延迟应用主题，确保UI已更新
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() => { ApplyTheme(settings.BaseTheme); });
+                    // Delay applying the theme to ensure the UI is updated
+                    Dispatcher.UIThread.Post(() => { ApplyTheme(settings.BaseTheme); });
                 }
             }
 
-            // 加载硬件加速设置
             HardwareAcceleration = settings.UseGpu;
 
-            // 加载API设置
             ApiEnabled = settings.ApiEnabled;
             ApiPort = settings.ApiPort;
-            
-            // 手动触发API URL更新
-            UpdateApiUrl();
 
+            UpdateApiUrl();
             Console.WriteLine(
                 $"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}, API: {ApiEnabled}@{ApiPort}");
         }
@@ -861,7 +708,7 @@ public partial class SettingsViewModel : ViewModelBase
     private static IEnumerable<FilePickerFileType> GetBlenderExecutableFileTypes()
     {
 #if WINDOWS
-        return new[] { new FilePickerFileType("Executable") { Patterns = new[] { "*.exe" } } };
+        return [new FilePickerFileType("Executable") { Patterns = ["*.exe"] }];
 #else
         return new[] { new FilePickerFileType("Blender") { Patterns = new[] { "blender", "*blender*" } } };
 #endif
@@ -876,60 +723,38 @@ public partial class SettingsViewModel : ViewModelBase
 }
 
 // 设置变化事件参数
-public class SettingsChangedEventArgs : EventArgs
+public class SettingsChangedEventArgs(
+    int defaultRenderTimeoutSeconds,
+    int maxRetryAttempts,
+    string videoCodec,
+    string videoQuality,
+    string language)
+    : EventArgs
 {
-    public int DefaultRenderTimeoutSeconds { get; }
-    public int MaxRetryAttempts { get; }
-    public string VideoCodec { get; }
-    public string VideoQuality { get; }
-    public string Language { get; }
-
-    public SettingsChangedEventArgs(int defaultRenderTimeoutSeconds, int maxRetryAttempts, string videoCodec,
-        string videoQuality, string language)
-    {
-        DefaultRenderTimeoutSeconds = defaultRenderTimeoutSeconds;
-        MaxRetryAttempts = maxRetryAttempts;
-        VideoCodec = videoCodec;
-        VideoQuality = videoQuality;
-        Language = language;
-    }
+    public int DefaultRenderTimeoutSeconds { get; } = defaultRenderTimeoutSeconds;
+    public int MaxRetryAttempts { get; } = maxRetryAttempts;
+    public string VideoCodec { get; } = videoCodec;
+    public string VideoQuality { get; } = videoQuality;
+    public string Language { get; } = language;
 }
 
 // 初始化完成事件参数
-public class InitializationCompletedEventArgs : EventArgs
+public class InitializationCompletedEventArgs(bool isBlenderDetected) : EventArgs
 {
-    public bool IsBlenderDetected { get; }
-
-    public InitializationCompletedEventArgs(bool isBlenderDetected)
-    {
-        IsBlenderDetected = isBlenderDetected;
-    }
+    public bool IsBlenderDetected { get; } = isBlenderDetected;
 }
 
 // Blender验证状态变化事件参数
-public class BlenderValidationChangedEventArgs : EventArgs
+public class BlenderValidationChangedEventArgs(bool isValid, string message) : EventArgs
 {
-    public bool IsValid { get; }
-    public string Message { get; }
-
-    public BlenderValidationChangedEventArgs(bool isValid, string message)
-    {
-        IsValid = isValid;
-        Message = message;
-    }
+    public bool IsValid { get; } = isValid;
+    public string Message { get; } = message;
 }
 
 // API状态变化事件参数
-public class ApiStatusChangedEventArgs : EventArgs
+public class ApiStatusChangedEventArgs(bool isEnabled, int port, bool isRunning) : EventArgs
 {
-    public bool IsEnabled { get; }
-    public int Port { get; }
-    public bool IsRunning { get; }
-
-    public ApiStatusChangedEventArgs(bool isEnabled, int port, bool isRunning)
-    {
-        IsEnabled = isEnabled;
-        Port = port;
-        IsRunning = isRunning;
-    }
+    public bool IsEnabled { get; } = isEnabled;
+    public int Port { get; } = port;
+    public bool IsRunning { get; } = isRunning;
 }
