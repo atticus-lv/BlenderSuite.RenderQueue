@@ -9,7 +9,7 @@
         x:Class="BlenderSuite.RenderQueue.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
         Title="Blender Render Queue Client"
-        MinWidth="400" MinHeight="600">
+        Width="600" Height="1000">
     <controls:InteractiveContainer>
         <views:MainView />
     </controls:InteractiveContainer>
