@@ -576,11 +576,7 @@ public partial class SettingsViewModel : ViewModelBase
         if (!_isLoadingSettings)
         {
             HasUnsavedChanges = true;
-        }
-
-        // 触发API状态变化事件（仅在非加载设置时）
-        if (!_isLoadingSettings)
-        {
+            // 触发API状态变化事件（仅在非加载设置时）
             ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
         }
     }
@@ -594,11 +590,7 @@ public partial class SettingsViewModel : ViewModelBase
         if (!_isLoadingSettings)
         {
             HasUnsavedChanges = true;
-        }
-
-        // 触发API状态变化事件（仅在非加载设置时）
-        if (!_isLoadingSettings)
-        {
+            // 触发API状态变化事件（仅在非加载设置时）
             ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
         }
     }
@@ -608,8 +600,11 @@ public partial class SettingsViewModel : ViewModelBase
         // 更新API URL显示
         UpdateApiUrl();
 
-        // 触发API状态变化事件
-        ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
+        // 触发API状态变化事件（仅在非加载设置时）
+        if (!_isLoadingSettings)
+        {
+            ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
+        }
     }
 
     private void ApplyTheme(string themeValue)

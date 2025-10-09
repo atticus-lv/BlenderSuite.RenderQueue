@@ -45,6 +45,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Compile Update="App.axaml.cs">
+        <DependentUpon>App.axaml</DependentUpon>
+      </Compile>
       <Compile Update="Views\Test\TestRenderView.axaml.cs">
         <DependentUpon>TestRenderView.axaml</DependentUpon>
       </Compile>

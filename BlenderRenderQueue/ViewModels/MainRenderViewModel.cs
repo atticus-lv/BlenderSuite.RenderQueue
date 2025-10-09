@@ -216,10 +216,7 @@ public partial class MainRenderViewModel : ViewModelBase
         _settingsViewModel.BlenderValidationChanged += OnBlenderValidationChanged;
         _settingsViewModel.ApiStatusChanged += OnApiStatusChanged;
 
-        // 异步加载设置
-        _ = Task.Run(async () => await _settingsViewModel.LoadSettingsFromFileAsync());
-
-        // 开始初始化检测
+        // 开始初始化检测（这会自动加载设置）
         _settingsViewModel.StartInitialization();
     }
 
@@ -334,8 +331,8 @@ public partial class MainRenderViewModel : ViewModelBase
         if (_settingsViewModel != null)
         {
             _settingsViewModel.IsApiRunning = e.IsRunning;
-            // 触发API URL更新
-            _settingsViewModel.UpdateApiUrl();
+            // 触发API URL更新（延迟执行，避免在设置加载过程中触发）
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => _settingsViewModel.UpdateApiUrl());
         }
         
         Console.WriteLine($"[MainRenderViewModel] OnApiStatusChanged - Enabled: {e.IsEnabled}, Port: {e.Port}, Running: {e.IsRunning}");
@@ -550,9 +547,6 @@ public partial class MainRenderViewModel : ViewModelBase
 
             // 等待设置初始化完成
             await Task.Delay(1000);
-
-            // 加载设置
-            if (_settingsViewModel != null) await _settingsViewModel.LoadSettingsFromFileAsync();
 
             // 等待BlenderService初始化完成后再加载队列数据
             Console.WriteLine("[MainRenderViewModel] Waiting for Blender initialization...");
