@@ -561,6 +561,17 @@ public partial class SettingsViewModel : ViewModelBase
         HardwareAccelerationChanged = false;
     }
 
+    [RelayCommand]
+    private void OpenUrl(string urlPath)
+    {
+        if (string.IsNullOrEmpty(urlPath))
+            return;
+
+        // 构建完整的URL
+        var fullUrl = ApiUrl + urlPath;
+        UrlUtilities.OpenUrl(fullUrl);
+    }
+
 
     public async Task SaveSettingsToFileAsync()
     {

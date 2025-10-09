@@ -243,7 +243,7 @@
                     <!-- API设置部分 -->
                     <suki:SettingsLayoutItem Header="API Service">
                         <suki:SettingsLayoutItem.Content>
-                            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
                                 <!-- API启用开关 -->
                                 <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0"
@@ -268,16 +268,56 @@
                                                    suki:NumericUpDownExtensions.Unit="Port" />
                                 </StackPanel>
 
-                                <!-- API链接显示 -->
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="API URL"
+                                <!-- API服务状态 -->
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Service Status"
                                            VerticalAlignment="Center" />
-                                <StackPanel Grid.Row="2" Grid.Column="2"
+                                <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                            VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0 8">
+                                    <StackPanel Orientation="Horizontal" Spacing="4"
+                                                IsVisible="{Binding ApiEnabled}">
+                                        <avalonia:MaterialIcon Kind="CheckCircle"
+                                                               Width="16"
+                                                               Height="16"
+                                                               Foreground="{DynamicResource SukiSuccessColor}" />
+                                        <TextBlock Text="Running"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding !ApiEnabled}">
+                                        <avalonia:MaterialIcon Kind="StopCircle"
+                                                               Width="16"
+                                                               Height="16"
+                                                               Foreground="{DynamicResource SukiDangerColor}" />
+                                        <TextBlock Text="Stopped"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- API链接显示 -->
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="API URL"
+                                           VerticalAlignment="Center" />
+                                <StackPanel Grid.Row="3" Grid.Column="2"
                                             Orientation="Horizontal" Spacing="8"
                                             VerticalAlignment="Center">
-                                    <SelectableTextBlock Text="{Binding ApiUrl}"
-                                                         VerticalAlignment="Center"
-                                                         Foreground="{DynamicResource SukiAccentColor}"
-                                                         IsVisible="{Binding ApiEnabled}" />
+                                    <ToggleSplitButton Content="{Binding ApiUrl}" Classes="Small"
+                                                       IsEnabled="{Binding ApiEnabled}"
+                                                       IsVisible="{Binding ApiEnabled}">
+                                        <ToggleSplitButton.Flyout>
+                                            <MenuFlyout>
+                                                <MenuItem Header="Queue Status"
+                                                          Command="{Binding OpenUrlCommand}"
+                                                          CommandParameter="/api/queue/status" />
+                                                <MenuItem Header="Task List"
+                                                          Command="{Binding OpenUrlCommand}"
+                                                          CommandParameter="/api/queue/tasks" />
+                                                <MenuItem Header="Health Check"
+                                                          Command="{Binding OpenUrlCommand}"
+                                                          CommandParameter="/api/health" />
+                                                <MenuItem Header="Progress Stream"
+                                                          Command="{Binding OpenUrlCommand}"
+                                                          CommandParameter="/api/queue/progress-stream" />
+                                            </MenuFlyout>
+                                        </ToggleSplitButton.Flyout>
+                                    </ToggleSplitButton>
                                     <TextBlock Text="API service is disabled"
                                                VerticalAlignment="Center"
                                                Opacity="0.6"
