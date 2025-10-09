@@ -39,7 +39,9 @@
                     </StackPanel>
 
                     <Grid ColumnDefinitions="Auto,*,Auto">
-                        <TextBlock FontSize="16" FontWeight="DemiBold" Margin="4 0 0 0">Auto Refresh</TextBlock>
+                        <TextBlock 
+                            VerticalAlignment="Center"
+                            FontSize="16" FontWeight="DemiBold" Margin="4 0 0 0">Auto Refresh</TextBlock>
                         <ToggleButton Grid.Column="2" Classes="Switch"
                                       VerticalAlignment="Center" Margin="10"
                                       IsChecked="{Binding AutoRefreshEnabled}"
