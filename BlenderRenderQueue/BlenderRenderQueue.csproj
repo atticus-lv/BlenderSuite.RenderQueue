@@ -28,19 +28,19 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.6" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.6" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.6" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.6" />
+        <PackageReference Include="Avalonia" />
+        <PackageReference Include="Avalonia.Desktop" />
+        <PackageReference Include="Avalonia.Themes.Fluent" />
+        <PackageReference Include="Avalonia.Fonts.Inter" />
         <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.6" />
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
-        <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.5-pre474" />
-        <PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
-        <PackageReference Include="SukiUI" Version="6.0.3" />
-        <PackageReference Include="Xaml.Behaviors.Interactions.Draggable" Version="11.3.6.4" />
-        <PackageReference Include="Xaml.Behaviors.Interactivity" Version="11.3.6.4" />
-        <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc6.1" />
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
+        <PackageReference Include="CommunityToolkit.Mvvm" />
+        <PackageReference Include="LibreHardwareMonitorLib" />
+        <PackageReference Include="Material.Icons.Avalonia" />
+        <PackageReference Include="SukiUI" />
+        <PackageReference Include="Xaml.Behaviors.Interactions.Draggable" />
+        <PackageReference Include="Xaml.Behaviors.Interactivity" />
+        <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" />
     </ItemGroup>
 
     <ItemGroup>
