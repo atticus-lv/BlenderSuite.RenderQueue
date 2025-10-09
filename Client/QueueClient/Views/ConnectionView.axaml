@@ -4,88 +4,77 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
              xmlns:controls="clr-namespace:CherylUI.Controls;assembly=CherylUI"
+             xmlns:glassMorphism="clr-namespace:CherylUI.Controls.GlassMorphism;assembly=CherylUI"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BlenderSuite.RenderQueue.Views.ConnectionView"
              x:DataType="vm:ConnectionViewModel">
 
     <ScrollViewer>
-        <StackPanel Margin="20" Spacing="20">
-            
+        <Grid Margin="20" RowDefinitions="Auto,Auto,Auto">
+
             <!-- 标题 -->
-            <TextBlock Text="Server Connection" 
-                       FontSize="24" 
-                       FontWeight="Bold" 
+            <TextBlock Text="Connection"
+                       FontSize="24"
+                       FontWeight="Bold"
                        HorizontalAlignment="Center" />
 
             <!-- 服务器URL输入 -->
-            <controls:GroupBox Header="Server Configuration">
-                <StackPanel Spacing="15">
-                    <StackPanel>
-                        <TextBlock Text="Server URL" FontWeight="SemiBold" Margin="0,0,0,5" />
-                        <TextBox Text="{Binding ServerUrl, Mode=TwoWay}" 
-                                 Watermark="http://192.168.1.100:8080" />
+            <glassMorphism:GlassCard Grid.Row="1" Margin="0 10">
+                <StackPanel Spacing="16" VerticalAlignment="Center">
+                    <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                        <TextBlock FontSize="16" Classes="DemiBold" Margin="4,0,0,0" Text="Server Url" />
+                        <TextBox FontSize="16"
+                                 Text="{Binding ServerUrl, Mode=TwoWay}"
+                                 Watermark="http://192.168.101.174:8080" />
                     </StackPanel>
-                    
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Content="Connect" 
+
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <Button Content="Connect" FontSize="16" FontWeight="Bold"
                                 Command="{Binding ConnectCommand}"
-                                IsEnabled="{Binding !IsConnecting}"
-                                Classes="Primary" />
-                        <Button Content="Disconnect" 
+                                IsEnabled="{Binding !IsConnecting}" />
+                        <Button Content="Disconnect" FontSize="16" FontWeight="Bold"
                                 Command="{Binding DisconnectCommand}"
                                 IsEnabled="{Binding IsConnected}" />
                     </StackPanel>
-                </StackPanel>
-            </controls:GroupBox>
 
-            <!-- 连接状态 -->
-            <controls:GroupBox Header="Connection Status">
+                    <StackPanel HorizontalAlignment="Stretch">
+                        <TextBlock FontSize="16" FontWeight="DemiBold" Margin="4 0 0 0">Auto Refresh</TextBlock>
+                        <ToggleButton Classes="Switch"
+                                      VerticalAlignment="Center" Margin="10"
+                                      IsChecked="{Binding AutoRefreshEnabled}"
+                                      IsEnabled="{Binding IsConnected}" />
+
+                    </StackPanel>
+
+
+                </StackPanel>
+            </glassMorphism:GlassCard>
+
+            <glassMorphism:GlassCard Grid.Row="2" Margin="0 10">
                 <StackPanel Spacing="10">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Ellipse Width="12" Height="12" 
+                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="10">
+                        <Ellipse Width="16" Height="16"
                                  Fill="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" />
-                        <TextBlock Text="{Binding ConnectionStatus}" 
-                                   FontWeight="SemiBold" 
+                        <TextBlock Text="{Binding ConnectionStatus}"
+                                   FontWeight="SemiBold"
                                    VerticalAlignment="Center" />
                     </StackPanel>
-                    
+
                     <StackPanel IsVisible="{Binding IsConnected}">
-                        <TextBlock Text="{Binding ServerVersion, StringFormat='Version: {0}'}" 
+                        <TextBlock Text="{Binding ServerVersion, StringFormat='Version: {0}'}"
                                    Opacity="0.7" />
-                        <TextBlock Text="{Binding LastConnected, StringFormat='Last Connected: {0:yyyy-MM-dd HH:mm:ss}'}" 
-                                   Opacity="0.7" />
+                        <TextBlock
+                            Text="{Binding LastConnected, StringFormat='Last Connected: {0:yyyy-MM-dd HH:mm:ss}'}"
+                            Opacity="0.7" />
                     </StackPanel>
-                    
-                    <ProgressBar IsIndeterminate="True" 
-                                 IsVisible="{Binding IsConnecting}" 
+
+                    <ProgressBar IsIndeterminate="True"
+                                 IsVisible="{Binding IsConnecting}"
                                  Height="4" />
                 </StackPanel>
-            </controls:GroupBox>
+            </glassMorphism:GlassCard>
 
-            <!-- 自动刷新设置 -->
-            <controls:GroupBox Header="Auto Refresh Settings">
-                <StackPanel Spacing="10">
-                    <CheckBox Content="Enable Auto Refresh (1 second interval)" 
-                              IsChecked="{Binding AutoRefreshEnabled}"
-                              IsEnabled="{Binding IsConnected}" />
-                    <TextBlock Text="When enabled, queue information and task progress will be automatically updated every second." 
-                               Opacity="0.7" 
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </controls:GroupBox>
-
-            <!-- 使用说明 -->
-            <controls:GroupBox Header="Instructions">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="1. Enter the server URL (e.g., http://192.168.1.100:8080)" 
-                               TextWrapping="Wrap" />
-                    <TextBlock Text="2. Click 'Connect' to establish connection" 
-                               TextWrapping="Wrap" />
-                    <TextBlock Text="3. Once connected, you can view queue information and progress" 
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </controls:GroupBox>
-
-        </StackPanel>
+        </Grid>
     </ScrollViewer>
 </UserControl>
