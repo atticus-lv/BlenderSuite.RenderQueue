@@ -3,7 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             xmlns:views="clr-namespace:BlenderSuite.RenderQueue.Views"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BlenderSuite.RenderQueue.Views.MainView"
              x:DataType="vm:MainViewModel">
   <Design.DataContext>
@@ -12,5 +13,18 @@
     <vm:MainViewModel />
   </Design.DataContext>
 
-  <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+  <TabControl SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
+    <TabItem Header="Connection">
+      <views:ConnectionView DataContext="{Binding ConnectionViewModel}" />
+    </TabItem>
+    <TabItem Header="Queue Info">
+      <views:QueueInfoView DataContext="{Binding QueueInfoViewModel}" />
+    </TabItem>
+    <TabItem Header="Progress">
+      <views:ProgressView DataContext="{Binding ProgressViewModel}" />
+    </TabItem>
+    <TabItem Header="Settings">
+      <views:SettingsView />
+    </TabItem>
+  </TabControl>
 </UserControl>

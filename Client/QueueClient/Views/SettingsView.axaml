@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:CherylUI.Controls;assembly=CherylUI"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="BlenderSuite.RenderQueue.Views.SettingsView">
+
+    <ScrollViewer>
+        <StackPanel Margin="20" Spacing="20">
+            
+            <!-- 标题 -->
+            <TextBlock Text="Settings" 
+                       FontSize="24" 
+                       FontWeight="Bold" 
+                       HorizontalAlignment="Center" />
+
+            <!-- 占位内容 -->
+            <controls:GroupBox Header="Coming Soon">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Settings panel will be implemented in future updates." 
+                               HorizontalAlignment="Center" 
+                               Opacity="0.7" />
+                </StackPanel>
+            </controls:GroupBox>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

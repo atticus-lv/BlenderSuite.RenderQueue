@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
+             xmlns:controls="clr-namespace:CherylUI.Controls;assembly=CherylUI"
+             xmlns:models="clr-namespace:BlenderSuite.RenderQueue.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="BlenderSuite.RenderQueue.Views.ProgressView"
+             x:DataType="vm:ProgressViewModel">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        
+        <!-- 标题和刷新按钮 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15" Margin="20,20,20,10">
+            <TextBlock Text="Task Progress" 
+                       FontSize="24" 
+                       FontWeight="Bold" 
+                       VerticalAlignment="Center" />
+            <Button Content="Refresh" 
+                    Command="{Binding RefreshCommand}"
+                    IsEnabled="{Binding !IsLoading}"
+                    Classes="Secondary" />
+            <TextBlock Text="{Binding LastUpdateTime, StringFormat='Last Update: {0}'}" 
+                       VerticalAlignment="Center" 
+                       Opacity="0.7" />
+        </StackPanel>
+
+        <!-- 错误信息 -->
+        <Border Grid.Row="0" 
+                Background="#FFE6E6" 
+                BorderBrush="#FF9999" 
+                BorderThickness="1" 
+                CornerRadius="4" 
+                Padding="10"
+                Margin="20,0,20,10"
+                IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
+            <TextBlock Text="{Binding ErrorMessage}" 
+                       Foreground="#CC0000" 
+                       TextWrapping="Wrap" />
+        </Border>
+
+        <!-- 加载指示器 -->
+        <ProgressBar Grid.Row="0" 
+                     IsIndeterminate="True" 
+                     IsVisible="{Binding IsLoading}" 
+                     Height="4" 
+                     Margin="20,0,20,10" />
+
+        <!-- 任务列表 -->
+        <ScrollViewer Grid.Row="1" Margin="20,0,20,20">
+            <StackPanel Spacing="15">
+                
+                <!-- 任务概览 -->
+                <controls:GroupBox Header="Task Overview">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="{Binding TaskSummary}" FontSize="14" />
+                        <StackPanel>
+                            <TextBlock Text="Overall Progress" FontWeight="SemiBold" Margin="0,0,0,5" />
+                            <ProgressBar Value="{Binding OverallProgress}" 
+                                         Maximum="1.0" 
+                                         Height="20" />
+                            <TextBlock Text="{Binding ProgressText}" 
+                                       HorizontalAlignment="Center" 
+                                       Margin="0,5,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </controls:GroupBox>
+
+                <!-- 任务列表 -->
+                <controls:GroupBox Header="Task List">
+                    <ListBox ItemsSource="{Binding Tasks}" 
+                             SelectedItem="{Binding SelectedTask}"
+                             Height="300">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="models:TaskInfoResponse">
+                                <Border Background="#F5F5F5" 
+                                        BorderBrush="#DDDDDD" 
+                                        BorderThickness="1" 
+                                        CornerRadius="4" 
+                                        Padding="15" 
+                                        Margin="0,5">
+                                    <StackPanel Spacing="8">
+                                        <StackPanel Orientation="Horizontal" Spacing="15">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding FileName}" 
+                                                           FontWeight="SemiBold" 
+                                                           FontSize="14" />
+                                                <TextBlock Text="{Binding Status}" 
+                                                           Opacity="0.7" />
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding OverallProgress, StringFormat='{}{0:P1}'}" 
+                                                           FontWeight="SemiBold" 
+                                                           FontSize="14" />
+                                                <TextBlock Text="Overall" 
+                                                           Opacity="0.7" />
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding CurrentFrameProgress, StringFormat='{}{0:P1}'}" 
+                                                           FontWeight="SemiBold" 
+                                                           FontSize="14" />
+                                                <TextBlock Text="Current Frame" 
+                                                           Opacity="0.7" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                        
+                                        <StackPanel>
+                                            <TextBlock Text="Frame Progress" FontWeight="SemiBold" Margin="0,0,0,5" />
+                                            <ProgressBar Value="{Binding OverallProgress}" 
+                                                         Maximum="1.0" 
+                                                         Height="8" />
+                                        </StackPanel>
+                                        
+                                        <StackPanel>
+                                            <TextBlock Text="Current Frame Progress" FontWeight="SemiBold" Margin="0,0,0,5" />
+                                            <ProgressBar Value="{Binding CurrentFrameProgress}" 
+                                                         Maximum="1.0" 
+                                                         Height="8" />
+                                        </StackPanel>
+                                        
+                                        <TextBlock Opacity="0.7">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}Frame {0} of {1}">
+                                                    <Binding Path="CurrentFrame" />
+                                                    <Binding Path="TotalFrames" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </controls:GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+
+    </Grid>
+</UserControl>
