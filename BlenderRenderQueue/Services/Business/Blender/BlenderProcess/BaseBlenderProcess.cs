@@ -124,7 +124,7 @@ print('__SCRIPT_COMPLETE__')
 
         void OutputHandler(string output)
         {
-            Console.WriteLine($"[{GetType().Name}] Output received - ID: {_processId}, Output: {output}");
+            // Console.WriteLine($"[{GetType().Name}] Output received - ID: {_processId}, Output: {output}");
             if (output.Contains("__SCRIPT_COMPLETE__"))
             {
                 completionSource.TrySetResult(true);
