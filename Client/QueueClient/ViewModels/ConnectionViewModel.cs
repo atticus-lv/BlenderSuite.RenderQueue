@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -86,7 +87,17 @@ public partial class ConnectionViewModel : ViewModelBase
         {
             IsConnected = false;
             ConnectionStatus = "Connection failed";
-            ErrorMessage = $"Connection error: {ex.Message}";
+            
+            // 提供更详细的错误信息
+            var errorDetails = ex switch
+            {
+                HttpRequestException httpEx => $"Network error: {httpEx.Message}. Please check if the server is running and accessible.",
+                TaskCanceledException => "Connection timeout. The server may be unreachable or slow to respond.",
+                System.Net.Sockets.SocketException socketEx => $"Socket error: {socketEx.Message}. Check network connectivity.",
+                _ => $"Connection error: {ex.GetType().Name}: {ex.Message}"
+            };
+            
+            ErrorMessage = errorDetails;
         }
         finally
         {
