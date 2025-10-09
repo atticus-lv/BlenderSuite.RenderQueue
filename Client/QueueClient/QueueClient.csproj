@@ -21,6 +21,7 @@
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="CherylUI" />
+    <PackageReference Include="SkiaSharp" />
     <PackageReference Include="System.Net.Http.Json" />
   </ItemGroup>
 

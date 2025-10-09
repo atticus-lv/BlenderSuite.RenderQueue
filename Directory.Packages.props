@@ -16,6 +16,7 @@
     <PackageVersion Include="Avalonia.Android" Version="11.3.6" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.2.1" />
     <PackageVersion Include="CherylUI" Version="1.5.0" />
+    <PackageVersion Include="SkiaSharp" Version="3.119.0" />
     <PackageVersion Include="System.Net.Http.Json" Version="9.0.0" />
     <!-- Additional packages -->
     <PackageVersion Include="LibreHardwareMonitorLib" Version="0.9.5-pre474" />
