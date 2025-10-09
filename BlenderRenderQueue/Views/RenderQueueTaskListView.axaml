@@ -129,9 +129,9 @@
 
                                     <Separator></Separator>
                                     <MenuItem Header="{i18n:Localize ClearAllTask}"
-                                              Command="{Binding RemoveAllTasksCommand}"
+                                              Command="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).RemoveAllTasksCommand}"
                                               Foreground="{DynamicResource SukiDangerColor}"
-                                              IsEnabled="{Binding CanClearTasks}">
+                                              IsEnabled="{Binding $parent[UserControl].((viewModels:RenderQueueViewModel)DataContext).CanClearTasks}">
                                         <MenuItem.Icon>
                                             <material:MaterialIcon Kind="Delete" Width="16"
                                                                    Foreground="{DynamicResource SukiDangerColor}"

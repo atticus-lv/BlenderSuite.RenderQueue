@@ -331,9 +331,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             switch (e.PropertyName)
             {
-                case nameof(QueueState):
-                case nameof(ActiveTaskCount):
-                case nameof(RenderTasks):
+                case nameof(QueueState) or nameof(ActiveTaskCount) or nameof(RenderTasks):
                     OnPropertyChanged(nameof(IsQueueRunning));
                     OnPropertyChanged(nameof(IsQueueActive));
                     OnPropertyChanged(nameof(HasNoTasks));
