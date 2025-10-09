@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.ViewModels;
 using BlenderRenderQueue.Services.Business.Api.Models;
+using BlenderRenderQueue.Helpers;
 
 namespace BlenderRenderQueue.Services.Business.Api;
 
@@ -198,9 +199,12 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
             _cancellationTokenSource = new CancellationTokenSource();
             IsRunning = true;
 
+            var localNetworkIp = NetworkHelper.GetLocalNetworkIpAddress();
+            
             Console.WriteLine($"[RenderQueueApiService] 🚀 API service started successfully!");
             Console.WriteLine($"[RenderQueueApiService] 📡 Listening on: http://*:{port}");
             Console.WriteLine($"[RenderQueueApiService] 🌐 Local access: http://localhost:{port}");
+            Console.WriteLine($"[RenderQueueApiService] 🌍 Network access: http://{localNetworkIp}:{port}");
             Console.WriteLine($"[RenderQueueApiService] 📋 Available endpoints:");
             Console.WriteLine($"[RenderQueueApiService]   - GET /api/health");
             Console.WriteLine($"[RenderQueueApiService]   - GET /api/queue/status");

@@ -12,6 +12,7 @@ using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Persistence;
 using BlenderRenderQueue.Services.UI;
+using BlenderRenderQueue.Helpers;
 using SukiUI;
 
 namespace BlenderRenderQueue.ViewModels;
@@ -656,8 +657,9 @@ public partial class SettingsViewModel : ViewModelBase
     {
         if (ApiEnabled)
         {
-            // 如果API启用，显示URL（不管是否正在运行）
-            ApiUrl = $"http://localhost:{ApiPort}";
+            // 如果API启用，显示局域网IP地址的URL（不管是否正在运行）
+            var localNetworkIp = NetworkHelper.GetLocalNetworkIpAddress();
+            ApiUrl = $"http://{localNetworkIp}:{ApiPort}";
         }
         else
         {
