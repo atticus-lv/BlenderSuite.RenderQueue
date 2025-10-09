@@ -52,10 +52,20 @@ public class ApiService
     {
         try
         {
-            return await _httpClient.GetFromJsonAsync<QueueStatusResponse>($"{_baseUrl}/api/queue/status");
+            var response = await _httpClient.GetAsync($"{_baseUrl}/api/queue/status");
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<QueueStatusResponse>();
+            }
+            else
+            {
+                Console.WriteLine($"[ApiService] GetQueueStatusAsync failed: {response.StatusCode} - {response.ReasonPhrase}");
+                return null;
+            }
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[ApiService] GetQueueStatusAsync exception: {ex.Message}");
             return null;
         }
     }
@@ -69,10 +79,15 @@ public class ApiService
             {
                 return await response.Content.ReadFromJsonAsync<List<TaskInfoResponse>>();
             }
-            return null;
+            else
+            {
+                Console.WriteLine($"[ApiService] GetTasksAsync failed: {response.StatusCode} - {response.ReasonPhrase}");
+                return null;
+            }
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[ApiService] GetTasksAsync exception: {ex.Message}");
             return null;
         }
     }

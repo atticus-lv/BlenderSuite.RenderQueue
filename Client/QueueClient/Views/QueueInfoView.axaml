@@ -21,6 +21,9 @@
                         Command="{Binding RefreshCommand}"
                         IsEnabled="{Binding !IsLoading}"
                         Classes="Secondary" />
+                <CheckBox Content="Auto Refresh (1s)" 
+                          IsChecked="{Binding AutoRefreshEnabled}"
+                          VerticalAlignment="Center" />
                 <TextBlock Text="{Binding LastUpdateTime, StringFormat='Last Update: {0}'}" 
                            VerticalAlignment="Center" 
                            Opacity="0.7" />

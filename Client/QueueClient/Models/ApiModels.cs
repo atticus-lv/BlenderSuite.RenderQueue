@@ -4,6 +4,32 @@ using System.Text.Json.Serialization;
 
 namespace BlenderSuite.RenderQueue.Models;
 
+// 枚举类型 - 与服务器端保持一致
+public enum QueueState
+{
+    Idle,
+    Running,
+    Paused,
+    Stopped
+}
+
+public enum RenderTaskStatus
+{
+    Pending,
+    Running,
+    Completed,
+    Failed,
+    Cancelled
+}
+
+public enum RenderEngine
+{
+    Unknown,
+    Cycles,
+    Eevee,
+    Workbench
+}
+
 // API响应模型 - 与服务器端保持一致
 public class QueueStatusResponse
 {
@@ -11,7 +37,7 @@ public class QueueStatusResponse
     public DateTime Timestamp { get; set; }
 
     [JsonPropertyName("queueState")]
-    public string QueueState { get; set; } = string.Empty;
+    public QueueState QueueState { get; set; }
 
     [JsonPropertyName("activeTaskCount")]
     public int ActiveTaskCount { get; set; }
@@ -53,10 +79,10 @@ public class CurrentTaskInfo
     public double Progress { get; set; }
 
     [JsonPropertyName("status")]
-    public string Status { get; set; } = string.Empty;
+    public RenderTaskStatus Status { get; set; }
 
     [JsonPropertyName("engine")]
-    public string Engine { get; set; } = string.Empty;
+    public RenderEngine Engine { get; set; }
 
     [JsonPropertyName("sampleText")]
     public string SampleText { get; set; } = string.Empty;
@@ -77,7 +103,7 @@ public class TaskInfoResponse
     public string FilePath { get; set; } = string.Empty;
 
     [JsonPropertyName("status")]
-    public string Status { get; set; } = string.Empty;
+    public RenderTaskStatus Status { get; set; }
 
     [JsonPropertyName("enable")]
     public bool Enable { get; set; }
@@ -113,7 +139,7 @@ public class TaskInfoResponse
     public bool OverrideScene { get; set; }
 
     [JsonPropertyName("engine")]
-    public string Engine { get; set; } = string.Empty;
+    public RenderEngine Engine { get; set; }
 
     [JsonPropertyName("sampleText")]
     public string SampleText { get; set; } = string.Empty;
@@ -137,7 +163,7 @@ public class ProgressUpdate
     public string FileName { get; set; } = string.Empty;
 
     [JsonPropertyName("status")]
-    public string Status { get; set; } = string.Empty;
+    public RenderTaskStatus Status { get; set; }
 
     [JsonPropertyName("overallProgress")]
     public double OverallProgress { get; set; }
