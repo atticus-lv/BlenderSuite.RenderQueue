@@ -2,18 +2,20 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderRenderQueue", "BlenderRenderQueue\BlenderRenderQueue.csproj", "{8792E03B-36C8-45F4-94CC-F6825382E0C6}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QueueClient", "QueueClient\QueueClient.csproj", "{EBFA8512-1EA5-4D8C-B4AC-AB5B48A6D568}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QueueClient", "Client\QueueClient\QueueClient.csproj", "{EBFA8512-1EA5-4D8C-B4AC-AB5B48A6D568}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QueueClient.Desktop", "QueueClient.Desktop\QueueClient.Desktop.csproj", "{ABC31E74-02FF-46EB-B3B2-4E6AE43B456C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QueueClient.Desktop", "Client\QueueClient.Desktop\QueueClient.Desktop.csproj", "{ABC31E74-02FF-46EB-B3B2-4E6AE43B456C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QueueClient.Browser", "QueueClient.Browser\QueueClient.Browser.csproj", "{1C1A049E-235C-4CD0-B6FA-D53AC418F4DA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QueueClient.Browser", "Client\QueueClient.Browser\QueueClient.Browser.csproj", "{1C1A049E-235C-4CD0-B6FA-D53AC418F4DA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QueueClient.Android", "QueueClient.Android\QueueClient.Android.csproj", "{7AD1DAC8-7FBE-49D5-8614-7321233DB82E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QueueClient.Android", "Client\QueueClient.Android\QueueClient.Android.csproj", "{7AD1DAC8-7FBE-49D5-8614-7321233DB82E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3DA99C4E-89E3-4049-9C22-0A7EC60D83D8}"
 	ProjectSection(SolutionItems) = preProject
 		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client", "Client", "{98227341-CD1D-424B-9056-3BFBC6E85974}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,5 +49,11 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {83CB65B8-011F-4ED7-BCD3-A6CFA935EF7E}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EBFA8512-1EA5-4D8C-B4AC-AB5B48A6D568} = {98227341-CD1D-424B-9056-3BFBC6E85974}
+		{7AD1DAC8-7FBE-49D5-8614-7321233DB82E} = {98227341-CD1D-424B-9056-3BFBC6E85974}
+		{1C1A049E-235C-4CD0-B6FA-D53AC418F4DA} = {98227341-CD1D-424B-9056-3BFBC6E85974}
+		{ABC31E74-02FF-46EB-B3B2-4E6AE43B456C} = {98227341-CD1D-424B-9056-3BFBC6E85974}
 	EndGlobalSection
 EndGlobal
