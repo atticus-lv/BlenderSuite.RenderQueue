@@ -12,7 +12,7 @@ public partial class MainViewModel : ViewModelBase
     private QueueInfoViewModel _queueInfoViewModel;
 
     [ObservableProperty]
-    private int _selectedTabIndex = 0;
+    private int _selectedTabIndex;
 
     public MainViewModel()
     {

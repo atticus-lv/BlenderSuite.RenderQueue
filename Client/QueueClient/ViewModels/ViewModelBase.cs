@@ -5,7 +5,7 @@ namespace QueueClient.ViewModels;
 
 public abstract class ViewModelBase : ObservableObject, IDisposable
 {
-    private bool _disposed = false;
+    private bool _disposed;
 
     public void Dispose()
     {
@@ -15,13 +15,11 @@ public abstract class ViewModelBase : ObservableObject, IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!_disposed)
+        if (_disposed) return;
+        if (disposing)
         {
-            if (disposing)
-            {
-                // Dispose managed resources
-            }
-            _disposed = true;
+            // Dispose managed resources
         }
+        _disposed = true;
     }
 }

@@ -20,7 +20,7 @@ public partial class QueueInfoViewModel : ViewModelBase
     private QueueStatusResponse? _queueStatus;
 
     [ObservableProperty]
-    private bool _isLoading = false;
+    private bool _isLoading;
 
     [ObservableProperty]
     private string _errorMessage = string.Empty;
@@ -68,7 +68,7 @@ public partial class QueueInfoViewModel : ViewModelBase
 
         if (_connectionViewModel.AutoRefreshEnabled)
         {
-            _refreshTimer = new Timer(async _ =>
+            _refreshTimer = new Timer(async void (_) =>
             {
                 if (!_connectionViewModel.IsConnected || IsLoading) return;
                 try
