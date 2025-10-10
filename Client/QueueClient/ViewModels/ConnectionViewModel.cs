@@ -20,7 +20,7 @@ public partial class ConnectionViewModel : ViewModelBase
     private QueueClientData _clientData;
 
     [ObservableProperty]
-    private string _serverUrl = "http://192.168.101.174:8080";
+    private string _serverUrl = "http://192.168.101.174:8325";
 
     [ObservableProperty]
     private List<string> _serverUrls = new();

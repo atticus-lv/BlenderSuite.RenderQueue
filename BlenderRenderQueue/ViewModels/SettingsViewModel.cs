@@ -69,7 +69,7 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _apiEnabled; // API服务是否启用
 
     [ObservableProperty]
-    private int _apiPort = 8080; // API服务端口
+    private int _apiPort = 8325; // API服务端口
 
     [ObservableProperty]
     private bool _isApiRunning; // API服务是否正在运行

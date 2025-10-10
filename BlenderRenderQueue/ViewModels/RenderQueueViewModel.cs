@@ -57,7 +57,7 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     // API服务相关属性
     [ObservableProperty] private bool _isApiEnabled = false;
-    [ObservableProperty] private int _apiPort = 8080;
+    [ObservableProperty] private int _apiPort = 8325;
     [ObservableProperty] private bool _isApiRunning = false;
 
     /// <summary>

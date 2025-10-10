@@ -13,7 +13,7 @@ public interface IRenderQueueApiService
     /// </summary>
     /// <param name="port">端口号，默认为8080</param>
     /// <returns></returns>
-    Task StartAsync(int port = 8080);
+    Task StartAsync(int port = 8325);
 
     /// <summary>
     /// 停止API服务

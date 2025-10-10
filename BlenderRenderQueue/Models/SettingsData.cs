@@ -45,7 +45,7 @@ public class SettingsData
     public bool ApiEnabled { get; set; } = false;
 
     [JsonPropertyName("ApiPort")]
-    public int ApiPort { get; set; } = 8080;
+    public int ApiPort { get; set; } = 8325;
 
 
     public BlenderExecutable? GetSelectedBlender()

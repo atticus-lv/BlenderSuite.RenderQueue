@@ -82,7 +82,7 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
         }
     }
 
-    public async Task StartAsync(int port = 8080)
+    public async Task StartAsync(int port = 8325)
     {
         if (IsRunning)
         {

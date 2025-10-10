@@ -60,7 +60,7 @@
 ```csharp
 // 在RenderQueueViewModel中
 [ObservableProperty] private bool _isApiEnabled = false;    // 是否启用API
-[ObservableProperty] private int _apiPort = 8080;          // API端口号
+[ObservableProperty] private int _apiPort = 8325;          // API端口号
 [ObservableProperty] private bool _isApiRunning = false;   // API运行状态
 ```
 
@@ -136,12 +136,12 @@
 ### JavaScript
 ```javascript
 // 获取队列状态
-fetch('http://localhost:8080/api/queue/status')
+fetch('http://localhost:8325/api/queue/status')
   .then(response => response.json())
   .then(data => console.log('队列状态:', data));
 
 // 实时监听进度
-const eventSource = new EventSource('http://localhost:8080/api/queue/progress-stream');
+const eventSource = new EventSource('http://localhost:8325/api/queue/progress-stream');
 eventSource.onmessage = function(event) {
     const updates = JSON.parse(event.data);
     updates.forEach(update => {
@@ -156,7 +156,7 @@ import requests
 import json
 
 # 获取队列状态
-response = requests.get('http://localhost:8080/api/queue/status')
+response = requests.get('http://localhost:8325/api/queue/status')
 status = response.json()
 print(f"队列状态: {status['queueState']}")
 print(f"进度: {status['overallProgress'] * 100:.1f}%")
@@ -181,7 +181,7 @@ Services/Business/Api/
 
 1. **依赖**: 已添加`Microsoft.AspNetCore.App`框架引用
 2. **端口**: 默认8080，可配置
-3. **网络**: 监听所有网络接口（`http://*:8080`）
+3. **网络**: 监听所有网络接口（`http://*:8325`）
 4. **防火墙**: 需要开放对应端口
 5. **安全**: 当前无认证，适合内网使用
 

@@ -17,8 +17,8 @@
     <TabItem>
       <TabItem.Header>
         <StackPanel Orientation="Vertical" Spacing="4">
-          <PathIcon Data="{StaticResource wifi_regular}" Width="32" Height="32" />
-          <TextBlock Text="Connection" FontSize="12" />
+          <PathIcon Classes="Tab" Data="{StaticResource wifi_regular}" Width="32" Height="32" />
+          <TextBlock Classes="Tab" Text="Connection" FontSize="12" />
         </StackPanel>
       </TabItem.Header>
       <views:ConnectionView DataContext="{Binding ConnectionViewModel}" />
@@ -26,8 +26,8 @@
     <TabItem>
       <TabItem.Header>
         <StackPanel Orientation="Vertical" Spacing="4">
-          <PathIcon Data="{StaticResource home_regular}" Width="32" Height="32" />
-          <TextBlock Text="Queue Info" FontSize="12" />
+          <PathIcon Classes="Tab" Data="{StaticResource home_regular}" Width="32" Height="32" />
+          <TextBlock Classes="Tab" Text="Queue Info" FontSize="12" />
         </StackPanel>
       </TabItem.Header>
       <views:QueueInfoView DataContext="{Binding QueueInfoViewModel}" />
@@ -35,8 +35,8 @@
     <TabItem>
       <TabItem.Header>
         <StackPanel Orientation="Vertical" Spacing="4">
-          <PathIcon Data="{StaticResource settings_regular}" Width="32" Height="32" />
-          <TextBlock Text="Settings" FontSize="12" />
+          <PathIcon Classes="Tab" Data="{StaticResource settings_regular}" Width="32" Height="32" />
+          <TextBlock Classes="Tab" Text="Settings" FontSize="12" />
         </StackPanel>
       </TabItem.Header>
       <views:SettingsView />

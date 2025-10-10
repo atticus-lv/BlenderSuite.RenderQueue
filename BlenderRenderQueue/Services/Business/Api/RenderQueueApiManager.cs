@@ -22,7 +22,7 @@ public class RenderQueueApiManager : IDisposable
     /// <summary>
     /// API端口号
     /// </summary>
-    public int ApiPort { get; set; } = 8080;
+    public int ApiPort { get; set; } = 8325;
 
     /// <summary>
     /// API是否正在运行
