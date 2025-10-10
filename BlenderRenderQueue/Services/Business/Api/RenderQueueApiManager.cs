@@ -13,6 +13,7 @@ public class RenderQueueApiManager : IDisposable
     private readonly RenderQueueViewModel _renderQueue;
     private IRenderQueueApiService? _apiService;
     private bool _disposed;
+    private bool _isStarting = false;
 
     /// <summary>
     /// API是否启用
@@ -38,26 +39,8 @@ public class RenderQueueApiManager : IDisposable
     {
         _renderQueue = renderQueue;
         
-        // 如果API已启用，自动启动服务
-        if (IsApiEnabled)
-        {
-            Console.WriteLine($"[RenderQueueApiManager] 🔧 API is enabled, preparing to auto-start service...");
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await StartApiAsync();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[RenderQueueApiManager] ⚠️ Failed to auto-start API service: {ex.Message}");
-                }
-            });
-        }
-        else
-        {
-            Console.WriteLine($"[RenderQueueApiManager] 🔧 API is disabled, skipping auto-start");
-        }
+        // 注意：不在这里自动启动API服务，等待显式调用
+        Console.WriteLine($"[RenderQueueApiManager] 🔧 API Manager initialized, API enabled: {IsApiEnabled}, Port: {ApiPort}");
     }
 
     /// <summary>
@@ -73,19 +56,46 @@ public class RenderQueueApiManager : IDisposable
             return;
         }
 
+        if (_isStarting)
+        {
+            Console.WriteLine($"[RenderQueueApiManager] ⚠️ API service is already starting, please wait...");
+            return;
+        }
+
         if (_apiService != null && _apiService.IsRunning)
         {
-            Console.WriteLine($"[RenderQueueApiManager] ⚠️ API service is already running");
+            Console.WriteLine($"[RenderQueueApiManager] ⚠️ API service is already running on port {_apiService.Port}");
             return;
+        }
+
+        _isStarting = true;
+
+        // 如果服务存在但未运行，先清理
+        if (_apiService != null && !_apiService.IsRunning)
+        {
+            Console.WriteLine($"[RenderQueueApiManager] 🧹 Cleaning up previous API service instance...");
+            try
+            {
+                _apiService.StatusChanged -= OnApiServiceStatusChanged;
+                if (_apiService is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RenderQueueApiManager] ⚠️ Error cleaning up previous service: {ex.Message}");
+            }
+            _apiService = null;
         }
 
         try
         {
-            Console.WriteLine($"[RenderQueueApiManager] 🔧 Creating API service instance...");
+            Console.WriteLine($"[RenderQueueApiManager] 🔧 Creating new API service instance...");
             _apiService = new RenderQueueApiService(_renderQueue);
             _apiService.StatusChanged += OnApiServiceStatusChanged;
             
-            Console.WriteLine($"[RenderQueueApiManager] 🔧 Starting API service...");
+            Console.WriteLine($"[RenderQueueApiManager] 🔧 Starting API service on port {ApiPort}...");
             await _apiService.StartAsync(ApiPort);
             Console.WriteLine($"[RenderQueueApiManager] ✅ API service started successfully on port {ApiPort}");
         }
@@ -93,7 +103,30 @@ public class RenderQueueApiManager : IDisposable
         {
             Console.WriteLine($"[RenderQueueApiManager] ❌ Failed to start API service: {ex.Message}");
             Console.WriteLine($"[RenderQueueApiManager] ❌ Exception details: {ex}");
+            
+            // 清理失败的服务实例
+            if (_apiService != null)
+            {
+                try
+                {
+                    _apiService.StatusChanged -= OnApiServiceStatusChanged;
+                    if (_apiService is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                }
+                catch
+                {
+                    // 忽略清理时的异常
+                }
+                _apiService = null;
+            }
+            
             throw;
+        }
+        finally
+        {
+            _isStarting = false;
         }
     }
 
