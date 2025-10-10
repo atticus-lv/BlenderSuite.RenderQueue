@@ -4,19 +4,21 @@ using System.Text.Json.Serialization;
 
 namespace BlenderSuite.RenderQueue.Models;
 
-// 枚举类型 - 与服务器端保持一致
+
 public enum QueueState
 {
     Idle,
     Running,
     Paused,
-    Stopped
+    Completed,
+    Error
 }
 
 public enum RenderTaskStatus
 {
     Pending,
     Running,
+    Paused,
     Completed,
     Failed,
     Cancelled
