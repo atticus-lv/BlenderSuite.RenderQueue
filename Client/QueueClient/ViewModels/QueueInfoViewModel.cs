@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BlenderSuite.RenderQueue.Models;
@@ -17,7 +18,7 @@ public partial class QueueInfoViewModel : ViewModelBase
     private readonly object _refreshLock = new object();
 
     [ObservableProperty]
-    private QueueStatusResponse? _queueStatus;
+    private OptimizedQueueStatusResponse? _queueStatus;
 
     [ObservableProperty]
     private bool _isLoading;
@@ -154,11 +155,19 @@ public partial class QueueInfoViewModel : ViewModelBase
 
     public string RemainingTime => QueueStatus?.RemainingTime ?? "Unknown";
 
-    public string CurrentTaskName => QueueStatus?.CurrentTask?.FileName ?? "No active task";
+    public string CurrentTaskName => GetCurrentTask()?.FileName ?? "No active task";
 
-    public double CurrentTaskProgress => QueueStatus?.CurrentTask?.Progress ?? 0.0;
+    public double CurrentTaskProgress => GetCurrentTask()?.OverallProgress ?? 0.0;
 
     public string CurrentTaskProgressText => $"{CurrentTaskProgress:P1}";
+
+    /// <summary>
+    /// 获取当前正在渲染的任务
+    /// </summary>
+    private OptimizedTaskInfo? GetCurrentTask()
+    {
+        return QueueStatus?.Tasks.FirstOrDefault(task => task.Status == RenderTaskStatus.Running);
+    }
 
     protected override void Dispose(bool disposing)
     {

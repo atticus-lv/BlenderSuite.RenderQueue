@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using BlenderSuite.RenderQueue.Models;
 
@@ -112,14 +114,14 @@ public class ApiService
         }
     }
 
-    public async Task<QueueStatusResponse?> GetQueueStatusAsync()
+    public async Task<OptimizedQueueStatusResponse?> GetQueueStatusAsync()
     {
         try
         {
             var response = await _httpClient.GetAsync($"{_baseUrl}/api/queue/status");
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<QueueStatusResponse>();
+                return await response.Content.ReadFromJsonAsync<OptimizedQueueStatusResponse>();
             }
             else
             {
@@ -134,14 +136,14 @@ public class ApiService
         }
     }
 
-    public async Task<List<TaskInfoResponse>?> GetTasksAsync()
+    public async Task<List<OptimizedTaskInfo>?> GetTasksAsync()
     {
         try
         {
             var response = await _httpClient.GetAsync($"{_baseUrl}/api/queue/tasks");
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<List<TaskInfoResponse>>();
+                return await response.Content.ReadFromJsonAsync<List<OptimizedTaskInfo>>();
             }
             else
             {
@@ -153,6 +155,64 @@ public class ApiService
         {
             Console.WriteLine($"[ApiService] GetTasksAsync exception: {ex.Message}");
             return null;
+        }
+    }
+
+    /// <summary>
+    /// 开始监听进度更新流
+    /// </summary>
+    /// <param name="onProgressUpdate">进度更新回调</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    public async Task StartProgressStreamAsync(
+        Action<OptimizedProgressUpdate> onProgressUpdate, 
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var httpClient = CreateHttpClient();
+            httpClient.Timeout = TimeSpan.FromMilliseconds(Timeout.Infinite);
+            
+            var response = await httpClient.GetAsync($"{_baseUrl}/api/queue/progress-stream", 
+                HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"[ApiService] Progress stream failed: {response.StatusCode}");
+                return;
+            }
+
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var reader = new StreamReader(stream);
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var line = await reader.ReadLineAsync();
+                if (string.IsNullOrEmpty(line)) continue;
+
+                if (line.StartsWith("data: "))
+                {
+                    var json = line.Substring(6); // 移除 "data: " 前缀
+                    try
+                    {
+                        var updates = System.Text.Json.JsonSerializer.Deserialize<List<OptimizedProgressUpdate>>(json);
+                        if (updates != null)
+                        {
+                            foreach (var update in updates)
+                            {
+                                onProgressUpdate(update);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[ApiService] Failed to parse progress update: {ex.Message}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ApiService] Progress stream exception: {ex.Message}");
         }
     }
 

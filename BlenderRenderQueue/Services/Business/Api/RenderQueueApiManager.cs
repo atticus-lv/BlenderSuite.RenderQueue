@@ -104,12 +104,15 @@ public class RenderQueueApiManager : IDisposable
     {
         if (_apiService == null || !_apiService.IsRunning)
         {
+            Console.WriteLine($"[RenderQueueApiManager] ℹ️ API服务未运行，无需停止");
             return;
         }
 
         try
         {
+            Console.WriteLine($"[RenderQueueApiManager] 🛑 正在停止API服务...");
             await _apiService.StopAsync();
+            Console.WriteLine($"[RenderQueueApiManager] ✅ API服务已停止");
         }
         catch (Exception ex)
         {
@@ -173,11 +176,13 @@ public class RenderQueueApiManager : IDisposable
 
         try
         {
-            StopApiAsync().Wait(5000); // 等待最多5秒
+            Console.WriteLine($"[RenderQueueApiManager] 🗑️ 正在释放API管理器资源...");
+            StopApiAsync().Wait(10000); // 等待最多10秒
+            Console.WriteLine($"[RenderQueueApiManager] ✅ API管理器资源已释放");
         }
-        catch
+        catch (Exception ex)
         {
-            // 忽略停止时的异常
+            Console.WriteLine($"[RenderQueueApiManager] ⚠️ 释放API管理器资源时出现异常: {ex.Message}");
         }
 
         if (_apiService is IDisposable disposableApiService)

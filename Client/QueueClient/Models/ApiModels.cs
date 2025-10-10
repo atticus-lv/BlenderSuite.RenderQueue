@@ -32,8 +32,8 @@ public enum RenderEngine
     Workbench
 }
 
-// API响应模型 - 与服务器端保持一致
-public class QueueStatusResponse
+// 优化的API响应模型 - 与服务器端保持一致
+public class OptimizedQueueStatusResponse
 {
     [JsonPropertyName("timestamp")]
     public DateTime Timestamp { get; set; }
@@ -62,8 +62,8 @@ public class QueueStatusResponse
     [JsonPropertyName("remainingTime")]
     public string RemainingTime { get; set; } = string.Empty;
 
-    [JsonPropertyName("currentTask")]
-    public CurrentTaskInfo? CurrentTask { get; set; }
+    [JsonPropertyName("tasks")]
+    public List<OptimizedTaskInfo> Tasks { get; set; } = new();
 }
 
 public class CurrentTaskInfo
@@ -93,7 +93,7 @@ public class CurrentTaskInfo
     public string SavedPath { get; set; } = string.Empty;
 }
 
-public class TaskInfoResponse
+public class OptimizedTaskInfo
 {
     [JsonPropertyName("taskId")]
     public int TaskId { get; set; }
@@ -143,8 +143,8 @@ public class TaskInfoResponse
     [JsonPropertyName("engine")]
     public RenderEngine Engine { get; set; }
 
-    [JsonPropertyName("sampleText")]
-    public string SampleText { get; set; } = string.Empty;
+    [JsonPropertyName("sampleTotal")]
+    public int? SampleTotal { get; set; }
 
     [JsonPropertyName("savedPath")]
     public string SavedPath { get; set; } = string.Empty;
@@ -153,13 +153,65 @@ public class TaskInfoResponse
     public DateTime LastUpdateTime { get; set; }
 }
 
-public class ProgressUpdate
+// 优化的进度更新模型
+public class OptimizedProgressUpdate
+{
+    [JsonPropertyName("timestamp")]
+    public DateTime Timestamp { get; set; }
+
+    [JsonPropertyName("currentTask")]
+    public CurrentTaskProgress? CurrentTask { get; set; }
+
+    [JsonPropertyName("statusChanges")]
+    public List<TaskStatusChange>? StatusChanges { get; set; }
+}
+
+public class CurrentTaskProgress
 {
     [JsonPropertyName("taskId")]
     public int TaskId { get; set; }
 
-    [JsonPropertyName("timestamp")]
-    public DateTime Timestamp { get; set; }
+    [JsonPropertyName("fileName")]
+    public string FileName { get; set; } = string.Empty;
+
+    [JsonPropertyName("currentFrame")]
+    public int CurrentFrame { get; set; }
+
+    [JsonPropertyName("overallProgress")]
+    public double OverallProgress { get; set; }
+
+    [JsonPropertyName("currentFrameProgress")]
+    public double CurrentFrameProgress { get; set; }
+
+    [JsonPropertyName("status")]
+    public RenderTaskStatus Status { get; set; }
+
+    [JsonPropertyName("realtimeProgress")]
+    public RealtimeRenderProgress RealtimeProgress { get; set; } = new();
+}
+
+public class RealtimeRenderProgress
+{
+    [JsonPropertyName("currentFrame")]
+    public int CurrentFrame { get; init; }
+
+    [JsonPropertyName("sampleCurrent")]
+    public int? SampleCurrent { get; init; }
+
+    [JsonPropertyName("memoryMB")]
+    public double? MemoryMB { get; init; }
+
+    [JsonPropertyName("elapsed")]
+    public TimeSpan? Elapsed { get; init; }
+
+    [JsonPropertyName("savedPath")]
+    public string? SavedPath { get; init; }
+}
+
+public class TaskStatusChange
+{
+    [JsonPropertyName("taskId")]
+    public int TaskId { get; set; }
 
     [JsonPropertyName("fileName")]
     public string FileName { get; set; } = string.Empty;
@@ -169,9 +221,6 @@ public class ProgressUpdate
 
     [JsonPropertyName("overallProgress")]
     public double OverallProgress { get; set; }
-
-    [JsonPropertyName("currentFrameProgress")]
-    public double CurrentFrameProgress { get; set; }
 }
 
 public class HealthResponse

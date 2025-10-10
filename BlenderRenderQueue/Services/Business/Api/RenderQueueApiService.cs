@@ -25,7 +25,7 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
     private readonly RenderQueueViewModel _renderQueue;
     private WebApplication? _app;
     private CancellationTokenSource? _cancellationTokenSource;
-    private readonly ConcurrentQueue<ProgressUpdate> _progressUpdates = new();
+    private readonly ConcurrentQueue<OptimizedProgressUpdate> _progressUpdates = new();
     private readonly object _progressLock = new();
     private bool _disposed;
 
@@ -68,8 +68,25 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
     private void OnTaskProgressChanged(object? sender, RenderTaskProgressEventArgs e)
     {
         if (sender is not RenderTaskViewModel task) return;
-        var update = task.ToProgressUpdate();
-        update.Timestamp = DateTime.UtcNow;
+        
+        var update = new OptimizedProgressUpdate
+        {
+            Timestamp = DateTime.UtcNow
+        };
+
+        // 只有当前渲染任务推送详细进度
+        if (task == _renderQueue.CurrentRenderingTask)
+        {
+            update.CurrentTask = task.ToCurrentTaskProgress();
+        }
+        else
+        {
+            // 其他任务只推送状态变化
+            update.StatusChanges = new List<TaskStatusChange>
+            {
+                task.ToTaskStatusChange()
+            };
+        }
 
         lock (_progressLock)
         {
@@ -116,16 +133,13 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                 .AllowAnyMethod()
                 .AllowAnyHeader());
 
-            // 获取队列状态API
+            // 获取队列状态API - 使用优化的响应模型
             _app.MapGet("/api/queue/status", () =>
             {
                 Console.WriteLine($"[RenderQueueApiService] 📊 Received queue status request");
                 try
                 {
-                    var currentTask = _renderQueue.CurrentRenderingTask;
-                    var currentTaskInfo = currentTask?.ToCurrentTaskInfo();
-
-                    var response = new QueueStatusResponse
+                    var response = new OptimizedQueueStatusResponse
                     {
                         Timestamp = DateTime.UtcNow,
                         QueueState = _renderQueue.QueueState,
@@ -136,11 +150,11 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                         CompletedFrames = _renderQueue.CompletedFrames,
                         OverallProgress = _renderQueue.OverallQueueProgress,
                         RemainingTime = _renderQueue.RemainingTimeText,
-                        CurrentTask = currentTaskInfo
+                        Tasks = _renderQueue.RenderTasks.Select(task => task.ToOptimizedTaskInfo()).ToList()
                     };
 
                     Console.WriteLine(
-                        $"[RenderQueueApiService] 📊 Returning queue status: {response.QueueState}, Progress: {response.OverallProgress:P1}, Tasks: {response.ActiveTaskCount}");
+                        $"[RenderQueueApiService] 📊 Returning optimized queue status: {response.QueueState}, Progress: {response.OverallProgress:P1}, Tasks: {response.ActiveTaskCount}");
                     return Results.Ok(response);
                 }
                 catch (Exception ex)
@@ -150,12 +164,12 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                 }
             });
 
-            // 获取所有任务列表API
+            // 获取所有任务列表API - 使用优化的响应模型
             _app.MapGet("/api/queue/tasks", () =>
             {
                 try
                 {
-                    var tasks = _renderQueue.RenderTasks.Select(task => task.ToApiResponse()).ToList();
+                    var tasks = _renderQueue.RenderTasks.Select(task => task.ToOptimizedTaskInfo()).ToList();
                     return Results.Ok(tasks);
                 }
                 catch (Exception ex)
@@ -165,7 +179,7 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                 }
             });
 
-            // 实时进度更新流API (Server-Sent Events)
+            // 实时进度更新流API (Server-Sent Events) - 使用优化的推送模型
             _app.MapGet("/api/queue/progress-stream", async (HttpContext context) =>
             {
                 context.Response.ContentType = "text/event-stream";
@@ -177,7 +191,7 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
 
                 while (!context.RequestAborted.IsCancellationRequested)
                 {
-                    var currentUpdates = new List<ProgressUpdate>();
+                    var currentUpdates = new List<OptimizedProgressUpdate>();
 
                     lock (_progressLock)
                     {
@@ -204,13 +218,14 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                 }
             });
 
-            // 特定任务进度历史API
+            // 特定任务进度历史API - 使用优化的响应模型
             _app.MapGet("/api/queue/task/{taskId}/progress", (int taskId) =>
             {
                 lock (_progressLock)
                 {
                     return _progressUpdates
-                        .Where(u => u.TaskId == taskId)
+                        .Where(u => (u.CurrentTask?.TaskId == taskId) || 
+                                   (u.StatusChanges?.Any(s => s.TaskId == taskId) == true))
                         .OrderBy(u => u.Timestamp)
                         .Take(100) // 最近100条记录
                         .ToList();
@@ -276,20 +291,41 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
 
         try
         {
+            Console.WriteLine($"[RenderQueueApiService] 🛑 正在停止API服务，端口: {Port}");
+            
+            // 取消所有正在进行的操作
             _cancellationTokenSource?.Cancel();
 
             if (_app != null)
             {
-                await _app.StopAsync();
+                Console.WriteLine($"[RenderQueueApiService] 🛑 正在停止WebApplication...");
+                
+                // 给应用一些时间来优雅关闭
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                
+                try
+                {
+                    await _app.StopAsync(cts.Token);
+                    Console.WriteLine($"[RenderQueueApiService] ✅ WebApplication已停止");
+                }
+                catch (OperationCanceledException)
+                {
+                    Console.WriteLine($"[RenderQueueApiService] ⚠️ WebApplication停止超时，强制关闭");
+                }
+                
+                Console.WriteLine($"[RenderQueueApiService] 🛑 正在释放WebApplication资源...");
                 await _app.DisposeAsync();
                 _app = null;
+                Console.WriteLine($"[RenderQueueApiService] ✅ WebApplication资源已释放");
             }
 
             IsRunning = false;
+            Console.WriteLine($"[RenderQueueApiService] ✅ API服务已完全停止，端口 {Port} 已释放");
             StatusChanged?.Invoke(this, new ApiServiceStatusChangedEventArgs(false, Port, "API服务已停止"));
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"[RenderQueueApiService] ❌ API服务停止失败: {ex.Message}");
             StatusChanged?.Invoke(this, new ApiServiceStatusChangedEventArgs(false, Port, $"API服务停止失败: {ex.Message}"));
             throw;
         }
@@ -304,11 +340,13 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
 
         try
         {
-            StopAsync().Wait(5000); // 等待最多5秒
+            Console.WriteLine($"[RenderQueueApiService] 🗑️ 正在释放API服务资源...");
+            StopAsync().Wait(10000); // 等待最多10秒
+            Console.WriteLine($"[RenderQueueApiService] ✅ API服务资源已释放");
         }
-        catch
+        catch (Exception ex)
         {
-            // 忽略停止时的异常
+            Console.WriteLine($"[RenderQueueApiService] ⚠️ 释放API服务资源时出现异常: {ex.Message}");
         }
 
         _cancellationTokenSource?.Dispose();
