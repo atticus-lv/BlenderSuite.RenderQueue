@@ -1,9 +1,7 @@
-﻿using System;
-using System.Windows.Input;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace BlenderSuite.RenderQueue.ViewModels;
+namespace QueueClient.ViewModels;
 
 public partial class MainViewModel : ViewModelBase
 {
@@ -18,7 +16,7 @@ public partial class MainViewModel : ViewModelBase
 
     public MainViewModel()
     {
-        _connectionViewModel = new ConnectionViewModel();
+        _connectionViewModel = new QueueClient.ViewModels.ConnectionViewModel();
         _queueInfoViewModel = new QueueInfoViewModel(_connectionViewModel);
     }
 

@@ -1,17 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using BlenderSuite.RenderQueue.Models;
 using BlenderSuite.RenderQueue.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace BlenderSuite.RenderQueue.ViewModels;
+namespace QueueClient.ViewModels;
 
 public partial class ConnectionViewModel : ViewModelBase
 {
@@ -78,9 +75,9 @@ public partial class ConnectionViewModel : ViewModelBase
             {
                 ServerUrl = _clientData.SelectedServerUrl;
             }
-            else if (ServerUrls.Any())
+            else if (Enumerable.Any<string>(ServerUrls))
             {
-                ServerUrl = ServerUrls.First();
+                ServerUrl = Enumerable.First<string>(ServerUrls);
             }
             
             Console.WriteLine($"[ConnectionViewModel] 数据加载完成 - 选中URL: {ServerUrl}, 服务器列表数量: {ServerUrls.Count}");
@@ -99,7 +96,7 @@ public partial class ConnectionViewModel : ViewModelBase
         try
         {
             // 更新数据模型
-            _clientData.ServerUrls = ServerUrls.ToList();
+            _clientData.ServerUrls = Enumerable.ToList<string>(ServerUrls);
             _clientData.SelectedServerUrl = ServerUrl;
             _clientData.RefreshInterval = RefreshInterval;
             _clientData.AutoRefresh = AutoRefreshEnabled;
@@ -144,9 +141,9 @@ public partial class ConnectionViewModel : ViewModelBase
             await SaveDataAsync();
             
             // 如果移除的是当前URL，切换到第一个可用的URL
-            if (ServerUrl == url && ServerUrls.Any())
+            if (ServerUrl == url && Enumerable.Any<string>(ServerUrls))
             {
-                ServerUrl = ServerUrls.First();
+                ServerUrl = Enumerable.First<string>(ServerUrls);
             }
         }
     }

@@ -2,8 +2,9 @@
 using Android.Content.PM;
 using Avalonia;
 using Avalonia.Android;
+using BlenderSuite.RenderQueue;
 
-namespace BlenderSuite.RenderQueue.Android;
+namespace QueueClient.Android;
 
 [Activity(
     Label = "QueueClient.Android",

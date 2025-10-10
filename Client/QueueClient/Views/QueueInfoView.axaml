@@ -2,12 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:vm="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
              xmlns:controls="clr-namespace:CherylUI.Controls;assembly=CherylUI"
              xmlns:glassMorphism="clr-namespace:CherylUI.Controls.GlassMorphism;assembly=CherylUI"
+             xmlns:viewModels="clr-namespace:QueueClient.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BlenderSuite.RenderQueue.Views.QueueInfoView"
-             x:DataType="vm:QueueInfoViewModel">
+             x:DataType="viewModels:QueueInfoViewModel">
 
     <ScrollViewer>
         <StackPanel Margin="15" Spacing="8">

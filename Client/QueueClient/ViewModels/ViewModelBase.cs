@@ -1,7 +1,7 @@
 ﻿using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace BlenderSuite.RenderQueue.ViewModels;
+namespace QueueClient.ViewModels;
 
 public abstract class ViewModelBase : ObservableObject, IDisposable
 {

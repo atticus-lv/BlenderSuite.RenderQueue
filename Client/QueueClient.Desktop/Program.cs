@@ -1,7 +1,8 @@
 ﻿using System;
 using Avalonia;
+using BlenderSuite.RenderQueue;
 
-namespace BlenderSuite.RenderQueue.Desktop;
+namespace QueueClient.Desktop;
 
 sealed class Program
 {

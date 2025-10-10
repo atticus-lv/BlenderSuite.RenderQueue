@@ -1,9 +1,9 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using BlenderSuite.RenderQueue.ViewModels;
+using QueueClient.ViewModels;
 
-namespace BlenderSuite.RenderQueue;
+namespace QueueClient;
 
 public class ViewLocator : IDataTemplate
 {

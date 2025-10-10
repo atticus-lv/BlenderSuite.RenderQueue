@@ -1,15 +1,13 @@
 using System;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using BlenderSuite.RenderQueue.Models;
 using BlenderSuite.RenderQueue.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace BlenderSuite.RenderQueue.ViewModels;
+namespace QueueClient.ViewModels;
 
 public partial class QueueInfoViewModel : ViewModelBase
 {

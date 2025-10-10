@@ -4,8 +4,8 @@ using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using System.Linq;
 using Avalonia.Markup.Xaml;
-using BlenderSuite.RenderQueue.ViewModels;
 using BlenderSuite.RenderQueue.Views;
+using MainViewModel = QueueClient.ViewModels.MainViewModel;
 
 namespace BlenderSuite.RenderQueue;
 

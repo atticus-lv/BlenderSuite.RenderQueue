@@ -6,7 +6,6 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <RootNamespace>BlenderSuite.RenderQueue.Desktop</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup>
