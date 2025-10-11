@@ -10,7 +10,7 @@
              x:Class="BlenderSuite.RenderQueue.Views.QueueInfoView"
              x:DataType="viewModels:QueueInfoViewModel">
 
-    <controls:SliverPage Header="Queue Information">
+    <controls:SliverPage Header="Queue">
         <StackPanel Margin="14 16">
 
             <Border Background="#FFE6E6"
