@@ -4,6 +4,11 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Controls.ApplicationLifetimes;
+using BlenderRenderQueue.Services.UI;
 
 namespace BlenderRenderQueue.Helpers;
 
@@ -222,13 +227,116 @@ public static class ClipboardHelper
     {
         try
         {
-            // 使用PowerShell来设置剪贴板文本，因为它更可靠
-            await PowerShellClipBoard.SetText(text);
-            return true;
+            // 使用Avalonia剪切板服务
+            var topLevel = Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow
+                : null;
+            
+            if (topLevel?.Clipboard != null)
+            {
+                var dataObject = new DataObject();
+                dataObject.Set(DataFormats.Text, text);
+                await topLevel.Clipboard.SetDataObjectAsync(dataObject);
+                return true;
+            }
+            
+            return false;
         }
         catch
         {
             return false;
+        }
+    }
+
+    /// <summary>
+    /// 使用Avalonia剪切板服务设置文本，通过context获取TopLevel
+    /// </summary>
+    /// <param name="text">要复制的文本</param>
+    /// <param name="context">上下文对象，通常传入ViewModel实例</param>
+    /// <returns>是否成功设置剪切板</returns>
+    /// <example>
+    /// // 在ViewModel中使用：
+    /// var success = await ClipboardHelper.SetText("Hello World", this);
+    /// 
+    /// // 在View中使用：
+    /// var success = await ClipboardHelper.SetText("Hello World", this);
+    /// </example>
+    public static async Task<bool> SetText(string text, object context)
+    {
+        try
+        {
+            // 使用ToplevelService获取TopLevel
+            var topLevel = ToplevelService.GetTopLevelForContext(context);
+            
+            if (topLevel?.Clipboard != null)
+            {
+                var dataObject = new DataObject();
+                dataObject.Set(DataFormats.Text, text);
+                await topLevel.Clipboard.SetDataObjectAsync(dataObject);
+                return true;
+            }
+            
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public static async Task<string?> GetText()
+    {
+        try
+        {
+            // 使用Avalonia剪切板服务获取文本
+            var topLevel = Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow
+                : null;
+            
+            if (topLevel?.Clipboard != null)
+            {
+                var dataObject = await topLevel.Clipboard.GetDataAsync(DataFormats.Text);
+                return dataObject?.ToString();
+            }
+            
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 使用Avalonia剪切板服务获取文本，通过context获取TopLevel
+    /// </summary>
+    /// <param name="context">上下文对象，通常传入ViewModel实例</param>
+    /// <returns>剪切板中的文本，如果获取失败则返回null</returns>
+    /// <example>
+    /// // 在ViewModel中使用：
+    /// var text = await ClipboardHelper.GetText(this);
+    /// 
+    /// // 在View中使用：
+    /// var text = await ClipboardHelper.GetText(this);
+    /// </example>
+    public static async Task<string?> GetText(object context)
+    {
+        try
+        {
+            // 使用ToplevelService获取TopLevel
+            var topLevel = ToplevelService.GetTopLevelForContext(context);
+            
+            if (topLevel?.Clipboard != null)
+            {
+                var dataObject = await topLevel.Clipboard.GetDataAsync(DataFormats.Text);
+                return dataObject?.ToString();
+            }
+            
+            return null;
+        }
+        catch
+        {
+            return null;
         }
     }
 }

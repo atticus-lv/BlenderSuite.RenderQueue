@@ -580,7 +580,8 @@ public partial class SettingsViewModel : ViewModelBase
 
         try
         {
-            var success = await ClipboardHelper.SetText(ApiUrl);
+            // 使用新的Avalonia剪切板服务，传入当前ViewModel作为context
+            var success = await ClipboardHelper.SetText(ApiUrl, this);
             Console.WriteLine(success
                 ? $"[SettingsViewModel] ✅ API URL copied to clipboard: {ApiUrl}"
                 : $"[SettingsViewModel] ❌ Failed to copy API URL to clipboard");
