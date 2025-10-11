@@ -9,15 +9,8 @@
              x:Class="BlenderSuite.RenderQueue.Views.ConnectionView"
              x:DataType="viewModels:ConnectionViewModel">
 
-    <ScrollViewer>
-        <Grid Margin="20" RowDefinitions="Auto,Auto,Auto">
-
-            <!-- 标题 -->
-            <TextBlock Text="Connection"
-                       FontSize="24"
-                       FontWeight="Bold"
-                       HorizontalAlignment="Center" />
-
+    <controls:SliverPage Header="Connection">
+        <Grid Margin="14 16" RowDefinitions="Auto,Auto,Auto">
             <!-- 服务器URL输入 -->
             <glassMorphism:GlassCard Grid.Row="1" Margin="0 10">
                 <StackPanel Spacing="16" VerticalAlignment="Center">
@@ -39,9 +32,11 @@
                     </StackPanel>
 
                     <Grid ColumnDefinitions="Auto,*,Auto">
-                        <TextBlock 
+                        <TextBlock
                             VerticalAlignment="Center"
-                            FontSize="16" FontWeight="DemiBold" Margin="4 0 0 0">Auto Refresh</TextBlock>
+                            FontSize="16" FontWeight="DemiBold" Margin="4 0 0 0">
+                            Auto Refresh
+                        </TextBlock>
                         <ToggleButton Grid.Column="2" Classes="Switch"
                                       VerticalAlignment="Center" Margin="10"
                                       IsChecked="{Binding AutoRefreshEnabled}"
@@ -94,5 +89,7 @@
             </glassMorphism:GlassCard>
 
         </Grid>
-    </ScrollViewer>
+    </controls:SliverPage>
+
+
 </UserControl>

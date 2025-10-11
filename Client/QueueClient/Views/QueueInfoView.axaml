@@ -4,215 +4,213 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:glassMorphism="clr-namespace:CherylUI.Controls.GlassMorphism;assembly=CherylUI"
              xmlns:viewModels="clr-namespace:QueueClient.ViewModels"
+             xmlns:controls="clr-namespace:CherylUI.Controls;assembly=CherylUI"
+
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
              x:Class="BlenderSuite.RenderQueue.Views.QueueInfoView"
              x:DataType="viewModels:QueueInfoViewModel">
 
-    <StackPanel Margin="15" Spacing="16">
+    <controls:SliverPage Header="Queue Information">
+        <StackPanel Margin="14 16">
 
-        <TextBlock Text="Queue Information"
-                   FontSize="24"
-                   FontWeight="Bold"
-                   HorizontalAlignment="Center" />
+            <Border Background="#FFE6E6"
+                    BorderBrush="#FF9999"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="10"
+                    IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="#CC0000"
+                           TextWrapping="Wrap" />
+            </Border>
 
-        <Border Background="#FFE6E6"
-                BorderBrush="#FF9999"
-                BorderThickness="1"
-                CornerRadius="4"
-                Padding="10"
-                IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
-            <TextBlock Text="{Binding ErrorMessage}"
-                       Foreground="#CC0000"
-                       TextWrapping="Wrap" />
-        </Border>
-
-        <Grid RowDefinitions="Auto,Auto,*">
-            <glassMorphism:GlassCard Margin="0,8">
-                <StackPanel Margin="10" Spacing="4">
-                    <Grid ColumnDefinitions="*,4,Auto">
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding ProgressText}"
-                                   FontSize="20"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,0,8"
-                                   IsVisible="{Binding IsQueueRunning}" />
-                        <!-- Progress Bar -->
-                        <ProgressBar Grid.Column="0"
-                                     Value="{Binding OverallProgress}"
-                                     Maximum="1.0"
-                                     Height="20"
-                                     Margin="0,0,0,8"
-                                     IsVisible="{Binding IsQueueRunning}" />
-                    </Grid>
-                    <StackPanel Spacing="8">
-                        <TextBlock
-                            Text="{Binding QueueStateText}"
-                            FontSize="20"
-                            VerticalAlignment="Center" />
-                        <TextBlock
-                            Text="{Binding TaskSummary}"
-                            FontSize="20"
-                            VerticalAlignment="Center" />
+            <Grid RowDefinitions="Auto,Auto,*">
+                <glassMorphism:GlassCard Margin="0,8">
+                    <StackPanel Margin="10" Spacing="4">
+                        <Grid ColumnDefinitions="*,4,Auto">
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding ProgressText}"
+                                       FontSize="20"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,0,8"
+                                       IsVisible="{Binding IsQueueRunning}" />
+                            <!-- Progress Bar -->
+                            <ProgressBar Grid.Column="0"
+                                         Value="{Binding OverallProgress}"
+                                         Maximum="1.0"
+                                         Height="20"
+                                         Margin="0,0,0,8"
+                                         IsVisible="{Binding IsQueueRunning}" />
+                        </Grid>
+                        <StackPanel Spacing="8">
+                            <TextBlock
+                                Text="{Binding QueueStateText}"
+                                FontSize="20"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Text="{Binding TaskSummary}"
+                                FontSize="20"
+                                VerticalAlignment="Center" />
 
 
-                        <TextBlock
-                            Text="{Binding FrameSummary}"
-                            FontSize="20"
-                            Opacity="0.7"
-                            VerticalAlignment="Center" />
-                        <TextBlock
-                            Text="{Binding RemainingTime,StringFormat=Remaining Time: {}}"
-                            FontSize="20"
-                            VerticalAlignment="Center" />
+                            <TextBlock
+                                Text="{Binding FrameSummary}"
+                                FontSize="20"
+                                Opacity="0.7"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Text="{Binding RemainingTime,StringFormat=Remaining Time: {}}"
+                                FontSize="20"
+                                VerticalAlignment="Center" />
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
-            </glassMorphism:GlassCard>
+                </glassMorphism:GlassCard>
 
-            <glassMorphism:GlassCard Grid.Row="1" IsVisible="{Binding IsQueueRunning}" Margin="0,8">
-                <StackPanel Margin="10" Spacing="4">
-                    <Grid ColumnDefinitions="*,4,Auto">
-                        <!-- Task Progress -->
-                        <TextBlock Grid.Column="2"
-                                   Text="{Binding CurrentTaskProgressText}"
-                                   FontSize="16"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,0,8" />
+                <glassMorphism:GlassCard Grid.Row="1" IsVisible="{Binding IsQueueRunning}" Margin="0,8">
+                    <StackPanel Margin="10" Spacing="4">
+                        <Grid ColumnDefinitions="*,4,Auto">
+                            <!-- Task Progress -->
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding CurrentTaskProgressText}"
+                                       FontSize="16"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,0,8" />
 
-                        <ProgressBar Grid.Column="0"
-                                     Value="{Binding CurrentTaskProgress}"
-                                     Maximum="1.0"
-                                     Height="16"
-                                     Margin="0,0,0,8" />
-                    </Grid>
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*">
+                            <ProgressBar Grid.Column="0"
+                                         Value="{Binding CurrentTaskProgress}"
+                                         Maximum="1.0"
+                                         Height="16"
+                                         Margin="0,0,0,8" />
+                        </Grid>
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*">
 
-                        <!-- Task Name -->
-                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                   Text="Task Name:"
+                            <!-- Task Name -->
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Text="Task Name:"
+                                       FontWeight="SemiBold"
+                                       FontSize="16"
+                                       VerticalAlignment="Top"
+                                       Margin="0,0,10,8" />
+                            <TextBlock Grid.Row="0" Grid.Column="1"
+                                       Text="{Binding CurrentTaskName}"
+                                       FontSize="16"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Top"
+                                       Margin="0,0,0,8" />
+
+
+                        </Grid>
+                    </StackPanel>
+                </glassMorphism:GlassCard>
+
+                <glassMorphism:GlassCard Grid.Row="2" Margin="0,8">
+                    <StackPanel Margin="10" Spacing="4">
+                        <!-- 空状态提示 -->
+                        <TextBlock Text="No tasks in queue"
+                                   Foreground="Gray"
                                    FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
                                    FontSize="16"
-                                   VerticalAlignment="Top"
-                                   Margin="0,0,10,8" />
-                        <TextBlock Grid.Row="0" Grid.Column="1"
-                                   Text="{Binding CurrentTaskName}"
-                                   FontSize="16"
-                                   TextWrapping="Wrap"
-                                   VerticalAlignment="Top"
-                                   Margin="0,0,0,8" />
+                                   IsVisible="{Binding !HasTasks}">
+                            <TextBlock.Styles>
+                                <Style Selector="TextBlock">
+                                    <Setter Property="Transitions">
+                                        <Transitions>
+                                            <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+                                        </Transitions>
+                                    </Setter>
+                                </Style>
+                            </TextBlock.Styles>
+                        </TextBlock>
+
+                        <!-- 任务列表 -->
+                        <ScrollViewer IsVisible="{Binding HasTasks}">
+                            <ItemsControl ItemsSource="{Binding AllTasks}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding $parent[ItemsControl].Background}"
+                                                CornerRadius="4"
+                                                Padding="8"
+                                                IsEnabled="{Binding Enable}"
+                                                Opacity="{Binding Enable,Converter={StaticResource BoolToOpacityConverter} }"
+                                                Margin="0,2">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <!-- 状态指示器 -->
+                                                <Border Grid.Column="0"
+                                                        Width="12" Height="12"
+                                                        CornerRadius="6"
+                                                        Margin="0,0,8,0"
+                                                        VerticalAlignment="Center">
+                                                    <Border.Background>
+                                                        <Binding Path="Status"
+                                                                 Converter="{StaticResource StatusToColorConverter}" />
+                                                    </Border.Background>
+                                                </Border>
+
+                                                <!-- 任务信息 -->
+                                                <StackPanel Grid.Column="1" Spacing="2">
+                                                    <!-- 文件名 -->
+                                                    <TextBlock Text="{Binding FileName}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="14"
+                                                               TextTrimming="CharacterEllipsis" />
+
+                                                    <!-- 场景和帧范围信息 -->
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding SceneName}"
+                                                                   FontSize="12"
+                                                                   Foreground="Gray" />
+                                                        <TextBlock FontSize="12" Foreground="Gray">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding StringFormat="{}{0} frames">
+                                                                    <Binding Path="TotalFrames" />
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
+                                                    </StackPanel>
+
+                                                    <!-- 进度条 - 仅当前任务显示 -->
+                                                    <ProgressBar Minimum="0" Maximum="1"
+                                                                 Value="{Binding OverallProgress}"
+                                                                 Height="4"
+                                                                 Margin="0,2,0,0">
+                                                        <ProgressBar.IsVisible>
+                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                                <Binding Path="IsValid" />
+                                                                <Binding Path="Enable" />
+                                                                <Binding Path="Status"
+                                                                         Converter="{StaticResource StatusEqualsConverter}"
+                                                                         ConverterParameter="Running" />
+                                                            </MultiBinding>
+                                                        </ProgressBar.IsVisible>
+                                                    </ProgressBar>
+                                                </StackPanel>
+
+                                                <!-- 状态文本 -->
+                                                <TextBlock Grid.Column="2"
+                                                           Text="{Binding Status}"
+                                                           FontSize="12"
+                                                           VerticalAlignment="Center"
+                                                           Margin="8,0" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </glassMorphism:GlassCard>
+            </Grid>
 
 
-                    </Grid>
-                </StackPanel>
-            </glassMorphism:GlassCard>
+        </StackPanel>
+    </controls:SliverPage>
 
-            <glassMorphism:GlassCard Grid.Row="2" Margin="0,8">
-                <StackPanel Margin="10" Spacing="4">
-                    <!-- 空状态提示 -->
-                    <TextBlock Text="No tasks in queue"
-                               Foreground="Gray"
-                               FontWeight="SemiBold"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               FontSize="16"
-                               IsVisible="{Binding !HasTasks}">
-                        <TextBlock.Styles>
-                            <Style Selector="TextBlock">
-                                <Setter Property="Transitions">
-                                    <Transitions>
-                                        <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
-                                    </Transitions>
-                                </Setter>
-                            </Style>
-                        </TextBlock.Styles>
-                    </TextBlock>
-
-                    <!-- 任务列表 -->
-                    <ScrollViewer>
-                        <ItemsControl ItemsSource="{Binding AllTasks}"
-                                      MaxHeight="400"
-                                      IsVisible="{Binding HasTasks}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="{Binding $parent[ItemsControl].Background}"
-                                            CornerRadius="4"
-                                            Padding="8"
-                                            IsEnabled="{Binding Enable}"
-                                            Opacity="{Binding Enable,Converter={StaticResource BoolToOpacityConverter} }"
-                                            Margin="0,2">
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <!-- 状态指示器 -->
-                                            <Border Grid.Column="0"
-                                                    Width="12" Height="12"
-                                                    CornerRadius="6"
-                                                    Margin="0,0,8,0"
-                                                    VerticalAlignment="Center">
-                                                <Border.Background>
-                                                    <Binding Path="Status"
-                                                             Converter="{StaticResource StatusToColorConverter}" />
-                                                </Border.Background>
-                                            </Border>
-
-                                            <!-- 任务信息 -->
-                                            <StackPanel Grid.Column="1" Spacing="2">
-                                                <!-- 文件名 -->
-                                                <TextBlock Text="{Binding FileName}"
-                                                           FontWeight="SemiBold"
-                                                           FontSize="14"
-                                                           TextTrimming="CharacterEllipsis" />
-
-                                                 <!-- 场景和帧范围信息 -->
-                                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                                     <TextBlock Text="{Binding SceneName}"
-                                                                FontSize="12"
-                                                                Foreground="Gray" />
-                                                     <TextBlock FontSize="12" Foreground="Gray">
-                                                         <TextBlock.Text>
-                                                             <MultiBinding StringFormat="{}{0} frames">
-                                                                 <Binding Path="TotalFrames" />
-                                                             </MultiBinding>
-                                                         </TextBlock.Text>
-                                                     </TextBlock>
-                                                 </StackPanel>
-
-                                                <!-- 进度条 - 仅当前任务显示 -->
-                                                <ProgressBar Minimum="0" Maximum="1"
-                                                             Value="{Binding OverallProgress}"
-                                                             Height="4"
-                                                             Margin="0,2,0,0">
-                                                    <ProgressBar.IsVisible>
-                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                            <Binding Path="IsValid" />
-                                                            <Binding Path="Enable" />
-                                                            <Binding Path="Status"
-                                                                     Converter="{StaticResource StatusEqualsConverter}"
-                                                                     ConverterParameter="Running" />
-                                                        </MultiBinding>
-                                                    </ProgressBar.IsVisible>
-                                                </ProgressBar>
-                                            </StackPanel>
-
-                                            <!-- 状态文本 -->
-                                            <TextBlock Grid.Column="2"
-                                                       Text="{Binding Status}"
-                                                       FontSize="12"
-                                                       VerticalAlignment="Center"
-                                                       Margin="8,0" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </StackPanel>
-            </glassMorphism:GlassCard>
-        </Grid>
-
-
-    </StackPanel>
 </UserControl>
