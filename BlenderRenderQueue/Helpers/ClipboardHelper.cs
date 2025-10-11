@@ -5,7 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace VirtualStreetSnap.Services;
+namespace BlenderRenderQueue.Helpers;
 
 public static class PowerShellClipBoard
 {
@@ -216,5 +216,19 @@ public static class ClipboardHelper
             ".png" => SetPng(srcImg),
             _ => throw new NotSupportedException("Unsupported image format")
         };
+    }
+
+    public static async Task<bool> SetText(string text)
+    {
+        try
+        {
+            // 使用PowerShell来设置剪贴板文本，因为它更可靠
+            await PowerShellClipBoard.SetText(text);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

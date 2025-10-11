@@ -572,6 +572,25 @@ public partial class SettingsViewModel : ViewModelBase
         UrlUtilities.OpenUrl(fullUrl);
     }
 
+    [RelayCommand]
+    private async Task CopyApiUrl()
+    {
+        if (string.IsNullOrEmpty(ApiUrl))
+            return;
+
+        try
+        {
+            var success = await ClipboardHelper.SetText(ApiUrl);
+            Console.WriteLine(success
+                ? $"[SettingsViewModel] ✅ API URL copied to clipboard: {ApiUrl}"
+                : $"[SettingsViewModel] ❌ Failed to copy API URL to clipboard");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SettingsViewModel] ❌ Failed to copy API URL to clipboard: {ex.Message}");
+        }
+    }
+
 
     public async Task SaveSettingsToFileAsync()
     {

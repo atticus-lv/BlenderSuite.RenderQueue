@@ -300,7 +300,8 @@
                                             VerticalAlignment="Center">
                                     <ToggleSplitButton Content="{Binding ApiUrl}" Classes="Small"
                                                        IsEnabled="{Binding ApiEnabled}"
-                                                       IsVisible="{Binding ApiEnabled}">
+                                                       IsVisible="{Binding ApiEnabled}"
+                                                       Command="{Binding CopyApiUrlCommand}">
                                         <ToggleSplitButton.Flyout>
                                             <MenuFlyout>
                                                 <MenuItem Header="{i18n:Localize ApiService_QueueStatus}"
@@ -312,9 +313,6 @@
                                                 <MenuItem Header="{i18n:Localize ApiService_HealthCheck}"
                                                           Command="{Binding OpenUrlCommand}"
                                                           CommandParameter="/api/health" />
-                                                <MenuItem Header="{i18n:Localize ApiService_ProgressStream}"
-                                                          Command="{Binding OpenUrlCommand}"
-                                                          CommandParameter="/api/queue/progress-stream" />
                                             </MenuFlyout>
                                         </ToggleSplitButton.Flyout>
                                     </ToggleSplitButton>
