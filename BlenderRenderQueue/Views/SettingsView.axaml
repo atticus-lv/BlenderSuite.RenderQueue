@@ -241,14 +241,14 @@
                     </suki:SettingsLayoutItem>
 
                     <!-- API设置部分 -->
-                    <suki:SettingsLayoutItem Header="API Service">
+                    <suki:SettingsLayoutItem Header="{i18n:Localize ApiService_Header}">
                         <suki:SettingsLayoutItem.Content>
                             <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*,Auto">
 
                                 <!-- API启用开关 -->
                                 <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0"
                                             VerticalAlignment="Center">
-                                    <TextBlock Text="Enable API Service" VerticalAlignment="Center" />
+                                    <TextBlock Text="{i18n:Localize ApiService_EnableApiService}" VerticalAlignment="Center" />
                                 </StackPanel>
                                 <ToggleSwitch
                                     Grid.Row="0" Grid.Column="2"
@@ -257,7 +257,7 @@
                                     HorizontalAlignment="Right" />
 
                                 <!-- API端口设置 -->
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="API Port"
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize ApiService_ApiPort}"
                                            VerticalAlignment="Center" />
                                 <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Spacing="8"
                                             Margin="0 4"
@@ -269,7 +269,7 @@
                                 </StackPanel>
 
                                 <!-- API服务状态 -->
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Service Status"
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="{i18n:Localize ApiService_ServiceStatus}"
                                            VerticalAlignment="Center" />
                                 <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Spacing="8"
                                             VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0 8">
@@ -279,7 +279,7 @@
                                                                Width="16"
                                                                Height="16"
                                                                Foreground="{DynamicResource SukiSuccessColor}" />
-                                        <TextBlock Text="Running"
+                                        <TextBlock Text="{i18n:Localize ApiService_Running}"
                                                    VerticalAlignment="Center" />
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding !ApiEnabled}">
@@ -287,13 +287,13 @@
                                                                Width="16"
                                                                Height="16"
                                                                Foreground="{DynamicResource SukiDangerColor}" />
-                                        <TextBlock Text="Stopped"
+                                        <TextBlock Text="{i18n:Localize ApiService_Stopped}"
                                                    VerticalAlignment="Center" />
                                     </StackPanel>
                                 </StackPanel>
 
                                 <!-- API链接显示 -->
-                                <TextBlock Grid.Row="3" Grid.Column="0" Text="API URL"
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="{i18n:Localize ApiService_ApiUrl}"
                                            VerticalAlignment="Center" />
                                 <StackPanel Grid.Row="3" Grid.Column="2"
                                             Orientation="Horizontal" Spacing="8"
@@ -303,22 +303,22 @@
                                                        IsVisible="{Binding ApiEnabled}">
                                         <ToggleSplitButton.Flyout>
                                             <MenuFlyout>
-                                                <MenuItem Header="Queue Status"
+                                                <MenuItem Header="{i18n:Localize ApiService_QueueStatus}"
                                                           Command="{Binding OpenUrlCommand}"
                                                           CommandParameter="/api/queue/status" />
-                                                <MenuItem Header="Task List"
+                                                <MenuItem Header="{i18n:Localize ApiService_TaskList}"
                                                           Command="{Binding OpenUrlCommand}"
                                                           CommandParameter="/api/queue/tasks" />
-                                                <MenuItem Header="Health Check"
+                                                <MenuItem Header="{i18n:Localize ApiService_HealthCheck}"
                                                           Command="{Binding OpenUrlCommand}"
                                                           CommandParameter="/api/health" />
-                                                <MenuItem Header="Progress Stream"
+                                                <MenuItem Header="{i18n:Localize ApiService_ProgressStream}"
                                                           Command="{Binding OpenUrlCommand}"
                                                           CommandParameter="/api/queue/progress-stream" />
                                             </MenuFlyout>
                                         </ToggleSplitButton.Flyout>
                                     </ToggleSplitButton>
-                                    <TextBlock Text="API service is disabled"
+                                    <TextBlock Text="{i18n:Localize ApiService_Disabled}"
                                                VerticalAlignment="Center"
                                                Opacity="0.6"
                                                IsVisible="{Binding !ApiEnabled}" />

@@ -223,5 +223,17 @@
   "SystemControl_Cancel": "取消",
   "SystemControl_ActionFailed": "计划{0}失败",
   "SystemControl_ActionCancelled": "用户取消了{0}",
-  "SystemControl_ActionError": "系统操作时出错: {0}"
+  "SystemControl_ActionError": "系统操作时出错: {0}",
+  "ApiService_Header": "API 服务",
+  "ApiService_EnableApiService": "启用 API 服务",
+  "ApiService_ApiPort": "API 端口",
+  "ApiService_ServiceStatus": "服务状态",
+  "ApiService_Running": "运行中",
+  "ApiService_Stopped": "已停止",
+  "ApiService_ApiUrl": "API 地址",
+  "ApiService_QueueStatus": "队列状态",
+  "ApiService_TaskList": "任务列表",
+  "ApiService_HealthCheck": "健康检查",
+  "ApiService_ProgressStream": "进度流",
+  "ApiService_Disabled": "API 服务已禁用"
 }
