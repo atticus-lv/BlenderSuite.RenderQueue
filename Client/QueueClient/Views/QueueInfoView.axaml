@@ -35,17 +35,19 @@
         <glassMorphism:GlassCard>
             <StackPanel Margin="10" Spacing="4">
                 <Grid ColumnDefinitions="*,4,Auto">
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding ProgressText}"
-                               FontSize="20"
-                               VerticalAlignment="Center"
-                               Margin="0,0,0,8" />
-                    <!-- Progress Bar -->
-                    <ProgressBar Grid.Column="0"
-                                 Value="{Binding OverallProgress}"
-                                 Maximum="1.0"
-                                 Height="20"
-                                 Margin="0,0,0,8" />
+                     <TextBlock Grid.Column="2"
+                                Text="{Binding ProgressText}"
+                                FontSize="20"
+                                VerticalAlignment="Center"
+                                Margin="0,0,0,8"
+                                IsVisible="{Binding IsQueueRunning}" />
+                     <!-- Progress Bar -->
+                     <ProgressBar Grid.Column="0"
+                                  Value="{Binding OverallProgress}"
+                                  Maximum="1.0"
+                                  Height="20"
+                                  Margin="0,0,0,8"
+                                  IsVisible="{Binding IsQueueRunning}" />
                 </Grid>
                 <StackPanel Spacing="8">
                     <TextBlock
@@ -71,42 +73,42 @@
             </StackPanel>
         </glassMorphism:GlassCard>
 
-        <glassMorphism:GlassCard>
-            <StackPanel Margin="10" Spacing="4">
-                <Grid ColumnDefinitions="*,4,Auto">
-                    <!-- Task Progress -->
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding CurrentTaskProgressText}"
-                               FontSize="16"
-                               VerticalAlignment="Center"
-                               Margin="0,0,0,8" />
+         <glassMorphism:GlassCard IsVisible="{Binding IsQueueRunning}">
+             <StackPanel Margin="10" Spacing="4">
+                 <Grid ColumnDefinitions="*,4,Auto">
+                     <!-- Task Progress -->
+                     <TextBlock Grid.Column="2"
+                                Text="{Binding CurrentTaskProgressText}"
+                                FontSize="16"
+                                VerticalAlignment="Center"
+                                Margin="0,0,0,8" />
 
-                    <ProgressBar Grid.Column="0"
-                                 Value="{Binding CurrentTaskProgress}"
-                                 Maximum="1.0"
-                                 Height="16"
-                                 Margin="0,0,0,8" />
-                </Grid>
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*">
+                     <ProgressBar Grid.Column="0"
+                                  Value="{Binding CurrentTaskProgress}"
+                                  Maximum="1.0"
+                                  Height="16"
+                                  Margin="0,0,0,8" />
+                 </Grid>
+                 <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*">
 
-                    <!-- Task Name -->
-                    <TextBlock Grid.Row="0" Grid.Column="0"
-                               Text="Task Name:"
-                               FontWeight="SemiBold"
-                               FontSize="16"
-                               VerticalAlignment="Top"
-                               Margin="0,0,10,8" />
-                    <TextBlock Grid.Row="0" Grid.Column="1"
-                               Text="{Binding CurrentTaskName}"
-                               FontSize="16"
-                               TextWrapping="Wrap"
-                               VerticalAlignment="Top"
-                               Margin="0,0,0,8" />
+                     <!-- Task Name -->
+                     <TextBlock Grid.Row="0" Grid.Column="0"
+                                Text="Task Name:"
+                                FontWeight="SemiBold"
+                                FontSize="16"
+                                VerticalAlignment="Top"
+                                Margin="0,0,10,8" />
+                     <TextBlock Grid.Row="0" Grid.Column="1"
+                                Text="{Binding CurrentTaskName}"
+                                FontSize="16"
+                                TextWrapping="Wrap"
+                                VerticalAlignment="Top"
+                                Margin="0,0,0,8" />
 
 
-                </Grid>
-            </StackPanel>
-        </glassMorphism:GlassCard>
+                 </Grid>
+             </StackPanel>
+         </glassMorphism:GlassCard>
 
         <glassMorphism:GlassCard>
             <StackPanel Margin="10" Spacing="4">
@@ -131,7 +133,7 @@
 
                 <!-- 任务列表 -->
                 <ListBox ItemsSource="{Binding AllTasks}"
-                         MaxHeight="400"
+                         MaxHeight="400" Classes="WithoutCheck"
                          IsVisible="{Binding HasTasks}">
 
                     <ListBox.ItemTemplate>

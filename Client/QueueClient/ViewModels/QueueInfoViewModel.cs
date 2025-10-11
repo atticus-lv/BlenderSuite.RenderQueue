@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
@@ -28,7 +29,7 @@ public partial class QueueInfoViewModel : ViewModelBase
     private string _errorMessage = string.Empty;
 
     [ObservableProperty]
-    private List<OptimizedTaskInfo> _allTasks = new();
+    private ObservableCollection<OptimizedTaskInfo> _allTasks = new();
 
     public QueueInfoViewModel(ConnectionViewModel connectionViewModel)
     {
@@ -112,7 +113,8 @@ public partial class QueueInfoViewModel : ViewModelBase
             if (status != null)
             {
                 QueueStatus = status;
-                AllTasks = status.Tasks ?? new List<OptimizedTaskInfo>();
+                // 高效更新任务列表
+                UpdateTasksList(status.Tasks ?? new List<OptimizedTaskInfo>());
                 ErrorMessage = string.Empty; // 清除之前的错误
 
                 // 手动触发计算属性更新通知
@@ -126,6 +128,7 @@ public partial class QueueInfoViewModel : ViewModelBase
                 OnPropertyChanged(nameof(CurrentTaskName));
                 OnPropertyChanged(nameof(CurrentTaskProgress));
                 OnPropertyChanged(nameof(CurrentTaskProgressText));
+                OnPropertyChanged(nameof(IsQueueRunning));
             }
             else
             {
@@ -172,11 +175,89 @@ public partial class QueueInfoViewModel : ViewModelBase
     public bool HasTasks => AllTasks.Any();
 
     /// <summary>
+    /// 队列是否正在运行
+    /// </summary>
+    public bool IsQueueRunning => QueueStatus?.QueueState == QueueState.Running;
+
+    /// <summary>
     /// 检查任务是否为当前正在运行的任务
     /// </summary>
     public bool IsCurrentTask(OptimizedTaskInfo task)
     {
         return task.Status == RenderTaskStatus.Running;
+    }
+
+    /// <summary>
+    /// 智能更新任务列表
+    /// </summary>
+    private void UpdateTasksList(List<OptimizedTaskInfo> newTasks)
+    {
+        // 如果队列正在运行，只更新当前任务
+        if (IsQueueRunning)
+        {
+            UpdateCurrentTaskOnly(newTasks);
+        }
+        else
+        {
+            // 队列状态变化时，更新所有任务
+            UpdateAllTasks(newTasks);
+        }
+    }
+
+    /// <summary>
+    /// 更新所有任务（队列状态变化时）
+    /// </summary>
+    private void UpdateAllTasks(List<OptimizedTaskInfo> newTasks)
+    {
+        AllTasks.Clear();
+        foreach (var task in newTasks)
+        {
+            AllTasks.Add(task);
+        }
+    }
+
+    /// <summary>
+    /// 只更新当前正在运行的任务（队列运行时）
+    /// </summary>
+    private void UpdateCurrentTaskOnly(List<OptimizedTaskInfo> newTasks)
+    {
+        bool hasUpdates = false;
+        
+        // 遍历所有任务，检查状态变化
+        for (int i = 0; i < AllTasks.Count; i++)
+        {
+            var existingTask = AllTasks[i];
+            var newTask = newTasks.FirstOrDefault(t => t.TaskId == existingTask.TaskId);
+            
+            if (newTask == null) continue;
+            
+            // 检查任务状态是否发生变化
+            bool taskChanged = existingTask.Status != newTask.Status ||
+                              existingTask.OverallProgress != newTask.OverallProgress ||
+                              existingTask.CurrentFrame != newTask.CurrentFrame ||
+                              existingTask.Enable != newTask.Enable;
+            
+            if (taskChanged)
+            {
+                // 更新任务属性
+                existingTask.Status = newTask.Status;
+                existingTask.OverallProgress = newTask.OverallProgress;
+                existingTask.CurrentFrame = newTask.CurrentFrame;
+                existingTask.CurrentFrameProgress = newTask.CurrentFrameProgress;
+                existingTask.Enable = newTask.Enable;
+                existingTask.LastUpdateTime = newTask.LastUpdateTime;
+                
+                // 通过替换触发UI更新
+                AllTasks[i] = existingTask;
+                hasUpdates = true;
+            }
+        }
+        
+        // 如果没有找到任何变化，检查是否有新任务或任务被删除
+        if (!hasUpdates && AllTasks.Count != newTasks.Count)
+        {
+            UpdateAllTasks(newTasks);
+        }
     }
 
     /// <summary>
