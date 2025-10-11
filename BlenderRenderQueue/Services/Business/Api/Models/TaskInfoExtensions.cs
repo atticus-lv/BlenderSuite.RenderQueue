@@ -18,7 +18,7 @@ public static class TaskInfoExtensions
     {
         return new OptimizedTaskInfo
         {
-            TaskId = task.GetHashCode(),
+            TaskId = GenerateStableTaskId(task),
             FileName = Path.GetFileName(task.BlendFilePath),
             FilePath = task.BlendFilePath,
             Status = task.Status,
@@ -47,7 +47,7 @@ public static class TaskInfoExtensions
     {
         return new CurrentTaskProgress
         {
-            TaskId = task.GetHashCode(),
+            TaskId = GenerateStableTaskId(task),
             FileName = Path.GetFileName(task.BlendFilePath),
             CurrentFrame = task.CurrentFrame,
             OverallProgress = task.OverallProgress01,
@@ -71,7 +71,7 @@ public static class TaskInfoExtensions
     {
         return new TaskStatusChange
         {
-            TaskId = task.GetHashCode(),
+            TaskId = GenerateStableTaskId(task),
             FileName = Path.GetFileName(task.BlendFilePath),
             Status = task.Status,
             OverallProgress = task.OverallProgress01
@@ -124,5 +124,11 @@ public static class TaskInfoExtensions
         }
 
         return null;
+    }
+    private static int GenerateStableTaskId(RenderTaskViewModel task)
+    {
+        // 使用文件路径、帧范围和场景名称生成稳定的哈希值
+        var key = $"{task.BlendFilePath}|{task.RealStartFrame}|{task.RealEndFrame}|{task.SelectedSceneName}";
+        return key.GetHashCode();
     }
 }

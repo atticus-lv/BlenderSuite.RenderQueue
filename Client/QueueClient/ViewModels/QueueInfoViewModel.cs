@@ -85,7 +85,7 @@ public partial class QueueInfoViewModel : ViewModelBase
                 {
                     Console.WriteLine($"[QueueInfoViewModel] Auto refresh error: {ex.Message}");
                 }
-            }, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
+            }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
         }
     }
 
@@ -204,7 +204,6 @@ public partial class QueueInfoViewModel : ViewModelBase
         if (AllTasks.Count != distinctTasks.Count)
         {
             hasChanges = true;
-            Console.WriteLine($"[UpdateTasksList] Task count changed: {AllTasks.Count} -> {distinctTasks.Count}");
         }
         else
         {
@@ -220,7 +219,6 @@ public partial class QueueInfoViewModel : ViewModelBase
                     existingTask.CurrentFrame != newTask.CurrentFrame)
                 {
                     hasChanges = true;
-                    Console.WriteLine($"[UpdateTasksList] Task {i} changed: {existingTask.TaskId} -> {newTask.TaskId}");
                     break;
                 }
             }
@@ -229,16 +227,11 @@ public partial class QueueInfoViewModel : ViewModelBase
         // 只有在有变化时才更新
         if (hasChanges)
         {
-            Console.WriteLine($"[UpdateTasksList] Updating tasks list, clearing {AllTasks.Count} tasks and adding {distinctTasks.Count} tasks");
             AllTasks.Clear();
             foreach (var task in distinctTasks)
             {
                 AllTasks.Add(task);
             }
-        }
-        else
-        {
-            Console.WriteLine($"[UpdateTasksList] No changes detected, skipping update");
         }
     }
 
