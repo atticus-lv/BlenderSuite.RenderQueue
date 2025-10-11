@@ -18,7 +18,7 @@ public static class TaskInfoExtensions
     {
         return new OptimizedTaskInfo
         {
-            TaskId = GenerateStableTaskId(task),
+            TaskId = GetTaskIdHash(task),
             FileName = Path.GetFileName(task.BlendFilePath),
             FilePath = task.BlendFilePath,
             Status = task.Status,
@@ -47,7 +47,7 @@ public static class TaskInfoExtensions
     {
         return new CurrentTaskProgress
         {
-            TaskId = GenerateStableTaskId(task),
+            TaskId = GetTaskIdHash(task),
             FileName = Path.GetFileName(task.BlendFilePath),
             CurrentFrame = task.CurrentFrame,
             OverallProgress = task.OverallProgress01,
@@ -71,7 +71,7 @@ public static class TaskInfoExtensions
     {
         return new TaskStatusChange
         {
-            TaskId = GenerateStableTaskId(task),
+            TaskId = GetTaskIdHash(task),
             FileName = Path.GetFileName(task.BlendFilePath),
             Status = task.Status,
             OverallProgress = task.OverallProgress01
@@ -92,14 +92,11 @@ public static class TaskInfoExtensions
         };
     }
 
-    /// <summary>
-    /// 解析采样总数
-    /// </summary>
+
     private static int? ParseSampleTotal(string sampleText)
     {
         if (string.IsNullOrEmpty(sampleText)) return null;
 
-        // 解析格式如 "150/400" 中的 400
         var parts = sampleText.Split('/');
         if (parts.Length == 2 && int.TryParse(parts[1], out var total))
         {
@@ -109,14 +106,10 @@ public static class TaskInfoExtensions
         return null;
     }
 
-    /// <summary>
-    /// 解析当前采样数
-    /// </summary>
     private static int? ParseSampleCurrent(string sampleText)
     {
         if (string.IsNullOrEmpty(sampleText)) return null;
 
-        // 解析格式如 "150/400" 中的 150
         var parts = sampleText.Split('/');
         if (parts.Length == 2 && int.TryParse(parts[0], out var current))
         {
@@ -125,12 +118,8 @@ public static class TaskInfoExtensions
 
         return null;
     }
-    private static int GenerateStableTaskId(RenderTaskViewModel task)
-    {
-        // 使用文件路径、帧范围和场景名称生成稳定的哈希值
-        var key = $"{task.BlendFilePath}|{task.RealStartFrame}|{task.RealEndFrame}|{task.SelectedSceneName}";
-        return key.GetHashCode();
-    }
+
+    private static int GetTaskIdHash(RenderTaskViewModel task) => task.Id.GetHashCode();
 
     /// <summary>
     /// 将RenderTaskInfo转换为RenderTaskViewModel
@@ -139,7 +128,7 @@ public static class TaskInfoExtensions
     {
         var task = new RenderTaskViewModel
         {
-            Id = taskInfo.Id, // 使用保存的 UUID，如果没有则使用默认的 Guid.NewGuid()
+            Id = taskInfo.Id,
             BlendFilePath = taskInfo.Filepath,
             StartFrame = taskInfo.StartFrame,
             EndFrame = taskInfo.EndFrame,
@@ -163,7 +152,6 @@ public static class TaskInfoExtensions
             }
         }
 
-        // 检查文件有效性
         task.IsValid = !string.IsNullOrEmpty(task.BlendFilePath) && File.Exists(task.BlendFilePath);
 
         Console.WriteLine(
@@ -187,27 +175,25 @@ public static class TaskInfoExtensions
             Enable = task.Enable
         };
 
-        // 如果有覆写设置，创建覆写数据
-        if (task.OverrideFrameRange || task.OverrideScene)
+        // If there are override settings, create override data
+        if (task is { OverrideFrameRange: false, OverrideScene: false }) return taskInfo;
+
+        taskInfo.Override = new OverrideData();
+        if (task.OverrideFrameRange)
         {
-            taskInfo.Override = new OverrideData();
-
-            if (task.OverrideFrameRange)
+            taskInfo.Override.OverrideFrameRange = new OverrideFrameRangeData
             {
-                taskInfo.Override.OverrideFrameRange = new OverrideFrameRangeData
-                {
-                    StartFrame = task.StartFrame,
-                    EndFrame = task.EndFrame
-                };
-            }
+                StartFrame = task.StartFrame,
+                EndFrame = task.EndFrame
+            };
+        }
 
-            if (task.OverrideScene && !string.IsNullOrEmpty(task.SelectedSceneName))
+        if (task.OverrideScene && !string.IsNullOrEmpty(task.SelectedSceneName))
+        {
+            taskInfo.Override.OverrideScene = new OverrideSceneData
             {
-                taskInfo.Override.OverrideScene = new OverrideSceneData
-                {
-                    SceneName = task.SelectedSceneName
-                };
-            }
+                SceneName = task.SelectedSceneName
+            };
         }
 
         return taskInfo;
