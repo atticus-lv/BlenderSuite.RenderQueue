@@ -1,8 +1,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:converters="using:BlenderSuite.RenderQueue.Converters"
-             xmlns:mainConverters="using:BlenderRenderQueue.Converters"
              xmlns:queueClient="clr-namespace:QueueClient"
+             xmlns:converters="clr-namespace:QueueClient.Converters"
              x:Class="BlenderSuite.RenderQueue.App"
              RequestedThemeVariant="Dark">
              <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
@@ -21,9 +20,9 @@
             <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
             <converters:StatusEqualsConverter x:Key="StatusEqualsConverter" />
             <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
-            <mainConverters:StatusToColorConverter x:Key="StatusToColorConverter" />
-            <mainConverters:FileNameConverter x:Key="FileNameConverter" />
-            <mainConverters:ObjectEqualMultiConverter x:Key="ObjectEqualMultiConverter" />
+            <converters:StatusToColorConverter x:Key="StatusToColorConverter" />
+            <converters:FileNameConverter x:Key="FileNameConverter" />
+            <converters:ObjectEqualMultiConverter x:Key="ObjectEqualMultiConverter" />
         </ResourceDictionary>
     </Application.Resources>
 

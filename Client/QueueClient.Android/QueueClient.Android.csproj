@@ -26,4 +26,5 @@
   <ItemGroup>
     <ProjectReference Include="..\QueueClient\QueueClient.csproj" />
   </ItemGroup>
+
 </Project>
