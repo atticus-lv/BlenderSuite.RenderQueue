@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
@@ -25,6 +26,9 @@ public partial class QueueInfoViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _errorMessage = string.Empty;
+
+    [ObservableProperty]
+    private List<OptimizedTaskInfo> _allTasks = new();
 
     public QueueInfoViewModel(ConnectionViewModel connectionViewModel)
     {
@@ -108,6 +112,7 @@ public partial class QueueInfoViewModel : ViewModelBase
             if (status != null)
             {
                 QueueStatus = status;
+                AllTasks = status.Tasks ?? new List<OptimizedTaskInfo>();
                 ErrorMessage = string.Empty; // 清除之前的错误
 
                 // 手动触发计算属性更新通知
@@ -160,6 +165,19 @@ public partial class QueueInfoViewModel : ViewModelBase
     public double CurrentTaskProgress => GetCurrentTask()?.OverallProgress ?? 0.0;
 
     public string CurrentTaskProgressText => $"{CurrentTaskProgress:P1}";
+
+    /// <summary>
+    /// 是否有任务
+    /// </summary>
+    public bool HasTasks => AllTasks.Any();
+
+    /// <summary>
+    /// 检查任务是否为当前正在运行的任务
+    /// </summary>
+    public bool IsCurrentTask(OptimizedTaskInfo task)
+    {
+        return task.Status == RenderTaskStatus.Running;
+    }
 
     /// <summary>
     /// 获取当前正在渲染的任务

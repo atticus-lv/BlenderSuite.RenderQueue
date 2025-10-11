@@ -26,6 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\BlenderRenderQueue\BlenderRenderQueue.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AdditionalFiles Include="Assets\Icons.axaml" />
   </ItemGroup>
 </Project>
