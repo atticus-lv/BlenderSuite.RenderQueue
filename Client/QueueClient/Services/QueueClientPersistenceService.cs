@@ -56,18 +56,18 @@ public class QueueClientPersistenceService
             data.Version = "1.0.0";
             data.LastUpdated = DateTime.Now;
 
-            Console.WriteLine($"[QueueClientPersistenceService] 保存数据到: {DataFilePath}");
+            Console.WriteLine($"[QueueClientPersistenceService] Save data to: {DataFilePath}");
 
             // 序列化并保存到文件
             var json = JsonSerializer.Serialize(data, JsonOptions);
             await File.WriteAllTextAsync(DataFilePath, json);
 
-            Console.WriteLine($"[QueueClientPersistenceService] ✅ 数据保存成功 - 服务器数量: {data.ServerUrls.Count}, 刷新间隔: {data.RefreshInterval}s, 自动刷新: {data.AutoRefresh}");
+            Console.WriteLine($"[QueueClientPersistenceService] Data Saved Successfully - Number of Servers: {data.ServerUrls.Count}, 刷新间隔: {data.RefreshInterval}s, 自动刷新: {data.AutoRefresh}");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[QueueClientPersistenceService] ❌ 保存数据失败: {ex.Message}");
+            Console.WriteLine($"[QueueClientPersistenceService]  Failed to save data: {ex.Message}");
             return false;
         }
     }
@@ -82,34 +82,34 @@ public class QueueClientPersistenceService
         {
             if (!File.Exists(DataFilePath))
             {
-                Console.WriteLine($"[QueueClientPersistenceService] 数据文件不存在，使用默认数据: {DataFilePath}");
+                Console.WriteLine($"[QueueClientPersistenceService] The data file does not exist, using the default data: {DataFilePath}");
                 return new QueueClientData();
             }
 
-            Console.WriteLine($"[QueueClientPersistenceService] 从文件加载数据: {DataFilePath}");
+            Console.WriteLine($"[QueueClientPersistenceService] Loading data from a file: {DataFilePath}");
 
             var json = await File.ReadAllTextAsync(DataFilePath);
             var data = JsonSerializer.Deserialize<QueueClientData>(json, JsonOptions);
 
             if (data == null)
             {
-                Console.WriteLine($"[QueueClientPersistenceService] ❌ 反序列化失败，使用默认数据");
+                Console.WriteLine($"[QueueClientPersistenceService] deserialization fails, using default data");
                 return new QueueClientData();
             }
 
             // 版本兼容性检查
             if (string.IsNullOrEmpty(data.Software) || data.Software != "QueueClient")
             {
-                Console.WriteLine($"[QueueClientPersistenceService] ⚠️ 无效的软件标识，使用默认数据");
+                Console.WriteLine($"[QueueClientPersistenceService] ⚠ Invalid software identifier, using default data");
                 return new QueueClientData();
             }
 
-            Console.WriteLine($"[QueueClientPersistenceService] ✅ 数据加载成功 - 服务器数量: {data.ServerUrls.Count}, 刷新间隔: {data.RefreshInterval}s, 自动刷新: {data.AutoRefresh}");
+            Console.WriteLine($"[QueueClientPersistenceService] Data Loading Success - Number of servers: {data.ServerUrls.Count}, 刷新间隔: {data.RefreshInterval}s, 自动刷新: {data.AutoRefresh}");
             return data;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[QueueClientPersistenceService] ❌ 加载数据失败: {ex.Message}");
+            Console.WriteLine($"[QueueClientPersistenceService]  Failed to load data: {ex.Message}");
             return new QueueClientData();
         }
     }
