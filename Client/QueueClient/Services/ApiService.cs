@@ -25,15 +25,35 @@ public class ApiService
         var handler = new HttpClientHandler();
         
         // Android
-        if (!OperatingSystem.IsAndroid()) return new HttpClient(handler);
-        Console.WriteLine("[ApiService] Configuring HttpClient for Android platform");
+        if (OperatingSystem.IsAndroid())
+        {
+            Console.WriteLine("[ApiService] Configuring HttpClient for Android platform");
             
-        // Allow insecure HTTP connections
-        handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
-            
-        // Disable proxies
-        handler.UseProxy = false;
+            // Allow insecure HTTP connections
+            handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
+                
+            // Disable proxies
+            handler.UseProxy = false;
 
+            return new HttpClient(handler);
+        }
+        
+        // Browser (WASM)
+        if (OperatingSystem.IsBrowser())
+        {
+            Console.WriteLine("[ApiService] Configuring HttpClient for Browser platform");
+            
+            // 浏览器环境使用默认配置，但设置适当的超时
+            var client = new HttpClient(handler);
+            client.Timeout = TimeSpan.FromSeconds(15);
+            
+            // 设置User-Agent
+            client.DefaultRequestHeaders.Add("User-Agent", "QueueClient-Browser/1.0");
+            
+            return client;
+        }
+        
+        // Desktop/其他平台
         return new HttpClient(handler);
     }
 
@@ -47,7 +67,7 @@ public class ApiService
         try
         {
             Console.WriteLine($"[ApiService] Attempting to connect to: {_baseUrl}/api/health");
-            Console.WriteLine($"[ApiService] Platform: Android={OperatingSystem.IsAndroid()}, Windows={OperatingSystem.IsWindows()}");
+            Console.WriteLine($"[ApiService] Platform: Android={OperatingSystem.IsAndroid()}, Browser={OperatingSystem.IsBrowser()}, Windows={OperatingSystem.IsWindows()}");
             Console.WriteLine($"[ApiService] HttpClient timeout: {_httpClient.Timeout}");
             
             // 对于Android，尝试使用更简单的请求方式
@@ -59,6 +79,17 @@ public class ApiService
                 using var androidClient = CreateAndroidHttpClient();
                 var response = await androidClient.GetAsync($"{_baseUrl}/api/health");
                 Console.WriteLine($"[ApiService] Android response status: {response.StatusCode}");
+                return response.IsSuccessStatusCode;
+            }
+            // 对于浏览器环境，使用特殊的连接方法
+            else if (OperatingSystem.IsBrowser())
+            {
+                Console.WriteLine("[ApiService] Using Browser-specific connection method");
+                
+                // 创建一个新的HttpClient实例，避免可能的缓存问题
+                using var browserClient = CreateBrowserHttpClient();
+                var response = await browserClient.GetAsync($"{_baseUrl}/api/health");
+                Console.WriteLine($"[ApiService] Browser response status: {response.StatusCode}");
                 return response.IsSuccessStatusCode;
             }
             else
@@ -93,6 +124,23 @@ public class ApiService
         return client;
     }
 
+    private HttpClient CreateBrowserHttpClient()
+    {
+        var handler = new HttpClientHandler();
+        
+        // 浏览器特定的HTTP配置
+        var client = new HttpClient(handler);
+        client.Timeout = TimeSpan.FromSeconds(15);
+        
+        // 设置User-Agent
+        client.DefaultRequestHeaders.Add("User-Agent", "QueueClient-Browser/1.0");
+        
+        // 设置Accept头
+        client.DefaultRequestHeaders.Add("Accept", "application/json");
+        
+        return client;
+    }
+
     public async Task<HealthResponse?> GetHealthAsync()
     {
         try
@@ -101,6 +149,11 @@ public class ApiService
             {
                 using var androidClient = CreateAndroidHttpClient();
                 return await androidClient.GetFromJsonAsync<HealthResponse>($"{_baseUrl}/api/health");
+            }
+            else if (OperatingSystem.IsBrowser())
+            {
+                using var browserClient = CreateBrowserHttpClient();
+                return await browserClient.GetFromJsonAsync<HealthResponse>($"{_baseUrl}/api/health");
             }
             else
             {
