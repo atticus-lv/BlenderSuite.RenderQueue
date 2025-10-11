@@ -38,7 +38,6 @@ jobs:
                         -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
         
     - name: Build Installer
-      working-directory: BlenderRenderQueue
       run: |
         ./make_aot_installer.bat
       
@@ -55,5 +54,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BlenderDisplaceSuite-${{ steps.get_version.outputs.version }}
-        path: BlenderRenderQueue/Install/Windows/Output/*.exe
+        path: Install/Windows/Output/*.exe
         if-no-files-found: error
