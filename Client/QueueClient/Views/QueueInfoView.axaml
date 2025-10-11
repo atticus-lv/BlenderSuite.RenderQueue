@@ -180,22 +180,6 @@
                                                         </TextBlock.Text>
                                                     </TextBlock>
                                                 </StackPanel>
-
-                                                <!-- 进度条 - 仅当前任务显示 -->
-                                                <ProgressBar Minimum="0" Maximum="1"
-                                                             Value="{Binding OverallProgress}"
-                                                             Height="4"
-                                                             Margin="0,2,0,0">
-                                                    <ProgressBar.IsVisible>
-                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                            <Binding Path="IsValid" />
-                                                            <Binding Path="Enable" />
-                                                            <Binding Path="Status"
-                                                                     Converter="{StaticResource StatusEqualsConverter}"
-                                                                     ConverterParameter="Running" />
-                                                        </MultiBinding>
-                                                    </ProgressBar.IsVisible>
-                                                </ProgressBar>
                                             </StackPanel>
 
                                             <!-- 状态文本 -->
