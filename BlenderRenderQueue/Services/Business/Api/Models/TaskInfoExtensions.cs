@@ -12,78 +12,6 @@ namespace BlenderRenderQueue.Services.Business.Api.Models;
 public static class TaskInfoExtensions
 {
     /// <summary>
-    /// 将RenderTaskViewModel转换为TaskInfoResponse
-    /// </summary>
-    public static TaskInfoResponse ToApiResponse(this RenderTaskViewModel task)
-    {
-        return new TaskInfoResponse
-        {
-            TaskId = task.GetHashCode(),
-            FileName = Path.GetFileName(task.BlendFilePath),
-            FilePath = task.BlendFilePath,
-            Status = task.Status,
-            Enable = task.Enable,
-            IsValid = task.IsValid,
-            StartFrame = task.StartFrame,
-            EndFrame = task.EndFrame,
-            CurrentFrame = task.CurrentFrame,
-            TotalFrames = task.RealTotalFrames,
-            OverallProgress = task.OverallProgress01,
-            CurrentFrameProgress = task.Progress01,
-            SceneName = task.SelectedSceneName ?? string.Empty,
-            OverrideFrameRange = task.OverrideFrameRange,
-            OverrideScene = task.OverrideScene,
-            Engine = ParseRenderEngine(task.Engine),
-            SampleText = task.SampleText,
-            SavedPath = task.SavedPath,
-            LastUpdateTime = DateTime.UtcNow
-        };
-    }
-
-    /// <summary>
-    /// 将RenderTaskViewModel转换为ProgressUpdate
-    /// </summary>
-    public static ProgressUpdate ToProgressUpdate(this RenderTaskViewModel task)
-    {
-        return new ProgressUpdate
-        {
-            TaskId = task.GetHashCode(),
-            Timestamp = DateTime.UtcNow,
-            FileName = Path.GetFileName(task.BlendFilePath),
-            Status = task.Status,
-            Progress = new RenderProgress
-            {
-                CurrentFrame = task.CurrentFrame,
-                StartFrame = task.StartFrame,
-                EndFrame = task.EndFrame,
-                Engine = ParseRenderEngine(task.Engine),
-                Scene = task.SelectedSceneName,
-                SavedPath = task.SavedPath
-            },
-            OverallProgress = task.OverallProgress01,
-            CurrentFrameProgress = task.Progress01
-        };
-    }
-
-    /// <summary>
-    /// 将RenderTaskViewModel转换为CurrentTaskInfo
-    /// </summary>
-    public static CurrentTaskInfo ToCurrentTaskInfo(this RenderTaskViewModel task)
-    {
-        return new CurrentTaskInfo
-        {
-            FileName = Path.GetFileName(task.BlendFilePath),
-            CurrentFrame = task.CurrentFrame,
-            TotalFrames = task.RealTotalFrames,
-            Progress = task.OverallProgress01,
-            Status = task.Status,
-            Engine = ParseRenderEngine(task.Engine),
-            SampleText = task.SampleText,
-            SavedPath = task.SavedPath
-        };
-    }
-
-    /// <summary>
     /// 将RenderTaskViewModel转换为OptimizedTaskInfo
     /// </summary>
     public static OptimizedTaskInfo ToOptimizedTaskInfo(this RenderTaskViewModel task)
@@ -170,13 +98,14 @@ public static class TaskInfoExtensions
     private static int? ParseSampleTotal(string sampleText)
     {
         if (string.IsNullOrEmpty(sampleText)) return null;
-        
+
         // 解析格式如 "150/400" 中的 400
         var parts = sampleText.Split('/');
         if (parts.Length == 2 && int.TryParse(parts[1], out var total))
         {
             return total;
         }
+
         return null;
     }
 
@@ -186,13 +115,14 @@ public static class TaskInfoExtensions
     private static int? ParseSampleCurrent(string sampleText)
     {
         if (string.IsNullOrEmpty(sampleText)) return null;
-        
+
         // 解析格式如 "150/400" 中的 150
         var parts = sampleText.Split('/');
         if (parts.Length == 2 && int.TryParse(parts[0], out var current))
         {
             return current;
         }
+
         return null;
     }
 }
