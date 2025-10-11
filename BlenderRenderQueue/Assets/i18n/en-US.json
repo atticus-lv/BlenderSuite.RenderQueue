@@ -202,7 +202,7 @@
   "VideoGeneration_Completed": "Video generation completed",
   "VideoGeneration_Failed": "Video generation failed",
   "VideoGeneration_Error": "Video generation error: {0}",
-  "VideoGeneration_ToastTitle": "Generating video for {0}",
+  "VideoGeneration_ToastTitle": "Generating video: {0}",
   "VideoGeneration_SuccessTitle": "Video generation successful",
   "VideoGeneration_SuccessMessage": "Video for task {0} has been generated successfully",
   "VideoGeneration_FailedTitle": "Video generation failed",

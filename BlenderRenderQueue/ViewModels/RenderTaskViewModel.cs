@@ -760,7 +760,6 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             try
             {
-
                 // 重新从文件加载图片
                 using var fileStream = File.OpenRead(imagePath);
                 var originalBitmap = new Bitmap(fileStream);
@@ -780,7 +779,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 var newWidth = (int)(originalSize.Width * scale);
                 var newHeight = (int)(originalSize.Height * scale);
 
-           
+
                 // 使用RenderTargetBitmap进行缩放
                 var renderTarget = new RenderTargetBitmap(new Avalonia.PixelSize(newWidth, newHeight));
                 using (var drawingContext = renderTarget.CreateDrawingContext())
@@ -1254,10 +1253,14 @@ public partial class RenderTaskViewModel : ViewModelBase
                 Minimum = 0,
                 Maximum = 100
             };
+            var fileName = Path.GetFileName(BlendFilePath);
+            var titleName = fileName.EndsWith(".blend", StringComparison.OrdinalIgnoreCase)
+                ? fileName.Substring(0, fileName.Length - 6)
+                : fileName;
             var progressToast =
                 this.ShowProgressToast(
                     string.Format(Localizer.Localizer.Instance["VideoGeneration_ToastTitle"],
-                        Path.GetFileName(BlendFilePath)), progressBar);
+                        titleName), progressBar);
 
             // 使用进程管理服务创建视频生成进程
             var videoProcess = await _processService.CreateVideoProcessAsync();
