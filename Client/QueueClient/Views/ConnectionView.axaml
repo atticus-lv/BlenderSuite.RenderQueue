@@ -15,26 +15,17 @@
             <glassMorphism:GlassCard Grid.Row="1" Margin="0 10">
                 <StackPanel Spacing="16" VerticalAlignment="Center">
                     <StackPanel Spacing="4" HorizontalAlignment="Stretch">
-                        <TextBlock FontSize="16" Classes="DemiBold" Margin="4,0,0,0" Text="Server Url" />
+                        <TextBlock FontSize="18" Classes="DemiBold" Margin="4,0,0,0" Text="Server Url" />
                         <TextBox FontSize="16"
                                  Text="{Binding ServerUrl, Mode=TwoWay}"
                                  Watermark="http://192.168.101.174:8325" />
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"
-                                HorizontalAlignment="Center">
-                        <Button Content="Connect" FontSize="16" FontWeight="Bold"
-                                Command="{Binding ConnectCommand}"
-                                IsEnabled="{Binding !IsConnecting}" />
-                        <Button Content="Disconnect" FontSize="16" FontWeight="Bold"
-                                Command="{Binding DisconnectCommand}"
-                                IsEnabled="{Binding IsConnected}" />
-                    </StackPanel>
 
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <TextBlock
                             VerticalAlignment="Center"
-                            FontSize="16" FontWeight="DemiBold" Margin="4 0 0 0">
+                            FontSize="18" FontWeight="DemiBold" Margin="4 0 0 0">
                             Auto Refresh
                         </TextBlock>
                         <ToggleButton Grid.Column="2" Classes="Switch"
@@ -47,13 +38,33 @@
             </glassMorphism:GlassCard>
 
             <glassMorphism:GlassCard Grid.Row="2" Margin="0 10">
-                <StackPanel Spacing="10">
-                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="10">
+                <StackPanel Spacing="10" Margin="10">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
                         <Ellipse Width="16" Height="16"
                                  Fill="{Binding IsConnected, Converter={StaticResource BoolToColorConverter}}" />
                         <TextBlock Text="{Binding ConnectionStatus}"
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center" />
+                    </StackPanel>
+
+
+                    <StackPanel IsVisible="{Binding IsConnected}">
+                        <TextBlock Text="{Binding ServerVersion, StringFormat='Version: {0}'}"
+                                   Opacity="0.7" />
+                        <TextBlock
+                            Text="{Binding LastConnected, StringFormat='Last Connected: {0:yyyy-MM-dd HH:mm:ss}'}"
+                            Opacity="0.7" />
+                    </StackPanel>
+
+
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <Button Content="Connect" FontSize="20" FontWeight="Bold"
+                                Command="{Binding ConnectCommand}"
+                                IsEnabled="{Binding !IsConnecting}" />
+                        <Button Content="Disconnect" FontSize="20" FontWeight="Bold"
+                                Command="{Binding DisconnectCommand}"
+                                IsEnabled="{Binding IsConnected}" />
                     </StackPanel>
 
                     <!-- 错误信息显示 -->
@@ -74,13 +85,6 @@
                         </StackPanel>
                     </Border>
 
-                    <StackPanel IsVisible="{Binding IsConnected}">
-                        <TextBlock Text="{Binding ServerVersion, StringFormat='Version: {0}'}"
-                                   Opacity="0.7" />
-                        <TextBlock
-                            Text="{Binding LastConnected, StringFormat='Last Connected: {0:yyyy-MM-dd HH:mm:ss}'}"
-                            Opacity="0.7" />
-                    </StackPanel>
 
                     <ProgressBar IsIndeterminate="True"
                                  IsVisible="{Binding IsConnecting}"
