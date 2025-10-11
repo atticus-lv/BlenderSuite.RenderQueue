@@ -235,5 +235,9 @@
   "ApiService_TaskList": "任务列表",
   "ApiService_HealthCheck": "健康检查",
   "ApiService_ProgressStream": "进度流",
-  "ApiService_Disabled": "API 服务已禁用"
+  "ApiService_Disabled": "API 服务已禁用",
+  "ApiService_CopySuccess": "API 地址已复制",
+  "ApiService_CopySuccessMessage": "API 地址已复制到剪贴板",
+  "ApiService_CopyFailed": "复制失败",
+  "ApiService_CopyFailedMessage": "复制 API 地址到剪贴板失败"
 }

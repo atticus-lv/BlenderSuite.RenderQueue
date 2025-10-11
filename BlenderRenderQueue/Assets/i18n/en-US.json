@@ -235,5 +235,9 @@
   "ApiService_TaskList": "Task List",
   "ApiService_HealthCheck": "Health Check",
   "ApiService_ProgressStream": "Progress Stream",
-  "ApiService_Disabled": "API service is disabled"
+  "ApiService_Disabled": "API service is disabled",
+  "ApiService_CopySuccess": "API URL Copied",
+  "ApiService_CopySuccessMessage": "API URL has been copied to clipboard",
+  "ApiService_CopyFailed": "Copy Failed",
+  "ApiService_CopyFailedMessage": "Failed to copy API URL to clipboard"
 }

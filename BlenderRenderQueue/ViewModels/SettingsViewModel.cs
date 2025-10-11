@@ -584,10 +584,29 @@ public partial class SettingsViewModel : ViewModelBase
             Console.WriteLine(success
                 ? $"[SettingsViewModel] ✅ API URL copied to clipboard: {ApiUrl}"
                 : $"[SettingsViewModel] ❌ Failed to copy API URL to clipboard");
+
+            // 显示toast提示
+            if (success)
+            {
+                this.ShowSuccessToast(
+                    Localizer.Localizer.Instance["ApiService_CopySuccess"],
+                    Localizer.Localizer.Instance["ApiService_CopySuccessMessage"]);
+            }
+            else
+            {
+                this.ShowErrorToast(
+                    Localizer.Localizer.Instance["ApiService_CopyFailed"],
+                    Localizer.Localizer.Instance["ApiService_CopyFailedMessage"]);
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[SettingsViewModel] ❌ Failed to copy API URL to clipboard: {ex.Message}");
+            
+            // 显示错误toast
+            this.ShowErrorToast(
+                Localizer.Localizer.Instance["ApiService_CopyFailed"],
+                Localizer.Localizer.Instance["ApiService_CopyFailedMessage"]);
         }
     }
 
