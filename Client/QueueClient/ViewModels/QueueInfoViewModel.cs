@@ -85,7 +85,7 @@ public partial class QueueInfoViewModel : ViewModelBase
                 {
                     Console.WriteLine($"[QueueInfoViewModel] Auto refresh error: {ex.Message}");
                 }
-            }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            }, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
         }
     }
 
@@ -192,71 +192,53 @@ public partial class QueueInfoViewModel : ViewModelBase
     /// </summary>
     private void UpdateTasksList(List<OptimizedTaskInfo> newTasks)
     {
-        // 如果队列正在运行，只更新当前任务
-        if (IsQueueRunning)
+        // 去重处理 - 按TaskId去重
+        var distinctTasks = newTasks
+            .GroupBy(t => t.TaskId)
+            .Select(g => g.First())
+            .ToList();
+        
+        // 检查是否有任何变化
+        bool hasChanges = false;
+        
+        if (AllTasks.Count != distinctTasks.Count)
         {
-            UpdateCurrentTaskOnly(newTasks);
+            hasChanges = true;
+            Console.WriteLine($"[UpdateTasksList] Task count changed: {AllTasks.Count} -> {distinctTasks.Count}");
         }
         else
         {
-            // 队列状态变化时，更新所有任务
-            UpdateAllTasks(newTasks);
-        }
-    }
-
-    /// <summary>
-    /// 更新所有任务（队列状态变化时）
-    /// </summary>
-    private void UpdateAllTasks(List<OptimizedTaskInfo> newTasks)
-    {
-        AllTasks.Clear();
-        foreach (var task in newTasks)
-        {
-            AllTasks.Add(task);
-        }
-    }
-
-    /// <summary>
-    /// 只更新当前正在运行的任务（队列运行时）
-    /// </summary>
-    private void UpdateCurrentTaskOnly(List<OptimizedTaskInfo> newTasks)
-    {
-        bool hasUpdates = false;
-        
-        // 遍历所有任务，检查状态变化
-        for (int i = 0; i < AllTasks.Count; i++)
-        {
-            var existingTask = AllTasks[i];
-            var newTask = newTasks.FirstOrDefault(t => t.TaskId == existingTask.TaskId);
-            
-            if (newTask == null) continue;
-            
-            // 检查任务状态是否发生变化
-            bool taskChanged = existingTask.Status != newTask.Status ||
-                              existingTask.OverallProgress != newTask.OverallProgress ||
-                              existingTask.CurrentFrame != newTask.CurrentFrame ||
-                              existingTask.Enable != newTask.Enable;
-            
-            if (taskChanged)
+            for (int i = 0; i < distinctTasks.Count; i++)
             {
-                // 更新任务属性
-                existingTask.Status = newTask.Status;
-                existingTask.OverallProgress = newTask.OverallProgress;
-                existingTask.CurrentFrame = newTask.CurrentFrame;
-                existingTask.CurrentFrameProgress = newTask.CurrentFrameProgress;
-                existingTask.Enable = newTask.Enable;
-                existingTask.LastUpdateTime = newTask.LastUpdateTime;
+                var newTask = distinctTasks[i];
+                var existingTask = AllTasks[i];
                 
-                // 通过替换触发UI更新
-                AllTasks[i] = existingTask;
-                hasUpdates = true;
+                if (existingTask.TaskId != newTask.TaskId ||
+                    existingTask.Status != newTask.Status ||
+                    existingTask.Enable != newTask.Enable ||
+                    existingTask.OverallProgress != newTask.OverallProgress ||
+                    existingTask.CurrentFrame != newTask.CurrentFrame)
+                {
+                    hasChanges = true;
+                    Console.WriteLine($"[UpdateTasksList] Task {i} changed: {existingTask.TaskId} -> {newTask.TaskId}");
+                    break;
+                }
             }
         }
         
-        // 如果没有找到任何变化，检查是否有新任务或任务被删除
-        if (!hasUpdates && AllTasks.Count != newTasks.Count)
+        // 只有在有变化时才更新
+        if (hasChanges)
         {
-            UpdateAllTasks(newTasks);
+            Console.WriteLine($"[UpdateTasksList] Updating tasks list, clearing {AllTasks.Count} tasks and adding {distinctTasks.Count} tasks");
+            AllTasks.Clear();
+            foreach (var task in distinctTasks)
+            {
+                AllTasks.Add(task);
+            }
+        }
+        else
+        {
+            Console.WriteLine($"[UpdateTasksList] No changes detected, skipping update");
         }
     }
 
