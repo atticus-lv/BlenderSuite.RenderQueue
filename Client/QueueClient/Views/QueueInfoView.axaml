@@ -166,20 +166,35 @@
                                                            FontSize="14"
                                                            TextTrimming="CharacterEllipsis" />
 
-                                                <!-- 场景和帧范围信息 -->
-                                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                                    <TextBlock Text="{Binding SceneName}"
-                                                               FontSize="12"
-                                                               Foreground="Gray" />
-                                                    <TextBlock FontSize="12" Foreground="Gray">
-                                                        <TextBlock.Text>
-                                                            <MultiBinding StringFormat="{}{0}-{1}">
-                                                                <Binding Path="StartFrame" />
-                                                                <Binding Path="EndFrame" />
-                                                            </MultiBinding>
-                                                        </TextBlock.Text>
-                                                    </TextBlock>
-                                                </StackPanel>
+                                                 <!-- 场景和帧范围信息 -->
+                                                 <StackPanel Orientation="Horizontal" Spacing="8">
+                                                     <TextBlock Text="{Binding SceneName}"
+                                                                FontSize="12"
+                                                                Foreground="Gray" />
+                                                     <TextBlock FontSize="12" Foreground="Gray">
+                                                         <TextBlock.Text>
+                                                             <MultiBinding StringFormat="{}{0} frames">
+                                                                 <Binding Path="TotalFrames" />
+                                                             </MultiBinding>
+                                                         </TextBlock.Text>
+                                                     </TextBlock>
+                                                 </StackPanel>
+
+                                                <!-- 进度条 - 仅当前任务显示 -->
+                                                <ProgressBar Minimum="0" Maximum="1"
+                                                             Value="{Binding OverallProgress}"
+                                                             Height="4"
+                                                             Margin="0,2,0,0">
+                                                    <ProgressBar.IsVisible>
+                                                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                            <Binding Path="IsValid" />
+                                                            <Binding Path="Enable" />
+                                                            <Binding Path="Status"
+                                                                     Converter="{StaticResource StatusEqualsConverter}"
+                                                                     ConverterParameter="Running" />
+                                                        </MultiBinding>
+                                                    </ProgressBar.IsVisible>
+                                                </ProgressBar>
                                             </StackPanel>
 
                                             <!-- 状态文本 -->
