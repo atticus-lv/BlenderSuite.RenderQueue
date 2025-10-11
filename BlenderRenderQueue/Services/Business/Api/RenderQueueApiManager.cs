@@ -38,9 +38,10 @@ public class RenderQueueApiManager : IDisposable
     public RenderQueueApiManager(RenderQueueViewModel renderQueue)
     {
         _renderQueue = renderQueue;
-        
+
         // 注意：不在这里自动启动API服务，等待显式调用
-        Console.WriteLine($"[RenderQueueApiManager] 🔧 API Manager initialized, API enabled: {IsApiEnabled}, Port: {ApiPort}");
+        Console.WriteLine(
+            $"[RenderQueueApiManager] 🔧 API Manager initialized, API enabled: {IsApiEnabled}, Port: {ApiPort}");
     }
 
     /// <summary>
@@ -49,7 +50,7 @@ public class RenderQueueApiManager : IDisposable
     public async Task StartApiAsync()
     {
         Console.WriteLine($"[RenderQueueApiManager] 🚀 Starting API service on port {ApiPort}...");
-        
+
         if (!IsApiEnabled)
         {
             Console.WriteLine($"[RenderQueueApiManager] ⚠️ API is disabled, cannot start service");
@@ -86,6 +87,7 @@ public class RenderQueueApiManager : IDisposable
             {
                 Console.WriteLine($"[RenderQueueApiManager] ⚠️ Error cleaning up previous service: {ex.Message}");
             }
+
             _apiService = null;
         }
 
@@ -94,7 +96,7 @@ public class RenderQueueApiManager : IDisposable
             Console.WriteLine($"[RenderQueueApiManager] 🔧 Creating new API service instance...");
             _apiService = new RenderQueueApiService(_renderQueue);
             _apiService.StatusChanged += OnApiServiceStatusChanged;
-            
+
             Console.WriteLine($"[RenderQueueApiManager] 🔧 Starting API service on port {ApiPort}...");
             await _apiService.StartAsync(ApiPort);
             Console.WriteLine($"[RenderQueueApiManager] ✅ API service started successfully on port {ApiPort}");
@@ -103,7 +105,7 @@ public class RenderQueueApiManager : IDisposable
         {
             Console.WriteLine($"[RenderQueueApiManager] ❌ Failed to start API service: {ex.Message}");
             Console.WriteLine($"[RenderQueueApiManager] ❌ Exception details: {ex}");
-            
+
             // 清理失败的服务实例
             if (_apiService != null)
             {
@@ -119,9 +121,10 @@ public class RenderQueueApiManager : IDisposable
                 {
                     // 忽略清理时的异常
                 }
+
                 _apiService = null;
             }
-            
+
             throw;
         }
         finally
@@ -177,7 +180,7 @@ public class RenderQueueApiManager : IDisposable
     public async Task SetApiConfigAsync(bool enabled, int port)
     {
         var wasRunning = IsApiRunning;
-        
+
         // 如果正在运行，先停止
         if (wasRunning)
         {

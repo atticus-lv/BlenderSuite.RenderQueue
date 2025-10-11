@@ -17,16 +17,13 @@ using BlenderRenderQueue.Helpers;
 
 namespace BlenderRenderQueue.Services.Business.Api;
 
-/// <summary>
-/// 渲染队列API服务实现
-/// </summary>
 public class RenderQueueApiService : IRenderQueueApiService, IDisposable
 {
     private readonly RenderQueueViewModel _renderQueue;
     private WebApplication? _app;
     private CancellationTokenSource? _cancellationTokenSource;
     private readonly ConcurrentQueue<OptimizedProgressUpdate> _progressUpdates = new();
-    private readonly object _progressLock = new();
+    private readonly Lock _progressLock = new();
     private bool _disposed;
 
     public bool IsRunning { get; private set; }
@@ -38,13 +35,11 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
     {
         _renderQueue = renderQueue;
 
-        // 订阅所有现有任务的进度变化事件
         foreach (var task in _renderQueue.RenderTasks)
         {
             task.ProgressChanged += OnTaskProgressChanged;
         }
 
-        // 订阅队列任务集合变化，自动订阅新任务的进度事件
         _renderQueue.RenderTasks.CollectionChanged += (s, e) =>
         {
             if (e.NewItems != null)
@@ -55,12 +50,10 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                 }
             }
 
-            if (e.OldItems != null)
+            if (e.OldItems == null) return;
+            foreach (RenderTaskViewModel oldTask in e.OldItems)
             {
-                foreach (RenderTaskViewModel oldTask in e.OldItems)
-                {
-                    oldTask.ProgressChanged -= OnTaskProgressChanged;
-                }
+                oldTask.ProgressChanged -= OnTaskProgressChanged;
             }
         };
     }
@@ -68,24 +61,19 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
     private void OnTaskProgressChanged(object? sender, RenderTaskProgressEventArgs e)
     {
         if (sender is not RenderTaskViewModel task) return;
-        
+
         var update = new OptimizedProgressUpdate
         {
             Timestamp = DateTime.UtcNow
         };
 
-        // 只有当前渲染任务推送详细进度
         if (task == _renderQueue.CurrentRenderingTask)
         {
             update.CurrentTask = task.ToCurrentTaskProgress();
         }
         else
         {
-            // 其他任务只推送状态变化
-            update.StatusChanges = new List<TaskStatusChange>
-            {
-                task.ToTaskStatusChange()
-            };
+            update.StatusChanges = [task.ToTaskStatusChange()];
         }
 
         lock (_progressLock)
@@ -113,30 +101,27 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
             var builder = WebApplication.CreateBuilder();
             builder.WebHost.UseUrls($"http://*:{port}");
 
-            // 添加CORS服务
             builder.Services.AddCors();
-            
-            // 配置JSON序列化选项 - AOT兼容
+
             builder.Services.ConfigureHttpJsonOptions(options =>
             {
                 options.SerializerOptions.WriteIndented = true;
                 options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                options.SerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+                options.SerializerOptions.Encoder =
+                    System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
                 options.SerializerOptions.TypeInfoResolver = ApiJsonContext.Default;
             });
 
             _app = builder.Build();
 
-            // 配置CORS
             _app.UseCors(policy => policy
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowAnyHeader());
 
-            // 获取队列状态API - 使用优化的响应模型
             _app.MapGet("/api/queue/status", () =>
             {
-                Console.WriteLine($"[RenderQueueApiService] 📊 Received queue status request");
+                // Console.WriteLine("[RenderQueueApiService] Received queue status request");
                 try
                 {
                     var response = new OptimizedQueueStatusResponse
@@ -153,18 +138,17 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                         Tasks = _renderQueue.RenderTasks.Select(task => task.ToOptimizedTaskInfo()).ToList()
                     };
 
-                    Console.WriteLine(
-                        $"[RenderQueueApiService] 📊 Returning optimized queue status: {response.QueueState}, Progress: {response.OverallProgress:P1}, Tasks: {response.ActiveTaskCount}");
+                    // Console.WriteLine(
+                    //     $"[RenderQueueApiService] 📊 Returning optimized queue status: {response.QueueState}, Progress: {response.OverallProgress:P1}, Tasks: {response.ActiveTaskCount}");
                     return Results.Ok(response);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[RenderQueueApiService] ❌ Queue status error: {ex.Message}");
+                    // Console.WriteLine($"[RenderQueueApiService] Queue status error: {ex.Message}");
                     return Results.Problem($"Queue status failed: {ex.Message}");
                 }
             });
 
-            // 获取所有任务列表API - 使用优化的响应模型
             _app.MapGet("/api/queue/tasks", () =>
             {
                 try
@@ -174,7 +158,7 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[RenderQueueApiService] ❌ Tasks list error: {ex.Message}");
+                    // Console.WriteLine($"[RenderQueueApiService] ❌ Tasks list error: {ex.Message}");
                     return Results.Problem($"Tasks list failed: {ex.Message}");
                 }
             });
@@ -183,9 +167,9 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
             _app.MapGet("/api/queue/progress-stream", async (HttpContext context) =>
             {
                 context.Response.ContentType = "text/event-stream";
-                context.Response.Headers["Cache-Control"] = "no-cache";
-                context.Response.Headers["Connection"] = "keep-alive";
-                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                context.Response.Headers.CacheControl = "no-cache";
+                context.Response.Headers.Connection = "keep-alive";
+                context.Response.Headers.AccessControlAllowOrigin = "*";
 
                 var lastUpdateCount = 0;
 
@@ -203,7 +187,7 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                         }
                     }
 
-                    if (currentUpdates.Any())
+                    if (currentUpdates.Count != 0)
                     {
                         var options = new JsonSerializerOptions
                         {
@@ -214,28 +198,27 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                         await context.Response.Body.FlushAsync();
                     }
 
-                    await Task.Delay(1000); // 每秒检查一次更新
+                    await Task.Delay(1000); // Check for updates every second
                 }
             });
 
-            // 特定任务进度历史API - 使用优化的响应模型
             _app.MapGet("/api/queue/task/{taskId}/progress", (int taskId) =>
             {
                 lock (_progressLock)
                 {
                     return _progressUpdates
-                        .Where(u => (u.CurrentTask?.TaskId == taskId) || 
-                                   (u.StatusChanges?.Any(s => s.TaskId == taskId) == true))
+                        .Where(u => (u.CurrentTask?.TaskId == taskId) ||
+                                    (u.StatusChanges?.Any(s => s.TaskId == taskId) == true))
                         .OrderBy(u => u.Timestamp)
                         .Take(100) // 最近100条记录
                         .ToList();
                 }
             });
 
-            // 健康检查API
+
             _app.MapGet("/api/health", () =>
             {
-                Console.WriteLine($"[RenderQueueApiService] ❤️ Received health check request");
+                // Console.WriteLine($"[RenderQueueApiService] Received health check request");
                 try
                 {
                     var response = new HealthResponse
@@ -244,12 +227,12 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                         Timestamp = DateTime.UtcNow,
                         Version = "1.0.0"
                     };
-                    Console.WriteLine($"[RenderQueueApiService] ❤️ Returning health status: {response.Status}");
+                    // Console.WriteLine($"[RenderQueueApiService] Returning health status: {response.Status}");
                     return Results.Ok(response);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[RenderQueueApiService] ❌ Health check error: {ex.Message}");
+                    // Console.WriteLine($"[RenderQueueApiService] ❌ Health check error: {ex.Message}");
                     return Results.Problem($"Health check failed: {ex.Message}");
                 }
             });
@@ -258,12 +241,12 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
             IsRunning = true;
 
             var localNetworkIp = NetworkHelper.GetLocalNetworkIpAddress();
-            
-            Console.WriteLine($"[RenderQueueApiService] 🚀 API service started successfully!");
-            Console.WriteLine($"[RenderQueueApiService] 📡 Listening on: http://*:{port}");
-            Console.WriteLine($"[RenderQueueApiService] 🌐 Local access: http://localhost:{port}");
-            Console.WriteLine($"[RenderQueueApiService] 🌍 Network access: http://{localNetworkIp}:{port}");
-            Console.WriteLine($"[RenderQueueApiService] 📋 Available endpoints:");
+
+            Console.WriteLine($"[RenderQueueApiService] API service started successfully!");
+            Console.WriteLine($"[RenderQueueApiService] Listening on: http://*:{port}");
+            Console.WriteLine($"[RenderQueueApiService] Local access: http://localhost:{port}");
+            Console.WriteLine($"[RenderQueueApiService] Network access: http://{localNetworkIp}:{port}");
+            Console.WriteLine($"[RenderQueueApiService] Available endpoints:");
             Console.WriteLine($"[RenderQueueApiService]   - GET /api/health");
             Console.WriteLine($"[RenderQueueApiService]   - GET /api/queue/status");
             Console.WriteLine($"[RenderQueueApiService]   - GET /api/queue/tasks");
@@ -291,42 +274,36 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
 
         try
         {
-            Console.WriteLine($"[RenderQueueApiService] 🛑 正在停止API服务，端口: {Port}");
-            
+            Console.WriteLine($"[RenderQueueApiService] Stopping API services, ports: {Port}");
+
             // 取消所有正在进行的操作
             _cancellationTokenSource?.Cancel();
 
             if (_app != null)
             {
-                Console.WriteLine($"[RenderQueueApiService] 🛑 正在停止WebApplication...");
-                
-                // 给应用一些时间来优雅关闭
+                Console.WriteLine($"[RenderQueueApiService] IS STOPPING WebApplication...");
+
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                
+
                 try
                 {
                     await _app.StopAsync(cts.Token);
-                    Console.WriteLine($"[RenderQueueApiService] ✅ WebApplication已停止");
                 }
                 catch (OperationCanceledException)
-                {
-                    Console.WriteLine($"[RenderQueueApiService] ⚠️ WebApplication停止超时，强制关闭");
-                }
-                
-                Console.WriteLine($"[RenderQueueApiService] 🛑 正在释放WebApplication资源...");
+                { }
+
                 await _app.DisposeAsync();
                 _app = null;
-                Console.WriteLine($"[RenderQueueApiService] ✅ WebApplication资源已释放");
             }
 
             IsRunning = false;
-            Console.WriteLine($"[RenderQueueApiService] ✅ API服务已完全停止，端口 {Port} 已释放");
-            StatusChanged?.Invoke(this, new ApiServiceStatusChangedEventArgs(false, Port, "API服务已停止"));
+            StatusChanged?.Invoke(this,
+                new ApiServiceStatusChangedEventArgs(false, Port, "The API service has been discontinued"));
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RenderQueueApiService] ❌ API服务停止失败: {ex.Message}");
-            StatusChanged?.Invoke(this, new ApiServiceStatusChangedEventArgs(false, Port, $"API服务停止失败: {ex.Message}"));
+            StatusChanged?.Invoke(this,
+                new ApiServiceStatusChangedEventArgs(false, Port, $"API service stop failed: {ex.Message}"));
             throw;
         }
     }
@@ -340,13 +317,12 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
 
         try
         {
-            Console.WriteLine($"[RenderQueueApiService] 🗑️ 正在释放API服务资源...");
             StopAsync().Wait(10000); // 等待最多10秒
-            Console.WriteLine($"[RenderQueueApiService] ✅ API服务资源已释放");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RenderQueueApiService] ⚠️ 释放API服务资源时出现异常: {ex.Message}");
+            Console.WriteLine(
+                $"[RenderQueueApiService] An exception occurs when releasing an API service resource: {ex.Message}");
         }
 
         _cancellationTokenSource?.Dispose();

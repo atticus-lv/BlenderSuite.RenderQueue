@@ -6,12 +6,10 @@ using BlenderRenderQueue.Services.Business.Api.Models;
 namespace BlenderRenderQueue.Services.Business.Api;
 
 [JsonSerializable(typeof(HealthResponse))]
-[JsonSerializable(typeof(TaskInfoResponse))]
 [JsonSerializable(typeof(RenderProgress))]
 [JsonSerializable(typeof(RenderTaskStatus))]
 [JsonSerializable(typeof(QueueState))]
 [JsonSerializable(typeof(RenderEngine))]
-[JsonSerializable(typeof(List<TaskInfoResponse>))]
 [JsonSerializable(typeof(OptimizedQueueStatusResponse))]
 [JsonSerializable(typeof(OptimizedTaskInfo))]
 [JsonSerializable(typeof(OptimizedProgressUpdate))]
