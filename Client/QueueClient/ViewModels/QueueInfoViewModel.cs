@@ -192,47 +192,64 @@ public partial class QueueInfoViewModel : ViewModelBase
     /// </summary>
     private void UpdateTasksList(List<OptimizedTaskInfo> newTasks)
     {
-        // 去重处理 - 按TaskId去重
+        // 去重处理 - 按TaskId去重，保留第一个
         var distinctTasks = newTasks
             .GroupBy(t => t.TaskId)
             .Select(g => g.First())
             .ToList();
         
-        // 检查是否有任何变化
-        bool hasChanges = false;
+        Console.WriteLine($"[QueueInfoViewModel] UpdateTasksList: Original={newTasks.Count}, After dedup={distinctTasks.Count}");
         
-        if (AllTasks.Count != distinctTasks.Count)
+        // 使用增量更新策略，避免清空整个集合
+        var newTaskIds = distinctTasks.Select(t => t.TaskId).ToHashSet();
+        var existingTaskIds = AllTasks.Select(t => t.TaskId).ToHashSet();
+        
+        // 移除不再存在的任务
+        var tasksToRemove = AllTasks.Where(t => !newTaskIds.Contains(t.TaskId)).ToList();
+        foreach (var task in tasksToRemove)
         {
-            hasChanges = true;
+            Console.WriteLine($"[QueueInfoViewModel] Removing task: TaskId={task.TaskId}, FileName={task.FileName}");
+            AllTasks.Remove(task);
         }
-        else
+        
+        // 添加新任务
+        var tasksToAdd = distinctTasks.Where(t => !existingTaskIds.Contains(t.TaskId)).ToList();
+        foreach (var task in tasksToAdd)
         {
-            for (int i = 0; i < distinctTasks.Count; i++)
+            Console.WriteLine($"[QueueInfoViewModel] Adding new task: TaskId={task.TaskId}, FileName={task.FileName}");
+            AllTasks.Add(task);
+        }
+        
+        // 更新现有任务的数据
+        foreach (var newTask in distinctTasks)
+        {
+            var existingTask = AllTasks.FirstOrDefault(t => t.TaskId == newTask.TaskId);
+            if (existingTask != null)
             {
-                var newTask = distinctTasks[i];
-                var existingTask = AllTasks[i];
+                // 检查是否有变化
+                bool hasChanges = existingTask.Status != newTask.Status ||
+                                 existingTask.Enable != newTask.Enable ||
+                                 Math.Abs(existingTask.OverallProgress - newTask.OverallProgress) > 0.001 ||
+                                 existingTask.CurrentFrame != newTask.CurrentFrame ||
+                                 existingTask.FileName != newTask.FileName;
                 
-                if (existingTask.TaskId != newTask.TaskId ||
-                    existingTask.Status != newTask.Status ||
-                    existingTask.Enable != newTask.Enable ||
-                    existingTask.OverallProgress != newTask.OverallProgress ||
-                    existingTask.CurrentFrame != newTask.CurrentFrame)
+                if (hasChanges)
                 {
-                    hasChanges = true;
-                    break;
+                    Console.WriteLine($"[QueueInfoViewModel] Updating task: TaskId={newTask.TaskId}, FileName={newTask.FileName}");
+                    // 更新属性
+                    existingTask.Status = newTask.Status;
+                    existingTask.Enable = newTask.Enable;
+                    existingTask.OverallProgress = newTask.OverallProgress;
+                    existingTask.CurrentFrame = newTask.CurrentFrame;
+                    existingTask.FileName = newTask.FileName;
+                    existingTask.FilePath = newTask.FilePath;
+                    existingTask.SceneName = newTask.SceneName;
+                    existingTask.TotalFrames = newTask.TotalFrames;
                 }
             }
         }
         
-        // 只有在有变化时才更新
-        if (hasChanges)
-        {
-            AllTasks.Clear();
-            foreach (var task in distinctTasks)
-            {
-                AllTasks.Add(task);
-            }
-        }
+        Console.WriteLine($"[QueueInfoViewModel] Final AllTasks count: {AllTasks.Count}");
     }
 
     /// <summary>
