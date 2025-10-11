@@ -12,7 +12,6 @@
         "Filepath": "C:\\Users\\atticus\\Downloads\\test_file\\test_file.blend",
         "StartFrame": 1,
         "EndFrame": 1,
-        "LastRenderedFrame": 0,
         "Enable": true
       }
     },
@@ -22,7 +21,6 @@
         "Filepath": "C:\\Users\\atticus\\Downloads\\animation\\animation.blend",
         "StartFrame": 1,
         "EndFrame": 1,
-        "LastRenderedFrame": 45,
         "Enable": true,
         "Override": {
           "OverrideFrameRange": {

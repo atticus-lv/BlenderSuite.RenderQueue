@@ -15,6 +15,7 @@ using Avalonia.Threading;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Api;
+using BlenderRenderQueue.Services.Business.Api.Models;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Persistence;
 using BlenderRenderQueue.Services.UI;
@@ -1512,33 +1513,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             {
                 RenderQueue = RenderTasks.Select(task => new RenderTaskData
                 {
-                    RenderTask = new RenderTaskInfo
-                    {
-                        Filename = Path.GetFileName(task.BlendFilePath),
-                        Filepath = task.BlendFilePath,
-                        StartFrame = 1, // 默认值，实际不使用
-                        EndFrame = 1, // 默认值，实际不使用
-                        LastRenderedFrame = task.CurrentFrame,
-                        Enable = task.Enable,
-                        Override = task.OverrideFrameRange || task.OverrideScene
-                            ? new OverrideData
-                            {
-                                OverrideFrameRange = task.OverrideFrameRange
-                                    ? new OverrideFrameRangeData
-                                    {
-                                        StartFrame = task.StartFrame,
-                                        EndFrame = task.EndFrame
-                                    }
-                                    : null,
-                                OverrideScene = task.OverrideScene
-                                    ? new OverrideSceneData
-                                    {
-                                        SceneName = task.SelectedSceneName
-                                    }
-                                    : null
-                            }
-                            : null
-                    }
+                    RenderTask = task.ToRenderTaskInfo() // 使用扩展方法，保持 UUID 一致性
                 }).ToList()
             };
 
@@ -1571,21 +1546,8 @@ public partial class RenderQueueViewModel : ViewModelBase
 
                 // 不再跳过文件不存在的任务，而是标记为无效
 
-                // 确定是否使用覆写帧范围
-                var overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;
-                var startFrame =
-                    overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.StartFrame : 1; // 默认值，将从文件读取
-                var endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : 1; // 默认值，将从文件读取
-
-                var task = new RenderTaskViewModel(
-                    taskInfo.Filepath,
-                    startFrame,
-                    endFrame,
-                    true,
-                    overrideFrameRange)
-                {
-                    Enable = taskInfo.Enable
-                };
+                // 使用新的构造函数从 RenderTaskInfo 加载，保持 UUID 一致性
+                var task = new RenderTaskViewModel(taskInfo);
 
                 // set the parameters for video generation
                 task.SetVideoCodec(_videoCodec);
@@ -1815,20 +1777,8 @@ public partial class RenderQueueViewModel : ViewModelBase
                             continue;
                         }
 
-                        // 确定是否使用覆写帧范围
-                        var overrideFrameRange = taskInfo.Override?.OverrideFrameRange != null;
-                        var startFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.StartFrame : 1;
-                        var endFrame = overrideFrameRange ? taskInfo.Override!.OverrideFrameRange!.EndFrame : 1;
-
-                        var task = new RenderTaskViewModel(
-                            taskInfo.Filepath,
-                            startFrame,
-                            endFrame,
-                            true, // AutoStart
-                            overrideFrameRange);
-
-                        // 设置Enable属性
-                        task.Enable = taskInfo.Enable;
+                        // 使用新的构造函数从 RenderTaskInfo 加载，保持 UUID 一致性
+                        var task = new RenderTaskViewModel(taskInfo);
 
                         // 设置视频生成相关参数
                         task.SetVideoCodec(_videoCodec);

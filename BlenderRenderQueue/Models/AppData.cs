@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
@@ -18,21 +19,17 @@ public class AppData
     public List<RenderTaskData> RenderQueue { get; set; } = new();
 }
 
-
-/// <summary>
-/// 渲染任务数据模型
-/// </summary>
 public class RenderTaskData
 {
     [JsonPropertyName("RenderTask")]
     public RenderTaskInfo RenderTask { get; set; } = new();
 }
 
-/// <summary>
-/// 渲染任务信息
-/// </summary>
 public class RenderTaskInfo
 {
+    [JsonPropertyName("Id")]
+    public Guid Id { get; set; } = Guid.NewGuid();
+
     [JsonPropertyName("Filename")]
     public string Filename { get; set; } = string.Empty;
 

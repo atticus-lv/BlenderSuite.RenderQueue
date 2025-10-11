@@ -23,6 +23,9 @@ namespace BlenderRenderQueue.ViewModels;
 public partial class RenderTaskViewModel : ViewModelBase
 {
     [ObservableProperty]
+    private Guid _id = Guid.NewGuid();
+
+    [ObservableProperty]
     private string _blendFilePath = string.Empty;
 
     [ObservableProperty]
@@ -608,9 +611,50 @@ public partial class RenderTaskViewModel : ViewModelBase
         IsValid = !string.IsNullOrEmpty(blendFilePath) && File.Exists(blendFilePath);
 
         Console.WriteLine(
-            $"[RenderTaskViewModel] Constructor - File: {Path.GetFileName(blendFilePath)}, IsValid: {IsValid}");
+            $"[RenderTaskViewModel] Constructor - ID: {Id}, File: {Path.GetFileName(blendFilePath)}, IsValid: {IsValid}");
         Console.WriteLine(
             $"[RenderTaskViewModel] Initial ScenePropertiesView state - IsLoading: {ScenePropertiesView.IsLoading}, IsLoaded: {ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {ScenePropertiesView.ShowEmptyState}");
+
+        // 加载文件信息
+        LoadFileInfo();
+    }
+
+    /// <summary>
+    /// 从 RenderTaskInfo 数据创建 RenderTaskViewModel 实例
+    /// 如果 RenderTaskInfo 中有 UUID 则使用，否则生成新的
+    /// </summary>
+    public RenderTaskViewModel(RenderTaskInfo taskInfo) : this()
+    {
+        // 使用保存的 UUID，如果为空则生成新的
+        Id = taskInfo.Id == Guid.Empty ? Guid.NewGuid() : taskInfo.Id;
+        
+        BlendFilePath = taskInfo.Filepath;
+        StartFrame = taskInfo.StartFrame;
+        EndFrame = taskInfo.EndFrame;
+        Enable = taskInfo.Enable;
+
+        // 处理覆写数据
+        if (taskInfo.Override != null)
+        {
+            if (taskInfo.Override.OverrideFrameRange != null)
+            {
+                OverrideFrameRange = true;
+                StartFrame = taskInfo.Override.OverrideFrameRange.StartFrame;
+                EndFrame = taskInfo.Override.OverrideFrameRange.EndFrame;
+            }
+
+            if (taskInfo.Override.OverrideScene != null)
+            {
+                OverrideScene = true;
+                SelectedSceneName = taskInfo.Override.OverrideScene.SceneName;
+            }
+        }
+
+        // 检查文件有效性
+        IsValid = !string.IsNullOrEmpty(BlendFilePath) && File.Exists(BlendFilePath);
+
+        Console.WriteLine(
+            $"[RenderTaskViewModel] Constructor from RenderTaskInfo - ID: {Id}, File: {Path.GetFileName(BlendFilePath)}, IsValid: {IsValid}");
 
         // 加载文件信息
         LoadFileInfo();

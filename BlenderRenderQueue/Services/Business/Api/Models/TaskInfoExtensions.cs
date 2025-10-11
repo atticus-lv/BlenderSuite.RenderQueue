@@ -131,4 +131,85 @@ public static class TaskInfoExtensions
         var key = $"{task.BlendFilePath}|{task.RealStartFrame}|{task.RealEndFrame}|{task.SelectedSceneName}";
         return key.GetHashCode();
     }
+
+    /// <summary>
+    /// 将RenderTaskInfo转换为RenderTaskViewModel
+    /// </summary>
+    public static RenderTaskViewModel ToRenderTaskViewModel(this RenderTaskInfo taskInfo)
+    {
+        var task = new RenderTaskViewModel
+        {
+            Id = taskInfo.Id, // 使用保存的 UUID，如果没有则使用默认的 Guid.NewGuid()
+            BlendFilePath = taskInfo.Filepath,
+            StartFrame = taskInfo.StartFrame,
+            EndFrame = taskInfo.EndFrame,
+            Enable = taskInfo.Enable
+        };
+
+        // 处理覆写数据
+        if (taskInfo.Override != null)
+        {
+            if (taskInfo.Override.OverrideFrameRange != null)
+            {
+                task.OverrideFrameRange = true;
+                task.StartFrame = taskInfo.Override.OverrideFrameRange.StartFrame;
+                task.EndFrame = taskInfo.Override.OverrideFrameRange.EndFrame;
+            }
+
+            if (taskInfo.Override.OverrideScene != null)
+            {
+                task.OverrideScene = true;
+                task.SelectedSceneName = taskInfo.Override.OverrideScene.SceneName;
+            }
+        }
+
+        // 检查文件有效性
+        task.IsValid = !string.IsNullOrEmpty(task.BlendFilePath) && File.Exists(task.BlendFilePath);
+
+        Console.WriteLine(
+            $"[TaskInfoExtensions] Created RenderTaskViewModel from RenderTaskInfo - ID: {task.Id}, File: {Path.GetFileName(task.BlendFilePath)}, IsValid: {task.IsValid}");
+
+        return task;
+    }
+
+    /// <summary>
+    /// 将RenderTaskViewModel转换为RenderTaskInfo用于保存
+    /// </summary>
+    public static RenderTaskInfo ToRenderTaskInfo(this RenderTaskViewModel task)
+    {
+        var taskInfo = new RenderTaskInfo
+        {
+            Id = task.Id, // 使用现有的 UUID
+            Filename = Path.GetFileName(task.BlendFilePath),
+            Filepath = task.BlendFilePath,
+            StartFrame = task.StartFrame,
+            EndFrame = task.EndFrame,
+            Enable = task.Enable
+        };
+
+        // 如果有覆写设置，创建覆写数据
+        if (task.OverrideFrameRange || task.OverrideScene)
+        {
+            taskInfo.Override = new OverrideData();
+
+            if (task.OverrideFrameRange)
+            {
+                taskInfo.Override.OverrideFrameRange = new OverrideFrameRangeData
+                {
+                    StartFrame = task.StartFrame,
+                    EndFrame = task.EndFrame
+                };
+            }
+
+            if (task.OverrideScene && !string.IsNullOrEmpty(task.SelectedSceneName))
+            {
+                taskInfo.Override.OverrideScene = new OverrideSceneData
+                {
+                    SceneName = task.SelectedSceneName
+                };
+            }
+        }
+
+        return taskInfo;
+    }
 }
