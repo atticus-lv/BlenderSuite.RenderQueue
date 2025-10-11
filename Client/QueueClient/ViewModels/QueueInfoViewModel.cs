@@ -220,11 +220,13 @@ public partial class QueueInfoViewModel : ViewModelBase
             AllTasks.Add(task);
         }
         
-        // 更新现有任务的数据
-        foreach (var newTask in distinctTasks)
+        // 更新现有任务的数据 - 替换整个对象以触发UI更新
+        for (int i = 0; i < AllTasks.Count; i++)
         {
-            var existingTask = AllTasks.FirstOrDefault(t => t.TaskId == newTask.TaskId);
-            if (existingTask != null)
+            var existingTask = AllTasks[i];
+            var newTask = distinctTasks.FirstOrDefault(t => t.TaskId == existingTask.TaskId);
+            
+            if (newTask != null)
             {
                 // 检查是否有变化
                 bool hasChanges = existingTask.Status != newTask.Status ||
@@ -236,15 +238,8 @@ public partial class QueueInfoViewModel : ViewModelBase
                 if (hasChanges)
                 {
                     Console.WriteLine($"[QueueInfoViewModel] Updating task: TaskId={newTask.TaskId}, FileName={newTask.FileName}");
-                    // 更新属性
-                    existingTask.Status = newTask.Status;
-                    existingTask.Enable = newTask.Enable;
-                    existingTask.OverallProgress = newTask.OverallProgress;
-                    existingTask.CurrentFrame = newTask.CurrentFrame;
-                    existingTask.FileName = newTask.FileName;
-                    existingTask.FilePath = newTask.FilePath;
-                    existingTask.SceneName = newTask.SceneName;
-                    existingTask.TotalFrames = newTask.TotalFrames;
+                    // 替换整个对象以触发UI更新
+                    AllTasks[i] = newTask;
                 }
             }
         }
