@@ -138,6 +138,10 @@ public class ApiService
         // 设置Accept头
         client.DefaultRequestHeaders.Add("Accept", "application/json");
         
+        // 设置CORS相关头部
+        client.DefaultRequestHeaders.Add("Access-Control-Request-Method", "GET");
+        client.DefaultRequestHeaders.Add("Access-Control-Request-Headers", "Content-Type");
+        
         return client;
     }
 

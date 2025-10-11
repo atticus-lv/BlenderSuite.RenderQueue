@@ -6,6 +6,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./app.css" />
+    <!-- 允許混合內容和HTTP連接 -->
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests; connect-src 'self' http: https: ws: wss:;">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
 </head>
 
 <body style="margin: 0; overflow: hidden">
