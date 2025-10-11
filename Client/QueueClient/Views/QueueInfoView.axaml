@@ -11,7 +11,7 @@
              x:DataType="viewModels:QueueInfoViewModel">
 
     <controls:SliverPage Header="Queue">
-        <StackPanel Margin="14 16">
+        <StackPanel Margin="14 16 14 32">
 
             <Border Background="#FFE6E6"
                     BorderBrush="#FF9999"
@@ -61,6 +61,7 @@
                             <TextBlock
                                 Text="{Binding RemainingTime,StringFormat=Remaining Time: {}}"
                                 FontSize="20"
+                                IsVisible="{Binding IsQueueRunning}"
                                 VerticalAlignment="Center" />
                         </StackPanel>
                     </StackPanel>
@@ -103,7 +104,7 @@
                     </StackPanel>
                 </glassMorphism:GlassCard>
 
-                <glassMorphism:GlassCard Grid.Row="2" Margin="0,8">
+                <glassMorphism:GlassCard Grid.Row="2" Margin="0,8" MaxHeight="600">
                     <StackPanel Margin="10" Spacing="4">
                         <!-- 空状态提示 -->
                         <TextBlock Text="No tasks in queue"
@@ -176,21 +177,7 @@
                                                         </TextBlock>
                                                     </StackPanel>
 
-                                                    <!-- 进度条 - 仅当前任务显示 -->
-                                                    <ProgressBar Minimum="0" Maximum="1"
-                                                                 Value="{Binding OverallProgress}"
-                                                                 Height="4"
-                                                                 Margin="0,2,0,0">
-                                                        <ProgressBar.IsVisible>
-                                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                                                <Binding Path="IsValid" />
-                                                                <Binding Path="Enable" />
-                                                                <Binding Path="Status"
-                                                                         Converter="{StaticResource StatusEqualsConverter}"
-                                                                         ConverterParameter="Running" />
-                                                            </MultiBinding>
-                                                        </ProgressBar.IsVisible>
-                                                    </ProgressBar>
+                                                    
                                                 </StackPanel>
 
                                                 <!-- 状态文本 -->
