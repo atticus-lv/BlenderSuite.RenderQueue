@@ -149,21 +149,7 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
                 }
             });
 
-            _app.MapGet("/api/queue/tasks", () =>
-            {
-                try
-                {
-                    var tasks = _renderQueue.RenderTasks.Select(task => task.ToOptimizedTaskInfo()).ToList();
-                    return Results.Ok(tasks);
-                }
-                catch (Exception ex)
-                {
-                    // Console.WriteLine($"[RenderQueueApiService] ❌ Tasks list error: {ex.Message}");
-                    return Results.Problem($"Tasks list failed: {ex.Message}");
-                }
-            });
 
-            // 实时进度更新流API (Server-Sent Events) - 使用优化的推送模型
             _app.MapGet("/api/queue/progress-stream", async (HttpContext context) =>
             {
                 context.Response.ContentType = "text/event-stream";
@@ -249,7 +235,6 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
             Console.WriteLine($"[RenderQueueApiService] Available endpoints:");
             Console.WriteLine($"[RenderQueueApiService]   - GET /api/health");
             Console.WriteLine($"[RenderQueueApiService]   - GET /api/queue/status");
-            Console.WriteLine($"[RenderQueueApiService]   - GET /api/queue/tasks");
             Console.WriteLine($"[RenderQueueApiService]   - GET /api/queue/progress-stream");
             Console.WriteLine($"[RenderQueueApiService]   - GET /api/queue/task/{{taskId}}/progress");
 

@@ -193,27 +193,6 @@ public class ApiService
         }
     }
 
-    public async Task<List<OptimizedTaskInfo>?> GetTasksAsync()
-    {
-        try
-        {
-            var response = await _httpClient.GetAsync($"{_baseUrl}/api/queue/tasks");
-            if (response.IsSuccessStatusCode)
-            {
-                return await response.Content.ReadFromJsonAsync<List<OptimizedTaskInfo>>();
-            }
-            else
-            {
-                Console.WriteLine($"[ApiService] GetTasksAsync failed: {response.StatusCode} - {response.ReasonPhrase}");
-                return null;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[ApiService] GetTasksAsync exception: {ex.Message}");
-            return null;
-        }
-    }
 
     /// <summary>
     /// 开始监听进度更新流
