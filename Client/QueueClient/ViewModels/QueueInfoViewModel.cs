@@ -29,7 +29,7 @@ public partial class QueueInfoViewModel : ViewModelBase
     private string _errorMessage = string.Empty;
 
     [ObservableProperty]
-    private ObservableCollection<OptimizedTaskInfo> _allTasks = new();
+    private ObservableCollection<OptimizedTaskInfo> _allTasks = [];
 
     public QueueInfoViewModel(ConnectionViewModel connectionViewModel)
     {
@@ -114,10 +114,9 @@ public partial class QueueInfoViewModel : ViewModelBase
             {
                 QueueStatus = status;
                 // 高效更新任务列表
-                UpdateTasksList(status.Tasks ?? new List<OptimizedTaskInfo>());
-                ErrorMessage = string.Empty; // 清除之前的错误
+                UpdateTasksList(status.Tasks);
+                ErrorMessage = string.Empty; 
 
-                // 手动触发计算属性更新通知
                 OnPropertyChanged(nameof(QueueStateText));
                 OnPropertyChanged(nameof(OverallProgress));
                 OnPropertyChanged(nameof(ProgressText));
@@ -198,13 +197,11 @@ public partial class QueueInfoViewModel : ViewModelBase
             .Select(g => g.First())
             .ToList();
         
-        Console.WriteLine($"[QueueInfoViewModel] UpdateTasksList: Original={newTasks.Count}, After dedup={distinctTasks.Count}");
-        
+            
         // 使用增量更新策略，避免清空整个集合
         var newTaskIds = distinctTasks.Select(t => t.TaskId).ToHashSet();
         var existingTaskIds = AllTasks.Select(t => t.TaskId).ToHashSet();
         
-        // 移除不再存在的任务
         var tasksToRemove = AllTasks.Where(t => !newTaskIds.Contains(t.TaskId)).ToList();
         foreach (var task in tasksToRemove)
         {
@@ -221,28 +218,23 @@ public partial class QueueInfoViewModel : ViewModelBase
         }
         
         // 更新现有任务的数据 - 替换整个对象以触发UI更新
-        for (int i = 0; i < AllTasks.Count; i++)
+        for (var i = 0; i < AllTasks.Count; i++)
         {
             var existingTask = AllTasks[i];
             var newTask = distinctTasks.FirstOrDefault(t => t.TaskId == existingTask.TaskId);
-            
-            if (newTask != null)
-            {
-                // 检查是否有变化
-                bool hasChanges = existingTask.Status != newTask.Status ||
-                                 existingTask.Enable != newTask.Enable ||
-                                 Math.Abs(existingTask.OverallProgress - newTask.OverallProgress) > 0.001 ||
-                                 existingTask.CurrentFrame != newTask.CurrentFrame ||
-                                 existingTask.FileName != newTask.FileName;
-                
-                if (hasChanges)
-                {
-                    Console.WriteLine($"[QueueInfoViewModel] Updating task: TaskId={newTask.TaskId}, FileName={newTask.FileName}");
-                    // 替换整个对象以触发UI更新
-                    AllTasks[i] = newTask;
-                }
-            }
+
+            if (newTask == null) continue;
+            var hasChanges = existingTask.Status != newTask.Status ||
+                             existingTask.Enable != newTask.Enable ||
+                             Math.Abs(existingTask.OverallProgress - newTask.OverallProgress) > 0.001 ||
+                             existingTask.CurrentFrame != newTask.CurrentFrame ||
+                             existingTask.FileName != newTask.FileName;
+
+            if (!hasChanges) continue;
+            Console.WriteLine($"[QueueInfoViewModel] Updating task: TaskId={newTask.TaskId}, FileName={newTask.FileName}");
+            AllTasks[i] = newTask;
         }
+        
         
         Console.WriteLine($"[QueueInfoViewModel] Final AllTasks count: {AllTasks.Count}");
     }
