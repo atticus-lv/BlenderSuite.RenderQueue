@@ -1158,7 +1158,6 @@ public partial class RenderTaskViewModel : ViewModelBase
                 return;
             }
 
-            // 触发事件，请求父级打开文件所在文件夹
             OpenFileDirectoryRequested?.Invoke(this, new OpenSysDirectoryRequestedEventArgs(BlendFilePath));
         }
         catch (Exception ex)

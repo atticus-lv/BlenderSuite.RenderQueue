@@ -12,8 +12,9 @@ public static class FileSystemHelper
 {
     /// <summary>
     /// 在文件资源管理器中打开指定路径的文件夹
+    /// 如果传入的是文件路径，则打开目录并选中该文件
     /// </summary>
-    /// <param name="filePath">文件路径</param>
+    /// <param name="filePath">文件路径或目录路径</param>
     /// <returns>操作是否成功</returns>
     public static bool OpenFileDirectory(string filePath)
     {
@@ -24,34 +25,45 @@ public static class FileSystemHelper
                 Console.WriteLine("[FileSystemHelper] ❌ File path is null or empty");
                 return false;
             }
-            // if filepath is a file, get its directory, else use the path directly
-            var directory =
-                Directory.Exists(filePath) ? filePath : Path.GetDirectoryName(filePath);
 
+            var normalizedPath = filePath.Replace('/', '\\');
+            var isDirectory = Directory.Exists(normalizedPath);
+            var isFile = File.Exists(normalizedPath);
 
-            if (string.IsNullOrEmpty(directory))
+            if (!isDirectory && !isFile)
             {
-                Console.WriteLine("[FileSystemHelper] ❌ Cannot get directory from file path");
+                Console.WriteLine($"[FileSystemHelper] ❌ Path does not exist: {filePath}");
                 return false;
             }
 
-            if (!Directory.Exists(directory))
-            {
-                Console.WriteLine($"[FileSystemHelper] ❌ Directory does not exist: {directory}");
-                return false;
-            }
+            ProcessStartInfo startInfo;
 
-            // 启动文件资源管理器
-            var startInfo = new ProcessStartInfo
+            if (isFile)
             {
-                FileName = "explorer.exe",
-                Arguments = $"\"{directory.Replace('/', '\\')}\"",
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Normal
-            };
+                // 如果是文件，使用 /select 参数选中文件
+                startInfo = new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"/select,\"{normalizedPath}\"",
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Normal
+                };
+                Console.WriteLine($"[FileSystemHelper] ✅ Opening directory and selecting file: {normalizedPath}");
+            }
+            else
+            {
+                // 如果是目录，直接打开目录
+                startInfo = new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"\"{normalizedPath}\"",
+                    UseShellExecute = true,
+                    WindowStyle = ProcessWindowStyle.Normal
+                };
+                Console.WriteLine($"[FileSystemHelper] ✅ Opened directory in explorer: {normalizedPath}");
+            }
 
             Process.Start(startInfo);
-            Console.WriteLine($"[FileSystemHelper] ✅ Opened directory in explorer: {directory}");
             return true;
         }
         catch (Exception ex)
