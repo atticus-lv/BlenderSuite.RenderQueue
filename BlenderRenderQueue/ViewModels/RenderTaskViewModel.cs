@@ -627,7 +627,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         // 使用保存的 UUID，如果为空则生成新的
         Id = taskInfo.Id == Guid.Empty ? Guid.NewGuid() : taskInfo.Id;
-        
+
         BlendFilePath = taskInfo.Filepath;
         StartFrame = taskInfo.StartFrame;
         EndFrame = taskInfo.EndFrame;
@@ -898,7 +898,9 @@ public partial class RenderTaskViewModel : ViewModelBase
                     EnqueueLog($"使用场景覆写: {sceneName}");
                 }
 
-                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, StartFrame, EndFrame, sceneName);
+                using var noTimeoutCts = new CancellationTokenSource();
+                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, StartFrame, EndFrame, sceneName,
+                    noTimeoutCts.Token);
             }
             else
             {
@@ -908,7 +910,8 @@ public partial class RenderTaskViewModel : ViewModelBase
                     EnqueueLog($"使用场景覆写: {sceneName}");
                 }
 
-                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, null, null, sceneName);
+                using var noTimeoutCts2 = new CancellationTokenSource();
+                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, null, null, sceneName, noTimeoutCts2.Token);
             }
 
             EnqueueLog($"渲染指令已发送完成");
@@ -1071,7 +1074,10 @@ public partial class RenderTaskViewModel : ViewModelBase
                 EnqueueLog($"使用场景覆写: {sceneName}");
             }
 
-            await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, startFrame, endFrame, sceneName);
+            // 创建无超时的CancellationToken，避免暂停恢复时的超时问题
+            using var noTimeoutCts = new CancellationTokenSource();
+            await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, startFrame, endFrame, sceneName,
+                noTimeoutCts.Token);
 
             EnqueueLog($"恢复渲染指令已发送完成");
         }
