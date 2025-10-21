@@ -118,8 +118,14 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public int TotalFrames => Math.Max(0, EndFrame - StartFrame + 1);
 
-    public int DisplayStartFrame => OverrideFrameRange ? StartFrame : ScenePropertiesView.SceneProperties.FrameStart;
-    public int DisplayEndFrame => OverrideFrameRange ? EndFrame : ScenePropertiesView.SceneProperties.FrameEnd;
+    public int DisplayStartFrame => OverrideFrameRange
+        ? StartFrame
+        : (ScenePropertiesView.SceneProperties.IsLoaded ? ScenePropertiesView.SceneProperties.FrameStart : StartFrame);
+
+    public int DisplayEndFrame => OverrideFrameRange
+        ? EndFrame
+        : (ScenePropertiesView.SceneProperties.IsLoaded ? ScenePropertiesView.SceneProperties.FrameEnd : EndFrame);
+
     public int DisplayTotalFrames => Math.Max(0, DisplayEndFrame - DisplayStartFrame + 1);
 
     // 实际渲染用的帧范围属性（优先级：覆写帧范围 > 覆写场景帧范围 > 默认场景帧范围）
@@ -138,7 +144,10 @@ public partial class RenderTaskViewModel : ViewModelBase
                 return value.FrameStart;
             }
 
-            return ScenePropertiesView.SceneProperties.FrameStart;
+            // If the scene properties are loaded, use the frame range of the scene
+            return ScenePropertiesView.SceneProperties.IsLoaded
+                ? ScenePropertiesView.SceneProperties.FrameStart
+                : StartFrame;
         }
     }
 
@@ -157,7 +166,11 @@ public partial class RenderTaskViewModel : ViewModelBase
                 return value.FrameEnd;
             }
 
-            return ScenePropertiesView.SceneProperties.FrameEnd;
+            return ScenePropertiesView.SceneProperties.IsLoaded
+                ? ScenePropertiesView.SceneProperties.FrameEnd
+                :
+                // If the scene properties are not loaded, but there is an override setting, use the overridden frame range as a fallback
+                EndFrame;
         }
     }
 
@@ -344,11 +357,30 @@ public partial class RenderTaskViewModel : ViewModelBase
         if (value == null) return;
         value.PropertyChanged += (sender, args) =>
         {
-            if (args.PropertyName != nameof(value.SelectedSceneProperties) &&
-                args.PropertyName != nameof(value.SceneProperties) &&
-                args.PropertyName != nameof(value.AllScenes)) return;
-            OnPropertyChanged(nameof(FinalSceneProperties));
-            OnPropertyChanged(nameof(FramePathDirectory));
+            switch (args.PropertyName)
+            {
+                case nameof(value.SelectedSceneProperties) or nameof(value.SceneProperties) or nameof(value.AllScenes):
+                    OnPropertyChanged(nameof(FinalSceneProperties));
+                    OnPropertyChanged(nameof(FramePathDirectory));
+                    break;
+                
+                case nameof(value.IsLoading):
+                {
+                    if (!value.IsLoading)
+                    {
+                        OnPropertyChanged(nameof(DisplayStartFrame));
+                        OnPropertyChanged(nameof(DisplayEndFrame));
+                        OnPropertyChanged(nameof(DisplayTotalFrames));
+                        OnPropertyChanged(nameof(RealStartFrame));
+                        OnPropertyChanged(nameof(RealEndFrame));
+                        OnPropertyChanged(nameof(RealTotalFrames));
+                        OnPropertyChanged(nameof(FinalSceneProperties));
+                        OnPropertyChanged(nameof(FramePathDirectory));
+                    }
+
+                    break;
+                }
+            }
         };
     }
 
@@ -837,6 +869,9 @@ public partial class RenderTaskViewModel : ViewModelBase
             OnPropertyChanged(nameof(DisplayStartFrame));
             OnPropertyChanged(nameof(DisplayEndFrame));
             OnPropertyChanged(nameof(DisplayTotalFrames));
+            OnPropertyChanged(nameof(RealStartFrame));
+            OnPropertyChanged(nameof(RealEndFrame));
+            OnPropertyChanged(nameof(RealTotalFrames));
             OnPropertyChanged(nameof(AvailableSceneNames));
             OnPropertyChanged(nameof(HasValidSceneSelection));
             OnPropertyChanged(nameof(ShowSceneOverrideWarning));
