@@ -307,9 +307,6 @@
                                                 <MenuItem Header="{i18n:Localize ApiService_QueueStatus}"
                                                           Command="{Binding OpenUrlCommand}"
                                                           CommandParameter="/api/queue/status" />
-                                                <MenuItem Header="{i18n:Localize ApiService_TaskList}"
-                                                          Command="{Binding OpenUrlCommand}"
-                                                          CommandParameter="/api/queue/tasks" />
                                                 <MenuItem Header="{i18n:Localize ApiService_HealthCheck}"
                                                           Command="{Binding OpenUrlCommand}"
                                                           CommandParameter="/api/health" />
