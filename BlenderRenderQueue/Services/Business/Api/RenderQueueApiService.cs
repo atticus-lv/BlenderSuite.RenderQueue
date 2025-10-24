@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -10,7 +9,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using BlenderRenderQueue.Models;
 using BlenderRenderQueue.ViewModels;
 using BlenderRenderQueue.Services.Business.Api.Models;
 using BlenderRenderQueue.Helpers;
@@ -40,7 +38,7 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
             task.ProgressChanged += OnTaskProgressChanged;
         }
 
-        _renderQueue.RenderTasks.CollectionChanged += (s, e) =>
+        _renderQueue.RenderTasks.CollectionChanged += (_, e) =>
         {
             if (e.NewItems != null)
             {
@@ -150,7 +148,7 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
             });
 
 
-            _app.MapGet("/api/queue/progress-stream", async (HttpContext context) =>
+            _app.MapGet("/api/queue/progress-stream", async context =>
             {
                 context.Response.ContentType = "text/event-stream";
                 context.Response.Headers.CacheControl = "no-cache";
@@ -262,7 +260,7 @@ public class RenderQueueApiService : IRenderQueueApiService, IDisposable
             Console.WriteLine($"[RenderQueueApiService] Stopping API services, ports: {Port}");
 
             // 取消所有正在进行的操作
-            _cancellationTokenSource?.Cancel();
+            await _cancellationTokenSource?.CancelAsync()!;
 
             if (_app != null)
             {
