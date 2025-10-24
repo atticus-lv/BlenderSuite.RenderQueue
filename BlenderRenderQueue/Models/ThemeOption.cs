@@ -3,16 +3,10 @@ using System.Linq;
 
 namespace BlenderRenderQueue.Models;
 
-public class ThemeOption
+public class ThemeOption(string value, string displayName)
 {
-    public string Value { get; set; } = string.Empty;
-    public string DisplayName { get; set; } = string.Empty;
-
-    public ThemeOption(string value, string displayName)
-    {
-        Value = value;
-        DisplayName = displayName;
-    }
+    public string Value { get; } = value;
+    public string DisplayName { get; set; } = displayName;
 
     public static IReadOnlyList<ThemeOption> AllOptions { get; } = new List<ThemeOption>
     {
@@ -20,9 +14,7 @@ public class ThemeOption
         new("Dark", "Dark"),
     };
 
-
     public static ThemeOption Default => AllOptions[1]; // Dark
-
 
     public static ThemeOption? FindByValue(string value)
     {

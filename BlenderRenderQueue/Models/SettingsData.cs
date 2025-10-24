@@ -42,7 +42,7 @@ public class SettingsData
     public bool UseGpu { get; set; } = true;
 
     [JsonPropertyName("ApiEnabled")]
-    public bool ApiEnabled { get; set; } = false;
+    public bool ApiEnabled { get; set; }
 
     [JsonPropertyName("ApiPort")]
     public int ApiPort { get; set; } = 8325;
