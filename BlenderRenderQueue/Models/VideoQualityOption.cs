@@ -5,23 +5,12 @@ namespace BlenderRenderQueue.Models;
 /// <summary>
 /// 视频质量选项模型
 /// </summary>
-public class VideoQualityOption
+public class VideoQualityOption(string displayName, string value)
 {
-    [JsonPropertyName("DisplayName")]
-    public string DisplayName { get; set; } = string.Empty;
+    [JsonPropertyName("DisplayName")] public string DisplayName { get; set; } = displayName;
 
-    [JsonPropertyName("Value")]
-    public string Value { get; set; } = string.Empty;
+    [JsonPropertyName("Value")] public string Value { get; } = value;
 
-    public VideoQualityOption()
-    {
-    }
-
-    public VideoQualityOption(string displayName, string value)
-    {
-        DisplayName = displayName;
-        Value = value;
-    }
 
     public override string ToString()
     {
@@ -34,6 +23,7 @@ public class VideoQualityOption
         {
             return Value == other.Value;
         }
+
         return false;
     }
 
@@ -42,12 +32,14 @@ public class VideoQualityOption
         return Value.GetHashCode();
     }
 
-    // 预定义的质量选项
     public static readonly VideoQualityOption Lossless = new("VideoQuality_Lossless", "LOSSLESS");
-    public static readonly VideoQualityOption PerceptualLossless = new("VideoQuality_PerceptualLossless", "PERC_LOSSLESS");
+
+    public static readonly VideoQualityOption PerceptualLossless =
+        new("VideoQuality_PerceptualLossless", "PERC_LOSSLESS");
+
     public static readonly VideoQualityOption High = new("VideoQuality_High", "HIGH");
     public static readonly VideoQualityOption Medium = new("VideoQuality_Medium", "MEDIUM");
     public static readonly VideoQualityOption Low = new("VideoQuality_Low", "LOW");
 
-    public static readonly VideoQualityOption[] AllOptions = { Lossless, PerceptualLossless, High, Medium, Low };
+    public static readonly VideoQualityOption[] AllOptions = [Lossless, PerceptualLossless, High, Medium, Low];
 }
