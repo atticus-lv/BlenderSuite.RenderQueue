@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
@@ -25,7 +22,7 @@ public static class ToastHelper
     /// <param name="duration">How long to show the toast (default: 3 seconds)</param>
     /// <returns>True if toast was shown successfully, false otherwise</returns>
     /// <exception cref="ArgumentNullException">if context was null</exception>
-    public static bool ShowToast(this object? context, string title, string content, 
+    private static bool ShowToast(this object? context, string title, string content,
         NotificationType type = NotificationType.Information, TimeSpan? duration = null)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -41,7 +38,7 @@ public static class ToastHelper
             if (toastManager == null) return false;
 
             // Create and show the toast
-            var toast = toastManager.CreateToast()
+            toastManager.CreateToast()
                 .WithTitle(title)
                 .WithContent(content)
                 .OfType(type)
@@ -58,27 +55,27 @@ public static class ToastHelper
     }
 
 
-    public static bool ShowSuccessToast(this object? context, string title, string content, 
+    public static bool ShowSuccessToast(this object? context, string title, string content,
         TimeSpan? duration = null)
     {
         return context.ShowToast(title, content, NotificationType.Success, duration);
     }
 
 
-    public static bool ShowErrorToast(this object? context, string title, string content, 
+    public static bool ShowErrorToast(this object? context, string title, string content,
         TimeSpan? duration = null)
     {
         return context.ShowToast(title, content, NotificationType.Error, duration);
     }
 
 
-    public static bool ShowWarningToast(this object? context, string title, string content, 
+    public static bool ShowWarningToast(this object? context, string title, string content,
         TimeSpan? duration = null)
     {
         return context.ShowToast(title, content, NotificationType.Warning, duration);
     }
-    
-    public static bool ShowInfoToast(this object? context, string title, string content, 
+
+    public static bool ShowInfoToast(this object? context, string title, string content,
         TimeSpan? duration = null)
     {
         return context.ShowToast(title, content, NotificationType.Information, duration);
@@ -92,7 +89,7 @@ public static class ToastHelper
     /// <param name="progressBar">The progress bar control</param>
     /// <param name="type">The notification type</param>
     /// <returns>The created toast instance for later updates</returns>
-    public static ISukiToast? ShowProgressToast(this object? context, string title, 
+    public static ISukiToast? ShowProgressToast(this object? context, string title,
         ProgressBar progressBar, NotificationType type = NotificationType.Information)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -105,10 +102,9 @@ public static class ToastHelper
 
             // Get the ToastManager from the MainWindowViewModel
             var toastManager = GetToastManager(topLevel);
-            if (toastManager == null) return null;
 
             // Create and show the progress toast
-            var toast = toastManager.CreateToast()
+            var toast = toastManager?.CreateToast()
                 .WithTitle(title)
                 .WithContent(progressBar)
                 .OfType(type)
@@ -131,7 +127,7 @@ public static class ToastHelper
     public static void UpdateProgressToast(this ISukiToast? toast, double progress)
     {
         if (toast == null) return;
-        
+
         Dispatcher.UIThread.Post(() =>
         {
             if (toast.Content is ProgressBar progressBar)
