@@ -23,7 +23,7 @@ public abstract class BaseBlenderProcess : IBlenderProcess
     public string ProcessId => _processId;
     public abstract BlenderProcessType ProcessType { get; }
     public string BlenderPath => _blenderPath;
-    public bool IsRunning => _isRunning && _process != null && !_process.HasExited;
+    public bool IsRunning => _isRunning && _process is { HasExited: false };
     public bool IsDisposed => _disposed;
 
     public event Action<string>? OnOutputReceived;
@@ -140,7 +140,7 @@ print('__SCRIPT_COMPLETE__')
         try
         {
             await _process!.StandardInput.WriteLineAsync(wrappedScript);
-            await _process.StandardInput.FlushAsync();
+            await _process.StandardInput.FlushAsync(cancellationToken);
 
             Console.WriteLine($"[{GetType().Name}] Script sent, waiting for completion - ID: {_processId}");
             await completionSource.Task.WaitAsync(cancellationToken);
@@ -163,7 +163,7 @@ print('__SCRIPT_COMPLETE__')
 
         try
         {
-            if (_process != null && !_process.HasExited)
+            if (_process is { HasExited: false })
             {
                 _process.Kill(true);
                 await Task.Delay(_config.StopWaitTimeMs); // 使用配置的等待时间
