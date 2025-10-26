@@ -40,7 +40,7 @@ public class BlenderExecutable
     public string Type { get; set; } = string.Empty;
 
     [JsonPropertyName("IsValid")]
-    public bool IsValid { get; set; } = false;
+    public bool IsValid { get; set; }
 
     [JsonPropertyName("LastValidated")]
     public DateTime? LastValidated { get; set; }
@@ -84,7 +84,7 @@ public class BlenderExecutable
     /// <summary>
     /// 获取格式化的路径显示（头尾显示）
     /// </summary>
-    public string GetFormattedPath(int maxLength = 50)
+    private string GetFormattedPath(int maxLength = 50)
     {
         if (string.IsNullOrEmpty(Path))
             return "未知路径";
@@ -113,7 +113,7 @@ public class BlenderExecutable
     /// <summary>
     /// 获取版本-分支显示
     /// </summary>
-    public string GetVersionBranchDisplay()
+    private string GetVersionBranchDisplay()
     {
         if (string.IsNullOrEmpty(Version) && string.IsNullOrEmpty(Branch))
             return "未知版本";
@@ -130,7 +130,7 @@ public class BlenderExecutable
     /// <summary>
     /// 获取构建日期-时间显示
     /// </summary>
-    public string GetBuildDateTimeDisplay()
+    private string GetBuildDateTimeDisplay()
     {
         if (BuildDate.HasValue && !string.IsNullOrEmpty(BuildTime))
         {
@@ -142,12 +142,7 @@ public class BlenderExecutable
             return BuildDate.Value.ToString("yyyy-MM-dd");
         }
         
-        if (!string.IsNullOrEmpty(BuildTime))
-        {
-            return BuildTime;
-        }
-        
-        return "未知构建时间";
+        return !string.IsNullOrEmpty(BuildTime) ? BuildTime : "Unknown";
     }
 
     /// <summary>
@@ -172,7 +167,7 @@ public class BlenderExecutable
     /// </summary>
     public void UpdateFromVersionInfo(BlenderVersionInfo versionInfo)
     {
-        Version = versionInfo.Version ?? string.Empty;
+        Version = versionInfo.Version;
         Platform = versionInfo.Platform ?? string.Empty;
         Branch = versionInfo.Branch ?? string.Empty;
         Hash = versionInfo.Hash ?? string.Empty;

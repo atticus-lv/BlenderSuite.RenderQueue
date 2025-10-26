@@ -46,15 +46,10 @@ public class BlendFileInfo
             // 提取缩略图
             Console.WriteLine($"[BlendFileInfo] Starting thumbnail extraction...");
             fileInfo.Thumbnail = BlendThumbnailExtractor.ExtractThumbnailWithStatus(filePath, out var status);
-            
-            if (fileInfo.Thumbnail != null)
-            {
-                Console.WriteLine($"[BlendFileInfo] ✅ Thumbnail extraction successful! Size: {fileInfo.Thumbnail.PixelSize.Width}x{fileInfo.Thumbnail.PixelSize.Height}");
-            }
-            else
-            {
-                Console.WriteLine($"[BlendFileInfo] ❌ Thumbnail extraction failed - Status: {status}");
-            }
+
+            Console.WriteLine(fileInfo.Thumbnail != null
+                ? $"[BlendFileInfo] ✅ Thumbnail extraction successful! Size: {fileInfo.Thumbnail.PixelSize.Width}x{fileInfo.Thumbnail.PixelSize.Height}"
+                : $"[BlendFileInfo] ❌ Thumbnail extraction failed - Status: {status}");
         }
         else
         {
@@ -85,15 +80,10 @@ public class BlendFileInfo
             Console.WriteLine($"[BlendFileInfo] Re-extracting thumbnail...");
             Thumbnail?.Dispose();
             Thumbnail = BlendThumbnailExtractor.ExtractThumbnailWithStatus(FilePath, out var status);
-            
-            if (Thumbnail != null)
-            {
-                Console.WriteLine($"[BlendFileInfo] ✅ Thumbnail refresh successful! Size: {Thumbnail.PixelSize.Width}x{Thumbnail.PixelSize.Height}");
-            }
-            else
-            {
-                Console.WriteLine($"[BlendFileInfo] ❌ Thumbnail refresh failed - Status: {status}");
-            }
+
+            Console.WriteLine(Thumbnail != null
+                ? $"[BlendFileInfo] ✅ Thumbnail refresh successful! Size: {Thumbnail.PixelSize.Width}x{Thumbnail.PixelSize.Height}"
+                : $"[BlendFileInfo] ❌ Thumbnail refresh failed - Status: {status}");
         }
         else
         {
@@ -125,13 +115,13 @@ public class BlendFileInfo
     /// </summary>
     private static string FormatFileSize(long bytes)
     {
-        if (bytes < 1024)
-            return $"{bytes} B";
-        if (bytes < 1024 * 1024)
-            return $"{bytes / 1024.0:F1} KB";
-        if (bytes < 1024 * 1024 * 1024)
-            return $"{bytes / (1024.0 * 1024.0):F1} MB";
-        return $"{bytes / (1024.0 * 1024.0 * 1024.0):F1} GB";
+        return bytes switch
+        {
+            < 1024 => $"{bytes} B",
+            < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
+            < 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024.0):F1} MB",
+            _ => $"{bytes / (1024.0 * 1024.0 * 1024.0):F1} GB"
+        };
     }
 
     /// <summary>

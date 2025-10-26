@@ -10,13 +10,13 @@ namespace BlenderRenderQueue.Models;
 public class AppData
 {
     [JsonPropertyName("Software")]
-    public string Software { get; set; } = "BlenderRenderQueue";
+    public string Software { get; init; } = "BlenderRenderQueue";
 
     [JsonPropertyName("Version")]
-    public string Version { get; set; } = "0.0.1";
+    public string Version { get; init; } = "0.0.1";
 
     [JsonPropertyName("RenderQueue")]
-    public List<RenderTaskData> RenderQueue { get; set; } = new();
+    public List<RenderTaskData> RenderQueue { get; set; } = [];
 }
 
 public class RenderTaskData
