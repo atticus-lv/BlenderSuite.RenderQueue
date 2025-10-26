@@ -507,6 +507,14 @@ public partial class RenderQueueViewModel : ViewModelBase
         var taskToRemove = SelectedTask;
         if (taskToRemove.Status == RenderTaskStatus.Running) taskToRemove.StopRender();
 
+
+        if (_pausedTask == taskToRemove)
+        {
+            _pausedTask = null;
+            _pausedFrame = 0;
+            Console.WriteLine("[RenderQueueViewModel] Cleared paused task reference due to selected task deletion");
+        }
+
         UnsubscribeFromTaskEvents(taskToRemove);
         RenderTasks.Remove(taskToRemove);
         taskToRemove.Dispose();
@@ -525,6 +533,14 @@ public partial class RenderQueueViewModel : ViewModelBase
             if (taskToRemove.Status == RenderTaskStatus.Running) taskToRemove.StopRender();
             var wasSelected = SelectedTask == taskToRemove;
             var selectedIndex = wasSelected ? RenderTasks.IndexOf(taskToRemove) : -1;
+
+            // 检查并清理暂停任务引用
+            if (_pausedTask == taskToRemove)
+            {
+                _pausedTask = null;
+                _pausedFrame = 0;
+                Console.WriteLine("[RenderQueueViewModel] Cleared paused task reference due to task deletion");
+            }
 
             UnsubscribeFromTaskEvents(taskToRemove);
             RenderTasks.Remove(taskToRemove);
@@ -601,6 +617,14 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         foreach (var task in completedTasks)
         {
+            // 检查并清理暂停任务引用
+            if (_pausedTask == task)
+            {
+                _pausedTask = null;
+                _pausedFrame = 0;
+                Console.WriteLine("[RenderQueueViewModel] Cleared paused task reference due to completed task deletion");
+            }
+
             UnsubscribeFromTaskEvents(task);
             RenderTasks.Remove(task);
             task.Dispose();
@@ -664,6 +688,12 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         _pausedTask = null;
         _pausedFrame = 0;
+
+        // 清理运行中的任务列表
+        lock (_queueLock)
+        {
+            _runningTasks.Clear();
+        }
 
         _ = Task.Run(() =>
         {
@@ -1026,7 +1056,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         RenderTaskViewModel? taskToStart;
 
         // If there are paused tasks, resume the paused tasks first
-        if (_pausedTask is { Enable: true, IsValid: true })
+        if (_pausedTask is { Enable: true, IsValid: true } && RenderTasks.Contains(_pausedTask))
         {
             taskToStart = _pausedTask;
             Console.WriteLine(
@@ -1034,6 +1064,14 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
         else
         {
+            // 如果暂停的任务已被删除，清理引用
+            if (_pausedTask != null && !RenderTasks.Contains(_pausedTask))
+            {
+                Console.WriteLine("[RenderQueueViewModel] Paused task no longer exists in queue, clearing reference");
+                _pausedTask = null;
+                _pausedFrame = 0;
+            }
+
             // Start the next pending task that is enabled and active
             taskToStart =
                 RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid);
@@ -1050,47 +1088,53 @@ public partial class RenderQueueViewModel : ViewModelBase
         CurrentRenderingTask = taskToStart;
 
         var taskCopy = taskToStart; // Avoid closure problems
-        var runningTask = Task.Run(async () =>
+        var runningTaskRef = new Task[1]; // 使用数组来避免闭包问题
+        lock (_queueLock)
         {
-            try
+            runningTaskRef[0] = Task.Run(async () =>
             {
-                var renderProcess = await _processService!.CreateRenderProcessAsync();
-
                 try
                 {
-                    // If the task is resumed from paused, start from the specified frame
-                    if (_pausedTask == taskCopy && _pausedFrame > 0)
+                    var renderProcess = await _processService!.CreateRenderProcessAsync();
+
+                    try
                     {
-                        await taskCopy.ResumeRenderAsync(renderProcess, _pausedFrame);
-                        _pausedTask = null;
-                        _pausedFrame = 0;
+                        // If the task is resumed from paused, start from the specified frame
+                        if (_pausedTask == taskCopy && _pausedFrame > 0)
+                        {
+                            await taskCopy.ResumeRenderAsync(renderProcess, _pausedFrame);
+                            _pausedTask = null;
+                            _pausedFrame = 0;
+                        }
+                        else
+                        {
+                            await taskCopy.StartRenderAsync(renderProcess);
+                        }
                     }
-                    else
+                    finally
                     {
-                        await taskCopy.StartRenderAsync(renderProcess);
+                        await renderProcess.StopAsync();
+                        _processService.UnregisterProcess(renderProcess.ProcessId);
+                        renderProcess.Dispose();
                     }
+                }
+                catch (Exception)
+                {
+                    // 错误处理已在RenderTaskViewModel中完成
                 }
                 finally
                 {
-                    await renderProcess.StopAsync();
-                    _processService.UnregisterProcess(renderProcess.ProcessId);
-                    renderProcess.Dispose();
-                }
-            }
-            catch (Exception)
-            {
-                // 错误处理已在RenderTaskViewModel中完成
-            }
-            finally
-            {
-                // 任务完成后，尝试启动下一个任务
-                if (AutoStartNext && QueueState == QueueState.Running) await StartNextAvailableTasks();
-            }
-        });
+                    // 清理当前运行的任务
+                    lock (_queueLock)
+                    {
+                        _runningTasks.RemoveAll(t => t == runningTaskRef[0]);
+                    }
 
-        lock (_queueLock)
-        {
-            _runningTasks.Add(runningTask);
+                    // 任务完成后，尝试启动下一个任务
+                    if (AutoStartNext && QueueState == QueueState.Running) await StartNextAvailableTasks();
+                }
+            });
+            _runningTasks.Add(runningTaskRef[0]);
         }
     }
 
@@ -1964,6 +2008,12 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         _apiManager?.Dispose();
         _apiManager = null;
+
+        // 清理运行中的任务列表
+        lock (_queueLock)
+        {
+            _runningTasks.Clear();
+        }
 
         foreach (var task in RenderTasks)
         {
