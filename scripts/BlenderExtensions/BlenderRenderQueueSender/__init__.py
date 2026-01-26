@@ -1,8 +1,11 @@
 import bpy
 import os
 import json
+import subprocess
+import time
 
 from pathlib import Path
+from shutil import which
 
 from bpy.types import AddonPreferences, Operator, Panel
 from bpy.props import StringProperty, BoolProperty, IntProperty, EnumProperty
@@ -17,6 +20,72 @@ class RenderQueuePreferences(AddonPreferences):
 
 
 SCENE_ITEMS = []
+
+
+def _is_blender_render_queue_running(process_name: str = "BlenderRenderQueue.exe") -> bool:
+    try:
+        create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        output = subprocess.check_output(
+            ["tasklist"],
+            creationflags=create_no_window,
+        ).decode(errors="ignore")
+        return process_name.lower() in output.lower()
+    except Exception:
+        return False
+
+
+def _find_blender_render_queue_exe() -> str | None:
+    exe_path = which("BlenderRenderQueue.exe")
+    if exe_path and os.path.isfile(exe_path):
+        return exe_path
+
+    candidates = []
+    for env_var in ("ProgramFiles", "ProgramFiles(x86)"):
+        base = os.environ.get(env_var)
+        if base:
+            candidates.append(os.path.join(base, "BlenderRenderQueue", "BlenderRenderQueue.exe"))
+
+    addon_dir = os.path.dirname(__file__)
+    candidates.append(os.path.join(addon_dir, "BlenderRenderQueue.exe"))
+
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
+
+    return None
+
+
+def _ensure_blender_render_queue_started(self_reporter) -> bool:
+    """
+    Make sure BlenderRenderQueue is started before committing the render:
+    - If it is not running, try starting it via cmd /c start
+    - Any errors are only prompted as WARNINGs and do not disrupt the subsequent submission process
+    """
+    if _is_blender_render_queue_running():
+        return False
+
+    exe_path = _find_blender_render_queue_exe()
+    if not exe_path:
+        try:
+            self_reporter({'WARNING'}, "未找到 BlenderRenderQueue.exe，已写入队列数据，但请手动启动 BlenderRenderQueue。")
+        except Exception:
+            pass
+        return False
+
+    try:
+        create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        subprocess.Popen(
+            f'cmd /c start "" "{exe_path}"',
+            shell=True,
+            creationflags=create_no_window,
+        )
+        return True
+    except Exception as e:
+        try:
+            self_reporter({'WARNING'}, f"尝试启动 BlenderRenderQueue 失败：{e}。请手动启动后再使用队列。")
+        except Exception:
+            pass
+        return False
 
 
 def enum_scene_items_callback(scene, context):
@@ -63,6 +132,14 @@ class RENDERQUEUE_OT_submit_scene(Operator):
 
         data_json_path = app_dir.joinpath("data_from_blender.json")
 
+        started_now = _ensure_blender_render_queue_started(self.report)
+        if started_now:
+            for _ in range(20):  # up to ~5s
+                if _is_blender_render_queue_running():
+                    break
+                time.sleep(0.25)
+            time.sleep(1.0)  # give UI + watcher extra time
+
         scene = context.scene
         blend_file_path = bpy.data.filepath
         blend_filename = os.path.basename(blend_file_path)
@@ -106,6 +183,13 @@ class RENDERQUEUE_OT_submit_scene(Operator):
             with open(data_json_path, 'w', encoding='utf-8') as f:
                 # clean up the json file and write new data
                 json.dump(data, f, indent=2, ensure_ascii=False)
+
+            if started_now:
+                time.sleep(0.75)
+                try:
+                    os.utime(data_json_path, None)
+                except Exception:
+                    pass
 
             self.report({'INFO'}, f"Scene '{self.scene_name}' submitted to queue successfully!")
             return {'FINISHED'}
