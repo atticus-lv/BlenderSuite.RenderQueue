@@ -1,6 +1,6 @@
 ﻿# Blender Render Queue
 
-一个用于Blender的队列渲染工具，目前支持Windows平台，计划支持多语言界面和跨平台部署。
+一个用于 Blender 的队列渲染工具，当前主桌面应用支持 Windows 和 macOS 构建运行，并支持多语言界面与跨平台部署。
 
 ## 功能特性
 
@@ -22,13 +22,14 @@
 
 ### 计划中功能 🚧
 
-- 🖥️ **跨平台支持** - 支持Windows、macOS和Linux平台
+- 🖥️ **Linux 支持** - 继续完善跨平台桌面支持
+- 📦 **安装包完善** - 补充 macOS `.dmg` 等分发流程
 
 ## 开发环境配置
 
 ### 1. 安装必要工具
 
-1. **下载并安装 [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)**
+1. **下载并安装 [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)**
 2. (Windows) **下载并安装 [Inno Setup 6](https://jrsoftware.org/isdl.php)**
 
 ### 2. 克隆项目
@@ -43,12 +44,12 @@ cd BlenderSuite.RenderQueue
 #### 调试构建
 
 ```bash
-dotnet build
+dotnet build BlenderRenderQueue/BlenderRenderQueue.csproj
 ```
 
 #### 发布构建
 
-项目提供了便捷的构建脚本来创建完整的安装程序：
+Windows 下项目提供了便捷的构建脚本来创建完整的安装程序：
 
 ```bash
 # 进入项目目录
@@ -70,6 +71,18 @@ make_aot_installer.bat
 
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained true -p:PublishAot=true -o Install/Publish
+```
+
+**macOS 发布 (Apple Silicon)**
+
+```bash
+dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained false
+```
+
+**macOS 发布 (Intel)**
+
+```bash
+dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-x64 --self-contained false
 ```
 
 **标准发布**
@@ -113,38 +126,39 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 ### 平台支持
 
 - **Windows** ✅ - 完整支持，包含安装程序
-- **macOS** 🚧 - 长期计划支持，将提供.dmg安装包
+- **macOS** ✅ - 主桌面应用可构建运行，安装包流程待完善
 - **Linux** 🚧 - 待定
 
 ## 开发说明
 
 ### 技术栈
 
-- **.NET 9.0** - 应用程序框架
+- **.NET 10** - 应用程序框架
 - **Avalonia UI** - 跨平台UI框架
 - **Inno Setup** - Windows安装程序制作工具
 
 ### 构建要求
 
-#### 当前支持 (Windows)
+#### 当前支持
 
 - Windows 10/11 (64位)
-- .NET 9.0 SDK
-- Inno Setup 6
+- macOS 13+（Apple Silicon / Intel）
+- .NET 10 SDK
+- Inno Setup 6（仅 Windows 打包需要）
 
 #### 计划支持 (跨平台)
 
 - **macOS**: macOS 10.15+ (Catalina)
 - **Linux**: 待定
-- **通用要求**: .NET 9.0 SDK, 对应平台的构建工具
+- **通用要求**: .NET 10 SDK, 对应平台的构建工具
 
 ## 开发路线图
 
 ### 跨平台支持计划 🚧
 
-- [ ] macOS 支持
+- [ ] macOS 分发完善
     - [ ] .dmg 安装包制作
-    - [ ] macOS 特定功能适配
+    - [ ] 签名与公证
 - [ ] Linux 支持
 - [ ] CI/CD 多平台构建
 
@@ -158,4 +172,3 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 
 - [中文许可协议](BlenderRenderQueue/Install/license_zh.txt)
 - [English License Agreement](BlenderRenderQueue/Install/license_en.txt)
-

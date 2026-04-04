@@ -227,16 +227,13 @@ public static class ClipboardHelper
     {
         try
         {
-            // 使用Avalonia剪切板服务
             var topLevel = Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
                 ? desktop.MainWindow
                 : null;
             
             if (topLevel?.Clipboard != null)
             {
-                var dataObject = new DataObject();
-                dataObject.Set(DataFormats.Text, text);
-                await topLevel.Clipboard.SetDataObjectAsync(dataObject);
+                await topLevel.Clipboard.SetTextAsync(text);
                 return true;
             }
             
@@ -265,14 +262,11 @@ public static class ClipboardHelper
     {
         try
         {
-            // 使用ToplevelService获取TopLevel
             var topLevel = ToplevelService.GetTopLevelForContext(context);
             
             if (topLevel?.Clipboard != null)
             {
-                var dataObject = new DataObject();
-                dataObject.Set(DataFormats.Text, text);
-                await topLevel.Clipboard.SetDataObjectAsync(dataObject);
+                await topLevel.Clipboard.SetTextAsync(text);
                 return true;
             }
             
@@ -288,15 +282,13 @@ public static class ClipboardHelper
     {
         try
         {
-            // 使用Avalonia剪切板服务获取文本
             var topLevel = Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
                 ? desktop.MainWindow
                 : null;
             
             if (topLevel?.Clipboard != null)
             {
-                var dataObject = await topLevel.Clipboard.GetDataAsync(DataFormats.Text);
-                return dataObject?.ToString();
+                return await topLevel.Clipboard.GetTextAsync();
             }
             
             return null;
@@ -323,13 +315,11 @@ public static class ClipboardHelper
     {
         try
         {
-            // 使用ToplevelService获取TopLevel
             var topLevel = ToplevelService.GetTopLevelForContext(context);
             
             if (topLevel?.Clipboard != null)
             {
-                var dataObject = await topLevel.Clipboard.GetDataAsync(DataFormats.Text);
-                return dataObject?.ToString();
+                return await topLevel.Clipboard.GetTextAsync();
             }
             
             return null;

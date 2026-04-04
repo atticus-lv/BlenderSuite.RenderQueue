@@ -26,7 +26,7 @@ public static class FileSystemHelper
                 return false;
             }
 
-            var normalizedPath = filePath.Replace('/', '\\');
+            var normalizedPath = NormalizePathForCurrentPlatform(filePath);
             var isDirectory = Directory.Exists(normalizedPath);
             var isFile = File.Exists(normalizedPath);
 
@@ -36,34 +36,18 @@ public static class FileSystemHelper
                 return false;
             }
 
-            ProcessStartInfo startInfo;
-
             if (isFile)
             {
-                // 如果是文件，使用 /select 参数选中文件
-                startInfo = new ProcessStartInfo
-                {
-                    FileName = "explorer.exe",
-                    Arguments = $"/select,\"{normalizedPath}\"",
-                    UseShellExecute = true,
-                    WindowStyle = ProcessWindowStyle.Normal
-                };
+                var startInfo = CreateFileRevealStartInfo(normalizedPath);
                 Console.WriteLine($"[FileSystemHelper] ✅ Opening directory and selecting file: {normalizedPath}");
+                Process.Start(startInfo);
             }
             else
             {
-                // 如果是目录，直接打开目录
-                startInfo = new ProcessStartInfo
-                {
-                    FileName = "explorer.exe",
-                    Arguments = $"\"{normalizedPath}\"",
-                    UseShellExecute = true,
-                    WindowStyle = ProcessWindowStyle.Normal
-                };
+                var startInfo = CreateDirectoryOpenStartInfo(normalizedPath);
                 Console.WriteLine($"[FileSystemHelper] ✅ Opened directory in explorer: {normalizedPath}");
+                Process.Start(startInfo);
             }
-
-            Process.Start(startInfo);
             return true;
         }
         catch (Exception ex)
@@ -153,8 +137,7 @@ public static class FileSystemHelper
             var startInfo = new ProcessStartInfo
             {
                 FileName = currentExecutable,
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Normal
+                UseShellExecute = false
             };
 
             Process.Start(startInfo);
@@ -174,5 +157,72 @@ public static class FileSystemHelper
             Console.WriteLine($"[FileSystemHelper] ❌ Error restarting application: {ex.Message}");
             return false;
         }
+    }
+
+    private static string NormalizePathForCurrentPlatform(string path)
+    {
+        return OperatingSystem.IsWindows() ? path.Replace('/', '\\') : path;
+    }
+
+    private static ProcessStartInfo CreateFileRevealStartInfo(string path)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"/select,\"{path}\"",
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Normal
+            };
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            return new ProcessStartInfo
+            {
+                FileName = "open",
+                ArgumentList = { "-R", path },
+                UseShellExecute = false
+            };
+        }
+
+        return new ProcessStartInfo
+        {
+            FileName = "xdg-open",
+            Arguments = $"\"{Path.GetDirectoryName(path)}\"",
+            UseShellExecute = false
+        };
+    }
+
+    private static ProcessStartInfo CreateDirectoryOpenStartInfo(string path)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"\"{path}\"",
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Normal
+            };
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            return new ProcessStartInfo
+            {
+                FileName = "open",
+                ArgumentList = { path },
+                UseShellExecute = false
+            };
+        }
+
+        return new ProcessStartInfo
+        {
+            FileName = "xdg-open",
+            Arguments = $"\"{path}\"",
+            UseShellExecute = false
+        };
     }
 }

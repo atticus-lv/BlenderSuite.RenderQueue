@@ -339,32 +339,31 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
-            if (OperatingSystem.IsWindows())
+            var detectedBlenders = new List<string>();
+
+            if (BlenderLocator.TryFindBlenderExe(out var exe))
             {
-                var detectedBlenders = new List<string>();
+                detectedBlenders.Add(exe);
+            }
 
-                // Only registry scanning is used, no file system scanning is performed
-                if (BlenderLocator.TryFindBlenderExe(out var exe)) detectedBlenders.Add(exe);
-
-                if (detectedBlenders.Count != 0)
+            if (detectedBlenders.Count != 0)
+            {
+                Dispatcher.UIThread.Post(() =>
                 {
-                    Dispatcher.UIThread.Post(() =>
+                    foreach (var blender in from blenderPath in detectedBlenders
+                             let existing = BlenderExecutables.FirstOrDefault(b => b.Path == blenderPath)
+                             where existing == null
+                             select BlenderExecutable.CreateDefault(blenderPath))
                     {
-                        foreach (var blender in from blenderPath in detectedBlenders
-                                 let existing = BlenderExecutables.FirstOrDefault(b => b.Path == blenderPath)
-                                 where existing == null
-                                 select BlenderExecutable.CreateDefault(blenderPath))
-                        {
-                            BlenderExecutables.Add(blender);
-                            _ = Task.Run(async () => await ValidateBlenderAsync(blender));
-                        }
+                        BlenderExecutables.Add(blender);
+                        _ = Task.Run(async () => await ValidateBlenderAsync(blender));
+                    }
 
-                        // AutoSelect is automatically selected only if autoSelect is true and there is currently no Blender selected
-                        if (autoSelect && SelectedBlenderExecutable == null && BlenderExecutables.Any())
-                            SelectedBlenderExecutable = BlenderExecutables.First();
-                    });
-                    return Task.FromResult(true);
-                }
+                    // AutoSelect is automatically selected only if autoSelect is true and there is currently no Blender selected
+                    if (autoSelect && SelectedBlenderExecutable == null && BlenderExecutables.Any())
+                        SelectedBlenderExecutable = BlenderExecutables.First();
+                });
+                return Task.FromResult(true);
             }
         }
         catch
@@ -757,11 +756,24 @@ public partial class SettingsViewModel : ViewModelBase
 
     private static IEnumerable<FilePickerFileType> GetBlenderExecutableFileTypes()
     {
-#if WINDOWS
-        return [new FilePickerFileType("Executable") { Patterns = ["*.exe"] }];
-#else
-        return new[] { new FilePickerFileType("Blender") { Patterns = new[] { "blender", "*blender*" } } };
-#endif
+        if (OperatingSystem.IsWindows())
+        {
+            return [new FilePickerFileType("Executable") { Patterns = ["*.exe"] }];
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            return
+            [
+                new FilePickerFileType("Blender")
+                {
+                    Patterns = ["Blender", "*Blender*"],
+                    AppleUniformTypeIdentifiers = ["public.unix-executable"]
+                }
+            ];
+        }
+
+        return [new FilePickerFileType("Executable") { Patterns = ["*"] }];
     }
 
 

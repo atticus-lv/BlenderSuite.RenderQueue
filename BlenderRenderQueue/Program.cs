@@ -22,14 +22,17 @@ sealed class Program
         var appBuilder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            .WithDeveloperTools()
             .LogToTrace();
 
-        // 根据设置选择渲染模式
-        var renderingMode = GetRenderingModeFromSettings();
-        appBuilder = appBuilder.With(new Win32PlatformOptions
+        if (OperatingSystem.IsWindows())
         {
-            RenderingMode = [renderingMode]
-        });
+            var renderingMode = GetRenderingModeFromSettings();
+            appBuilder = appBuilder.With(new Win32PlatformOptions
+            {
+                RenderingMode = [renderingMode]
+            });
+        }
 
         return appBuilder;
     }

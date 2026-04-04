@@ -5,20 +5,35 @@ namespace BlenderRenderQueue.Services.Business.Monitoring;
 
 public class HardwareMonitorService : IDisposable
 {
-    private readonly Computer _computer;
+    private readonly Computer? _computer;
+    public bool IsSupported { get; }
     
     public HardwareMonitorService()
     {
-        _computer = new Computer
+        if (!OperatingSystem.IsWindows())
         {
-            IsCpuEnabled = true,
-            IsGpuEnabled = true,
-            IsMemoryEnabled = true,
-            IsMotherboardEnabled = true,
-            IsStorageEnabled = true
-        };
-        
-        _computer.Open();
+            return;
+        }
+
+        try
+        {
+            _computer = new Computer
+            {
+                IsCpuEnabled = true,
+                IsGpuEnabled = true,
+                IsMemoryEnabled = true,
+                IsMotherboardEnabled = true,
+                IsStorageEnabled = true
+            };
+
+            _computer.Open();
+            IsSupported = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[HardwareMonitorService] ❌ Failed to initialize hardware monitor: {ex.Message}");
+            _computer = null;
+        }
     }
 
     public class HardwareInfo
@@ -35,6 +50,11 @@ public class HardwareMonitorService : IDisposable
     public HardwareInfo GetHardwareInfo()
     {
         var info = new HardwareInfo();
+
+        if (!IsSupported || _computer == null)
+        {
+            return info;
+        }
         
         foreach (var hardware in _computer.Hardware)
         {
@@ -105,6 +125,6 @@ public class HardwareMonitorService : IDisposable
 
     public void Dispose()
     {
-        _computer.Close();
+        _computer?.Close();
     }
 }

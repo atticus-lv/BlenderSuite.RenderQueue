@@ -1334,6 +1334,11 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         try
         {
+            if (!OperatingSystem.IsWindows())
+            {
+                return blenderPath;
+            }
+
             var directory = Path.GetDirectoryName(blenderPath);
             var fileName = Path.GetFileName(blenderPath);
 

@@ -208,11 +208,24 @@ public partial class TestRenderViewModel : ViewModelBase
 
 	private static IEnumerable<FilePickerFileType> GetBlenderExecutableFileTypes()
 	{
-		#if WINDOWS
-		return new[] { new FilePickerFileType("Executable") { Patterns = new[] { "*.exe" } } };
-		#else
-		return new[] { new FilePickerFileType("Blender") { Patterns = new[] { "blender", "*blender*" } } };
-		#endif
+		if (OperatingSystem.IsWindows())
+		{
+			return new[] { new FilePickerFileType("Executable") { Patterns = new[] { "*.exe" } } };
+		}
+
+		if (OperatingSystem.IsMacOS())
+		{
+			return new[]
+			{
+				new FilePickerFileType("Blender")
+				{
+					Patterns = new[] { "Blender", "*Blender*" },
+					AppleUniformTypeIdentifiers = new[] { "public.unix-executable" }
+				}
+			};
+		}
+
+		return new[] { new FilePickerFileType("Executable") { Patterns = new[] { "*" } } };
 	}
 
 	[RelayCommand]

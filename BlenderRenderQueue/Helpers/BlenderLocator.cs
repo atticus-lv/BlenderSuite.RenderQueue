@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Microsoft.Win32;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,7 +13,44 @@ public static class BlenderLocator
 	public static bool TryFindBlenderExe(out string path)
 	{
 		path = string.Empty;
-		if (!OperatingSystem.IsWindows()) return false;
+
+		if (OperatingSystem.IsWindows())
+		{
+			return TryFindBlenderExeOnWindows(out path);
+		}
+
+		if (OperatingSystem.IsMacOS())
+		{
+			return TryFindBlenderExeOnMacOS(out path);
+		}
+
+		return false;
+	}
+
+	private static bool TryFindBlenderExeOnMacOS(out string path)
+	{
+		path = string.Empty;
+
+		string[] candidates =
+		[
+			"/Applications/Blender.app/Contents/MacOS/Blender",
+			Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Applications", "Blender.app",
+				"Contents", "MacOS", "Blender")
+		];
+
+		foreach (var candidate in candidates.Where(File.Exists))
+		{
+			path = candidate;
+			return true;
+		}
+
+		return false;
+	}
+
+	[SupportedOSPlatform("windows")]
+	private static bool TryFindBlenderExeOnWindows(out string path)
+	{
+		path = string.Empty;
 
 		// 1) 常见注册表位置：HKLM/HKCU 下的 Blender Foundation、卸载项、文件关联
 		string?[] candidates =
@@ -37,8 +75,9 @@ public static class BlenderLocator
 
 	public static async Task<string?> FindBlenderExeAsync(CancellationToken cancellationToken = default)
 	{
-		if (!OperatingSystem.IsWindows()) return null;
 		if (TryFindBlenderExe(out var path)) return path;
+
+		if (!OperatingSystem.IsWindows()) return null;
 
 		return await Task.Run(() =>
 		{
@@ -89,6 +128,7 @@ public static class BlenderLocator
 		return s;
 	}
 
+	[SupportedOSPlatform("windows")]
 	private static string? ReadRegString(RegistryHive hive, string subKey, string? valueName)
 	{
 		try
@@ -103,6 +143,7 @@ public static class BlenderLocator
 		catch { return null; }
 	}
 
+	[SupportedOSPlatform("windows")]
 	private static string? ReadUninstallForDisplayName(string namePart)
 	{
 		try

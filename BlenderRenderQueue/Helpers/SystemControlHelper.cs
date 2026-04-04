@@ -23,15 +23,7 @@ public static class SystemControlHelper
     {
         try
         {
-            // 使用 Windows 的 shutdown 命令
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = "shutdown",
-                Arguments = $"/s /t {delaySeconds}",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
+            var processStartInfo = CreateShutdownStartInfo(delaySeconds, restart: false);
 
             using var process = Process.Start(processStartInfo);
             if (process == null)
@@ -70,15 +62,7 @@ public static class SystemControlHelper
     {
         try
         {
-            // 使用 Windows 的 shutdown 命令进行重启
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = "shutdown",
-                Arguments = $"/r /t {delaySeconds}",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
+            var processStartInfo = CreateShutdownStartInfo(delaySeconds, restart: true);
 
             using var process = Process.Start(processStartInfo);
             if (process == null)
@@ -115,14 +99,7 @@ public static class SystemControlHelper
     {
         try
         {
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = "shutdown",
-                Arguments = "/a",
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
+            var processStartInfo = CreateCancelShutdownStartInfo();
 
             using var process = Process.Start(processStartInfo);
             if (process == null)
@@ -163,5 +140,61 @@ public static class SystemControlHelper
         var dialog = new SystemActionCountdownView(actionType, countdownSeconds);
         return await dialog.ShowDialogAsync(parentWindow, countdownSeconds);
     }
-}
 
+    private static ProcessStartInfo CreateShutdownStartInfo(int delaySeconds, bool restart)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return new ProcessStartInfo
+            {
+                FileName = "shutdown",
+                Arguments = restart ? $"/r /t {delaySeconds}" : $"/s /t {delaySeconds}",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            var delayMinutes = Math.Max(1, (int)Math.Ceiling(delaySeconds / 60d));
+            return new ProcessStartInfo
+            {
+                FileName = "/sbin/shutdown",
+                Arguments = restart ? $"-r +{delayMinutes}" : $"-h +{delayMinutes}",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+        }
+
+        throw new PlatformNotSupportedException("Shutdown is not supported on this platform.");
+    }
+
+    private static ProcessStartInfo CreateCancelShutdownStartInfo()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return new ProcessStartInfo
+            {
+                FileName = "shutdown",
+                Arguments = "/a",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            return new ProcessStartInfo
+            {
+                FileName = "/sbin/shutdown",
+                Arguments = "-c",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+        }
+
+        throw new PlatformNotSupportedException("Shutdown cancellation is not supported on this platform.");
+    }
+}

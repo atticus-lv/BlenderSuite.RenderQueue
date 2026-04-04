@@ -27,17 +27,21 @@ public partial class MainWindowViewModel : ViewModelBase
 	
 	private void GetFileVersion()
 	{
-#if WINDOWS
-        var exeDir = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
-        // get all the exe files in the directory
-        var exePath = exeDir != null ? Directory.GetFiles(exeDir, "*.exe").FirstOrDefault() : null;
-        Console.WriteLine($"Executable Path: {exePath}");
-        if (exePath == null) return;
-        var version = FileVersionInfo.GetVersionInfo(exePath).FileVersion;
-        Console.WriteLine($"Version: {version}");
-        if (version == null) return;
-        AppVersion = version;
-#elif OSX
+        if (OperatingSystem.IsWindows())
+        {
+            var exeDir = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
+            var exePath = exeDir != null ? Directory.GetFiles(exeDir, "*.exe").FirstOrDefault() : null;
+            Console.WriteLine($"Executable Path: {exePath}");
+            if (exePath == null) return;
+            var version = FileVersionInfo.GetVersionInfo(exePath).FileVersion;
+            Console.WriteLine($"Version: {version}");
+            if (version == null) return;
+            AppVersion = version;
+            return;
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
         // 尝试多个可能的路径
         var possiblePaths = new[]
         {
@@ -77,9 +81,10 @@ public partial class MainWindowViewModel : ViewModelBase
         
         // 如果所有路径都失败，设置为开发版本号
         AppVersion = "Dev";
-#else
+        return;
+        }
+
 		AppVersion = "Unknown";
-#endif
 	}
 	
 }
