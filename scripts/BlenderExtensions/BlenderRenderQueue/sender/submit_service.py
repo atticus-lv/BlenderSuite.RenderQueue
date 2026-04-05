@@ -59,20 +59,33 @@ def _find_app_launch_target() -> str | None:
 
 
 def _launch_app(launch_target: str):
+    popen_kwargs = {
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+
     if sys.platform == "win32":
         create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         subprocess.Popen(
             f'cmd /c start "" "{launch_target}"',
             shell=True,
             creationflags=create_no_window,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         return
 
     if launch_target.endswith(".app"):
-        subprocess.Popen(["open", "-a", launch_target])
+        subprocess.Popen(["open", "-a", launch_target], start_new_session=True, **popen_kwargs)
         return
 
-    subprocess.Popen([launch_target])
+    if launch_target.endswith(".dll"):
+        subprocess.Popen(["dotnet", launch_target], start_new_session=True, **popen_kwargs)
+        return
+
+    subprocess.Popen([launch_target], start_new_session=True, **popen_kwargs)
 
 
 def _read_endpoint_info() -> dict | None:

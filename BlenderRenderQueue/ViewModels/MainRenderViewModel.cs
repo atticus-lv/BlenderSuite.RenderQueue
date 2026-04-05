@@ -59,6 +59,7 @@ public partial class MainRenderViewModel : ViewModelBase
     // 内部状态
     private BlenderProcessService? _blenderProcessService;
     private CancellationTokenSource? _versionCts;
+    public Task InitialLoadTask { get; }
 
 
     public MainRenderViewModel(SettingsViewModel settingsViewModel, RenderQueueViewModel renderQueue)
@@ -76,7 +77,7 @@ public partial class MainRenderViewModel : ViewModelBase
         InitializeSettings(settingsViewModel);
 
         // 异步加载保存的数据
-        _ = Task.Run(async () => await LoadSavedDataAsync());
+        InitialLoadTask = Task.Run(LoadSavedDataAsync);
     }
 
     private void ValidateSelectedBlender()
