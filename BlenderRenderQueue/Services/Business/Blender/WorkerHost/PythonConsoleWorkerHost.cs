@@ -25,6 +25,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
     private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
     private readonly SemaphoreSlim _requestLock = new(1, 1);
     private readonly SemaphoreSlim _stdinLock = new(1, 1);
+    private readonly Lock _activeRequestLock = new();
     private readonly object _waitersLock = new();
     private readonly List<OutputWaiter> _outputWaiters = [];
     private readonly CancellationTokenSource _disposeCts = new();
@@ -38,6 +39,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
     private string _lastLoadedBlendFilePath = string.Empty;
     private int _requestSequence;
     private bool _disposed;
+    private TcpClient? _activeRequestClient;
 
     public BlenderWorkerHostState State { get; } = new();
 
@@ -308,6 +310,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
     private async Task StartWorkerProcessCoreAsync(string blenderExecutablePath, CancellationToken cancellationToken)
     {
         await TerminateProcessCoreAsync();
+        await CleanupStaleWorkerProcessAsync(blenderExecutablePath);
 
         _connectionInfo = BlenderWorkerConnectionInfo.CreateLocal();
         _appInstanceId = Guid.NewGuid().ToString("N");
@@ -336,11 +339,14 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             },
             EnableRaisingEvents = true
         };
+        process.StartInfo.Environment["BRQ_WORKER"] = "1";
+        process.StartInfo.Environment["BRQ_APP_INSTANCE_ID"] = _appInstanceId;
 
         process.Exited += (_, _) =>
         {
             State.IsProcessRunning = false;
             var exitCode = process.HasExited ? process.ExitCode : -1;
+            DeleteWorkerProcessInfo();
             OnProcessExited?.Invoke(exitCode);
         };
 
@@ -351,6 +357,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
         _process = process;
         State.IsProcessRunning = true;
+        PersistWorkerProcessInfo(process.Id, blenderExecutablePath);
         _stdoutTask = Task.Run(() => ReadOutputLoopAsync(process.StandardOutput, false, _disposeCts.Token));
         _stderrTask = Task.Run(() => ReadOutputLoopAsync(process.StandardError, true, _disposeCts.Token));
 
@@ -449,6 +456,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
             using var client = new TcpClient();
             await client.ConnectAsync(_connectionInfo.Host, _connectionInfo.Port, linkedCts.Token);
+            SetActiveRequestClient(client);
 
             await using var stream = client.GetStream();
             using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
@@ -485,6 +493,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
         }
         finally
         {
+            ClearActiveRequestClient();
             _requestLock.Release();
         }
     }
@@ -735,6 +744,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
         _heartbeatCts?.Cancel();
         _heartbeatCts?.Dispose();
         _heartbeatCts = null;
+        AbortActiveRequestClient();
 
         if (_process is null)
         {
@@ -758,6 +768,62 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             _process.Dispose();
             _process = null;
             State.IsProcessRunning = false;
+            DeleteWorkerProcessInfo();
+        }
+    }
+
+    private async Task CleanupStaleWorkerProcessAsync(string blenderExecutablePath)
+    {
+        var metadataPath = GetWorkerProcessInfoPath();
+        if (!File.Exists(metadataPath))
+        {
+            return;
+        }
+
+        try
+        {
+            var json = await File.ReadAllTextAsync(metadataPath);
+            var metadata = JsonSerializer.Deserialize<WorkerProcessMetadata>(json);
+            if (metadata is null || metadata.ProcessId <= 0)
+            {
+                DeleteWorkerProcessInfo();
+                return;
+            }
+
+            try
+            {
+                var process = Process.GetProcessById(metadata.ProcessId);
+                if (process.HasExited)
+                {
+                    DeleteWorkerProcessInfo();
+                    return;
+                }
+
+                if (!IsLikelyBlenderProcess(process, blenderExecutablePath))
+                {
+                    DeleteWorkerProcessInfo();
+                    return;
+                }
+
+                process.Kill(true);
+                await process.WaitForExitAsync(_disposeCts.Token);
+            }
+            catch (ArgumentException)
+            {
+                // The process no longer exists.
+            }
+            catch (InvalidOperationException)
+            {
+                // The process has already exited.
+            }
+        }
+        catch
+        {
+            // If the metadata is unreadable, remove it and continue.
+        }
+        finally
+        {
+            DeleteWorkerProcessInfo();
         }
     }
 
@@ -769,6 +835,76 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             "Logs");
         Directory.CreateDirectory(directory);
         return Path.Combine(directory, $"worker-{_appInstanceId}.log");
+    }
+
+    private string GetWorkerProcessInfoPath()
+    {
+        var directory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "BlenderRenderQueue");
+        Directory.CreateDirectory(directory);
+        return Path.Combine(directory, "python-console-worker.json");
+    }
+
+    private void PersistWorkerProcessInfo(int processId, string blenderExecutablePath)
+    {
+        var metadata = new WorkerProcessMetadata
+        {
+            ProcessId = processId,
+            BlenderExecutablePath = blenderExecutablePath,
+            AppInstanceId = _appInstanceId
+        };
+
+        File.WriteAllText(GetWorkerProcessInfoPath(), JsonSerializer.Serialize(metadata));
+    }
+
+    private void DeleteWorkerProcessInfo()
+    {
+        try
+        {
+            var path = GetWorkerProcessInfoPath();
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch
+        {
+            // ignored
+        }
+    }
+
+    private static bool IsLikelyBlenderProcess(Process process, string blenderExecutablePath)
+    {
+        try
+        {
+            if (!process.ProcessName.Contains("blender", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            try
+            {
+                var mainModulePath = process.MainModule?.FileName;
+                if (!string.IsNullOrWhiteSpace(mainModulePath))
+                {
+                    return string.Equals(
+                        Path.GetFullPath(mainModulePath),
+                        Path.GetFullPath(blenderExecutablePath),
+                        StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch
+            {
+                // Accessing MainModule can fail on some platforms. Fall back to process name only.
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private bool VerifyRenderOutput(BlenderWorkerRequest request, BlenderWorkerResponse response)
@@ -825,11 +961,53 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
         }
     }
 
+    private void SetActiveRequestClient(TcpClient client)
+    {
+        lock (_activeRequestLock)
+        {
+            _activeRequestClient = client;
+        }
+    }
+
+    private void ClearActiveRequestClient()
+    {
+        lock (_activeRequestLock)
+        {
+            _activeRequestClient = null;
+        }
+    }
+
+    private void AbortActiveRequestClient()
+    {
+        lock (_activeRequestLock)
+        {
+            try
+            {
+                _activeRequestClient?.Dispose();
+            }
+            catch
+            {
+                // ignored
+            }
+            finally
+            {
+                _activeRequestClient = null;
+            }
+        }
+    }
+
     private sealed class OutputWaiter(Func<string, bool> predicate)
     {
         public Func<string, bool> Predicate { get; } = predicate;
         public TaskCompletionSource<string> CompletionSource { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    private sealed class WorkerProcessMetadata
+    {
+        public int ProcessId { get; init; }
+        public string BlenderExecutablePath { get; init; } = string.Empty;
+        public string AppInstanceId { get; init; } = string.Empty;
     }
 }
 
