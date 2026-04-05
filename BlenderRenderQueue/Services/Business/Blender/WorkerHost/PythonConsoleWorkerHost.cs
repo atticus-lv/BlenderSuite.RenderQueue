@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -25,6 +26,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
     private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
     private readonly SemaphoreSlim _stdinLock = new(1, 1);
     private readonly Lock _activeRequestLock = new();
+    private readonly Lock _recentOutputLock = new();
     private readonly object _waitersLock = new();
     private readonly List<OutputWaiter> _outputWaiters = [];
     private readonly CancellationTokenSource _disposeCts = new();
@@ -39,6 +41,12 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
     private int _requestSequence;
     private bool _disposed;
     private TcpClient? _activeRequestClient;
+    private Process? _terminatingProcess;
+    private long _processGeneration;
+    private readonly Queue<string> _recentOutputLines = new();
+    private const int MaxRecentOutputLines = 120;
+    private bool _sawBlenderQuitLine;
+    private DateTimeOffset _processStartedAtUtc;
 
     public BlenderWorkerHostState State { get; } = new();
 
@@ -312,13 +320,18 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
         _connectionInfo = BlenderWorkerConnectionInfo.CreateLocal();
         _appInstanceId = Guid.NewGuid().ToString("N");
+        State.ProcessGeneration = Interlocked.Increment(ref _processGeneration);
         State.Status = "starting";
         State.IsProcessRunning = false;
         State.IsRendering = false;
         State.LastError = string.Empty;
+        State.LastErrorCategory = string.Empty;
         State.RenderStartedAt = null;
         State.CurrentFile = string.Empty;
         State.ActiveScene = string.Empty;
+        _sawBlenderQuitLine = false;
+        _processStartedAtUtc = DateTimeOffset.UtcNow;
+        ClearRecentOutputLines();
 
         var process = new Process
         {
@@ -345,6 +358,20 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             State.IsProcessRunning = false;
             var exitCode = process.HasExited ? process.ExitCode : -1;
             DeleteWorkerProcessInfo();
+            if (!ReferenceEquals(process, _process))
+            {
+                return;
+            }
+
+            if (ReferenceEquals(process, _terminatingProcess))
+            {
+                return;
+            }
+
+            var diagnostic = BuildUnexpectedExitDiagnostic(exitCode);
+            State.LastError = diagnostic;
+            State.LastErrorCategory = ClassifyProcessExit(exitCode);
+            OnErrorReceived?.Invoke(diagnostic);
             OnProcessExited?.Invoke(exitCode);
         };
 
@@ -473,6 +500,11 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             var responseLine = await reader.ReadLineAsync(linkedCts.Token);
             if (string.IsNullOrWhiteSpace(responseLine))
             {
+                if (_process is null || _process.HasExited)
+                {
+                    throw new InvalidOperationException(BuildUnexpectedExitDiagnostic(_process?.HasExited == true ? _process.ExitCode : -1));
+                }
+
                 throw new InvalidOperationException($"Worker returned an empty response for command '{command}'.");
             }
 
@@ -514,6 +546,9 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             Error = root.TryGetProperty("error", out var errorElement)
                 ? errorElement.GetString() ?? string.Empty
                 : string.Empty,
+            ErrorCategory = root.TryGetProperty("error_category", out var errorCategoryElement)
+                ? errorCategoryElement.GetString() ?? string.Empty
+                : string.Empty,
             CurrentFile = payload.TryGetProperty("current_file", out var currentFileElement)
                 ? currentFileElement.GetString() ?? string.Empty
                 : string.Empty,
@@ -552,6 +587,9 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
         State.CurrentFile = response.CurrentFile;
         State.ActiveScene = response.ActiveScene;
         State.LastError = response.Error;
+        State.LastErrorCategory = !string.IsNullOrWhiteSpace(response.ErrorCategory)
+            ? response.ErrorCategory
+            : ClassifyErrorText(response.Error);
         State.LastHeartbeatAt = ParseDateTime(response.LastHeartbeatAt);
         State.RenderStartedAt = ParseDateTime(response.RenderStartedAt);
         State.IsRendering = string.Equals(response.WorkerState, "rendering", StringComparison.Ordinal);
@@ -603,6 +641,11 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
         }
 
         State.LastOutputAt = DateTimeOffset.UtcNow;
+        RecordRecentOutputLine("[stdout] " + line);
+        if (line.Contains("Blender quit", StringComparison.OrdinalIgnoreCase))
+        {
+            _sawBlenderQuitLine = true;
+        }
 
         lock (_waitersLock)
         {
@@ -628,9 +671,33 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             return;
         }
 
+        if (IsIgnorableConsoleNoise(line))
+        {
+            return;
+        }
+
         State.LastOutputAt = DateTimeOffset.UtcNow;
+        RecordRecentOutputLine("[stderr] " + line);
+        if (line.Contains("Blender quit", StringComparison.OrdinalIgnoreCase))
+        {
+            _sawBlenderQuitLine = true;
+        }
+
         State.LastError = line;
+        var category = ClassifyErrorText(line);
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            State.LastErrorCategory = category;
+        }
         OnErrorReceived?.Invoke(line);
+    }
+
+    private static bool IsIgnorableConsoleNoise(string line)
+    {
+        var trimmed = line.Trim();
+        return trimmed is "(InteractiveConsole)" or "now exiting InteractiveConsole..."
+            || trimmed.StartsWith("Python ", StringComparison.Ordinal)
+            || trimmed.StartsWith("Type \"help\"", StringComparison.Ordinal);
     }
 
     private async Task<string> WaitForOutputAsync(
@@ -696,6 +763,12 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
                         break;
                     }
 
+                    // Let the active render pipeline own crash recovery while a render is in flight.
+                    if (State.IsRendering)
+                    {
+                        continue;
+                    }
+
                     if (_process is null || _process.HasExited)
                     {
                         State.ConsecutiveHeartbeatFailures++;
@@ -705,11 +778,6 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
                             State.ConsecutiveHeartbeatFailures = 0;
                         }
 
-                        continue;
-                    }
-
-                    if (State.IsRendering)
-                    {
                         continue;
                     }
 
@@ -747,12 +815,14 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             return;
         }
 
+        var process = _process;
+        _terminatingProcess = process;
         try
         {
-            if (!_process.HasExited)
+            if (!process.HasExited)
             {
-                _process.Kill(true);
-                await _process.WaitForExitAsync(_disposeCts.Token);
+                process.Kill(true);
+                await process.WaitForExitAsync(_disposeCts.Token);
             }
         }
         catch
@@ -761,8 +831,17 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
         }
         finally
         {
-            _process.Dispose();
-            _process = null;
+            process.Dispose();
+            if (ReferenceEquals(_process, process))
+            {
+                _process = null;
+            }
+
+            if (ReferenceEquals(_terminatingProcess, process))
+            {
+                _terminatingProcess = null;
+            }
+
             State.IsProcessRunning = false;
             DeleteWorkerProcessInfo();
         }
@@ -949,6 +1028,206 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             : null;
     }
 
+    private void RecordRecentOutputLine(string line)
+    {
+        lock (_recentOutputLock)
+        {
+            _recentOutputLines.Enqueue($"{DateTimeOffset.UtcNow:O} {line}");
+            while (_recentOutputLines.Count > MaxRecentOutputLines)
+            {
+                _recentOutputLines.Dequeue();
+            }
+        }
+    }
+
+    private void ClearRecentOutputLines()
+    {
+        lock (_recentOutputLock)
+        {
+            _recentOutputLines.Clear();
+        }
+    }
+
+    private string BuildUnexpectedExitDiagnostic(int exitCode)
+    {
+        var parts = new List<string>();
+        var category = ClassifyProcessExit(exitCode);
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            parts.Add($"Failure category: {category}");
+        }
+
+        if (exitCode == 0 || _sawBlenderQuitLine)
+        {
+            parts.Add("Blender worker exited normally.");
+            if (_sawBlenderQuitLine)
+            {
+                parts.Add("Observed 'Blender quit' in the process output.");
+            }
+        }
+        else
+        {
+            parts.Add($"Blender worker exited unexpectedly with code {exitCode}.");
+        }
+
+        var crashReportPath = FindCrashReportPath();
+        if (!string.IsNullOrWhiteSpace(crashReportPath))
+        {
+            parts.Add($"Crash report: {crashReportPath}");
+        }
+
+        var recentTail = GetRecentOutputTail(12);
+        if (!string.IsNullOrWhiteSpace(recentTail))
+        {
+            parts.Add("Recent Blender output:");
+            parts.Add(recentTail);
+        }
+
+        return string.Join(Environment.NewLine, parts);
+    }
+
+    private string ClassifyProcessExit(int exitCode)
+    {
+        var recentTail = GetRecentOutputTail(20);
+        var classifiedFromOutput = ClassifyErrorText(recentTail);
+        if (!string.IsNullOrWhiteSpace(classifiedFromOutput))
+        {
+            return classifiedFromOutput;
+        }
+
+        return exitCode == 0 || _sawBlenderQuitLine
+            ? "normal_quit"
+            : "unexpected_exit";
+    }
+
+    private static string ClassifyErrorText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        var normalized = text.ToLowerInvariant();
+        if (normalized.Contains("file format is not supported") ||
+            normalized.Contains("unable to open blend file") ||
+            normalized.Contains("cannot read file as a blender file") ||
+            normalized.Contains("not a blend file"))
+        {
+            return "file_error";
+        }
+
+        if (normalized.Contains("traceback") ||
+            normalized.Contains("runtimeerror:") ||
+            normalized.Contains("syntaxerror:") ||
+            normalized.Contains("nameerror:") ||
+            normalized.Contains("valueerror:") ||
+            normalized.Contains("unknown worker command"))
+        {
+            return "script_error";
+        }
+
+        if (normalized.Contains("blender quit"))
+        {
+            return "normal_quit";
+        }
+
+        return string.Empty;
+    }
+
+    private string GetRecentOutputTail(int maxLines)
+    {
+        lock (_recentOutputLock)
+        {
+            if (_recentOutputLines.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(
+                Environment.NewLine,
+                _recentOutputLines.Skip(Math.Max(0, _recentOutputLines.Count - maxLines)));
+        }
+    }
+
+    private string FindCrashReportPath()
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                var diagnosticReports = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                    "Library",
+                    "Logs",
+                    "DiagnosticReports");
+
+                return FindNewestCrashFile(
+                    diagnosticReports,
+                    new[] { "Blender*.crash", "Blender*.ips" },
+                    _processStartedAtUtc);
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                var candidates = new List<string>();
+                if (!string.IsNullOrWhiteSpace(_lastLoadedBlendFilePath))
+                {
+                    var blendDirectory = Path.GetDirectoryName(_lastLoadedBlendFilePath);
+                    var blendName = Path.GetFileNameWithoutExtension(_lastLoadedBlendFilePath);
+                    if (!string.IsNullOrWhiteSpace(blendDirectory) && !string.IsNullOrWhiteSpace(blendName))
+                    {
+                        candidates.Add(Path.Combine(blendDirectory, blendName + ".crash.txt"));
+                    }
+                }
+
+                candidates.Add("/tmp/blender.crash.txt");
+                foreach (var candidate in candidates.Distinct())
+                {
+                    if (File.Exists(candidate))
+                    {
+                        return candidate;
+                    }
+                }
+
+                return FindNewestCrashFile("/tmp", new[] { "*.crash.txt" }, _processStartedAtUtc);
+            }
+        }
+        catch
+        {
+            // Best-effort diagnostic only.
+        }
+
+        return string.Empty;
+    }
+
+    private static string FindNewestCrashFile(string directory, IReadOnlyList<string> patterns, DateTimeOffset processStartedAtUtc)
+    {
+        if (!Directory.Exists(directory))
+        {
+            return string.Empty;
+        }
+
+        var minTimestamp = processStartedAtUtc.AddMinutes(-1);
+        var newest = patterns
+            .SelectMany(pattern =>
+            {
+                try
+                {
+                    return Directory.EnumerateFiles(directory, pattern, SearchOption.TopDirectoryOnly);
+                }
+                catch
+                {
+                    return Enumerable.Empty<string>();
+                }
+            })
+            .Select(path => new FileInfo(path))
+            .Where(info => info.Exists && info.LastWriteTimeUtc >= minTimestamp.UtcDateTime)
+            .OrderByDescending(info => info.LastWriteTimeUtc)
+            .FirstOrDefault();
+
+        return newest?.FullName ?? string.Empty;
+    }
+
     private void ThrowIfDisposed()
     {
         if (_disposed)
@@ -1017,6 +1296,7 @@ internal static class BlenderWorkerResponseExtensions
             Ok = response.Ok,
             WorkerState = response.WorkerState,
             Error = response.Error,
+            ErrorCategory = response.ErrorCategory,
             CurrentFile = response.CurrentFile,
             ActiveScene = response.ActiveScene,
             Scenes = response.Scenes,

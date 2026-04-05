@@ -18,6 +18,7 @@ using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.UI;
 using BlenderRenderQueue.Helpers;
+using BlenderRenderQueue.Localizer;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -112,6 +113,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     private string _engine = string.Empty;
 
     [ObservableProperty]
+    private string _statusDetailText = string.Empty;
+
+    [ObservableProperty]
     private int _currentFrame;
 
     [ObservableProperty]
@@ -201,6 +205,13 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public string StatusText => Status.GetLocalizationKey();
 
+    public bool HasStatusDetailText => !string.IsNullOrWhiteSpace(StatusDetailText);
+
+    partial void OnStatusDetailTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasStatusDetailText));
+    }
+
 
     private void UpdateStatusDependentProperties()
     {
@@ -211,6 +222,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowProgress));
         OnPropertyChanged(nameof(CanGenerateVideo));
         OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(HasStatusDetailText));
     }
 
 
@@ -258,6 +270,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         // 只在渲染状态时处理进程退出
         if (Status != RenderTaskStatus.Running)
+        {
+            return;
+        }
+
+        if (_workerHost != null && _workerHost.State.ProcessGeneration != _activeWorkerProcessGeneration)
         {
             return;
         }
@@ -615,6 +632,8 @@ public partial class RenderTaskViewModel : ViewModelBase
     private bool _workerExitedUnexpectedly;
     private int _lastWorkerExitCode;
     private bool _suppressUnexpectedExitHandling;
+    private int _renderPipelineVersion;
+    private long _activeWorkerProcessGeneration;
 
     // 事件
     public event EventHandler<RenderTaskStatusChangedEventArgs>? StatusChanged;
@@ -981,6 +1000,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         try
         {
+            var renderPipelineVersion = Interlocked.Increment(ref _renderPipelineVersion);
             _renderCancellationRequested = false;
             _lastActivityTime = DateTime.UtcNow;
             _workerExitedUnexpectedly = false;
@@ -998,16 +1018,19 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             AttachWorkerHost(workerHost);
             _currentBlenderProcess = workerHost;
+            _activeWorkerProcessGeneration = workerHost.State.ProcessGeneration;
             _renderOutputParser = new RenderOutputParser();
 
             var request = CreateWorkerRequest(resumeFromFrame);
+            StatusDetailText = string.Empty;
             EnqueueLog($"{(isResume ? "恢复渲染" : "开始渲染")}: {DescribeWorkerRequest(request)}");
 
-            var response = await ExecuteRenderWithRecoveryAsync(workerHost, request);
+            var response = await ExecuteRenderWithRecoveryAsync(workerHost, request, renderPipelineVersion);
             EnqueueLog(isResume
                 ? (response.OutputVerified ? "恢复渲染输出已校验" : "恢复渲染完成，但未能校验输出文件")
                 : (response.OutputVerified ? "渲染输出已校验" : "渲染已完成，但未能校验输出文件"));
 
+            EnsureRenderPipelineIsCurrent(renderPipelineVersion);
             if (Status == RenderTaskStatus.Running)
             {
                 CompleteRenderSuccessfully();
@@ -1022,7 +1045,9 @@ public partial class RenderTaskViewModel : ViewModelBase
             }
             else
             {
-                EnqueueLog($"{(isResume ? "恢复渲染任务" : "渲染任务")}超时: {ex.Message}");
+                var detail = BuildFinalFailureDetail(ex);
+                EnqueueLog($"{(isResume ? "恢复渲染任务" : "渲染任务")}超时: {detail}");
+                StatusDetailText = detail;
                 SetStatus(RenderTaskStatus.Failed);
             }
         }
@@ -1051,7 +1076,9 @@ public partial class RenderTaskViewModel : ViewModelBase
             }
             else
             {
-                EnqueueLog($"{(isResume ? "恢复渲染" : "渲染")}失败: {ex.Message}");
+                var detail = BuildFinalFailureDetail(ex);
+                EnqueueLog($"{(isResume ? "恢复渲染" : "渲染")}失败: {detail}");
+                StatusDetailText = detail;
                 SetStatus(RenderTaskStatus.Failed);
             }
         }
@@ -1066,12 +1093,14 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     private async Task<BlenderWorkerResponse> ExecuteRenderWithRecoveryAsync(
         IBlenderWorkerHost workerHost,
-        BlenderWorkerRequest initialRequest)
+        BlenderWorkerRequest initialRequest,
+        int renderPipelineVersion)
     {
         var request = initialRequest;
 
         while (true)
         {
+            EnsureRenderPipelineIsCurrent(renderPipelineVersion);
             _lastActivityTime = DateTime.UtcNow;
             _workerExitedUnexpectedly = false;
             _lastWorkerExitCode = 0;
@@ -1080,7 +1109,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             try
             {
-                return await WaitForRenderCompletionAsync(workerHost, request);
+                return await WaitForRenderCompletionAsync(workerHost, request, renderPipelineVersion);
             }
             catch (Exception ex) when (IsRecoverableFailure(ex))
             {
@@ -1094,6 +1123,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                     throw new InvalidOperationException(reason, ex);
                 }
 
+                EnsureRenderPipelineIsCurrent(renderPipelineVersion);
                 request = CreateWorkerRequest(resumeFrame);
                 EnqueueLog($"自动恢复成功，继续渲染: {DescribeWorkerRequest(request)}");
                 Console.WriteLine(
@@ -1104,13 +1134,15 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     private async Task<BlenderWorkerResponse> WaitForRenderCompletionAsync(
         IBlenderWorkerHost workerHost,
-        BlenderWorkerRequest request)
+        BlenderWorkerRequest request,
+        int renderPipelineVersion)
     {
         using var renderAttemptCts = new CancellationTokenSource();
         var renderTask = workerHost.RenderTaskAsync(request, renderAttemptCts.Token);
 
         while (true)
         {
+            EnsureRenderPipelineIsCurrent(renderPipelineVersion);
             var completedTask = await Task.WhenAny(renderTask, Task.Delay(1000));
             if (completedTask == renderTask)
             {
@@ -1160,6 +1192,12 @@ public partial class RenderTaskViewModel : ViewModelBase
             return false;
         }
 
+        var category = GetFailureCategory(ex);
+        if (category is "file_error" or "script_error" or "normal_quit")
+        {
+            return false;
+        }
+
         if (_workerExitedUnexpectedly)
         {
             return true;
@@ -1178,6 +1216,14 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     private string GetRecoverableFailureReason(Exception ex)
     {
+        var category = GetFailureCategory(ex);
+        if (category == "unexpected_exit")
+        {
+            return _workerExitedUnexpectedly
+                ? $"检测到 Blender 进程异常退出 (退出码 {_lastWorkerExitCode})"
+                : "检测到 Blender Worker 异常退出";
+        }
+
         if (_workerExitedUnexpectedly)
         {
             return $"检测到 Blender 进程崩溃 (退出码 {_lastWorkerExitCode})";
@@ -1201,6 +1247,71 @@ public partial class RenderTaskViewModel : ViewModelBase
         return $"渲染执行异常: {ex.Message}";
     }
 
+    private string BuildFinalFailureDetail(Exception ex)
+    {
+        var category = GetFailureCategory(ex);
+        return category switch
+        {
+            "file_error" => FormatLocalized("RenderTask_StatusDetail_FileError", ex.Message),
+            "script_error" => FormatLocalized("RenderTask_StatusDetail_ScriptError", ex.Message),
+            "normal_quit" => Localizer.Localizer.Instance["RenderTask_StatusDetail_NormalQuit"],
+            "unexpected_exit" => _workerExitedUnexpectedly
+                ? FormatLocalized("RenderTask_StatusDetail_UnexpectedExitWithCode", _lastWorkerExitCode)
+                : Localizer.Localizer.Instance["RenderTask_StatusDetail_UnexpectedExit"],
+            "render_timeout" => FormatLocalized("RenderTask_StatusDetail_RenderTimeout", _globalRenderTimeoutSeconds),
+            "output_verification_failure" => Localizer.Localizer.Instance["RenderTask_StatusDetail_OutputVerificationFailed"],
+            "request_interrupted" => Localizer.Localizer.Instance["RenderTask_StatusDetail_RequestInterrupted"],
+            _ => string.IsNullOrWhiteSpace(ex.Message)
+                ? Localizer.Localizer.Instance["RenderTask_StatusDetail_RenderFailed"]
+                : ex.Message
+        };
+    }
+
+    private string GetFailureCategory(Exception ex)
+    {
+        if (_workerExitedUnexpectedly)
+        {
+            var workerCategory = _workerHost?.State.LastErrorCategory;
+            return string.IsNullOrWhiteSpace(workerCategory) ? "unexpected_exit" : workerCategory;
+        }
+
+        if (ex is TimeoutException)
+        {
+            return "render_timeout";
+        }
+
+        if (ex is OperationCanceledException or TaskCanceledException)
+        {
+            return "request_interrupted";
+        }
+
+        if (ex.Message.Contains("no render output was verified", StringComparison.OrdinalIgnoreCase))
+        {
+            return "output_verification_failure";
+        }
+
+        var hostCategory = _workerHost?.State.LastErrorCategory;
+        if (!string.IsNullOrWhiteSpace(hostCategory))
+        {
+            return hostCategory;
+        }
+
+        var normalized = ex.Message.ToLowerInvariant();
+        if (normalized.Contains("file format is not supported") ||
+            normalized.Contains("not a blend file") ||
+            normalized.Contains("cannot read file as a blender file"))
+        {
+            return "file_error";
+        }
+
+        if (normalized.Contains("scene '") && normalized.Contains("was not found"))
+        {
+            return "script_error";
+        }
+
+        return string.Empty;
+    }
+
     private async Task<bool> TryRecoverAndRetryAsync(
         IBlenderWorkerHost workerHost,
         string reason,
@@ -1213,6 +1324,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
 
         _automaticRecoveryAttempts++;
+        StatusDetailText = FormatLocalized("RenderTask_StatusDetail_RecoveringWorker", _automaticRecoveryAttempts, _globalMaxRetryAttempts);
         EnqueueLog($"{reason}，尝试自动恢复 ({_automaticRecoveryAttempts}/{_globalMaxRetryAttempts})...");
         Console.WriteLine(
             $"[RenderTaskViewModel] Attempting recovery {_automaticRecoveryAttempts}/{_globalMaxRetryAttempts} for {Path.GetFileName(BlendFilePath)}: {reason}");
@@ -1227,6 +1339,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 return false;
             }
+
+            _activeWorkerProcessGeneration = workerHost.State.ProcessGeneration;
         }
         catch (Exception ex)
         {
@@ -1243,7 +1357,16 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
 
         CurrentFrame = resumeFrame;
+        StatusDetailText = FormatLocalized("RenderTask_StatusDetail_RecoverySucceeded", _automaticRecoveryAttempts, _globalMaxRetryAttempts);
         return true;
+    }
+
+    private void EnsureRenderPipelineIsCurrent(int renderPipelineVersion)
+    {
+        if (renderPipelineVersion != _renderPipelineVersion || Status != RenderTaskStatus.Running)
+        {
+            throw new OperationCanceledException("Render pipeline is no longer active.");
+        }
     }
 
     private int GetResumeFrameForRetry(BlenderWorkerRequest request)
@@ -1260,12 +1383,19 @@ public partial class RenderTaskViewModel : ViewModelBase
     private void CompleteRenderSuccessfully()
     {
         OverallProgress01 = 1;
+        StatusDetailText = string.Empty;
         SetStatus(RenderTaskStatus.Completed);
         EndTime = DateTime.Now;
         if (StartTime.HasValue)
         {
             Duration = EndTime.Value - StartTime.Value;
         }
+    }
+
+    private static string FormatLocalized(string key, params object[] args)
+    {
+        var format = Localizer.Localizer.Instance[key];
+        return args.Length == 0 ? format : string.Format(format, args);
     }
 
     private BlenderWorkerRequest CreateWorkerRequest(int? resumeFromFrame = null)
@@ -1635,14 +1765,8 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         EnqueueLog($"[ERR] {line}");
         _lastActivityTime = DateTime.UtcNow;
-
-        // 检查是否是超时错误，如果是，不要立即设置为失败状态
-        if (line.Contains("操作超时") && line.Contains("render"))
-        {
-            EnqueueLog("[INFO] 检测到渲染超时，但渲染进程可能仍在继续...");
-        }
-
-        Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(new RenderError(line)));
+        // The worker-host request lifecycle owns retries and final task transitions.
+        // Raw stderr is preserved for diagnostics only.
     }
 
     private void OnProgress(RenderProgress p)
@@ -1710,59 +1834,12 @@ public partial class RenderTaskViewModel : ViewModelBase
             case RenderCompletedAll:
                 EnqueueLog("全部帧完成");
                 OverallProgress01 = 1;
-
-                // 先设置状态，确保状态变化事件被触发
-                SetStatus(RenderTaskStatus.Completed);
-                EndTime = DateTime.Now;
-                if (StartTime.HasValue)
-                {
-                    Duration = EndTime.Value - StartTime.Value;
-                }
-
-                // 渲染完成后，停止 Blender 进程
-                try
-                {
-                    DetachWorkerHost();
-                }
-                catch (Exception ex)
-                {
-                    EnqueueLog($"停止渲染进程时出错: {ex.Message}");
-                }
-
+                // In the worker-host pipeline, final completion is committed only after the
+                // request returns successfully and the output path is verified on disk.
                 break;
             case RenderError err:
                 EnqueueLog($"渲染错误: {err.Message}");
-
-                // 尝试帧级别的重试
-                if (_currentFrameRetryAttempts < _globalMaxRetryAttempts && _currentBlenderProcess != null)
-                {
-                    _currentFrameRetryAttempts++;
-                    EnqueueLog($"检测到帧渲染错误，尝试第 {_currentFrameRetryAttempts} 次重试 (最大 {_globalMaxRetryAttempts} 次)...");
-
-                    try
-                    {
-                        // 等待一小段时间再重试当前帧
-                        await Task.Delay(2000);
-
-                        // 重新开始当前帧的渲染
-                        await ResumeRenderAsync(_currentBlenderProcess, CurrentFrame);
-                        EnqueueLog($"第 {_currentFrameRetryAttempts} 次帧重试开始成功");
-                        return; // 重试成功，继续渲染
-                    }
-                    catch (Exception ex)
-                    {
-                        EnqueueLog($"第 {_currentFrameRetryAttempts} 次帧重试失败: {ex.Message}");
-                    }
-                }
-
-                // 帧级别重试失败，标记任务失败
-                SetStatus(RenderTaskStatus.Failed);
-                EndTime = DateTime.Now;
-                if (StartTime.HasValue)
-                {
-                    Duration = EndTime.Value - StartTime.Value;
-                }
-
+                // The worker-host pipeline owns retries and final failure transitions.
                 break;
         }
     }
@@ -1775,6 +1852,11 @@ public partial class RenderTaskViewModel : ViewModelBase
         if (status == RenderTaskStatus.Running && CurrentFrame == 0)
         {
             CurrentFrame = StartFrame;
+        }
+
+        if (status is RenderTaskStatus.Pending or RenderTaskStatus.Completed or RenderTaskStatus.Cancelled)
+        {
+            StatusDetailText = string.Empty;
         }
 
         // 当任务完成时，重置帧重试计数器

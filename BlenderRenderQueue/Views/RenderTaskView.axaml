@@ -46,6 +46,12 @@
 
                     </StackPanel>
 
+                    <TextBlock Text="{Binding StatusDetailText}"
+                               IsVisible="{Binding HasStatusDetailText}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Opacity="0.8" />
+
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="8" VerticalAlignment="Center">

@@ -39,6 +39,7 @@ class WorkerState:
         self.app_instance_id = app_instance_id
         self.status = "starting"
         self.last_error = ""
+        self.last_error_category = ""
         self.request_count = 0
         self.shutdown_requested = False
         self.current_file = ""
@@ -54,10 +55,11 @@ class WorkerState:
         self.output_verified = False
         self._lock = threading.RLock()
 
-    def set_status(self, status, error=""):
+    def set_status(self, status, error="", error_category=""):
         with self._lock:
             self.status = status
             self.last_error = error
+            self.last_error_category = error_category
             if status != "rendering":
                 self.render_started_at = None
 
@@ -102,6 +104,7 @@ class WorkerState:
                 "render_started_at": self.render_started_at,
                 "last_heartbeat_at": self.last_heartbeat_at,
                 "last_error": self.last_error,
+                "last_error_category": self.last_error_category,
                 "output_verified": self.output_verified,
                 "request_count": self.request_count,
                 "app_instance_id": self.app_instance_id,
@@ -145,7 +148,7 @@ class PendingRequest:
         self.response = None
 
 
-def make_response(request_id, ok, worker_state, payload=None, error=None):
+def make_response(request_id, ok, worker_state, payload=None, error=None, error_category=None):
     response = {
         "request_id": request_id,
         "ok": ok,
@@ -154,6 +157,8 @@ def make_response(request_id, ok, worker_state, payload=None, error=None):
     }
     if error:
         response["error"] = error
+    if error_category:
+        response["error_category"] = error_category
     return response
 
 
@@ -366,9 +371,23 @@ def handle_request(runtime, request):
 
         return make_response(request_id, True, runtime.state.status, payload_out)
     except Exception as exc:
-        runtime.state.set_status("error", str(exc))
+        error_category = classify_exception(exc)
+        runtime.state.set_status("error", str(exc), error_category)
         runtime.logger.write(f"Request failed: {exc}\n{traceback.format_exc()}")
-        return make_response(request_id, False, runtime.state.status, error=str(exc))
+        return make_response(request_id, False, runtime.state.status, error=str(exc), error_category=error_category)
+
+
+def classify_exception(exc):
+    message = str(exc).lower()
+    if (
+        "file format is not supported" in message
+        or "unable to open blend file" in message
+        or "cannot read file as a blender file" in message
+        or "not a blend file" in message
+    ):
+        return "file_error"
+
+    return "script_error"
 
 
 def load_file(runtime, filepath):

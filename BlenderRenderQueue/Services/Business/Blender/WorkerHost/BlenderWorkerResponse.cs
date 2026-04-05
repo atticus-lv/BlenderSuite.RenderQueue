@@ -8,6 +8,7 @@ public sealed class BlenderWorkerResponse
     public bool Ok { get; init; }
     public string WorkerState { get; init; } = string.Empty;
     public string Error { get; init; } = string.Empty;
+    public string ErrorCategory { get; init; } = string.Empty;
     public string CurrentFile { get; init; } = string.Empty;
     public string ActiveScene { get; init; } = string.Empty;
     public IReadOnlyList<string> Scenes { get; init; } = [];
