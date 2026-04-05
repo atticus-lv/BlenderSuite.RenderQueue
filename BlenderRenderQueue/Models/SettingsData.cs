@@ -41,13 +41,6 @@ public class SettingsData
     [JsonPropertyName("UseGpu")]
     public bool UseGpu { get; set; } = true;
 
-    [JsonPropertyName("ApiEnabled")]
-    public bool ApiEnabled { get; set; }
-
-    [JsonPropertyName("ApiPort")]
-    public int ApiPort { get; set; } = 8325;
-
-
     public BlenderExecutable? GetSelectedBlender()
     {
         return string.IsNullOrEmpty(SelectedBlenderPath)

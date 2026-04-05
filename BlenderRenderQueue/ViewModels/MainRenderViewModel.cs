@@ -216,7 +216,6 @@ public partial class MainRenderViewModel : ViewModelBase
         _settingsViewModel!.SettingsChanged += OnSettingsChanged;
         _settingsViewModel.InitializationCompleted += OnInitializationCompleted;
         _settingsViewModel.BlenderValidationChanged += OnBlenderValidationChanged;
-        _settingsViewModel.ApiStatusChanged += OnApiStatusChanged;
 
         // 开始初始化检测（这会自动加载设置）
         _settingsViewModel.StartInitialization();
@@ -229,11 +228,6 @@ public partial class MainRenderViewModel : ViewModelBase
         ApplySettings(selectedPath, _settingsViewModel.DefaultRenderTimeoutSeconds,
             _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoCodec.Value,
             _settingsViewModel.VideoQuality.Value);
-
-        // 应用API设置
-        _ = Task.Run(async () => await _renderQueue.ApplyApiSettingsAsync(
-            _settingsViewModel.ApiEnabled, 
-            _settingsViewModel.ApiPort));
     }
 
     [RelayCommand]
@@ -271,14 +265,6 @@ public partial class MainRenderViewModel : ViewModelBase
         // 更新视频生成设置
         _renderQueue.SetVideoCodec(e.VideoCodec);
         _renderQueue.SetVideoQuality(e.VideoQuality);
-
-        // 应用API设置
-        if (_settingsViewModel != null)
-        {
-            _ = Task.Run(async () => await _renderQueue.ApplyApiSettingsAsync(
-                _settingsViewModel.ApiEnabled, 
-                _settingsViewModel.ApiPort));
-        }
     }
 
     private void OnBlenderValidationChanged(object? sender, BlenderValidationChangedEventArgs e)
@@ -322,19 +308,6 @@ public partial class MainRenderViewModel : ViewModelBase
             StatusMessage = $"Blender验证失败: {e.Message}";
             CleanupBlenderService();
         }
-    }
-
-    private void OnApiStatusChanged(object? sender, ApiStatusChangedEventArgs e)
-    {
-        // 同步API状态到设置ViewModel
-        if (_settingsViewModel != null)
-        {
-            _settingsViewModel.IsApiRunning = e.IsRunning;
-            // 触发API URL更新（延迟执行，避免在设置加载过程中触发）
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => _settingsViewModel.UpdateApiUrl());
-        }
-        
-        Console.WriteLine($"[MainRenderViewModel] OnApiStatusChanged - Enabled: {e.IsEnabled}, Port: {e.Port}, Running: {e.IsRunning}");
     }
 
     private void ShowBlenderSwitchWarning()
@@ -648,7 +621,6 @@ public partial class MainRenderViewModel : ViewModelBase
             _settingsViewModel.SettingsChanged -= OnSettingsChanged;
             _settingsViewModel.InitializationCompleted -= OnInitializationCompleted;
             _settingsViewModel.BlenderValidationChanged -= OnBlenderValidationChanged;
-            _settingsViewModel.ApiStatusChanged -= OnApiStatusChanged;
         }
 
 

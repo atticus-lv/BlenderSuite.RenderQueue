@@ -67,18 +67,6 @@ public partial class SettingsViewModel : ViewModelBase
     private bool _hardwareAccelerationChanged; // 硬件加速是否已更改
 
     [ObservableProperty]
-    private bool _apiEnabled; // API服务是否启用
-
-    [ObservableProperty]
-    private int _apiPort = 8325; // API服务端口
-
-    [ObservableProperty]
-    private bool _isApiRunning; // API服务是否正在运行
-
-    [ObservableProperty]
-    private string _apiUrl = string.Empty; // API服务URL
-
-    [ObservableProperty]
     private bool _isInstallingBlenderExtension;
 
     [ObservableProperty]
@@ -149,9 +137,6 @@ public partial class SettingsViewModel : ViewModelBase
 
     // 事件：当运行任务状态发生变化时通知
     public event EventHandler<bool>? RunningTasksStatusChanged;
-
-    // 事件：当API状态发生变化时通知
-    public event EventHandler<ApiStatusChangedEventArgs>? ApiStatusChanged;
 
     public SettingsViewModel(
         ISettingsPersistenceService settingsPersistenceService,
@@ -495,31 +480,6 @@ public partial class SettingsViewModel : ViewModelBase
         HardwareAccelerationChanged = true;
     }
 
-    partial void OnApiEnabledChanged(bool value)
-    {
-        UpdateApiUrl();
-
-        if (_isLoadingSettings) return;
-        HasUnsavedChanges = true;
-        ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
-    }
-
-    partial void OnApiPortChanged(int value)
-    {
-        UpdateApiUrl();
-
-        if (_isLoadingSettings) return;
-        HasUnsavedChanges = true;
-        ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
-    }
-
-    partial void OnIsApiRunningChanged(bool value)
-    {
-        UpdateApiUrl();
-        if (_isLoadingSettings) return;
-        ApiStatusChanged?.Invoke(this, new ApiStatusChangedEventArgs(ApiEnabled, ApiPort, IsApiRunning));
-    }
-
     private void ApplyTheme(string themeValue)
     {
         try
@@ -548,19 +508,6 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
-    public void UpdateApiUrl()
-    {
-        if (ApiEnabled)
-        {
-            var localNetworkIp = NetworkHelper.GetLocalNetworkIpAddress();
-            ApiUrl = $"http://{localNetworkIp}:{ApiPort}";
-        }
-        else
-        {
-            ApiUrl = string.Empty;
-        }
-    }
-
     [RelayCommand]
     public async Task SaveSettingsCommand()
     {
@@ -573,57 +520,6 @@ public partial class SettingsViewModel : ViewModelBase
         HasUnsavedChanges = false;
         HardwareAccelerationChanged = false;
     }
-
-    [RelayCommand]
-    private void OpenUrl(string urlPath)
-    {
-        if (string.IsNullOrEmpty(urlPath))
-            return;
-
-        // 构建完整的URL
-        var fullUrl = ApiUrl + urlPath;
-        UrlUtilities.OpenUrl(fullUrl);
-    }
-
-    [RelayCommand]
-    private async Task CopyApiUrl()
-    {
-        if (string.IsNullOrEmpty(ApiUrl))
-            return;
-
-        try
-        {
-            // 使用新的Avalonia剪切板服务，传入当前ViewModel作为context
-            var success = await ClipboardHelper.SetText(ApiUrl, this);
-            Console.WriteLine(success
-                ? $"[SettingsViewModel] ✅ API URL copied to clipboard: {ApiUrl}"
-                : $"[SettingsViewModel] ❌ Failed to copy API URL to clipboard");
-
-            // 显示toast提示
-            if (success)
-            {
-                this.ShowSuccessToast(
-                    Localizer.Localizer.Instance["ApiService_CopySuccess"],
-                    Localizer.Localizer.Instance["ApiService_CopySuccessMessage"]);
-            }
-            else
-            {
-                this.ShowErrorToast(
-                    Localizer.Localizer.Instance["ApiService_CopyFailed"],
-                    Localizer.Localizer.Instance["ApiService_CopyFailedMessage"]);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[SettingsViewModel] ❌ Failed to copy API URL to clipboard: {ex.Message}");
-            
-            // 显示错误toast
-            this.ShowErrorToast(
-                Localizer.Localizer.Instance["ApiService_CopyFailed"],
-                Localizer.Localizer.Instance["ApiService_CopyFailedMessage"]);
-        }
-    }
-
 
     public async Task SaveSettingsToFileAsync()
     {
@@ -644,15 +540,13 @@ public partial class SettingsViewModel : ViewModelBase
                 VideoQuality = VideoQuality.Value,
                 Language = Language.Value,
                 BaseTheme = BaseTheme.Value,
-                UseGpu = HardwareAcceleration,
-                ApiEnabled = ApiEnabled,
-                ApiPort = ApiPort
+                UseGpu = HardwareAcceleration
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
             Console.WriteLine(
                 success
-                    ? $"[SettingsViewModel] ✅ Settings saved successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}, API: {ApiEnabled}@{ApiPort}"
+                    ? $"[SettingsViewModel] ✅ Settings saved successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}"
                     : "[SettingsViewModel] ❌ Failed to save settings");
         }
         catch (Exception ex)
@@ -751,12 +645,8 @@ public partial class SettingsViewModel : ViewModelBase
 
             HardwareAcceleration = settings.UseGpu;
 
-            ApiEnabled = settings.ApiEnabled;
-            ApiPort = settings.ApiPort;
-
-            UpdateApiUrl();
             Console.WriteLine(
-                $"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}, API: {ApiEnabled}@{ApiPort}");
+                $"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
         }
         catch (Exception ex)
         {
@@ -874,12 +764,4 @@ public class BlenderValidationChangedEventArgs(bool isValid, string message) : E
 {
     public bool IsValid { get; } = isValid;
     public string Message { get; } = message;
-}
-
-// API状态变化事件参数
-public class ApiStatusChangedEventArgs(bool isEnabled, int port, bool isRunning) : EventArgs
-{
-    public bool IsEnabled { get; } = isEnabled;
-    public int Port { get; } = port;
-    public bool IsRunning { get; } = isRunning;
 }
