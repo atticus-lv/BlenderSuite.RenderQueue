@@ -23,7 +23,6 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
     private const int HeartbeatFailureThreshold = 3;
 
     private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
-    private readonly SemaphoreSlim _requestLock = new(1, 1);
     private readonly SemaphoreSlim _stdinLock = new(1, 1);
     private readonly Lock _activeRequestLock = new();
     private readonly object _waitersLock = new();
@@ -301,7 +300,6 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             _heartbeatCts?.Cancel();
             _heartbeatCts?.Dispose();
             _stdinLock.Dispose();
-            _requestLock.Dispose();
             _lifecycleLock.Dispose();
             _disposeCts.Dispose();
         }
@@ -448,7 +446,6 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             throw new InvalidOperationException("The Blender worker process is not running.");
         }
 
-        await _requestLock.WaitAsync(cancellationToken);
         try
         {
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposeCts.Token);
@@ -494,7 +491,6 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
         finally
         {
             ClearActiveRequestClient();
-            _requestLock.Release();
         }
     }
 

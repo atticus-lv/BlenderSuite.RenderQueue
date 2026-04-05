@@ -341,6 +341,7 @@ def handle_request(runtime, request):
     try:
         runtime.state.request_count += 1
         runtime.state.touch_heartbeat()
+        runtime.logger.write(f"Received command: {command}")
 
         if command == "ping":
             runtime.state.refresh_from_context()
@@ -398,6 +399,9 @@ def render_task(runtime, payload):
         frame_end = payload.get("frame_end")
         output_path = payload.get("output_path")
         single_frame = payload.get("single_frame")
+        runtime.logger.write(
+            f"Render task started: scene={scene.name}, single_frame={single_frame}, frame_start={frame_start}, frame_end={frame_end}, output={output_path}"
+        )
 
         if frame_start is not None:
             scene.frame_start = int(frame_start)
@@ -419,6 +423,7 @@ def render_task(runtime, payload):
 
         runtime.state.refresh_from_context()
         runtime.state.set_status("ready")
+        runtime.logger.write("Render task finished")
         return runtime.state.snapshot_payload()
     finally:
         scene.frame_start = original_start
