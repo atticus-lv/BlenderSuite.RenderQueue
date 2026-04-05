@@ -1,5 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Threading;
+using System.Threading.Tasks;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 
 namespace BlenderRenderQueue.ViewModels.DesignTime;
 
@@ -8,7 +11,7 @@ namespace BlenderRenderQueue.ViewModels.DesignTime;
 /// </summary>
 public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
 {
-    public DesignTimeRenderQueueViewModel()
+    public DesignTimeRenderQueueViewModel() : base(new DesignTimeWorkerHost())
     {
         // 创建多个设计时任务
         var task1 = new DesignTimeRenderTaskViewModel();
@@ -81,5 +84,38 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         
         // 设置模拟的剩余时间
         RemainingTimeText = "00:05:30";
+    }
+}
+
+internal sealed class DesignTimeWorkerHost : IBlenderWorkerHost
+{
+    public BlenderWorkerHostState State { get; } = new();
+    public event System.Action<string>? OnOutputReceived;
+    public event System.Action<string>? OnErrorReceived;
+    public event System.Action<int>? OnProcessExited;
+
+    public Task EnsureReadyAsync(string blenderExecutablePath, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public Task<BlenderWorkerResponse> PingAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new BlenderWorkerResponse { Ok = true, WorkerState = "ready" });
+
+    public Task<BlenderWorkerResponse> QueryFileInfoAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new BlenderWorkerResponse { Ok = true, WorkerState = "ready" });
+
+    public Task<BlenderWorkerResponse> LoadFileAsync(string blendFilePath, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new BlenderWorkerResponse { Ok = true, WorkerState = "ready", CurrentFile = blendFilePath });
+
+    public Task<BlenderWorkerResponse> RenderTaskAsync(BlenderWorkerRequest request, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new BlenderWorkerResponse { Ok = true, WorkerState = "ready", CurrentFile = request.BlendFilePath, OutputVerified = true });
+
+    public Task CancelCurrentRenderAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public Task<BlenderWorkerRecoveryResult> RecoverAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(new BlenderWorkerRecoveryResult { Recovered = true, Message = "Design-time host" });
+
+    public Task ShutdownAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public void Dispose()
+    {
     }
 }

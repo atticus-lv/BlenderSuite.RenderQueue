@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using BlenderRenderQueue.ViewModels;
 using BlenderRenderQueue.Views;
 using BlenderRenderQueue.Views.Test;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BlenderRenderQueue;
 
@@ -25,7 +26,7 @@ public partial class App : Application
             BindingPlugins.DataValidators.RemoveAt(0);
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainWindowViewModel(),
+                DataContext = AppServices.Instance.GetRequiredService<MainWindowViewModel>(),
             };
             
             desktop.ShutdownRequested += OnShutdownRequested;

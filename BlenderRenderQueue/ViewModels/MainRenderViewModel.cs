@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Blender;
+using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.UI;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -22,7 +23,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
 
     [ObservableProperty]
-    private RenderQueueViewModel _renderQueue = new();
+    private RenderQueueViewModel _renderQueue;
 
     [ObservableProperty]
     private bool _isBlenderPathValid;
@@ -60,8 +61,10 @@ public partial class MainRenderViewModel : ViewModelBase
     private CancellationTokenSource? _versionCts;
 
 
-    public MainRenderViewModel()
+    public MainRenderViewModel(SettingsViewModel settingsViewModel, IBlenderWorkerHost workerHost)
     {
+        _renderQueue = new RenderQueueViewModel(workerHost);
+
         // 订阅渲染队列事件
         RenderQueue.QueueStatusChanged += OnQueueStatusChanged;
         RenderQueue.TaskCompleted += OnTaskCompleted;
@@ -70,7 +73,7 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.PropertyChanged += OnRenderQueuePropertyChanged;
 
         // 初始化设置并检测路径
-        InitializeSettings();
+        InitializeSettings(settingsViewModel);
 
         // 异步加载保存的数据
         _ = Task.Run(async () => await LoadSavedDataAsync());
@@ -202,16 +205,15 @@ public partial class MainRenderViewModel : ViewModelBase
         }
 
         _blenderProcessService = null;
-        RenderQueue.SetBlenderService(null!);
+        RenderQueue.SetBlenderPath(string.Empty);
     }
 
-    private void InitializeSettings()
+    private void InitializeSettings(SettingsViewModel settingsViewModel)
     {
-        _settingsViewModel = new SettingsViewModel();
-        SettingsViewModel = _settingsViewModel; // 设置公共属性
+        SettingsViewModel = settingsViewModel;
 
         // 订阅设置变化事件
-        _settingsViewModel.SettingsChanged += OnSettingsChanged;
+        _settingsViewModel!.SettingsChanged += OnSettingsChanged;
         _settingsViewModel.InitializationCompleted += OnInitializationCompleted;
         _settingsViewModel.BlenderValidationChanged += OnBlenderValidationChanged;
         _settingsViewModel.ApiStatusChanged += OnApiStatusChanged;
@@ -248,9 +250,6 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void ShowSettingsDialog()
     {
-        // 确保设置ViewModel存在
-        if (_settingsViewModel == null) InitializeSettings();
-
         // 使用 ToplevelService 获取顶层窗口的 DialogManager
         var dialogManager = GetDialogManager();
         if (dialogManager != null)

@@ -17,10 +17,9 @@ public partial class MainWindowViewModel : ViewModelBase
 	public ISukiDialogManager DialogManager { get; } = new SukiDialogManager();
 	public ISukiToastManager ToastManager { get; } = new SukiToastManager();
 
-	public MainWindowViewModel()
+	public MainWindowViewModel(MainRenderViewModel mainRenderViewModel)
 	{
-		// 使用新的渲染队列视图模型
-		Content = new MainRenderViewModel();
+		Content = mainRenderViewModel;
 		GetFileVersion();
 	}
 	

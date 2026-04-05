@@ -15,6 +15,7 @@ using BlenderRenderQueue.Views;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
+using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.UI;
 using BlenderRenderQueue.Helpers;
 
@@ -264,7 +265,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         EnqueueLog($"Blender进程异常退出，退出码: {exitCode}");
 
         // 进程异常退出，直接标记任务失败（不进行重试）
-        if (exitCode == 0) return;
+        if (_renderCancellationRequested || exitCode == 0) return;
         SetStatus(RenderTaskStatus.Failed);
         EndTime = DateTime.Now;
         if (StartTime.HasValue)
@@ -547,12 +548,14 @@ public partial class RenderTaskViewModel : ViewModelBase
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
     private int _globalMaxRetryAttempts = 3; // 默认最大重试3次
     private int _currentFrameRetryAttempts = 0; // 当前帧的重试次数
-    private IBlenderProcess? _currentBlenderProcess; // 存储当前的Blender进程实例
 
     // 视频生成相关设置
     private string _videoCodec = "H264"; // 默认使用H264编码
     private string _videoQuality = "PERC_LOSSLESS"; // 默认感知无损质量
     private BlenderProcessService? _processService; // 进程管理服务
+    private IBlenderWorkerHost? _workerHost;
+    private IRenderOutputParser? _renderOutputParser;
+    private bool _renderCancellationRequested;
 
     [ObservableProperty]
     private RenderTaskStatus _status = RenderTaskStatus.Pending;
@@ -599,8 +602,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private bool _wasStopped = false;
 
     // 内部状态
-    private IRenderSession? _session;
-    private IBlenderProcess? _exe;
+    private IBlenderWorkerHost? _currentBlenderProcess;
     private readonly ConcurrentQueue<string> _logQueue = new();
     private readonly System.Timers.Timer _logTimer;
     private const int MaxLogLines = 1000;
@@ -887,7 +889,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
     }
 
-    public async Task StartRenderAsync(IBlenderProcess blenderProcess)
+    public async Task StartRenderAsync(IBlenderWorkerHost workerHost)
     {
         if (string.IsNullOrWhiteSpace(BlendFilePath))
         {
@@ -897,63 +899,34 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         try
         {
+            _renderCancellationRequested = false;
             SetStatus(RenderTaskStatus.Running);
             StartTime = DateTime.Now;
 
-            // 存储当前的Blender进程实例
-            _currentBlenderProcess = blenderProcess;
+            AttachWorkerHost(workerHost);
+            _currentBlenderProcess = workerHost;
+            _renderOutputParser = new RenderOutputParser();
 
-            // 直接使用 IBlenderProcess
-            _exe = blenderProcess;
-            _exe.OnOutputReceived += HandleRawOutput;
-            _exe.OnErrorReceived += HandleRawError;
+            var request = CreateWorkerRequest();
+            EnqueueLog($"开始渲染: {DescribeWorkerRequest(request)}");
 
-            // 订阅进程退出事件，用于处理进程异常退出时的重试
-            blenderProcess.OnProcessExited += OnBlenderProcessExited;
+            var response = await workerHost.RenderTaskAsync(request);
+            EnqueueLog(response.OutputVerified ? "渲染输出已校验" : "渲染已完成，但未能校验输出文件");
 
-            _session = new RenderSession(_exe, new RenderOutputParser());
-            _session.OnProgress += s => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnProgress(s));
-            _session.OnEvent += e => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(e));
-
-            var cmd = new BlenderCommandService();
-
-            // 为渲染任务设置可配置的超时时间
-            // 使用来自SettingsViewModel的超时设置，但确保有合理的最小值
-            var renderTimeout = Math.Max(_globalRenderTimeoutSeconds, 300); // 最少5分钟
-            // 注意：新架构中，超时管理由RenderTaskViewModel自己处理，不需要设置到IBlenderProcess
-
-            // 根据覆写设置决定是否传递帧范围和场景参数
-            var sceneName = OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) ? SelectedSceneName : null;
-
-            if (OverrideFrameRange)
+            if (Status == RenderTaskStatus.Running)
             {
-                EnqueueLog($"开始渲染: {StartFrame}..{EndFrame}, animation={Animation} (无活动超时: {renderTimeout}秒)");
-                if (sceneName != null)
+                OverallProgress01 = 1;
+                SetStatus(RenderTaskStatus.Completed);
+                EndTime = DateTime.Now;
+                if (StartTime.HasValue)
                 {
-                    EnqueueLog($"使用场景覆写: {sceneName}");
+                    Duration = EndTime.Value - StartTime.Value;
                 }
-
-                using var noTimeoutCts = new CancellationTokenSource();
-                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, StartFrame, EndFrame, sceneName,
-                    noTimeoutCts.Token);
             }
-            else
-            {
-                EnqueueLog($"开始渲染: 使用场景默认帧范围, animation={Animation} (无活动超时: {renderTimeout}秒)");
-                if (sceneName != null)
-                {
-                    EnqueueLog($"使用场景覆写: {sceneName}");
-                }
-
-                using var noTimeoutCts2 = new CancellationTokenSource();
-                await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, null, null, sceneName, noTimeoutCts2.Token);
-            }
-
-            EnqueueLog($"渲染指令已发送完成");
         }
         catch (TaskCanceledException ex)
         {
-            if (ex.CancellationToken.IsCancellationRequested)
+            if (_renderCancellationRequested || ex.CancellationToken.IsCancellationRequested)
             {
                 EnqueueLog("渲染任务被用户取消");
                 SetStatus(RenderTaskStatus.Cancelled);
@@ -968,45 +941,59 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
         catch (OperationCanceledException ex)
         {
-            EnqueueLog($"渲染操作被取消: {ex.Message}");
-            SetStatus(RenderTaskStatus.Cancelled);
+            if (_renderCancellationRequested)
+            {
+                EnqueueLog("渲染操作被用户取消");
+                SetStatus(RenderTaskStatus.Cancelled);
+            }
+            else
+            {
+                EnqueueLog($"渲染操作被取消: {ex.Message}");
+                SetStatus(RenderTaskStatus.Cancelled);
+            }
         }
         catch (Exception ex)
         {
-            EnqueueLog($"渲染启动失败: {ex.Message}");
-            SetStatus(RenderTaskStatus.Failed);
+            if (_renderCancellationRequested)
+            {
+                EnqueueLog("渲染已取消");
+                if (Status != RenderTaskStatus.Paused)
+                {
+                    SetStatus(RenderTaskStatus.Cancelled);
+                }
+            }
+            else
+            {
+                EnqueueLog($"渲染启动失败: {ex.Message}");
+                SetStatus(RenderTaskStatus.Failed);
+            }
+        }
+        finally
+        {
+            if (Status != RenderTaskStatus.Running)
+            {
+                DetachWorkerHost();
+            }
         }
     }
 
-    public void StopRender()
+    public async void StopRender()
     {
-        // 停止渲染会话和进程
         try
         {
-            _session?.Dispose();
-        }
-        catch
-        {
-            // ignored
-        }
-
-        _session = null;
-
-        // 停止Blender进程
-        if (_exe is not null)
-        {
-            _exe.OnOutputReceived -= HandleRawOutput;
-            _exe.OnErrorReceived -= HandleRawError;
-
-            // 停止进程，但不释放，因为它可能被其他任务使用
-            try
+            _renderCancellationRequested = true;
+            if (_workerHost != null)
             {
-                Task.Run(async () => await _exe.StopAsync()).Wait(5000); // 5秒超时
+                await _workerHost.CancelCurrentRenderAsync();
             }
-            catch
-            {
-                // 忽略停止进程时的异常
-            }
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"停止渲染失败: {ex.Message}");
+        }
+        finally
+        {
+            DetachWorkerHost();
         }
 
         SetStatus(RenderTaskStatus.Cancelled);
@@ -1023,28 +1010,20 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         try
         {
+            _renderCancellationRequested = true;
             EnqueueLog("正在暂停渲染...");
 
             // 立即更新状态，提供即时反馈
             SetStatus(RenderTaskStatus.Paused);
             EnqueueLog($"渲染已暂停，当前帧: {CurrentFrame}");
 
-            // 停止渲染会话
-            _session?.Dispose();
-            _session = null;
-
-            // 异步停止Blender进程，不阻塞状态更新
-            if (_exe is not null)
+            if (_workerHost is not null)
             {
-                _exe.OnOutputReceived -= HandleRawOutput;
-                _exe.OnErrorReceived -= HandleRawError;
-
-                // 异步停止进程，不等待完成
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        await _exe.StopAsync();
+                        await _workerHost.CancelCurrentRenderAsync();
                     }
                     catch
                     {
@@ -1052,6 +1031,8 @@ public partial class RenderTaskViewModel : ViewModelBase
                     }
                 });
             }
+
+            DetachWorkerHost();
         }
         catch (Exception ex)
         {
@@ -1062,7 +1043,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         return Task.CompletedTask;
     }
 
-    public async Task ResumeRenderAsync(IBlenderProcess blenderProcess, int resumeFromFrame)
+    public async Task ResumeRenderAsync(IBlenderWorkerHost workerHost, int resumeFromFrame)
     {
         if (string.IsNullOrWhiteSpace(BlendFilePath))
         {
@@ -1072,53 +1053,33 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         try
         {
+            _renderCancellationRequested = false;
             SetStatus(RenderTaskStatus.Running);
 
-            // 存储当前的Blender进程实例
-            _currentBlenderProcess = blenderProcess;
+            AttachWorkerHost(workerHost);
+            _currentBlenderProcess = workerHost;
+            _renderOutputParser = new RenderOutputParser();
 
-            // 直接使用 IBlenderProcess
-            _exe = blenderProcess;
-            _exe.OnOutputReceived += HandleRawOutput;
-            _exe.OnErrorReceived += HandleRawError;
+            var request = CreateWorkerRequest(resumeFromFrame);
+            EnqueueLog($"恢复渲染: {DescribeWorkerRequest(request)}");
 
-            // 订阅进程退出事件，用于处理进程异常退出时的重试
-            blenderProcess.OnProcessExited += OnBlenderProcessExited;
+            var response = await workerHost.RenderTaskAsync(request);
+            EnqueueLog(response.OutputVerified ? "恢复渲染输出已校验" : "恢复渲染完成，但未能校验输出文件");
 
-            _session = new RenderSession(_exe, new RenderOutputParser());
-            _session.OnProgress += s => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnProgress(s));
-            _session.OnEvent += e => Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(e));
-
-            var cmd = new BlenderCommandService();
-
-            // 为渲染任务设置可配置的超时时间
-            // 使用来自SettingsViewModel的超时设置，但确保有合理的最小值
-            var renderTimeout = Math.Max(_globalRenderTimeoutSeconds, 300); // 最少5分钟
-            // 注意：新架构中，超时管理由RenderTaskViewModel自己处理，不需要设置到IBlenderProcess
-
-            // 根据覆写设置决定是否传递帧范围和场景参数
-            string? sceneName = OverrideScene && !string.IsNullOrEmpty(SelectedSceneName) ? SelectedSceneName : null;
-
-            // 从指定帧开始渲染
-            var startFrame = OverrideFrameRange ? Math.Max(StartFrame, resumeFromFrame) : resumeFromFrame;
-            var endFrame = OverrideFrameRange ? EndFrame : ScenePropertiesView.SceneProperties.FrameEnd;
-
-            EnqueueLog($"恢复渲染: 从帧 {startFrame} 开始到 {endFrame}, animation={Animation} (无活动超时: {renderTimeout}秒)");
-            if (sceneName != null)
+            if (Status == RenderTaskStatus.Running)
             {
-                EnqueueLog($"使用场景覆写: {sceneName}");
+                OverallProgress01 = 1;
+                SetStatus(RenderTaskStatus.Completed);
+                EndTime = DateTime.Now;
+                if (StartTime.HasValue)
+                {
+                    Duration = EndTime.Value - StartTime.Value;
+                }
             }
-
-            // 创建无超时的CancellationToken，避免暂停恢复时的超时问题
-            using var noTimeoutCts = new CancellationTokenSource();
-            await cmd.StartRenderAsync(_exe, BlendFilePath, Animation, startFrame, endFrame, sceneName,
-                noTimeoutCts.Token);
-
-            EnqueueLog($"恢复渲染指令已发送完成");
         }
         catch (TaskCanceledException ex)
         {
-            if (ex.CancellationToken.IsCancellationRequested)
+            if (_renderCancellationRequested || ex.CancellationToken.IsCancellationRequested)
             {
                 EnqueueLog("恢复渲染任务被用户取消");
                 SetStatus(RenderTaskStatus.Cancelled);
@@ -1133,14 +1094,106 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
         catch (OperationCanceledException ex)
         {
-            EnqueueLog($"恢复渲染操作被取消: {ex.Message}");
-            SetStatus(RenderTaskStatus.Cancelled);
+            if (_renderCancellationRequested)
+            {
+                EnqueueLog("恢复渲染被用户取消");
+                SetStatus(RenderTaskStatus.Cancelled);
+            }
+            else
+            {
+                EnqueueLog($"恢复渲染操作被取消: {ex.Message}");
+                SetStatus(RenderTaskStatus.Cancelled);
+            }
         }
         catch (Exception ex)
         {
-            EnqueueLog($"恢复渲染启动失败: {ex.Message}");
-            SetStatus(RenderTaskStatus.Failed);
+            if (_renderCancellationRequested)
+            {
+                EnqueueLog("恢复渲染已取消");
+                if (Status != RenderTaskStatus.Paused)
+                {
+                    SetStatus(RenderTaskStatus.Cancelled);
+                }
+            }
+            else
+            {
+                EnqueueLog($"恢复渲染启动失败: {ex.Message}");
+                SetStatus(RenderTaskStatus.Failed);
+            }
         }
+        finally
+        {
+            if (Status != RenderTaskStatus.Running)
+            {
+                DetachWorkerHost();
+            }
+        }
+    }
+
+    private BlenderWorkerRequest CreateWorkerRequest(int? resumeFromFrame = null)
+    {
+        var sceneName = OverrideScene && !string.IsNullOrWhiteSpace(SelectedSceneName) ? SelectedSceneName : null;
+
+        if (Animation)
+        {
+            var startFrame = resumeFromFrame ?? RealStartFrame;
+            return new BlenderWorkerRequest
+            {
+                BlendFilePath = BlendFilePath,
+                Animation = true,
+                FrameStart = startFrame,
+                FrameEnd = RealEndFrame,
+                SceneName = sceneName
+            };
+        }
+
+        return new BlenderWorkerRequest
+        {
+            BlendFilePath = BlendFilePath,
+            Animation = false,
+            SingleFrame = resumeFromFrame ?? RealStartFrame,
+            SceneName = sceneName
+        };
+    }
+
+    private string DescribeWorkerRequest(BlenderWorkerRequest request)
+    {
+        var sceneText = string.IsNullOrWhiteSpace(request.SceneName) ? "默认场景" : request.SceneName;
+        return request.Animation
+            ? $"动画 {request.FrameStart}..{request.FrameEnd}, 场景={sceneText}"
+            : $"单帧 {request.SingleFrame}, 场景={sceneText}";
+    }
+
+    private void AttachWorkerHost(IBlenderWorkerHost workerHost)
+    {
+        if (!ReferenceEquals(_workerHost, workerHost))
+        {
+            DetachWorkerHost();
+            _workerHost = workerHost;
+        }
+
+        workerHost.OnOutputReceived -= HandleRawOutput;
+        workerHost.OnErrorReceived -= HandleRawError;
+        workerHost.OnProcessExited -= OnBlenderProcessExited;
+
+        workerHost.OnOutputReceived += HandleRawOutput;
+        workerHost.OnErrorReceived += HandleRawError;
+        workerHost.OnProcessExited += OnBlenderProcessExited;
+    }
+
+    private void DetachWorkerHost()
+    {
+        if (_workerHost == null)
+        {
+            _renderOutputParser = null;
+            return;
+        }
+
+        _workerHost.OnOutputReceived -= HandleRawOutput;
+        _workerHost.OnErrorReceived -= HandleRawError;
+        _workerHost.OnProcessExited -= OnBlenderProcessExited;
+        _workerHost = null;
+        _renderOutputParser = null;
     }
 
     [RelayCommand]
@@ -1410,6 +1463,32 @@ public partial class RenderTaskViewModel : ViewModelBase
     private void HandleRawOutput(string line)
     {
         EnqueueLog($"[OUT] {line}");
+
+        if (_renderOutputParser == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var events = _renderOutputParser.ParseLine(line);
+            foreach (var parsedEvent in events)
+            {
+                switch (parsedEvent)
+                {
+                    case RenderProgressEvent progressEvent:
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() => OnProgress(progressEvent.Progress));
+                        break;
+                    default:
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(parsedEvent));
+                        break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            EnqueueLog($"[WARN] 解析渲染输出失败: {ex.Message}");
+        }
     }
 
     private void HandleRawError(string line)
@@ -1417,11 +1496,12 @@ public partial class RenderTaskViewModel : ViewModelBase
         EnqueueLog($"[ERR] {line}");
 
         // 检查是否是超时错误，如果是，不要立即设置为失败状态
-        if (!line.Contains("操作超时") || !line.Contains("render")) return;
-        // 对于渲染超时，只记录日志，不改变状态
-        EnqueueLog("[INFO] 检测到渲染超时，但渲染进程可能仍在继续...");
+        if (line.Contains("操作超时") && line.Contains("render"))
+        {
+            EnqueueLog("[INFO] 检测到渲染超时，但渲染进程可能仍在继续...");
+        }
 
-        // 其他错误仍然会触发RenderError事件
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => OnEvent(new RenderError(line)));
     }
 
     private void OnProgress(RenderProgress p)
@@ -1499,15 +1579,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 // 渲染完成后，停止 Blender 进程
                 try
                 {
-                    // 先取消事件订阅，避免在停止过程中触发事件
-                    if (_exe is not null)
-                    {
-                        _exe.OnOutputReceived -= HandleRawOutput;
-                        _exe.OnErrorReceived -= HandleRawError;
-                    }
-
-                    _session?.Dispose();
-                    _session = null;
+                    DetachWorkerHost();
                 }
                 catch (Exception ex)
                 {
@@ -1660,24 +1732,9 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     private void DisposeSession()
     {
-        try
-        {
-            _session?.Dispose();
-        }
-        catch
-        {
-            // ignored
-        }
-
-        if (_exe is not null)
-        {
-            _exe.OnOutputReceived -= HandleRawOutput;
-            _exe.OnErrorReceived -= HandleRawError;
-            // 注意：不释放_exe，因为它可能被其他任务使用
-        }
-
-        _session = null;
-        _exe = null;
+        DetachWorkerHost();
+        _currentBlenderProcess = null;
+        _renderCancellationRequested = false;
     }
 
     public void ResetProgress()

@@ -18,6 +18,7 @@ using BlenderRenderQueue.Services.Business.Api;
 using BlenderRenderQueue.Services.Business.Api.Models;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Persistence;
+using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.UI;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -304,6 +305,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private string _videoQuality = "PERC_LOSSLESS"; // 默认感知无损质量
     private readonly IDataPersistenceService _dataPersistenceService = new DataPersistenceService();
     private readonly object _queueLock = new();
+    private readonly IBlenderWorkerHost _workerHost;
     
     // API服务相关
     private RenderQueueApiManager? _apiManager;
@@ -314,8 +316,10 @@ public partial class RenderQueueViewModel : ViewModelBase
     public event EventHandler<string>? StatusMessageChanged;
     public event EventHandler<ConfirmDialogRequestedEventArgs>? ConfirmDialogRequested;
 
-    public RenderQueueViewModel()
+    public RenderQueueViewModel(IBlenderWorkerHost workerHost)
     {
+        _workerHost = workerHost;
+
         // 初始化剩余时间更新定时器
         _remainingTimeTimer = new System.Timers.Timer(1000); // 每秒更新一次
         _remainingTimeTimer.Elapsed += OnRemainingTimeTimerElapsed;
@@ -1013,6 +1017,8 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     public void SetBlenderPath(string blenderPath)
     {
+        var previousPath = _blenderPath;
+
         if (_blenderProcessService != null)
         {
             Console.WriteLine(
@@ -1030,9 +1036,31 @@ public partial class RenderQueueViewModel : ViewModelBase
         _blenderVideoService =
             null; // The video service requires a Blender process instance, which is temporarily set to null
 
-        // 创建新的进程管理服务
-        _processService = new BlenderProcessService(blenderPath);
-        Console.WriteLine($"[RenderQueueViewModel] Blender path and process service set successfully: {blenderPath}");
+        if (!string.IsNullOrWhiteSpace(blenderPath))
+        {
+            _processService = new BlenderProcessService(blenderPath);
+            Console.WriteLine($"[RenderQueueViewModel] Blender path and process service set successfully: {blenderPath}");
+        }
+        else
+        {
+            _processService = null;
+            Console.WriteLine("[RenderQueueViewModel] Blender path cleared");
+        }
+
+        if (!string.Equals(previousPath, blenderPath, StringComparison.Ordinal))
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _workerHost.ShutdownAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[RenderQueueViewModel] Failed to shutdown worker on path change: {ex.Message}");
+                }
+            });
+        }
 
         InitializeBlenderDataWatcher();
     }
@@ -1095,27 +1123,18 @@ public partial class RenderQueueViewModel : ViewModelBase
             {
                 try
                 {
-                    var renderProcess = await _processService!.CreateRenderProcessAsync();
+                    await _workerHost.EnsureReadyAsync(_blenderPath!, CancellationToken.None);
 
-                    try
+                    // If the task is resumed from paused, start from the specified frame
+                    if (_pausedTask == taskCopy && _pausedFrame > 0)
                     {
-                        // If the task is resumed from paused, start from the specified frame
-                        if (_pausedTask == taskCopy && _pausedFrame > 0)
-                        {
-                            await taskCopy.ResumeRenderAsync(renderProcess, _pausedFrame);
-                            _pausedTask = null;
-                            _pausedFrame = 0;
-                        }
-                        else
-                        {
-                            await taskCopy.StartRenderAsync(renderProcess);
-                        }
+                        await taskCopy.ResumeRenderAsync(_workerHost, _pausedFrame);
+                        _pausedTask = null;
+                        _pausedFrame = 0;
                     }
-                    finally
+                    else
                     {
-                        await renderProcess.StopAsync();
-                        _processService.UnregisterProcess(renderProcess.ProcessId);
-                        renderProcess.Dispose();
+                        await taskCopy.StartRenderAsync(_workerHost);
                     }
                 }
                 catch (Exception)
@@ -2013,6 +2032,15 @@ public partial class RenderQueueViewModel : ViewModelBase
 
         _apiManager?.Dispose();
         _apiManager = null;
+
+        try
+        {
+            _workerHost.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[RenderQueueViewModel] Failed to dispose worker host: {ex.Message}");
+        }
 
         // 清理运行中的任务列表
         lock (_queueLock)
