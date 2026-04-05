@@ -666,6 +666,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         StartFrame = taskInfo.StartFrame;
         EndFrame = taskInfo.EndFrame;
         Enable = taskInfo.Enable;
+        Animation = StartFrame != EndFrame;
 
         // 处理覆写数据
         if (taskInfo.Override != null)
@@ -675,6 +676,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                 OverrideFrameRange = true;
                 StartFrame = taskInfo.Override.OverrideFrameRange.StartFrame;
                 EndFrame = taskInfo.Override.OverrideFrameRange.EndFrame;
+                Animation = StartFrame != EndFrame;
             }
 
             if (taskInfo.Override.OverrideScene != null)
@@ -1073,6 +1075,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             _lastActivityTime = DateTime.UtcNow;
             _workerExitedUnexpectedly = false;
             _lastWorkerExitCode = 0;
+            Console.WriteLine(
+                $"[RenderTaskViewModel] Executing render attempt for {Path.GetFileName(BlendFilePath)} - {DescribeWorkerRequest(request)}");
 
             try
             {
@@ -1082,6 +1086,8 @@ public partial class RenderTaskViewModel : ViewModelBase
             {
                 var resumeFrame = GetResumeFrameForRetry(request);
                 var reason = GetRecoverableFailureReason(ex);
+                Console.WriteLine(
+                    $"[RenderTaskViewModel] Recoverable failure detected for {Path.GetFileName(BlendFilePath)}: {reason}");
                 var recovered = await TryRecoverAndRetryAsync(workerHost, reason, resumeFrame);
                 if (!recovered)
                 {
@@ -1090,6 +1096,8 @@ public partial class RenderTaskViewModel : ViewModelBase
 
                 request = CreateWorkerRequest(resumeFrame);
                 EnqueueLog($"自动恢复成功，继续渲染: {DescribeWorkerRequest(request)}");
+                Console.WriteLine(
+                    $"[RenderTaskViewModel] Recovery succeeded for {Path.GetFileName(BlendFilePath)}, retrying {DescribeWorkerRequest(request)}");
             }
         }
     }
@@ -1206,12 +1214,15 @@ public partial class RenderTaskViewModel : ViewModelBase
 
         _automaticRecoveryAttempts++;
         EnqueueLog($"{reason}，尝试自动恢复 ({_automaticRecoveryAttempts}/{_globalMaxRetryAttempts})...");
+        Console.WriteLine(
+            $"[RenderTaskViewModel] Attempting recovery {_automaticRecoveryAttempts}/{_globalMaxRetryAttempts} for {Path.GetFileName(BlendFilePath)}: {reason}");
 
         try
         {
             _suppressUnexpectedExitHandling = true;
             var recoveryResult = await workerHost.RecoverAsync();
             EnqueueLog(recoveryResult.Message);
+            Console.WriteLine($"[RenderTaskViewModel] Worker recovery result: {recoveryResult.Message}");
             if (!recoveryResult.Recovered)
             {
                 return false;
@@ -1220,6 +1231,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         catch (Exception ex)
         {
             EnqueueLog($"自动恢复失败: {ex.Message}");
+            Console.WriteLine($"[RenderTaskViewModel] Worker recovery failed: {ex.Message}");
             return false;
         }
         finally
@@ -1236,7 +1248,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     private int GetResumeFrameForRetry(BlenderWorkerRequest request)
     {
-        if (Animation)
+        if (Animation && RealStartFrame != RealEndFrame)
         {
             var resumeFrame = CurrentFrame > 0 ? CurrentFrame : request.FrameStart ?? RealStartFrame;
             return Math.Clamp(resumeFrame, RealStartFrame, RealEndFrame);
@@ -1259,16 +1271,17 @@ public partial class RenderTaskViewModel : ViewModelBase
     private BlenderWorkerRequest CreateWorkerRequest(int? resumeFromFrame = null)
     {
         var sceneName = OverrideScene && !string.IsNullOrWhiteSpace(SelectedSceneName) ? SelectedSceneName : null;
+        var startFrame = resumeFromFrame ?? RealStartFrame;
+        var endFrame = RealEndFrame;
 
-        if (Animation)
+        if (Animation && startFrame != endFrame)
         {
-            var startFrame = resumeFromFrame ?? RealStartFrame;
             return new BlenderWorkerRequest
             {
                 BlendFilePath = BlendFilePath,
                 Animation = true,
                 FrameStart = startFrame,
-                FrameEnd = RealEndFrame,
+                FrameEnd = endFrame,
                 SceneName = sceneName
             };
         }
@@ -1277,7 +1290,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         {
             BlendFilePath = BlendFilePath,
             Animation = false,
-            SingleFrame = resumeFromFrame ?? RealStartFrame,
+            SingleFrame = startFrame,
             SceneName = sceneName
         };
     }

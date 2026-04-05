@@ -393,6 +393,7 @@ def render_task(runtime, payload):
     original_end = scene.frame_end
     original_output = scene.render.filepath
     original_frame = scene.frame_current
+    resolved_output_path = None
 
     try:
         frame_start = payload.get("frame_start")
@@ -416,12 +417,15 @@ def render_task(runtime, payload):
             frame_number = int(single_frame)
             scene.frame_set(frame_number)
             bpy.ops.render.render(write_still=True, scene=scene.name)
-            runtime.state.set_output_verified(bool(output_path) and os.path.exists(output_path))
+            resolved_output_path = resolve_single_frame_output_path(scene, frame_number)
+            runtime.state.set_output_verified(bool(resolved_output_path) and os.path.exists(resolved_output_path))
         else:
             bpy.ops.render.render(animation=True, scene=scene.name)
             runtime.state.set_output_verified(False)
 
         runtime.state.refresh_from_context()
+        if resolved_output_path:
+            runtime.state.output_path = resolved_output_path
         runtime.state.set_status("ready")
         runtime.logger.write("Render task finished")
         return runtime.state.snapshot_payload()
@@ -430,6 +434,35 @@ def render_task(runtime, payload):
         scene.frame_end = original_end
         scene.render.filepath = original_output
         scene.frame_set(original_frame)
+
+
+def resolve_single_frame_output_path(scene, frame_number):
+    candidates = []
+
+    try:
+        candidates.append(bpy.path.abspath(scene.render.frame_path(frame=frame_number)))
+    except Exception:
+        pass
+
+    try:
+        base_path = bpy.path.abspath(scene.render.filepath)
+        if base_path:
+            candidates.append(base_path)
+            file_extension = getattr(scene.render, "file_extension", "") or ""
+            if file_extension and not base_path.endswith(file_extension):
+                candidates.append(base_path + file_extension)
+    except Exception:
+        pass
+
+    seen = set()
+    for candidate in candidates:
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        if os.path.exists(candidate):
+            return candidate
+
+    return candidates[0] if candidates else ""
 
 
 @persistent

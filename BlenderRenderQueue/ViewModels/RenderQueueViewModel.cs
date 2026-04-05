@@ -1174,9 +1174,10 @@ public partial class RenderQueueViewModel : ViewModelBase
                         await taskCopy.StartRenderAsync(_workerHost);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // 错误处理已在RenderTaskViewModel中完成
+                    Console.WriteLine(
+                        $"[RenderQueueViewModel] ❌ Failed while starting queued task {Path.GetFileName(taskCopy.BlendFilePath)}: {ex}");
                 }
                 finally
                 {
