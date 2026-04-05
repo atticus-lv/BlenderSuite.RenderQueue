@@ -16,7 +16,7 @@ from ..shared.paths import get_submission_endpoint_path
 
 
 CONNECT_TIMEOUT_SECONDS = 2.0
-STARTUP_TIMEOUT_SECONDS = 12.0
+STARTUP_TIMEOUT_SECONDS = 30.0
 STARTUP_POLL_INTERVAL_SECONDS = 0.4
 
 
@@ -97,6 +97,15 @@ def _read_endpoint_info() -> dict | None:
         return json.loads(endpoint_path.read_text(encoding="utf-8"))
     except Exception:
         return None
+
+
+def _should_auto_start_queue() -> bool:
+    env_value = os.environ.get("BRQ_AUTO_START_QUEUE", "").strip().lower()
+    if env_value in {"1", "true", "yes", "on"}:
+        return True
+
+    prefs = _get_preferences()
+    return bool(prefs and prefs.auto_start_queue_after_submit)
 
 
 def _send_request(endpoint: dict, command: str, payload: dict | None = None) -> dict:
@@ -200,5 +209,10 @@ def submit_task(
     response = _send_request(endpoint, "submit_task", payload)
     if not response.get("ok"):
         raise RuntimeError(response.get("message") or "Desktop app rejected the submission.")
+
+    if _should_auto_start_queue():
+        start_response = _send_request(endpoint, "start_queue")
+        if not start_response.get("ok"):
+            raise RuntimeError(start_response.get("message") or "Desktop app rejected the queue start request.")
 
     return response

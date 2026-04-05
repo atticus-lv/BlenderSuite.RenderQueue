@@ -1526,7 +1526,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         var totalFrames = RealTotalFrames;
         if (totalFrames > 0)
         {
-            CompletedFrames = Math.Max(0, p.CurrentFrame - RealStartFrame + 1);
+            // CompletedFrames 只统计已经完全完成的帧，当前正在渲染的帧由 perFrame 表示。
+            CompletedFrames = Math.Max(0, p.CurrentFrame - RealStartFrame);
             double perFrame = Progress01; // 当前帧内进度
             OverallProgress01 = Math.Clamp((CompletedFrames + perFrame) / totalFrames, 0, 1);
         }

@@ -289,6 +289,16 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                     Message = "pong",
                     QueueState = _renderQueueViewModel.QueueState.ToString()
                 };
+            case "start_queue":
+                var startResponse = await _renderQueueViewModel.StartQueueFromSubmissionAsync(cancellationToken);
+                return new SubmissionWireResponse
+                {
+                    RequestId = request.RequestId,
+                    Ok = startResponse.Ok,
+                    TaskId = startResponse.TaskId,
+                    Message = startResponse.Message,
+                    QueueState = startResponse.QueueState
+                };
             case "submit_task":
                 if (request.Payload == null)
                 {

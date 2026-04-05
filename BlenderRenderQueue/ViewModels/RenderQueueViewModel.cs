@@ -580,6 +580,64 @@ public partial class RenderQueueViewModel : ViewModelBase
         }).GetTask();
     }
 
+    public Task<LocalSubmissionResponse> StartQueueFromSubmissionAsync(CancellationToken cancellationToken = default)
+    {
+        return Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            try
+            {
+                if (QueueState == QueueState.Running)
+                {
+                    return new LocalSubmissionResponse
+                    {
+                        Ok = true,
+                        Message = "Queue is already running.",
+                        QueueState = QueueState.ToString()
+                    };
+                }
+
+                if (!CanStartQueue)
+                {
+                    return new LocalSubmissionResponse
+                    {
+                        Ok = false,
+                        Message = "Queue cannot be started in its current state.",
+                        QueueState = QueueState.ToString()
+                    };
+                }
+
+                if (!IsBlenderServiceReady())
+                {
+                    return new LocalSubmissionResponse
+                    {
+                        Ok = false,
+                        Message = "Blender is not configured or not ready.",
+                        QueueState = QueueState.ToString()
+                    };
+                }
+
+                await StartQueue();
+
+                return new LocalSubmissionResponse
+                {
+                    Ok = true,
+                    Message = "Queue started successfully.",
+                    QueueState = QueueState.ToString()
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to start queue from local submission: {ex.Message}");
+                return new LocalSubmissionResponse
+                {
+                    Ok = false,
+                    Message = ex.Message,
+                    QueueState = QueueState.ToString()
+                };
+            }
+        });
+    }
+
     [RelayCommand]
     private void RemoveSelectedTask()
     {

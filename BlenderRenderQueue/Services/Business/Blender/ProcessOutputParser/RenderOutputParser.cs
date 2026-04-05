@@ -11,10 +11,12 @@ public sealed class RenderOutputParser : IRenderOutputParser
 	private RenderProgress _current = new();
 	public RenderProgress Current => _current;
 
-	// Cycles 单帧: Rendering single frame (frame 1)
-	private static readonly Regex RxSingleFrame = new(@"Rendering single frame \(frame (?<frame>\d+)\)", RegexOptions.Compiled);
+	// Cycles 单帧: Rendering single frame / Rendering single frame (frame 1)
+	private static readonly Regex RxSingleFrame = new(@"Rendering single frame(?: \(frame (?<frame>\d+)\))?", RegexOptions.Compiled);
 	// 动画: Rendering animation (frames 1..10)
 	private static readonly Regex RxAnimation = new(@"Rendering animation \(frames (?<start>\d+)\.\.(?<end>\d+)\)", RegexOptions.Compiled);
+	// 当前帧: Rendering frame 1
+	private static readonly Regex RxFrame = new(@"Rendering frame (?<frame>\d+)", RegexOptions.Compiled);
 	// Start rendering: Scene, ViewLayer
 	private static readonly Regex RxStart = new(@"Start rendering: (?<scene>[^,]+), (?<layer>.+)", RegexOptions.Compiled);
 	// Engine: Cycles / Eevee / Workbench
@@ -63,7 +65,10 @@ public sealed class RenderOutputParser : IRenderOutputParser
 		if (mSingle.Success)
 		{
 			_isAnimation = false;
-			_currentFrame = int.Parse(mSingle.Groups["frame"].Value, CultureInfo.InvariantCulture);
+			if (mSingle.Groups["frame"].Success)
+			{
+				_currentFrame = int.Parse(mSingle.Groups["frame"].Value, CultureInfo.InvariantCulture);
+			}
 			_current = new RenderProgress
 			{
 				CurrentFrame = _currentFrame,
@@ -71,7 +76,18 @@ public sealed class RenderOutputParser : IRenderOutputParser
 				Scene = _scene,
 				ViewLayer = _viewLayer
 			};
-			events.Add(new RenderSessionStarted(false, _currentFrame, _currentFrame));
+			events.Add(new RenderSessionStarted(false,
+				_currentFrame == 0 ? null : _currentFrame,
+				_currentFrame == 0 ? null : _currentFrame));
+			return events;
+		}
+
+		var mFrame = RxFrame.Match(line);
+		if (mFrame.Success)
+		{
+			_currentFrame = int.Parse(mFrame.Groups["frame"].Value, CultureInfo.InvariantCulture);
+			_current = _current with { CurrentFrame = _currentFrame };
+			events.Add(new RenderProgressEvent(_current));
 			return events;
 		}
 
