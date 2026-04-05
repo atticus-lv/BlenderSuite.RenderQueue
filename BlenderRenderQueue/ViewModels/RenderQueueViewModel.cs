@@ -141,17 +141,20 @@ public partial class RenderQueueViewModel : ViewModelBase
     // 帧数相关的计算属性 - 只计算启用且有效的任务，使用实际渲染用的帧范围
     public int TotalFrames => RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t => t.RealTotalFrames);
 
-    public int CompletedFrames => RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t =>
+    // 使用连续进度聚合，避免单帧任务在完成前一直被截断为 0 帧。
+    public double CompletedFrameProgress => RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t =>
     {
         var totalFrames = Math.Max(0, t.RealTotalFrames);
-        return (int)(totalFrames * t.OverallProgress01);
+        return totalFrames * t.OverallProgress01;
     });
+
+    public int CompletedFrames => (int)CompletedFrameProgress;
 
     // 队列进度直接计算，不需要事件更新 - 只计算启用的任务
     public double OverallQueueProgress =>
-        RenderTasks.Any(t => t.Enable) && TotalFrames > 0 ? (double)CompletedFrames / TotalFrames : 0.0;
+        RenderTasks.Any(t => t.Enable) && TotalFrames > 0 ? CompletedFrameProgress / TotalFrames : 0.0;
 
-    public int OverallQueueProgressInt => (int)(OverallQueueProgress * 100);
+    public int OverallQueueProgressInt => (int)Math.Round(OverallQueueProgress * 100, MidpointRounding.AwayFromZero);
 
 
     private static string FormatTimeSpan(TimeSpan timeSpan)

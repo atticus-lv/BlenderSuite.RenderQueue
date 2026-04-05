@@ -324,7 +324,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             StartInfo = new ProcessStartInfo
             {
                 FileName = blenderExecutablePath,
-                Arguments = "--background --python-console",
+                Arguments = "--background --log-level info --python-console",
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
