@@ -1,1 +1,0 @@
-# BlenderRenderQueue worker package

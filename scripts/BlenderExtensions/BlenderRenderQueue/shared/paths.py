@@ -18,7 +18,7 @@ def get_app_data_dir() -> Path:
     return Path(os.environ.get("XDG_CONFIG_HOME", home / ".config")) / "BlenderRenderQueue"
 
 
-def get_submission_file_path() -> Path:
+def get_submission_endpoint_path() -> Path:
     app_data_dir = get_app_data_dir()
     app_data_dir.mkdir(parents=True, exist_ok=True)
-    return app_data_dir / "data_from_blender.json"
+    return app_data_dir / "submission_endpoint.json"

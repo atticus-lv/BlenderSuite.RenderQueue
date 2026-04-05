@@ -2,10 +2,10 @@ schema_version = "1.0.0"
 
 id = "BlenderRenderQueue"
 type = "add-on"
-version = "0.6.0"
+version = "0.7.0"
 
 name = "Blender Render Queue"
-tagline = "Submit renders and host the BlenderRenderQueue worker"
+tagline = "Submit renders from Blender to BlenderRenderQueue"
 maintainer = "Atticus"
 copyright = ["2025 Atticus"]
 
@@ -18,8 +18,8 @@ blender_version_min = "5.0.0"
 platforms = ["windows-x64", "macos-arm64", "macos-x64"]
 
 [permissions]
-files = "Read and write BlenderRenderQueue data files"
-network = "Listen on localhost for the BlenderRenderQueue worker protocol"
+files = "Read local endpoint metadata"
+network = "Connect to localhost to submit tasks"
 
 [build]
 paths_exclude_pattern = [

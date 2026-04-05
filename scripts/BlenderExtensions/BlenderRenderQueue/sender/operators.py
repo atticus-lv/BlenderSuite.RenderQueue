@@ -6,7 +6,7 @@ import bpy
 from bpy.props import BoolProperty, EnumProperty, IntProperty
 from bpy.types import Operator
 
-from .submit_service import ensure_app_started, write_submission
+from .submit_service import submit_task
 
 
 def enum_scene_items_callback(scene, context):
@@ -49,18 +49,23 @@ class BRQ_OT_submit_scene(Operator):
             self.report({"ERROR"}, "Save the .blend file before submitting it to BlenderRenderQueue.")
             return {"CANCELLED"}
 
-        started_now = ensure_app_started(self.report)
-
         try:
-            write_submission(
+            response = submit_task(
                 self.scene_name,
                 self.override_frame_range,
                 self.frame_start,
                 self.frame_end,
-                started_now=started_now,
+                self.report,
             )
-            self.report({"INFO"}, f"Scene '{self.scene_name}' submitted to queue successfully.")
-            return {"FINISHED"}
+
+            if response.get("ok"):
+                message = response.get("message") or f"Scene '{self.scene_name}' submitted to queue successfully."
+                self.report({"INFO"}, message)
+                return {"FINISHED"}
+
+            message = response.get("message") or "Failed to submit scene."
+            self.report({"ERROR"}, message)
+            return {"CANCELLED"}
         except Exception as exc:
             self.report({"ERROR"}, f"Failed to submit scene: {exc}")
             return {"CANCELLED"}

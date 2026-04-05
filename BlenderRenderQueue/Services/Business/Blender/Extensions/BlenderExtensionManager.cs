@@ -129,6 +129,30 @@ public sealed class BlenderExtensionManager : IBlenderExtensionManager
         string blenderExecutablePath,
         CancellationToken cancellationToken)
     {
+        var sourceDirectory = FindExtensionSourceDirectory();
+        if (sourceDirectory != null)
+        {
+            var outputDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "BlenderRenderQueue",
+                "ExtensionsCache");
+            Directory.CreateDirectory(outputDirectory);
+
+            await RunBlenderCommandAsync(
+                blenderExecutablePath,
+                $"--background --command extension build --source-dir {Quote(sourceDirectory)} --output-dir {Quote(outputDirectory)}",
+                cancellationToken);
+
+            var builtPackagePath = Directory.EnumerateFiles(outputDirectory, $"{ExtensionId}-*.zip", SearchOption.TopDirectoryOnly)
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .FirstOrDefault();
+
+            if (builtPackagePath != null)
+            {
+                return ReadPackageInfoFromZip(builtPackagePath);
+            }
+        }
+
         var bundledDirectory = Path.Combine(AppContext.BaseDirectory, "Resources", "BlenderExtensions");
         if (Directory.Exists(bundledDirectory))
         {
@@ -143,33 +167,7 @@ public sealed class BlenderExtensionManager : IBlenderExtensionManager
             }
         }
 
-        var sourceDirectory = FindExtensionSourceDirectory();
-        if (sourceDirectory == null)
-        {
-            throw new FileNotFoundException("Could not find a bundled extension zip or extension source directory.");
-        }
-
-        var outputDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "BlenderRenderQueue",
-            "ExtensionsCache");
-        Directory.CreateDirectory(outputDirectory);
-
-        await RunBlenderCommandAsync(
-            blenderExecutablePath,
-            $"--background --command extension build --source-dir {Quote(sourceDirectory)} --output-dir {Quote(outputDirectory)}",
-            cancellationToken);
-
-        var builtPackagePath = Directory.EnumerateFiles(outputDirectory, $"{ExtensionId}-*.zip", SearchOption.TopDirectoryOnly)
-            .OrderByDescending(File.GetLastWriteTimeUtc)
-            .FirstOrDefault();
-
-        if (builtPackagePath == null)
-        {
-            throw new FileNotFoundException("Blender built the extension package but no zip was produced.");
-        }
-
-        return ReadPackageInfoFromZip(builtPackagePath);
+        throw new FileNotFoundException("Could not find a bundled extension zip or extension source directory.");
     }
 
     private static string? FindExtensionSourceDirectory()

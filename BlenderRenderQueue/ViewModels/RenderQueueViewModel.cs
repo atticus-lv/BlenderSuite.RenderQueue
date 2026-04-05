@@ -16,6 +16,7 @@ using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Persistence;
+using BlenderRenderQueue.Services.Business.Submission;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.UI;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -121,9 +122,6 @@ public partial class RenderQueueViewModel : ViewModelBase
     private System.Timers.Timer? _remainingTimeTimer; // 剩余时间更新定时器
 
     [ObservableProperty] private string _remainingTimeText = string.Empty; // 剩余时间文本
-
-    // 文件监控相关
-    private FileSystemWatcher? _blenderDataWatcher; // 监控Blender插件写入的文件
 
     // AOT兼容的JSON序列化选项
     private readonly JsonSerializerOptions _jsonOptions = new()
@@ -315,9 +313,6 @@ public partial class RenderQueueViewModel : ViewModelBase
         _remainingTimeTimer.Elapsed += OnRemainingTimeTimerElapsed;
         _remainingTimeTimer.AutoReset = true;
 
-        // 初始化文件监控
-        InitializeBlenderDataWatcher();
-
         // 监听任务状态变化
         RenderTasks.CollectionChanged += (s, e) =>
         {
@@ -469,6 +464,120 @@ public partial class RenderQueueViewModel : ViewModelBase
             StatusMessageChanged?.Invoke(this,
                 string.Format(Localizer.Localizer.Instance["Toast_TaskAddFailed"], ex.Message));
         }
+    }
+
+    public Task<LocalSubmissionResponse> SubmitTaskAsync(LocalSubmissionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Filepath))
+                {
+                    return new LocalSubmissionResponse
+                    {
+                        Ok = false,
+                        Message = "Submission filepath is required.",
+                        QueueState = QueueState.ToString()
+                    };
+                }
+
+                if (!File.Exists(request.Filepath))
+                {
+                    return new LocalSubmissionResponse
+                    {
+                        Ok = false,
+                        Message = $"Blend file does not exist: {request.Filepath}",
+                        QueueState = QueueState.ToString()
+                    };
+                }
+
+                var taskInfo = new RenderTaskInfo
+                {
+                    Id = Guid.NewGuid(),
+                    Filename = string.IsNullOrWhiteSpace(request.Filename)
+                        ? Path.GetFileName(request.Filepath)
+                        : request.Filename,
+                    Filepath = request.Filepath,
+                    StartFrame = request.FrameStart,
+                    EndFrame = request.FrameEnd,
+                    LastRenderedFrame = 0,
+                    Enable = true,
+                    Override = new OverrideData
+                    {
+                        OverrideFrameRange = request.OverrideFrameRange
+                            ? new OverrideFrameRangeData
+                            {
+                                StartFrame = request.FrameStart,
+                                EndFrame = request.FrameEnd
+                            }
+                            : null,
+                        OverrideScene = string.IsNullOrWhiteSpace(request.SceneName)
+                            ? null
+                            : new OverrideSceneData
+                            {
+                                SceneName = request.SceneName
+                            }
+                    }
+                };
+
+                var task = new RenderTaskViewModel(taskInfo);
+                task.SetGlobalRenderTimeout(_globalRenderTimeoutSeconds);
+                task.SetGlobalMaxRetryAttempts(_globalMaxRetryAttempts);
+                task.SetVideoCodec(_videoCodec);
+                task.SetVideoQuality(_videoQuality);
+                task.SetProcessService(_processService);
+
+                RenderTasks.Add(task);
+                SubscribeToTaskEvents(task);
+                task.SetQueueRunningState(QueueState == QueueState.Running);
+                SelectedTask = task;
+
+                if (IsBlenderServiceReady())
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await task.LoadFilePropertiesAsync(_blenderPath!);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(
+                                $"[RenderQueueViewModel] ❌ Failed to load file properties for submitted task {Path.GetFileName(task.BlendFilePath)}: {ex.Message}");
+                        }
+                    }, cancellationToken);
+                }
+
+                StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPluginDetected"]);
+                this.ShowSuccessToast(
+                    Localizer.Localizer.Instance["Toast_TaskAddSuccess"],
+                    Localizer.Localizer.Instance["Toast_BlenderPluginDetected"]);
+
+                return new LocalSubmissionResponse
+                {
+                    Ok = true,
+                    TaskId = task.Id.ToString("D"),
+                    Message = $"Queued {Path.GetFileName(task.BlendFilePath)} successfully.",
+                    QueueState = QueueState.ToString()
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to submit task locally: {ex.Message}");
+                this.ShowErrorToast(
+                    Localizer.Localizer.Instance["Toast_TaskAddFailedTitle"],
+                    string.Format(Localizer.Localizer.Instance["Toast_TaskAddFailed"], ex.Message));
+
+                return new LocalSubmissionResponse
+                {
+                    Ok = false,
+                    Message = ex.Message,
+                    QueueState = QueueState.ToString()
+                };
+            }
+        }).GetTask();
     }
 
     [RelayCommand]
@@ -876,12 +985,10 @@ public partial class RenderQueueViewModel : ViewModelBase
         if (blenderProcessService != null)
         {
             Console.WriteLine($"[RenderQueueViewModel] BlenderProcessService set successfully");
-            InitializeBlenderDataWatcher();
         }
         else
         {
             Console.WriteLine("[RenderQueueViewModel] BlenderService set to null - cleaning up");
-            CleanupBlenderDataWatcher();
         }
     }
 
@@ -932,8 +1039,6 @@ public partial class RenderQueueViewModel : ViewModelBase
                 }
             });
         }
-
-        InitializeBlenderDataWatcher();
     }
 
 
@@ -1628,207 +1733,6 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     /// <summary>
-    ///     初始化Blender数据文件监控
-    /// </summary>
-    private void InitializeBlenderDataWatcher()
-    {
-        // 清理现有的监控器
-        _blenderDataWatcher?.Dispose();
-        _blenderDataWatcher = null;
-
-        if (string.IsNullOrEmpty(_blenderPath)) return;
-
-        try
-        {
-            // 获取应用程序目录
-            // var appDirectory = AppDomain.CurrentDomain.BaseDirectory;
-            var appDataDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "BlenderRenderQueue"
-            );
-            var blenderDataPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "BlenderRenderQueue",
-                "data.json"
-            );
-
-            // 创建文件监控器
-            _blenderDataWatcher = new FileSystemWatcher(appDataDirectory, "data_from_blender.json")
-            {
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.CreationTime,
-                EnableRaisingEvents = true
-            };
-
-            // 订阅文件变化事件
-            _blenderDataWatcher.Changed += OnBlenderDataFileChanged;
-            _blenderDataWatcher.Created += OnBlenderDataFileChanged;
-
-            Console.WriteLine($"[RenderQueueViewModel] ✅ File watcher initialized for: {blenderDataPath}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to initialize file watcher: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    ///     清理Blender数据文件监控器
-    /// </summary>
-    private void CleanupBlenderDataWatcher()
-    {
-        try
-        {
-            if (_blenderDataWatcher != null)
-            {
-                _blenderDataWatcher.Changed -= OnBlenderDataFileChanged;
-                _blenderDataWatcher.Created -= OnBlenderDataFileChanged;
-                _blenderDataWatcher.Dispose();
-                _blenderDataWatcher = null;
-                Console.WriteLine("[RenderQueueViewModel] ✅ File watcher cleaned up");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[RenderQueueViewModel] ❌ Failed to cleanup file watcher: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    ///     处理Blender数据文件变化事件
-    /// </summary>
-    private async void OnBlenderDataFileChanged(object sender, FileSystemEventArgs e)
-    {
-        try
-        {
-            // 延迟一下，确保文件写入完成
-            await Task.Delay(500);
-
-            Console.WriteLine($"[RenderQueueViewModel] 📁 Blender data file changed: {e.FullPath}");
-
-            // 检查文件是否存在
-            if (!File.Exists(e.FullPath))
-            {
-                Console.WriteLine($"[RenderQueueViewModel] ⚠️ File does not exist: {e.FullPath}");
-                return;
-            }
-
-            // 读取文件内容
-            var jsonContent = await File.ReadAllTextAsync(e.FullPath);
-            if (string.IsNullOrWhiteSpace(jsonContent))
-            {
-                Console.WriteLine($"[RenderQueueViewModel] ⚠️ File is empty: {e.FullPath}");
-                return;
-            }
-
-            // 解析JSON - 使用AOT兼容的序列化选项
-            var appData = JsonSerializer.Deserialize<AppData>(jsonContent, _jsonOptions);
-
-            if (appData?.RenderQueue == null || !appData.RenderQueue.Any())
-            {
-                Console.WriteLine("[RenderQueueViewModel] ⚠️ No render tasks found in file");
-                return;
-            }
-
-            // 在UI线程上处理
-            Dispatcher.UIThread.Post(() =>
-            {
-                try
-                {
-                    // 添加新任务到队列
-                    foreach (var taskData in appData.RenderQueue)
-                    {
-                        var taskInfo = taskData.RenderTask;
-
-                        // 检查文件是否存在
-                        if (!File.Exists(taskInfo.Filepath))
-                        {
-                            Console.WriteLine($"[RenderQueueViewModel] ⚠️ File does not exist: {taskInfo.Filepath}");
-                            continue;
-                        }
-
-                        // 使用新的构造函数从 RenderTaskInfo 加载，保持 UUID 一致性
-                        var task = new RenderTaskViewModel(taskInfo);
-
-                        // 设置视频生成相关参数
-                        task.SetVideoCodec(_videoCodec);
-                        task.SetVideoQuality(_videoQuality);
-                        task.SetProcessService(_processService);
-
-                        // 保存场景覆写数据
-                        var savedOverrideScene = taskInfo.Override?.OverrideScene;
-
-                        // 添加到队列
-                        RenderTasks.Add(task);
-                        SubscribeToTaskEvents(task);
-
-                        // 设置队列运行状态，影响CanRefresh属性
-                        task.SetQueueRunningState(QueueState == QueueState.Running);
-
-                        // 异步加载文件属性
-                        if (IsBlenderServiceReady())
-                            _ = Task.Run(async () =>
-                            {
-                                try
-                                {
-                                    await task.LoadFilePropertiesAsync(_blenderPath!);
-
-                                    // 设置场景覆写
-                                    if (savedOverrideScene != null)
-                                        Dispatcher.UIThread.Post(() =>
-                                        {
-                                            task.OverrideScene = true;
-                                            task.SelectedSceneName = savedOverrideScene.SceneName;
-                                        });
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine(
-                                        $"[RenderQueueViewModel] ❌ Failed to load file properties: {ex.Message}");
-                                }
-                            });
-
-                        Console.WriteLine(
-                            $"[RenderQueueViewModel] ✅ Added task from Blender: {Path.GetFileName(taskInfo.Filepath)}");
-                    }
-
-                    // 删除源文件，避免重复处理
-                    try
-                    {
-                        File.Delete(e.FullPath);
-                        Console.WriteLine($"[RenderQueueViewModel] 🗑️ Deleted source file: {e.FullPath}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[RenderQueueViewModel] ⚠️ Failed to delete source file: {ex.Message}");
-                    }
-
-                    StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPluginDetected"]);
-
-                    // 显示成功toast
-                    this.ShowSuccessToast(
-                        Localizer.Localizer.Instance["Toast_TaskAddSuccess"],
-                        Localizer.Localizer.Instance["Toast_BlenderPluginDetected"]);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[RenderQueueViewModel] ❌ Error processing Blender data file: {ex.Message}");
-                    StatusMessageChanged?.Invoke(this,
-                        string.Format(Localizer.Localizer.Instance["Toast_BlenderDataProcessError"], ex.Message));
-
-                    // 显示错误toast
-                    this.ShowErrorToast(
-                        Localizer.Localizer.Instance["Toast_TaskAddFailedTitle"],
-                        string.Format(Localizer.Localizer.Instance["Toast_BlenderDataProcessError"], ex.Message));
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[RenderQueueViewModel] ❌ Error handling file change: {ex.Message}");
-        }
-    }
-
-    /// <summary>
     /// 处理队列完成后的行为
     /// </summary>
     private async Task HandlePostRenderBehaviorAsync()
@@ -1905,9 +1809,6 @@ public partial class RenderQueueViewModel : ViewModelBase
         _remainingTimeTimer?.Stop();
         _remainingTimeTimer?.Dispose();
         _remainingTimeTimer = null;
-
-        _blenderDataWatcher?.Dispose();
-        _blenderDataWatcher = null;
 
         _processService?.Dispose();
         _processService = null;

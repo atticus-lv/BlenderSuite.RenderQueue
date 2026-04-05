@@ -2,15 +2,22 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 from shutil import which
 
 import bpy
 
-from ..shared.paths import get_submission_file_path
+from ..shared.paths import get_submission_endpoint_path
+
+
+CONNECT_TIMEOUT_SECONDS = 2.0
+STARTUP_TIMEOUT_SECONDS = 12.0
+STARTUP_POLL_INTERVAL_SECONDS = 0.4
 
 
 def _get_preferences():
@@ -51,113 +58,134 @@ def _find_app_launch_target() -> str | None:
     return None
 
 
-def _is_app_running() -> bool:
-    try:
-        if sys.platform == "win32":
-            create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-            output = subprocess.check_output(["tasklist"], creationflags=create_no_window).decode(errors="ignore")
-            return "blenderrenderqueue.exe" in output.lower()
-
-        result = subprocess.run(
-            ["pgrep", "-f", "BlenderRenderQueue"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
+def _launch_app(launch_target: str):
+    if sys.platform == "win32":
+        create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        subprocess.Popen(
+            f'cmd /c start "" "{launch_target}"',
+            shell=True,
+            creationflags=create_no_window,
         )
-        return result.returncode == 0
+        return
+
+    if launch_target.endswith(".app"):
+        subprocess.Popen(["open", "-a", launch_target])
+        return
+
+    subprocess.Popen([launch_target])
+
+
+def _read_endpoint_info() -> dict | None:
+    endpoint_path = get_submission_endpoint_path()
+    if not endpoint_path.exists():
+        return None
+
+    try:
+        return json.loads(endpoint_path.read_text(encoding="utf-8"))
     except Exception:
-        return False
+        return None
 
 
-def ensure_app_started(report_callback) -> bool:
+def _send_request(endpoint: dict, command: str, payload: dict | None = None) -> dict:
+    request = {
+        "request_id": uuid.uuid4().hex,
+        "command": command,
+        "token": endpoint.get("token", ""),
+        "payload": payload,
+    }
+
+    with socket.create_connection(
+        (endpoint.get("host", "127.0.0.1"), int(endpoint.get("port", 0))),
+        timeout=CONNECT_TIMEOUT_SECONDS,
+    ) as conn:
+        conn.settimeout(CONNECT_TIMEOUT_SECONDS)
+        request_data = (json.dumps(request, ensure_ascii=False) + "\n").encode("utf-8")
+        conn.sendall(request_data)
+
+        response_chunks: list[bytes] = []
+        while True:
+            chunk = conn.recv(4096)
+            if not chunk:
+                break
+            response_chunks.append(chunk)
+            if b"\n" in chunk:
+                break
+
+    response_text = b"".join(response_chunks).decode("utf-8").strip()
+    if not response_text:
+        raise RuntimeError("Desktop app returned an empty submission response.")
+
+    return json.loads(response_text)
+
+
+def _wait_for_endpoint(report_callback) -> dict:
+    deadline = time.time() + STARTUP_TIMEOUT_SECONDS
+    last_error = "Desktop app did not publish a submission endpoint."
+
+    while time.time() < deadline:
+        endpoint = _read_endpoint_info()
+        if endpoint:
+            try:
+                response = _send_request(endpoint, "ping")
+                if response.get("ok"):
+                    return endpoint
+                last_error = response.get("message") or last_error
+            except Exception as exc:
+                last_error = str(exc)
+
+        time.sleep(STARTUP_POLL_INTERVAL_SECONDS)
+
+    report_callback({"WARNING"}, f"Failed to connect to BlenderRenderQueue after startup: {last_error}")
+    raise RuntimeError(last_error)
+
+
+def _ensure_endpoint(report_callback) -> dict:
+    endpoint = _read_endpoint_info()
+    if endpoint:
+        try:
+            response = _send_request(endpoint, "ping")
+            if response.get("ok"):
+                return endpoint
+        except Exception:
+            pass
+
     prefs = _get_preferences()
     if prefs and not prefs.auto_start_app:
-        return False
-
-    if _is_app_running():
-        return False
+        raise RuntimeError("BlenderRenderQueue is not running and auto-start is disabled.")
 
     launch_target = _find_app_launch_target()
     if not launch_target:
-        report_callback(
-            {"WARNING"},
-            "BlenderRenderQueue is not running. Task data was written, but you may need to start the desktop app manually.",
-        )
-        return False
+        raise RuntimeError("BlenderRenderQueue is not running and no launch target was found.")
 
-    try:
-        if sys.platform == "win32":
-            create_no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-            subprocess.Popen(
-                f'cmd /c start "" "{launch_target}"',
-                shell=True,
-                creationflags=create_no_window,
-            )
-        elif launch_target.endswith(".app"):
-            subprocess.Popen(["open", "-a", launch_target])
-        else:
-            subprocess.Popen([launch_target])
-
-        return True
-    except Exception as exc:
-        report_callback({"WARNING"}, f"Failed to start BlenderRenderQueue automatically: {exc}")
-        return False
+    _launch_app(launch_target)
+    return _wait_for_endpoint(report_callback)
 
 
-def write_submission(
+def submit_task(
     scene_name: str,
     override_frame_range: bool,
     frame_start: int,
     frame_end: int,
-    started_now: bool = False,
-):
-    submission_file = get_submission_file_path()
-
-    if started_now:
-        for _ in range(20):
-            if _is_app_running():
-                break
-            time.sleep(0.25)
-        time.sleep(0.75)
-
-    scene = bpy.context.scene
+    report_callback,
+) -> dict:
     blend_file_path = bpy.data.filepath
-    blend_filename = os.path.basename(blend_file_path)
+    if not blend_file_path:
+        raise RuntimeError("Save the .blend file before submitting it to BlenderRenderQueue.")
 
-    new_task = {
-        "RenderTask": {
-            "Filename": blend_filename,
-            "Filepath": blend_file_path,
-            "StartFrame": scene.frame_start,
-            "EndFrame": scene.frame_end,
-            "LastRenderedFrame": 0,
-            "Enable": True,
-        }
+    endpoint = _ensure_endpoint(report_callback)
+
+    payload = {
+        "filepath": blend_file_path,
+        "filename": os.path.basename(blend_file_path),
+        "scene_name": scene_name,
+        "override_frame_range": override_frame_range,
+        "frame_start": frame_start,
+        "frame_end": frame_end,
+        "submitted_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
-    override_payload = {
-        "OverrideScene": {
-            "SceneName": scene_name,
-        }
-    }
+    response = _send_request(endpoint, "submit_task", payload)
+    if not response.get("ok"):
+        raise RuntimeError(response.get("message") or "Desktop app rejected the submission.")
 
-    if override_frame_range:
-        override_payload["OverrideFrameRange"] = {
-            "StartFrame": frame_start,
-            "EndFrame": frame_end,
-        }
-
-    new_task["RenderTask"]["Override"] = override_payload
-
-    data = {
-        "Software": "BlenderRenderQueue",
-        "Version": "0.0.1",
-        "RenderQueue": [new_task],
-    }
-
-    with open(submission_file, "w", encoding="utf-8") as handle:
-        json.dump(data, handle, indent=2, ensure_ascii=False)
-
-    if started_now:
-        time.sleep(0.5)
-        os.utime(submission_file, None)
+    return response

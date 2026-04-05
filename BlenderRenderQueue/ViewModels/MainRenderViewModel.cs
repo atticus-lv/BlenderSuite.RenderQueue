@@ -7,7 +7,7 @@ using Avalonia.Threading;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Blender;
-using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
+using BlenderRenderQueue.Services.Business.Submission;
 using BlenderRenderQueue.Services.UI;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -61,9 +61,9 @@ public partial class MainRenderViewModel : ViewModelBase
     private CancellationTokenSource? _versionCts;
 
 
-    public MainRenderViewModel(SettingsViewModel settingsViewModel, IBlenderWorkerHost workerHost)
+    public MainRenderViewModel(SettingsViewModel settingsViewModel, RenderQueueViewModel renderQueue)
     {
-        _renderQueue = new RenderQueueViewModel(workerHost);
+        RenderQueue = renderQueue;
 
         // 订阅渲染队列事件
         RenderQueue.QueueStatusChanged += OnQueueStatusChanged;
@@ -81,6 +81,12 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void ValidateSelectedBlender()
     {
+        var settings = SettingsViewModel;
+        if (settings == null)
+        {
+            return;
+        }
+
         _versionCts?.Cancel();
         _versionCts = new CancellationTokenSource();
         var ct = _versionCts.Token;
@@ -89,7 +95,7 @@ public partial class MainRenderViewModel : ViewModelBase
         HasBlenderValidationError = false;
         BlenderValidationMessage = string.Empty;
 
-        var selectedBlender = _settingsViewModel.SelectedBlenderExecutable;
+        var selectedBlender = settings.SelectedBlenderExecutable;
         if (selectedBlender == null)
         {
             IsBlenderPathValid = false;
@@ -132,10 +138,10 @@ public partial class MainRenderViewModel : ViewModelBase
             // 更新UI线程上的属性
             Dispatcher.UIThread.Post(() =>
             {
-                BlenderVersion = info.Version;
-                BlenderPlatform = info.Platform;
-                BlenderBranch = info.Branch;
-                BlenderHash = info.Hash;
+                BlenderVersion = info.Version ?? string.Empty;
+                BlenderPlatform = info.Platform ?? string.Empty;
+                BlenderBranch = info.Branch ?? string.Empty;
+                BlenderHash = info.Hash ?? string.Empty;
                 IsLoadingBlenderInfo = false;
                 IsBlenderPathValid = true;
                 HasBlenderValidationError = false;
@@ -211,32 +217,39 @@ public partial class MainRenderViewModel : ViewModelBase
     private void InitializeSettings(SettingsViewModel settingsViewModel)
     {
         SettingsViewModel = settingsViewModel;
+        var settings = SettingsViewModel;
 
         // 订阅设置变化事件
-        _settingsViewModel!.SettingsChanged += OnSettingsChanged;
-        _settingsViewModel.InitializationCompleted += OnInitializationCompleted;
-        _settingsViewModel.BlenderValidationChanged += OnBlenderValidationChanged;
+        settings.SettingsChanged += OnSettingsChanged;
+        settings.InitializationCompleted += OnInitializationCompleted;
+        settings.BlenderValidationChanged += OnBlenderValidationChanged;
 
         // 开始初始化检测（这会自动加载设置）
-        _settingsViewModel.StartInitialization();
+        settings.StartInitialization();
     }
 
     private void OnInitializationCompleted(object? sender, InitializationCompletedEventArgs e)
     {
+        var settings = SettingsViewModel;
+        if (settings == null)
+        {
+            return;
+        }
+
         // 检测完成后，直接应用设置（不再自动弹出对话框，用户可以通过侧边菜单访问设置）
-        var selectedPath = _settingsViewModel.SelectedBlenderExecutable?.Path ?? string.Empty;
-        ApplySettings(selectedPath, _settingsViewModel.DefaultRenderTimeoutSeconds,
-            _settingsViewModel.MaxRetryAttempts, _settingsViewModel.VideoCodec.Value,
-            _settingsViewModel.VideoQuality.Value);
+        var selectedPath = settings.SelectedBlenderExecutable?.Path ?? string.Empty;
+        ApplySettings(selectedPath, settings.DefaultRenderTimeoutSeconds,
+            settings.MaxRetryAttempts, settings.VideoCodec.Value,
+            settings.VideoQuality.Value);
     }
 
     [RelayCommand]
     private void NavigateToSettings()
     {
         // 在导航到设置页面时，同步队列状态（与开始队列按钮逻辑保持一致）
-        if (_settingsViewModel != null)
+        if (SettingsViewModel != null)
         {
-            _settingsViewModel.UpdateQueueState(RenderQueue.QueueState);
+            SettingsViewModel.UpdateQueueState(RenderQueue.QueueState);
         }
         
 
@@ -247,24 +260,32 @@ public partial class MainRenderViewModel : ViewModelBase
         // 使用 ToplevelService 获取顶层窗口的 DialogManager
         var dialogManager = GetDialogManager();
         if (dialogManager != null)
+        {
+            var settings = SettingsViewModel;
+            if (settings == null)
+            {
+                return;
+            }
+
             dialogManager.CreateDialog()
                 .WithTitle(Localizer.Localizer.Instance["Settings"])
-                .WithContent(_settingsViewModel!)
-                .WithActionButton(Localizer.Localizer.Instance["Save"], async _ => { await _settingsViewModel!.SaveSettingsToFileAsync(); }, true)
+                .WithContent(settings)
+                .WithActionButton(Localizer.Localizer.Instance["Save"], async _ => { await settings.SaveSettingsToFileAsync(); }, true)
                 .WithActionButton(Localizer.Localizer.Instance["Cancel"], _ => { }, true)
                 .Dismiss().ByClickingBackground()
                 .TryShow();
+        }
     }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
     {
         // 只更新非Blender相关的设置，不重新验证Blender
-        _renderQueue.SetGlobalRenderTimeout(e.DefaultRenderTimeoutSeconds);
-        _renderQueue.SetGlobalMaxRetryAttempts(e.MaxRetryAttempts);
+        RenderQueue.SetGlobalRenderTimeout(e.DefaultRenderTimeoutSeconds);
+        RenderQueue.SetGlobalMaxRetryAttempts(e.MaxRetryAttempts);
         
         // 更新视频生成设置
-        _renderQueue.SetVideoCodec(e.VideoCodec);
-        _renderQueue.SetVideoQuality(e.VideoQuality);
+        RenderQueue.SetVideoCodec(e.VideoCodec);
+        RenderQueue.SetVideoQuality(e.VideoQuality);
     }
 
     private void OnBlenderValidationChanged(object? sender, BlenderValidationChangedEventArgs e)
@@ -295,7 +316,7 @@ public partial class MainRenderViewModel : ViewModelBase
             {
                 // 如果没有正在运行的任务，安全地切换Blender服务
                 Console.WriteLine("[MainRenderViewModel] 没有运行任务，直接切换Blender");
-                var selectedBlender = _settingsViewModel?.SelectedBlenderExecutable;
+                var selectedBlender = SettingsViewModel?.SelectedBlenderExecutable;
                 if (selectedBlender != null)
                 {
                     _ = Task.Run(async () => await LoadBlenderInfoAsync(selectedBlender, CancellationToken.None));
@@ -314,7 +335,7 @@ public partial class MainRenderViewModel : ViewModelBase
     {
         Console.WriteLine("[MainRenderViewModel] ShowBlenderSwitchWarning 被调用");
         
-        var selectedBlender = _settingsViewModel?.SelectedBlenderExecutable;
+        var selectedBlender = SettingsViewModel?.SelectedBlenderExecutable;
         if (selectedBlender == null) 
         {
             Console.WriteLine("[MainRenderViewModel] selectedBlender 为 null，退出");
@@ -366,12 +387,12 @@ public partial class MainRenderViewModel : ViewModelBase
         ValidateSelectedBlender();
 
         // 更新全局超时设置和重试次数
-        _renderQueue.SetGlobalRenderTimeout(defaultRenderTimeoutSeconds);
-        _renderQueue.SetGlobalMaxRetryAttempts(maxRetryAttempts);
+        RenderQueue.SetGlobalRenderTimeout(defaultRenderTimeoutSeconds);
+        RenderQueue.SetGlobalMaxRetryAttempts(maxRetryAttempts);
 
         // 更新视频生成设置
-        _renderQueue.SetVideoCodec(videoCodec);
-        _renderQueue.SetVideoQuality(videoQuality);
+        RenderQueue.SetVideoCodec(videoCodec);
+        RenderQueue.SetVideoQuality(videoQuality);
     }
 
     /// <summary>
@@ -469,7 +490,7 @@ public partial class MainRenderViewModel : ViewModelBase
             Console.WriteLine($"[MainRenderViewModel] 队列状态变化 - QueueState: {queueState}");
             
             // 通知SettingsViewModel更新CanSwitchBlender状态
-            _settingsViewModel?.UpdateQueueState(queueState);
+            SettingsViewModel?.UpdateQueueState(queueState);
         }
     }
 
@@ -604,6 +625,12 @@ public partial class MainRenderViewModel : ViewModelBase
         // 可以在这里添加额外的进度处理逻辑
     }
 
+    public Task<LocalSubmissionResponse> SubmitTaskAsync(LocalSubmissionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return RenderQueue.SubmitTaskAsync(request, cancellationToken);
+    }
+
 
     public void Dispose()
     {
@@ -616,11 +643,11 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.ConfirmDialogRequested -= OnConfirmDialogRequested;
         RenderQueue.PropertyChanged -= OnRenderQueuePropertyChanged;
 
-        if (_settingsViewModel != null)
+        if (SettingsViewModel != null)
         {
-            _settingsViewModel.SettingsChanged -= OnSettingsChanged;
-            _settingsViewModel.InitializationCompleted -= OnInitializationCompleted;
-            _settingsViewModel.BlenderValidationChanged -= OnBlenderValidationChanged;
+            SettingsViewModel.SettingsChanged -= OnSettingsChanged;
+            SettingsViewModel.InitializationCompleted -= OnInitializationCompleted;
+            SettingsViewModel.BlenderValidationChanged -= OnBlenderValidationChanged;
         }
 
 
