@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using BlenderSuite.RenderQueue.Models;
 using BlenderSuite.RenderQueue.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -17,7 +18,7 @@ public partial class QueueInfoViewModel : ViewModelBase
     private readonly ApiService _apiService;
     private readonly ConnectionViewModel _connectionViewModel;
     private Timer? _refreshTimer;
-    private readonly object _refreshLock = new object();
+    private int _refreshInProgress;
 
     [ObservableProperty]
     private OptimizedQueueStatusResponse? _queueStatus;
@@ -74,18 +75,7 @@ public partial class QueueInfoViewModel : ViewModelBase
 
         if (_connectionViewModel.AutoRefreshEnabled)
         {
-            _refreshTimer = new Timer(async void (_) =>
-            {
-                if (!_connectionViewModel.IsConnected || IsLoading) return;
-                try
-                {
-                    await RefreshAsync();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[QueueInfoViewModel] Auto refresh error: {ex.Message}");
-                }
-            }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+            _refreshTimer = new Timer(_ => _ = RefreshAsync(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
         }
     }
 
@@ -100,48 +90,49 @@ public partial class QueueInfoViewModel : ViewModelBase
     {
         if (!_connectionViewModel.IsConnected)
         {
-            ErrorMessage = "Not connected to server";
+            await Dispatcher.UIThread.InvokeAsync(() => ErrorMessage = "Not connected to server");
             return;
         }
 
-        IsLoading = true;
-        ErrorMessage = string.Empty;
+        if (Interlocked.CompareExchange(ref _refreshInProgress, 1, 0) != 0)
+        {
+            return;
+        }
 
         try
         {
-            var status = await _apiService.GetQueueStatusAsync();
-            if (status != null)
+            await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                QueueStatus = status;
-                // 高效更新任务列表
-                UpdateTasksList(status.Tasks);
-                ErrorMessage = string.Empty; 
+                IsLoading = true;
+                ErrorMessage = string.Empty;
+            });
 
-                OnPropertyChanged(nameof(QueueStateText));
-                OnPropertyChanged(nameof(OverallProgress));
-                OnPropertyChanged(nameof(ProgressText));
-                OnPropertyChanged(nameof(TotalTasks));
-                OnPropertyChanged(nameof(TaskSummary));
-                OnPropertyChanged(nameof(FrameSummary));
-                OnPropertyChanged(nameof(RemainingTime));
-                OnPropertyChanged(nameof(CurrentTaskName));
-                OnPropertyChanged(nameof(CurrentTaskProgress));
-                OnPropertyChanged(nameof(CurrentTaskProgressText));
-                OnPropertyChanged(nameof(IsQueueRunning));
-            }
-            else
+            var status = await _apiService.GetQueueStatusAsync();
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                ErrorMessage = "Failed to fetch queue status - check server connection and API endpoint";
-            }
+                if (status != null)
+                {
+                    QueueStatus = status;
+                    UpdateTasksList(status.Tasks);
+                    ErrorMessage = string.Empty;
+                    NotifyDerivedPropertiesChanged();
+                }
+                else
+                {
+                    ErrorMessage = "Failed to fetch queue status - check server connection and API endpoint";
+                }
+            });
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Error: {ex.Message}";
+            await Dispatcher.UIThread.InvokeAsync(() => ErrorMessage = $"Error: {ex.Message}");
             Console.WriteLine($"[QueueInfoViewModel] RefreshAsync exception: {ex}");
         }
         finally
         {
-            IsLoading = false;
+            await Dispatcher.UIThread.InvokeAsync(() => IsLoading = false);
+            Interlocked.Exchange(ref _refreshInProgress, 0);
         }
     }
 
@@ -237,6 +228,23 @@ public partial class QueueInfoViewModel : ViewModelBase
         
         
         Console.WriteLine($"[QueueInfoViewModel] Final AllTasks count: {AllTasks.Count}");
+        OnPropertyChanged(nameof(HasTasks));
+    }
+
+    private void NotifyDerivedPropertiesChanged()
+    {
+        OnPropertyChanged(nameof(QueueStateText));
+        OnPropertyChanged(nameof(OverallProgress));
+        OnPropertyChanged(nameof(ProgressText));
+        OnPropertyChanged(nameof(TotalTasks));
+        OnPropertyChanged(nameof(TaskSummary));
+        OnPropertyChanged(nameof(FrameSummary));
+        OnPropertyChanged(nameof(RemainingTime));
+        OnPropertyChanged(nameof(CurrentTaskName));
+        OnPropertyChanged(nameof(CurrentTaskProgress));
+        OnPropertyChanged(nameof(CurrentTaskProgressText));
+        OnPropertyChanged(nameof(IsQueueRunning));
+        OnPropertyChanged(nameof(HasTasks));
     }
 
     /// <summary>

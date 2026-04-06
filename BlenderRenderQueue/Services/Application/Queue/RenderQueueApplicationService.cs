@@ -135,6 +135,11 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
             Console.WriteLine($"[RenderQueueApplicationService] Blender path set: {blenderPath}");
         }
 
+        foreach (var task in RenderTasks)
+        {
+            task.SetProcessService(_processService);
+        }
+
         if (!string.Equals(previousPath, blenderPath, StringComparison.Ordinal))
         {
             _logService.Write(
@@ -196,7 +201,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
         }
     }
 
-    public void AddDroppedFiles(IEnumerable<IStorageItem> files)
+    public void AddDroppedFiles(IEnumerable<string> filePaths)
     {
         if (!IsBlenderServiceReady())
         {
@@ -204,10 +209,11 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
             return;
         }
 
-        var blendFiles = files
-            .OfType<IStorageFile>()
-            .Where(file => file.Name.EndsWith(".blend", StringComparison.OrdinalIgnoreCase))
-            .Select(file => file.Path.LocalPath)
+        var blendFiles = filePaths
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Where(File.Exists)
+            .Where(path => path.EndsWith(".blend", StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
         if (blendFiles.Count == 0)

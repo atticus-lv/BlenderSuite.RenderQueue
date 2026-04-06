@@ -273,6 +273,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     public void SetProcessService(BlenderProcessService? processService)
     {
         _processService = processService;
+        OnPropertyChanged(nameof(CanGenerateVideo));
     }
 
     partial void OnStartFrameChanged(int value)

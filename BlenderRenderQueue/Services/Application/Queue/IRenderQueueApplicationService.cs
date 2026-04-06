@@ -3,7 +3,6 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Platform.Storage;
 using BlenderRenderQueue.Services.Business.Submission;
 using BlenderRenderQueue.ViewModels;
 
@@ -31,7 +30,7 @@ public interface IRenderQueueApplicationService : IDisposable
 
     Task AddTaskAsync();
     Task AddMultipleTasksAsync();
-    void AddDroppedFiles(IEnumerable<IStorageItem> files);
+    void AddDroppedFiles(IEnumerable<string> filePaths);
     void RemoveSelectedTask(RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask);
     void RemoveTask(RenderTaskViewModel? taskToRemove, RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask);
     void RemoveAllTasks();

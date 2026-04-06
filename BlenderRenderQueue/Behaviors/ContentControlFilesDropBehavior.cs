@@ -8,7 +8,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Platform.Storage;
 
 namespace BlenderRenderQueue.Behaviors;
 
@@ -46,11 +45,11 @@ public sealed class ContentControlFilesDropBehavior : DropBehaviorBase
         {
             ExecuteCommand(dragEventArgs);
         }
-        else if (parameter is IEnumerable<IStorageItem> files)
+        else if (parameter is IEnumerable<string> filePaths)
         {
-            if (Command?.CanExecute(files) == true)
+            if (Command?.CanExecute(filePaths) == true)
             {
-                Command.Execute(files);
+                Command.Execute(filePaths);
             }
         }
     }
@@ -118,10 +117,7 @@ public sealed class ContentControlFilesDropBehavior : DropBehaviorBase
             object? targetContext,
             object? state)
         {
-            // 检查是否包含文件数据
-            return e.Data.Contains(DataFormats.Files) || 
-                   e.Data.Contains(DataFormats.FileNames) ||
-                   e.Data.Contains(DataFormats.Text);
+            return DropFileTransferHelper.ContainsFileDropData(e);
         }
 
         public override bool Execute(object? sender,
@@ -130,47 +126,14 @@ public sealed class ContentControlFilesDropBehavior : DropBehaviorBase
             object? targetContext,
             object? state)
         {
-            // 尝试获取文件
-            var files = e.Data.GetFiles();
-            if (files is not null)
+            var filePaths = DropFileTransferHelper.ExtractFilePaths(e);
+            if (filePaths.Count > 0)
             {
-                execute(files);
+                execute(filePaths);
                 return true;
             }
 
-            // 如果 GetFiles() 返回 null，尝试获取文件名
-            var fileNames = e.Data.Get(DataFormats.FileNames);
-            if (fileNames is string[] filePaths)
-            {
-                // 将文件路径转换为 IStorageItem
-                var storageFiles = filePaths
-                    .Where(File.Exists)
-                    .Select(path => new FileInfo(path))
-                    .Cast<IStorageItem>()
-                    .ToList();
-                
-                if (storageFiles.Any())
-                {
-                    execute(storageFiles);
-                    return true;
-                }
-            }
-
-            // 尝试从文本格式获取文件路径
-            var text = e.Data.Get(DataFormats.Text);
-            if (text is not string textData || string.IsNullOrEmpty(textData)) return false;
-            {
-                var lines = textData.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                var validFiles = lines
-                    .Where(line => File.Exists(line.Trim()))
-                    .Select(path => new FileInfo(path.Trim()))
-                    .Cast<IStorageItem>()
-                    .ToList();
-
-                if (!validFiles.Any()) return false;
-                execute(validFiles);
-                return true;
-            }
+            return false;
         }
 
         public override void Cancel(object? sender, RoutedEventArgs e)
@@ -190,4 +153,3 @@ public sealed class ContentControlFilesDropBehavior : DropBehaviorBase
         }
     }
 }
-

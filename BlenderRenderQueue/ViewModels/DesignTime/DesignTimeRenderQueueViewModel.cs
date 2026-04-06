@@ -141,7 +141,7 @@ internal sealed class DesignTimeQueueApplicationService : IRenderQueueApplicatio
     public bool IsBlenderServiceReady() => true;
     public Task AddTaskAsync() => Task.CompletedTask;
     public Task AddMultipleTasksAsync() => Task.CompletedTask;
-    public void AddDroppedFiles(IEnumerable<Avalonia.Platform.Storage.IStorageItem> files) { }
+    public void AddDroppedFiles(IEnumerable<string> filePaths) { }
     public void RemoveSelectedTask(RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask) { }
     public void RemoveTask(RenderTaskViewModel? taskToRemove, RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask) { }
     public void RemoveAllTasks() { }

@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Media;
-using Avalonia.Platform.Storage;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Application.Queue;
@@ -195,7 +194,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private Task AddMultipleTasks() => _queueService.AddMultipleTasksAsync();
 
     [RelayCommand]
-    private void AddDroppedFiles(IEnumerable<IStorageItem> files) => _queueService.AddDroppedFiles(files);
+    private void AddDroppedFiles(IEnumerable<string> filePaths) => _queueService.AddDroppedFiles(filePaths);
 
     [RelayCommand]
     private void RemoveSelectedTask() => _queueService.RemoveSelectedTask(SelectedTask, task => SelectedTask = task);

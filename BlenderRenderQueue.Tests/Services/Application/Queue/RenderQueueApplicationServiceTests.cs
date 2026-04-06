@@ -85,6 +85,61 @@ public sealed class RenderQueueApplicationServiceTests
         Assert.Equal(1.0, sut.Snapshot.OverallProgress01, 3);
     }
 
+    [AvaloniaFact]
+    public void AddDroppedFiles_QueuesOnlyExistingBlendFiles()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        using var otherFile = TemporaryFile.Create(".txt");
+        using var blenderExecutable = TemporaryFile.Create(".exe");
+
+        var workerHost = new FakeBlenderWorkerHost();
+        var executionService = new FakeRenderTaskExecutionService();
+        var persistenceService = new FakeDataPersistenceService();
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
+        sut.SetBlenderPath(blenderExecutable.Path);
+
+        sut.AddDroppedFiles([blendFile.Path, otherFile.Path, "/missing/file.blend"]);
+
+        Assert.Single(sut.RenderTasks);
+        Assert.Equal(blendFile.Path, sut.RenderTasks[0].BlendFilePath);
+    }
+
+    [AvaloniaFact]
+    public async Task SetBlenderPath_RefreshesExistingTasksVideoCapability()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        using var blenderExecutable = TemporaryFile.Create(".exe");
+
+        var workerHost = new FakeBlenderWorkerHost();
+        var executionService = new FakeRenderTaskExecutionService();
+        var persistenceService = new FakeDataPersistenceService();
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
+
+        await sut.SubmitTaskAsync(new LocalSubmissionRequest
+        {
+            Filepath = blendFile.Path,
+            Filename = Path.GetFileName(blendFile.Path)
+        });
+        var task = sut.RenderTasks.Single();
+        task.ScenePropertiesView.SelectedScene = new BlendSceneProperties
+        {
+            FilePath = blendFile.Path,
+            FramePath = "/tmp/render/frame_####.png"
+        };
+
+        Assert.False(task.CanGenerateVideo);
+
+        sut.SetBlenderPath(blenderExecutable.Path);
+
+        Assert.True(task.CanGenerateVideo);
+
+        sut.SetBlenderPath(string.Empty);
+
+        Assert.False(task.CanGenerateVideo);
+    }
+
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 2000)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
