@@ -238,6 +238,16 @@ ClientBin/
 *.dbmdl
 *.dbproj.schemaview
 *.jfm
+
+# Release artifacts
+Install/Windows/Publish/
+Install/Windows/Output/
+Install/macOS/build/
+Install/macOS/publish/
+Install/macOS/staging/
+Install/macOS/output/
+Install/macOS/symbols/
+*.dmg
 *.pfx
 *.publishsettings
 orleans.codegen.cs
