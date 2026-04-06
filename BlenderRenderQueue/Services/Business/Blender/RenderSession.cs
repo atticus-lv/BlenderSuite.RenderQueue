@@ -18,6 +18,8 @@ public sealed class RenderSession : IRenderSession
 {
     private readonly IBlenderProcess _process;
     private readonly IRenderOutputParser _parser;
+    private readonly object _stopLock = new();
+    private Task? _stopTask;
     private bool _disposed;
 
     public event Action<RenderEvent>? OnEvent;
@@ -53,14 +55,27 @@ public sealed class RenderSession : IRenderSession
 
     public void Cancel()
     {
+        _ = EnsureStopRequested();
+    }
+
+    private Task EnsureStopRequested()
+    {
+        lock (_stopLock)
+        {
+            _stopTask ??= StopProcessAsync();
+            return _stopTask;
+        }
+    }
+
+    private async Task StopProcessAsync()
+    {
         try
         {
-            // 使用 Task.Run 来避免死锁
-            Task.Run(async () => await _process.StopAsync()).Wait(5000); // 5秒超时
+            await _process.StopAsync();
         }
         catch
         {
-            /* 交给上层决定是否处理异常 */
+            // ignore stop failures to preserve existing Cancel semantics
         }
     }
 

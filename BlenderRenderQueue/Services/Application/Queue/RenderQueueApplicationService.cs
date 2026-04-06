@@ -27,6 +27,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
     private readonly IRenderTaskExecutionService _executionService;
     private readonly IDataPersistenceService _dataPersistenceService;
     private readonly IRenderLogService _logService;
+    private readonly SemaphoreSlim _taskPropertiesLoadLimiter = new(1, 1);
     private readonly List<Task> _runningTasks = [];
     private readonly object _queueLock = new();
     private readonly object _saveStateLock = new();
@@ -520,25 +521,16 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
             if (IsBlenderServiceReady())
             {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await newTask.LoadFilePropertiesAsync(_blenderPath!);
-                        if (savedOverrideScene && !string.IsNullOrEmpty(savedSelectedSceneName))
+                _ = LoadTaskPropertiesWithLimitAsync(
+                    newTask,
+                    postLoadAsync: savedOverrideScene && !string.IsNullOrEmpty(savedSelectedSceneName)
+                        ? () => Dispatcher.UIThread.InvokeAsync(() =>
                         {
-                            Dispatcher.UIThread.Post(() =>
-                            {
-                                newTask.OverrideScene = savedOverrideScene;
-                                newTask.SelectedSceneName = savedSelectedSceneName;
-                            });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[RenderQueueApplicationService] Failed to load copied task properties: {ex.Message}");
-                    }
-                });
+                            newTask.OverrideScene = savedOverrideScene;
+                            newTask.SelectedSceneName = savedSelectedSceneName;
+                        }).GetTask()
+                        : null,
+                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load copied task properties: {ex.Message}"));
             }
 
             StatusMessageChanged?.Invoke(this,
@@ -605,17 +597,10 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
                 if (IsBlenderServiceReady())
                 {
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await task.LoadFilePropertiesAsync(_blenderPath!);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"[RenderQueueApplicationService] Failed to load submitted task properties: {ex.Message}");
-                        }
-                    }, cancellationToken);
+                    _ = LoadTaskPropertiesWithLimitAsync(
+                        task,
+                        onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load submitted task properties: {ex.Message}"),
+                        cancellationToken: cancellationToken);
                 }
 
                 StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPluginDetected"]);
@@ -678,36 +663,26 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                 var savedOverrideScene = taskData.RenderTask.Override?.OverrideScene;
                 if (IsBlenderServiceReady())
                 {
-                    _ = Task.Run(async () =>
+                    Dispatcher.UIThread.Post(() =>
                     {
-                        try
-                        {
-                            Dispatcher.UIThread.Post(() =>
-                            {
-                                task.ScenePropertiesView.IsLoading = true;
-                                task.ScenePropertiesView.LoadingMessage = "SceneProperties_LoadingFileProperties";
-                            });
-
-                            await task.LoadFilePropertiesAsync(_blenderPath!);
-
-                            if (savedOverrideScene != null)
-                            {
-                                Dispatcher.UIThread.Post(() =>
-                                {
-                                    task.OverrideScene = true;
-                                    task.SelectedSceneName = savedOverrideScene.SceneName;
-                                });
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Dispatcher.UIThread.Post(() =>
-                            {
-                                task.ScenePropertiesView.IsLoading = false;
-                                task.ScenePropertiesView.ErrorMessage = $"加载失败: {ex.Message}";
-                            });
-                        }
+                        task.ScenePropertiesView.IsLoading = true;
+                        task.ScenePropertiesView.LoadingMessage = "SceneProperties_LoadingFileProperties";
                     });
+
+                    _ = LoadTaskPropertiesWithLimitAsync(
+                        task,
+                        postLoadAsync: savedOverrideScene != null
+                            ? () => Dispatcher.UIThread.InvokeAsync(() =>
+                            {
+                                task.OverrideScene = true;
+                                task.SelectedSceneName = savedOverrideScene.SceneName;
+                            }).GetTask()
+                            : null,
+                        onError: ex => Dispatcher.UIThread.Post(() =>
+                        {
+                            task.ScenePropertiesView.IsLoading = false;
+                            task.ScenePropertiesView.ErrorMessage = $"加载失败: {ex.Message}";
+                        }));
                 }
             }
 
@@ -735,17 +710,9 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
             if (IsBlenderServiceReady())
             {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await task.LoadFilePropertiesAsync(_blenderPath!);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[RenderQueueApplicationService] Failed to load task properties: {ex.Message}");
-                    }
-                });
+                _ = LoadTaskPropertiesWithLimitAsync(
+                    task,
+                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load task properties: {ex.Message}"));
             }
         }
         catch (Exception ex)
@@ -1123,6 +1090,43 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                 RenderTask = CreateRenderTaskInfo(task)
             }).ToList()
         };
+    }
+
+    private async Task LoadTaskPropertiesWithLimitAsync(
+        RenderTaskViewModel task,
+        Func<Task>? postLoadAsync = null,
+        Action<Exception>? onError = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _taskPropertiesLoadLimiter.WaitAsync(cancellationToken);
+            try
+            {
+                if (_disposed || !IsBlenderServiceReady())
+                {
+                    return;
+                }
+
+                await task.LoadFilePropertiesAsync(_blenderPath!);
+                if (postLoadAsync != null)
+                {
+                    await postLoadAsync();
+                }
+            }
+            finally
+            {
+                _taskPropertiesLoadLimiter.Release();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // ignored
+        }
+        catch (Exception ex)
+        {
+            onError?.Invoke(ex);
+        }
     }
 
     private static RenderTaskInfo CreateRenderTaskInfo(RenderTaskViewModel task)

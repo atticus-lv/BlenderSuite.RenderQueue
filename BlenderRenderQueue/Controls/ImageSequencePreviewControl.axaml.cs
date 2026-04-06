@@ -52,7 +52,10 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     private ObservableCollection<string> _imageFiles = new();
     private Bitmap?[] _imageCache = [];
     private FileSystemWatcher? _fileWatcher;
-    private readonly object _lockObject = new object();
+    private readonly SemaphoreSlim _sequenceLoadLock = new(1, 1);
+    private CancellationTokenSource? _refreshDebounceCts;
+    private int _loadRequestVersion;
+    private bool _disposed;
 
     public static readonly DirectProperty<ImageSequencePreviewControl, string?> FolderPathProperty =
         AvaloniaProperty.RegisterDirect<ImageSequencePreviewControl, string?>(
@@ -139,7 +142,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         {
             if (SetAndRaise(CurrentFrameProperty, ref _currentFrame, value))
             {
-                UpdateCurrentImage();
+                _ = UpdateCurrentImageAsync();
                 UpdateFrameTexts();
             }
         }
@@ -216,6 +219,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
         // 停止之前的文件监控
         StopFileWatcher();
+        CancelPendingRefresh();
 
         if (string.IsNullOrEmpty(newPath))
         {
@@ -251,36 +255,49 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         }
 
         Console.WriteLine($"[ImageSequencePreviewControl] Loading image sequence from: '{directoryPath}'");
-        LoadImageSequence(directoryPath);
+        _ = LoadImageSequenceAsync(directoryPath);
 
         // 启动文件监控
         StartFileWatcher(directoryPath);
     }
 
-    private async void LoadImageSequence(string folderPath)
+    private async Task LoadImageSequenceAsync(string folderPath)
     {
-        IsLoading = true;
-        HasImages = false;
-
-        // 保存当前帧位置，用于在重新加载后恢复
+        var requestVersion = Interlocked.Increment(ref _loadRequestVersion);
         var previousCurrentFrame = _currentFrame;
 
+        await _sequenceLoadLock.WaitAsync();
         try
         {
+            if (_disposed || requestVersion != _loadRequestVersion)
+            {
+                return;
+            }
+
+            IsLoading = true;
+            HasImages = false;
             Console.WriteLine($"[ImageSequencePreviewControl] LoadImageSequence: '{folderPath}'");
 
-            // 获取所有jpg和png文件，按文件名排序
-            var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
-            var allFiles = Directory.GetFiles(folderPath);
-            Console.WriteLine($"[ImageSequencePreviewControl] Found {allFiles.Length} total files in directory");
+            var files = await Task.Run(() =>
+            {
+                var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                var allFiles = Directory.GetFiles(folderPath);
+                Console.WriteLine($"[ImageSequencePreviewControl] Found {allFiles.Length} total files in directory");
 
-            var files = allFiles
-                .Where(file => imageExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
-                .OrderBy(file => file)
-                .ToList();
+                return allFiles
+                    .Where(file => imageExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
+                    .OrderBy(file => file)
+                    .ToList();
+            });
+
+            if (_disposed || requestVersion != _loadRequestVersion)
+            {
+                return;
+            }
 
             Console.WriteLine($"[ImageSequencePreviewControl] Found {files.Count} image files");
-            
+
+            DisposeImageCache();
             _imageFiles.Clear();
             foreach (var file in files)
             {
@@ -295,9 +312,8 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
                 var targetFrame = (previousCurrentFrame >= 0 && previousCurrentFrame < _imageFiles.Count)
                     ? previousCurrentFrame
                     : 0;
-                CurrentFrame = targetFrame;
-
                 _imageCache = new Bitmap?[_imageFiles.Count];
+                CurrentFrame = targetFrame;
 
                 Console.WriteLine(
                     $"[ImageSequencePreviewControl] Successfully loaded {_imageFiles.Count} images, restored to frame {targetFrame}");
@@ -322,26 +338,26 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         finally
         {
             IsLoading = false;
+            _sequenceLoadLock.Release();
         }
     }
 
-    private async void UpdateCurrentImage()
+    private Task UpdateCurrentImageAsync()
     {
         if (_imageFiles.Count == 0 || _currentFrame < 0 || _currentFrame >= _imageFiles.Count)
         {
             CurrentImage = null;
-            return;
+            return Task.CompletedTask;
         }
 
         // 如果图片已缓存，直接使用
         if (_imageCache[_currentFrame] != null)
         {
             CurrentImage = _imageCache[_currentFrame];
-            return;
+            return Task.CompletedTask;
         }
 
-        // 异步加载图片
-        await LoadImageAsync(_currentFrame);
+        return LoadImageAsync(_currentFrame);
     }
 
     private Task LoadImageAsync(int frameIndex)
@@ -387,17 +403,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
     private void ClearImages()
     {
-        // 释放缓存的图片
-        if (_imageCache != null)
-        {
-            foreach (var bitmap in _imageCache)
-            {
-                bitmap?.Dispose();
-            }
-
-            _imageCache = [];
-        }
-
+        DisposeImageCache();
         _imageFiles.Clear();
         HasImages = false;
         MaxFrame = 0;
@@ -408,6 +414,8 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        CancelPendingRefresh();
+        Interlocked.Increment(ref _loadRequestVersion);
         ClearImages();
         StopFileWatcher();
     }
@@ -471,19 +479,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             return;
 
         Console.WriteLine($"[ImageSequencePreviewControl] File {e.ChangeType}: {e.FullPath}");
-
-        // 使用防抖动机制，避免频繁更新
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(500); // 等待500ms，避免文件正在被写入时读取
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                lock (_lockObject)
-                {
-                    RefreshImageSequence();
-                }
-            });
-        });
+        ScheduleRefresh();
     }
 
     private void OnFileRenamed(object sender, RenamedEventArgs e)
@@ -497,19 +493,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             return;
 
         Console.WriteLine($"[ImageSequencePreviewControl] File renamed: {e.OldFullPath} -> {e.FullPath}");
-
-        // 使用防抖动机制
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(500);
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                lock (_lockObject)
-                {
-                    RefreshImageSequence();
-                }
-            });
-        });
+        ScheduleRefresh();
     }
 
     private void OnFileWatcherError(object sender, ErrorEventArgs e)
@@ -518,7 +502,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         // 可以在这里添加错误处理逻辑，比如重新启动监控器
     }
 
-    private void RefreshImageSequence()
+    private async Task RefreshImageSequenceAsync()
     {
         if (string.IsNullOrEmpty(_folderPath))
             return;
@@ -531,7 +515,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             var directoryPath = File.Exists(_folderPath) ? Path.GetDirectoryName(_folderPath) : _folderPath;
             if (!string.IsNullOrEmpty(directoryPath) && Directory.Exists(directoryPath))
             {
-                LoadImageSequence(directoryPath);
+                await LoadImageSequenceAsync(directoryPath);
             }
         }
         catch (Exception ex)
@@ -542,8 +526,12 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
+        CancelPendingRefresh();
         StopFileWatcher();
         ClearImages();
+        _sequenceLoadLock.Dispose();
+        _refreshDebounceCts?.Dispose();
     }
 
     private void PreviewImage_DoubleTapped(object? sender, TappedEventArgs e)
@@ -589,5 +577,48 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         {
             FileSystemHelper.OpenFileDirectory(FolderPath);
         }
+    }
+
+    private void ScheduleRefresh()
+    {
+        CancelPendingRefresh();
+        var cts = new CancellationTokenSource();
+        _refreshDebounceCts = cts;
+        _ = DebounceRefreshAsync(cts.Token);
+    }
+
+    private async Task DebounceRefreshAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(500, cancellationToken);
+            if (_disposed || cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            await Dispatcher.UIThread.InvokeAsync(async () => await RefreshImageSequenceAsync());
+        }
+        catch (OperationCanceledException)
+        {
+            // ignored
+        }
+    }
+
+    private void CancelPendingRefresh()
+    {
+        _refreshDebounceCts?.Cancel();
+        _refreshDebounceCts?.Dispose();
+        _refreshDebounceCts = null;
+    }
+
+    private void DisposeImageCache()
+    {
+        foreach (var bitmap in _imageCache)
+        {
+            bitmap?.Dispose();
+        }
+
+        _imageCache = [];
     }
 }
