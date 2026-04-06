@@ -6,43 +6,62 @@
              xmlns:logVm="clr-namespace:BlenderRenderQueue.ViewModels.Logs"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              mc:Ignorable="d"
              x:Class="BlenderRenderQueue.Views.GlobalLogView"
              x:CompileBindings="False">
 
     <Grid RowDefinitions="Auto,*" Margin="8">
         <StackPanel Spacing="8">
-            <TextBlock Text="Logs" FontSize="22" FontWeight="SemiBold" />
+            <TextBlock Text="{i18n:Localize GlobalLog_Title}" FontSize="22" FontWeight="SemiBold" />
             <WrapPanel Orientation="Horizontal" ItemWidth="220">
-                <TextBox Watermark="Search message or path"
+                <TextBox Watermark="{i18n:Localize GlobalLog_Search}"
                          Text="{Binding SearchText}"
                          MinWidth="220" />
                 <ComboBox ItemsSource="{Binding ScopeOptions}"
                           SelectedItem="{Binding SelectedScope}"
-                          MinWidth="180" />
+                          MinWidth="180">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ., Converter={StaticResource LocalizeConverter}}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
                 <ComboBox ItemsSource="{Binding LevelOptions}"
                           SelectedItem="{Binding SelectedLevel}"
-                          MinWidth="180" />
+                          MinWidth="180">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ., Converter={StaticResource LocalizeConverter}}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
                 <ComboBox ItemsSource="{Binding SessionOptions}"
                           SelectedItem="{Binding SelectedSession}"
-                          MinWidth="180" />
+                          MinWidth="180">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ., Converter={StaticResource LocalizeConverter}}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
                 <ComboBox ItemsSource="{Binding TaskOptions}"
                           SelectedItem="{Binding SelectedTask}"
                           MinWidth="220">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Label}" />
+                            <TextBlock Text="{Binding DisplayLabel}" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-                <Button Content="Refresh" Command="{Binding RefreshEntriesCommand}" Classes="Rounded" />
-                <Button Content="Clear History" Command="{Binding ClearHistoryCommand}" Classes="Rounded" />
+                <Button Content="{i18n:Localize Queue_Refresh}" Command="{Binding RefreshEntriesCommand}" Classes="Rounded" />
+                <Button Content="{i18n:Localize GlobalLog_ClearHistory}" Command="{Binding ClearHistoryCommand}" Classes="Rounded" />
             </WrapPanel>
         </StackPanel>
 
         <Border Grid.Row="1" Margin="0 12 0 0" Padding="8">
             <Grid RowDefinitions="Auto,*">
-                <TextBlock Text="No log events match the current filters."
+                <TextBlock Text="{i18n:Localize GlobalLog_NoEntries}"
                            IsVisible="{Binding !HasEntries}"
                            Opacity="0.7"
                            Margin="8" />
@@ -66,7 +85,7 @@
                                             </Border>
                                             <SelectableTextBlock Grid.Column="3" Text="{Binding TaskText}" Opacity="0.7" />
                                             <Button Grid.Column="4"
-                                                    Content="Open Task"
+                                                    Content="{i18n:Localize GlobalLog_OpenTask}"
                                                     Command="{Binding NavigateToTaskCommand}"
                                                     Classes="Rounded"
                                                     IsVisible="{Binding HasTask}" />

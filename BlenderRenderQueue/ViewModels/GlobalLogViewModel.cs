@@ -6,19 +6,20 @@ using System.Linq;
 using CommunityToolkit.Mvvm.Input;
 using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.ViewModels.Logs;
+using AppLocalizer = BlenderRenderQueue.Localizer.Localizer;
 
 namespace BlenderRenderQueue.ViewModels;
 
 public sealed class GlobalLogViewModel : ViewModelBase
 {
-    private const string AllScopes = "All scopes";
-    private const string DefaultLevels = "Info / Warning / Error";
-    private const string AllLevels = "All levels";
-    private const string ErrorsOnly = "Errors only";
-    private const string WarningsAndErrors = "Warnings + Errors";
-    private const string CurrentSession = "Current session";
-    private const string HistoryOnly = "History only";
-    private const string AllSessions = "All sessions";
+    private const string AllScopes = "GlobalLog_Filter_AllScopes";
+    private const string DefaultLevels = "GlobalLog_Filter_DefaultLevels";
+    private const string AllLevels = "GlobalLog_Filter_AllLevels";
+    private const string ErrorsOnly = "GlobalLog_Filter_ErrorsOnly";
+    private const string WarningsAndErrors = "GlobalLog_Filter_WarningsAndErrors";
+    private const string CurrentSession = "GlobalLog_Filter_CurrentSession";
+    private const string HistoryOnly = "GlobalLog_Filter_HistoryOnly";
+    private const string AllSessions = "GlobalLog_Filter_AllSessions";
 
     private readonly IRenderLogService _logService;
     private bool _isRefreshing;
@@ -27,13 +28,13 @@ public sealed class GlobalLogViewModel : ViewModelBase
         new[]
         {
             AllScopes,
-            nameof(RenderLogScope.Task),
-            nameof(RenderLogScope.Queue),
-            nameof(RenderLogScope.Worker),
-            nameof(RenderLogScope.Recovery),
-            nameof(RenderLogScope.Submission),
-            nameof(RenderLogScope.System),
-            nameof(RenderLogScope.Video)
+            "RenderLog_Scope_Task",
+            "RenderLog_Scope_Queue",
+            "RenderLog_Scope_Worker",
+            "RenderLog_Scope_Recovery",
+            "RenderLog_Scope_Submission",
+            "RenderLog_Scope_System",
+            "RenderLog_Scope_Video"
         });
     private ObservableCollection<string> _levelOptions = new(
         new[]
@@ -257,7 +258,7 @@ public sealed class GlobalLogViewModel : ViewModelBase
 
         IReadOnlyCollection<RenderLogScope>? scopes = null;
         if (!string.Equals(SelectedScope, AllScopes, StringComparison.Ordinal) &&
-            Enum.TryParse<RenderLogScope>(SelectedScope, out var scope))
+            TryParseScopeKey(SelectedScope, out var scope))
         {
             scopes = new RenderLogScope[] { scope };
         }
@@ -285,9 +286,18 @@ public sealed class GlobalLogViewModel : ViewModelBase
         Avalonia.Threading.Dispatcher.UIThread.Post(RefreshEntries);
     }
 
+    private static bool TryParseScopeKey(string selectedScope, out RenderLogScope scope)
+    {
+        const string prefix = "RenderLog_Scope_";
+        var scopeName = selectedScope.StartsWith(prefix, StringComparison.Ordinal)
+            ? selectedScope[prefix.Length..]
+            : selectedScope;
+        return Enum.TryParse(scopeName, out scope);
+    }
+
     public sealed class TaskFilterOption
     {
-        public static TaskFilterOption All { get; } = new(null, "All tasks");
+        public static TaskFilterOption All { get; } = new(null, "GlobalLog_Filter_AllTasks");
 
         public TaskFilterOption(Guid? taskId, string label)
         {
@@ -297,5 +307,7 @@ public sealed class GlobalLogViewModel : ViewModelBase
 
         public Guid? TaskId { get; }
         public string Label { get; }
+        public bool IsLocalizationKey => TaskId == null;
+        public string DisplayLabel => IsLocalizationKey ? AppLocalizer.Instance[Label] : Label;
     }
 }

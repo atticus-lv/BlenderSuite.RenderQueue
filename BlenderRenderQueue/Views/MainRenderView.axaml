@@ -62,7 +62,7 @@
                     </suki:SukiSideMenuItem.PageContent>
                 </suki:SukiSideMenuItem>
 
-                <suki:SukiSideMenuItem x:Name="LogsMenuItem" Header="Logs" Classes="Compact">
+                <suki:SukiSideMenuItem x:Name="LogsMenuItem" Header="{i18n:Localize MainRender_Logs}" Classes="Compact">
                     <suki:SukiSideMenuItem.Icon>
                         <avalonia:MaterialIcon Kind="TextBoxSearch" Width="24" Height="24" />
                     </suki:SukiSideMenuItem.Icon>

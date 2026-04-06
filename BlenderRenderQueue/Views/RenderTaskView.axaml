@@ -22,10 +22,9 @@
     </Design.DataContext>
 
 
-    <Grid>
-        <StackPanel Spacing="8" HorizontalAlignment="Stretch">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
 
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="8" Margin="8">
                     <StackPanel Orientation="Horizontal">
                         <SelectableTextBlock Text="{Binding BlendFileName}" FontWeight="Bold" FontSize="20"
@@ -110,7 +109,7 @@
                 </StackPanel>
             </Grid>
 
-            <suki:GlassCard IsAnimated="False">
+            <suki:GlassCard Grid.Row="1" IsAnimated="False">
                 <TabControl IsVisible="{Binding IsValid}" Name="TabControl">
                     <TabItem Header="{i18n:Localize RenderTask_SceneInfo}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8 4">
@@ -120,8 +119,9 @@
                     </TabItem>
                     <TabItem Header="{i18n:Localize RenderTask_RenderSettings}">
                         <!-- 渲染设置 -->
-                        <suki:BusyArea IsBusy="{Binding !CanModifyEnable}">
-                            <StackPanel Spacing="12" Margin="8 4">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0">
+                            <suki:BusyArea IsBusy="{Binding !CanModifyEnable}">
+                                <StackPanel Spacing="12" Margin="8 4">
                                 <!-- 动画渲染设置 -->
                                 <StackPanel Spacing="8">
                                     <CheckBox Content="{i18n:Localize RenderTask_RenderAnimation}"
@@ -211,8 +211,9 @@
                                     </StackPanel>
                                 </StackPanel>
 
-                            </StackPanel>
-                        </suki:BusyArea>
+                                </StackPanel>
+                            </suki:BusyArea>
+                        </ScrollViewer>
 
                     </TabItem>
                     <TabItem Header="{i18n:Localize RenderTask_OutputPreview}">
@@ -233,16 +234,16 @@
                                     Content="{Binding LogPauseButtonText, Converter={StaticResource LocalizeConverter}}"
                                     Command="{Binding ToggleLogPauseCommand}"
                                     Classes="Rounded" />
-                                <Button Content="Copy Diagnostics"
+                                <Button Content="{i18n:Localize RenderTask_CopyDiagnostics}"
                                         Command="{Binding CopyDebugDiagnosticsCommand}"
                                         Classes="Rounded"
                                         IsVisible="{Binding HasDebugEntries}" />
                             </StackPanel>
 
                             <TabControl Grid.Row="1" Margin="4 10">
-                                <TabItem Header="Timeline">
+                                <TabItem Header="{i18n:Localize RenderTask_LogTimeline}">
                                     <Grid RowDefinitions="Auto,*">
-                                        <TextBlock Text="关键渲染里程碑会显示在这里。"
+                                        <TextBlock Text="{i18n:Localize RenderTask_TimelineEmpty}"
                                                    Margin="8"
                                                    Opacity="0.65"
                                                    IsVisible="{Binding !HasTimelineEntries}" />
@@ -274,9 +275,9 @@
                                     </Grid>
                                 </TabItem>
 
-                                <TabItem Header="Debug">
+                                <TabItem Header="{i18n:Localize RenderTask_LogDebug}">
                                     <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                                        <TextBlock Text="原始诊断输出、解析失败和 worker 异常摘要会显示在这里。"
+                                        <TextBlock Text="{i18n:Localize RenderTask_DebugEmpty}"
                                                    Margin="8"
                                                    Opacity="0.65"
                                                    IsVisible="{Binding !HasDebugEntries}" />
@@ -325,7 +326,7 @@
                     </TabItem>
                 </TabControl>
             </suki:GlassCard>
-            <suki:GlassCard IsAnimated="False" IsVisible="{Binding !#TabControl.SelectedIndex}">
+            <suki:GlassCard Grid.Row="2" IsAnimated="False" IsVisible="{Binding !#TabControl.SelectedIndex}">
                 <StackPanel>
 
                     <Grid ColumnDefinitions="*,Auto" Margin="4">
@@ -365,8 +366,5 @@
                     </Grid>
                 </StackPanel>
             </suki:GlassCard>
-        </StackPanel>
-
-
     </Grid>
 </UserControl>
