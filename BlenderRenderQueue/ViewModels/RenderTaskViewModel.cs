@@ -1550,8 +1550,9 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             if (ShouldIncludeInDebug(logEvent))
             {
-                DebugEntries.Insert(0, new TaskLogEntryViewModel(logEvent));
-                RefreshDebugText();
+                var debugEntry = new TaskLogEntryViewModel(logEvent);
+                DebugEntries.Insert(0, debugEntry);
+                AppendDebugText(debugEntry);
             }
 
             OnPropertyChanged(nameof(HasTimelineEntries));
@@ -1639,8 +1640,22 @@ public partial class RenderTaskViewModel : ViewModelBase
             Environment.NewLine,
             DebugEntries
                 .OrderBy(entry => entry.Event.Timestamp)
-                .Select(entry => $"[{entry.Event.Timestamp.ToLocalTime():HH:mm:ss}] [{entry.LevelText}] {entry.Message}"));
+                .Select(FormatDebugLine));
         OutputLog = DebugLogText;
+    }
+
+    private void AppendDebugText(TaskLogEntryViewModel entry)
+    {
+        var line = FormatDebugLine(entry);
+        DebugLogText = string.IsNullOrEmpty(DebugLogText)
+            ? line
+            : string.Concat(DebugLogText, Environment.NewLine, line);
+        OutputLog = DebugLogText;
+    }
+
+    private static string FormatDebugLine(TaskLogEntryViewModel entry)
+    {
+        return $"[{entry.Event.Timestamp.ToLocalTime():HH:mm:ss}] [{entry.LevelText}] {entry.Message}";
     }
 
     private static (RenderLogLevel Level, RenderLogScope Scope, string Message, string Audience, string Kind)

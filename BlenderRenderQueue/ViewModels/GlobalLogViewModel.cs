@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.ViewModels.Logs;
@@ -10,7 +11,7 @@ using AppLocalizer = BlenderRenderQueue.Localizer.Localizer;
 
 namespace BlenderRenderQueue.ViewModels;
 
-public sealed class GlobalLogViewModel : ViewModelBase
+public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 {
     private const string AllScopes = "GlobalLog_Filter_AllScopes";
     private const string DefaultLevels = "GlobalLog_Filter_DefaultLevels";
@@ -20,8 +21,10 @@ public sealed class GlobalLogViewModel : ViewModelBase
     private const string CurrentSession = "GlobalLog_Filter_CurrentSession";
     private const string HistoryOnly = "GlobalLog_Filter_HistoryOnly";
     private const string AllSessions = "GlobalLog_Filter_AllSessions";
+    private static readonly TimeSpan RefreshDebounce = TimeSpan.FromMilliseconds(150);
 
     private readonly IRenderLogService _logService;
+    private readonly DispatcherTimer _refreshTimer;
     private bool _isRefreshing;
     private ObservableCollection<GlobalLogEntryViewModel> _entries = new();
     private ObservableCollection<string> _scopeOptions = new(
@@ -61,7 +64,9 @@ public sealed class GlobalLogViewModel : ViewModelBase
     public GlobalLogViewModel(IRenderLogService logService)
     {
         _logService = logService;
-        RefreshEntriesCommand = new RelayCommand(RefreshEntries);
+        _refreshTimer = new DispatcherTimer { Interval = RefreshDebounce };
+        _refreshTimer.Tick += OnRefreshTimerTick;
+        RefreshEntriesCommand = new RelayCommand(() => RequestRefresh(immediate: true));
         ClearHistoryCommand = new RelayCommand(ClearHistory);
         ClearAllCommand = new RelayCommand(ClearAll);
         _logService.LogAppended += OnLogAppended;
@@ -131,7 +136,7 @@ public sealed class GlobalLogViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedScope, value) && !_isRefreshing)
             {
-                RefreshEntries();
+                RequestRefresh();
             }
         }
     }
@@ -143,7 +148,7 @@ public sealed class GlobalLogViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedLevel, value) && !_isRefreshing)
             {
-                RefreshEntries();
+                RequestRefresh();
             }
         }
     }
@@ -155,7 +160,7 @@ public sealed class GlobalLogViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedSession, value) && !_isRefreshing)
             {
-                RefreshEntries();
+                RequestRefresh();
             }
         }
     }
@@ -167,7 +172,7 @@ public sealed class GlobalLogViewModel : ViewModelBase
         {
             if (SetProperty(ref _selectedTask, value) && !_isRefreshing)
             {
-                RefreshEntries();
+                RequestRefresh();
             }
         }
     }
@@ -179,7 +184,7 @@ public sealed class GlobalLogViewModel : ViewModelBase
         {
             if (SetProperty(ref _searchText, value) && !_isRefreshing)
             {
-                RefreshEntries();
+                RequestRefresh();
             }
         }
     }
@@ -194,6 +199,8 @@ public sealed class GlobalLogViewModel : ViewModelBase
 
     public void Dispose()
     {
+        _refreshTimer.Stop();
+        _refreshTimer.Tick -= OnRefreshTimerTick;
         _logService.LogAppended -= OnLogAppended;
     }
 
@@ -203,8 +210,7 @@ public sealed class GlobalLogViewModel : ViewModelBase
         try
         {
             var events = _logService.GetEvents(BuildProjection());
-            Entries = new ObservableCollection<GlobalLogEntryViewModel>(
-                events.Select(logEvent => new GlobalLogEntryViewModel(logEvent, _logService.CurrentSessionId, NavigateToTask)));
+            ReplaceEntries(events);
             RefreshTaskOptions(events);
         }
         finally
@@ -216,12 +222,14 @@ public sealed class GlobalLogViewModel : ViewModelBase
     private void ClearHistory()
     {
         _logService.ClearHistory();
+        _refreshTimer.Stop();
         RefreshEntries();
     }
 
     private void ClearAll()
     {
         _logService.ClearAll();
+        _refreshTimer.Stop();
         RefreshEntries();
     }
 
@@ -241,7 +249,7 @@ public sealed class GlobalLogViewModel : ViewModelBase
             })
             .OrderBy(option => option.Label, StringComparer.OrdinalIgnoreCase));
 
-        TaskOptions = new ObservableCollection<TaskFilterOption>(options);
+        ReplaceTaskOptions(options);
         var existing = TaskOptions.FirstOrDefault(option => option.TaskId == SelectedTask.TaskId) ?? TaskOptions[0];
         SetProperty(ref _selectedTask, existing, nameof(SelectedTask));
     }
@@ -283,7 +291,24 @@ public sealed class GlobalLogViewModel : ViewModelBase
 
     private void OnLogAppended(object? sender, RenderLogEvent e)
     {
-        Avalonia.Threading.Dispatcher.UIThread.Post(RefreshEntries);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_isRefreshing)
+            {
+                RequestRefresh();
+                return;
+            }
+
+            if (TryAppendEntry(e))
+            {
+                return;
+            }
+
+            if (_selectedTask.TaskId.HasValue && _selectedTask.TaskId == e.TaskId)
+            {
+                RequestRefresh();
+            }
+        });
     }
 
     private static bool TryParseScopeKey(string selectedScope, out RenderLogScope scope)
@@ -293,6 +318,84 @@ public sealed class GlobalLogViewModel : ViewModelBase
             ? selectedScope[prefix.Length..]
             : selectedScope;
         return Enum.TryParse(scopeName, out scope);
+    }
+
+    private void RequestRefresh(bool immediate = false)
+    {
+        if (immediate)
+        {
+            _refreshTimer.Stop();
+            RefreshEntries();
+            return;
+        }
+
+        _refreshTimer.Stop();
+        _refreshTimer.Start();
+    }
+
+    private void OnRefreshTimerTick(object? sender, EventArgs e)
+    {
+        _refreshTimer.Stop();
+        RefreshEntries();
+    }
+
+    private bool TryAppendEntry(RenderLogEvent logEvent)
+    {
+        var projection = BuildProjection();
+        if (!projection.Matches(logEvent, _logService.CurrentSessionId))
+        {
+            return false;
+        }
+
+        Entries.Insert(0, new GlobalLogEntryViewModel(logEvent, _logService.CurrentSessionId, NavigateToTask));
+        EnsureTaskOption(logEvent);
+        OnPropertyChanged(nameof(HasEntries));
+        return true;
+    }
+
+    private void EnsureTaskOption(RenderLogEvent logEvent)
+    {
+        if (!logEvent.TaskId.HasValue ||
+            TaskOptions.Any(option => option.TaskId == logEvent.TaskId))
+        {
+            return;
+        }
+
+        var label = !string.IsNullOrWhiteSpace(logEvent.BlendFilePath)
+            ? Path.GetFileName(logEvent.BlendFilePath)
+            : logEvent.TaskId.Value.ToString("D");
+        var option = new TaskFilterOption(logEvent.TaskId, label);
+        var insertIndex = 1;
+        while (insertIndex < TaskOptions.Count &&
+               StringComparer.OrdinalIgnoreCase.Compare(TaskOptions[insertIndex].Label, option.Label) < 0)
+        {
+            insertIndex++;
+        }
+
+        TaskOptions.Insert(insertIndex, option);
+    }
+
+    private void ReplaceEntries(IEnumerable<RenderLogEvent> events)
+    {
+        Entries.Clear();
+        foreach (var entry in events.Select(logEvent =>
+                     new GlobalLogEntryViewModel(logEvent, _logService.CurrentSessionId, NavigateToTask)))
+        {
+            Entries.Add(entry);
+        }
+
+        OnPropertyChanged(nameof(HasEntries));
+    }
+
+    private void ReplaceTaskOptions(IEnumerable<TaskFilterOption> options)
+    {
+        TaskOptions.Clear();
+        foreach (var option in options)
+        {
+            TaskOptions.Add(option);
+        }
+
+        OnPropertyChanged(nameof(TaskOptions));
     }
 
     public sealed class TaskFilterOption
