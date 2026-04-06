@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -19,6 +20,8 @@ public partial class App : Application
 {
     private ILocalSubmissionHost? _localSubmissionHost;
     private IRenderLogService? _renderLogService;
+    private readonly object _localSubmissionHostStopLock = new();
+    private Task? _localSubmissionHostStopTask;
     private bool _localSubmissionHostStopped;
 
     public override void Initialize()
@@ -98,22 +101,70 @@ public partial class App : Application
 
     private void StopLocalSubmissionHost()
     {
-        if (_localSubmissionHostStopped)
-        {
-            return;
-        }
+        _ = StopLocalSubmissionHostAsync();
+    }
 
-        _localSubmissionHostStopped = true;
+    private Task StopLocalSubmissionHostAsync()
+    {
+        lock (_localSubmissionHostStopLock)
+        {
+            if (_localSubmissionHostStopTask != null)
+            {
+                return _localSubmissionHostStopTask;
+            }
 
-        try
-        {
-            _localSubmissionHost?.ShutdownAsync().GetAwaiter().GetResult();
-            _localSubmissionHost?.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[App] Failed to stop local submission host: {ex.Message}");
-            _renderLogService?.Write(RenderLogLevel.Warning, RenderLogScope.Submission, $"停止本地 submission host 失败: {ex.Message}", source: nameof(App));
+            if (_localSubmissionHostStopped)
+            {
+                return Task.CompletedTask;
+            }
+
+            _localSubmissionHostStopped = true;
+            var host = _localSubmissionHost;
+            _localSubmissionHost = null;
+
+            _localSubmissionHostStopTask = Task.Run(async () =>
+            {
+                if (host == null)
+                {
+                    return;
+                }
+
+                try
+                {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                    await host.ShutdownAsync(cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    _renderLogService?.Write(
+                        RenderLogLevel.Warning,
+                        RenderLogScope.Submission,
+                        "停止本地 submission host 超时，已切换为后台收尾。",
+                        source: nameof(App));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[App] Failed to stop local submission host: {ex.Message}");
+                    _renderLogService?.Write(
+                        RenderLogLevel.Warning,
+                        RenderLogScope.Submission,
+                        $"停止本地 submission host 失败: {ex.Message}",
+                        source: nameof(App));
+                }
+                finally
+                {
+                    try
+                    {
+                        host.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[App] Failed to dispose local submission host: {ex.Message}");
+                    }
+                }
+            });
+
+            return _localSubmissionHostStopTask;
         }
     }
 }

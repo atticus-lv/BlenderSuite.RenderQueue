@@ -122,6 +122,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     // 内部状态
     private CancellationTokenSource? _versionCts;
+    private int _validationRequestVersion;
     private readonly ISettingsPersistenceService _settingsPersistenceService;
     private readonly IBlenderExtensionManager _blenderExtensionManager;
     private bool _isLoadingSettings;
@@ -213,6 +214,7 @@ public partial class SettingsViewModel : ViewModelBase
         _versionCts?.Cancel();
         _versionCts = new CancellationTokenSource();
         var ct = _versionCts.Token;
+        var requestVersion = Interlocked.Increment(ref _validationRequestVersion);
 
         // 重置验证状态
         HasBlenderValidationError = false;
@@ -235,7 +237,7 @@ public partial class SettingsViewModel : ViewModelBase
         }
 
         // 异步获取Blender版本信息
-        _ = Task.Run(async () => await LoadBlenderInfoAsync(blender, ct));
+        _ = LoadBlenderInfoAsync(blender, ct, requestVersion);
     }
 
 
@@ -280,20 +282,38 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
-    private async Task LoadBlenderInfoAsync(BlenderExecutable blender, CancellationToken cancellationToken)
+    private async Task LoadBlenderInfoAsync(BlenderExecutable blender, CancellationToken cancellationToken, int requestVersion)
     {
         try
         {
-            IsLoadingBlenderInfo = true;
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (!IsValidationRequestCurrent(blender, requestVersion))
+                {
+                    return;
+                }
+
+                IsLoadingBlenderInfo = true;
+            });
+
+            if (!IsValidationRequestCurrent(blender, requestVersion))
+            {
+                return;
+            }
 
             var svc = new BlenderCliInfoService();
             var info = await svc.GetVersionInfoAsync(blender.Path, cancellationToken);
 
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.IsCancellationRequested || !IsValidationRequestCurrent(blender, requestVersion)) return;
 
             // 更新UI线程上的属性
             Dispatcher.UIThread.Post(() =>
             {
+                if (!IsValidationRequestCurrent(blender, requestVersion))
+                {
+                    return;
+                }
+
                 // 更新Blender信息
                 blender.UpdateFromVersionInfo(info);
                 blender.UpdateValidationStatus(true, DateTime.UtcNow);
@@ -313,6 +333,11 @@ public partial class SettingsViewModel : ViewModelBase
             if (!cancellationToken.IsCancellationRequested)
                 Dispatcher.UIThread.Post(() =>
                 {
+                    if (!IsValidationRequestCurrent(blender, requestVersion))
+                    {
+                        return;
+                    }
+
                     IsLoadingBlenderInfo = false;
                     blender.UpdateValidationStatus(false, DateTime.UtcNow);
                     HasBlenderValidationError = true;
@@ -320,6 +345,13 @@ public partial class SettingsViewModel : ViewModelBase
                     NotifyBlenderValidationChanged();
                 });
         }
+    }
+
+    private bool IsValidationRequestCurrent(BlenderExecutable blender, int requestVersion)
+    {
+        return requestVersion == _validationRequestVersion &&
+               SelectedBlenderExecutable != null &&
+               string.Equals(SelectedBlenderExecutable.Path, blender.Path, StringComparison.Ordinal);
     }
 
 

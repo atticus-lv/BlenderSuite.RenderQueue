@@ -68,6 +68,7 @@ public partial class MainRenderViewModel : ViewModelBase
     private BlenderProcessService? _blenderProcessService;
     private readonly IRenderLogService _logService;
     private CancellationTokenSource? _versionCts;
+    private int _validationRequestVersion;
     public Task InitialLoadTask { get; }
 
 
@@ -107,6 +108,7 @@ public partial class MainRenderViewModel : ViewModelBase
         _versionCts?.Cancel();
         _versionCts = new CancellationTokenSource();
         var ct = _versionCts.Token;
+        var requestVersion = Interlocked.Increment(ref _validationRequestVersion);
 
         // 重置验证状态
         HasBlenderValidationError = false;
@@ -138,26 +140,45 @@ public partial class MainRenderViewModel : ViewModelBase
         }
 
         // 异步获取Blender版本信息
-        _ = Task.Run(async () => await LoadBlenderInfoAsync(selectedBlender, ct));
+        _ = LoadBlenderInfoAsync(selectedBlender, ct, requestVersion);
     }
 
 
-    private async Task LoadBlenderInfoAsync(BlenderExecutable blenderExecutable, CancellationToken cancellationToken)
+    private async Task LoadBlenderInfoAsync(BlenderExecutable blenderExecutable, CancellationToken cancellationToken, int requestVersion)
     {
         try
         {
-            IsLoadingBlenderInfo = true;
-            StatusMessage = "正在加载Blender信息...";
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (!IsValidationRequestCurrent(blenderExecutable, requestVersion))
+                {
+                    return;
+                }
+
+                IsLoadingBlenderInfo = true;
+                StatusMessage = "正在加载Blender信息...";
+            });
+
+            if (!IsValidationRequestCurrent(blenderExecutable, requestVersion))
+            {
+                return;
+            }
+
             _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"开始验证 Blender: {blenderExecutable.Path}", source: nameof(MainRenderViewModel));
 
             var svc = new BlenderCliInfoService();
             var info = await svc.GetVersionInfoAsync(blenderExecutable.Path, cancellationToken);
 
-            if (cancellationToken.IsCancellationRequested) return;
+            if (cancellationToken.IsCancellationRequested || !IsValidationRequestCurrent(blenderExecutable, requestVersion)) return;
 
             // 更新UI线程上的属性
             Dispatcher.UIThread.Post(() =>
             {
+                if (!IsValidationRequestCurrent(blenderExecutable, requestVersion))
+                {
+                    return;
+                }
+
                 BlenderVersion = info.Version ?? string.Empty;
                 BlenderPlatform = info.Platform ?? string.Empty;
                 BlenderBranch = info.Branch ?? string.Empty;
@@ -214,6 +235,11 @@ public partial class MainRenderViewModel : ViewModelBase
                 _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Blender 验证失败: {ex.Message}", source: nameof(MainRenderViewModel));
                 Dispatcher.UIThread.Post(() =>
                 {
+                    if (!IsValidationRequestCurrent(blenderExecutable, requestVersion))
+                    {
+                        return;
+                    }
+
                     IsLoadingBlenderInfo = false;
                     IsBlenderPathValid = false;
                     HasBlenderValidationError = true;
@@ -224,6 +250,14 @@ public partial class MainRenderViewModel : ViewModelBase
                 });
             }
         }
+    }
+
+    private bool IsValidationRequestCurrent(BlenderExecutable blenderExecutable, int requestVersion)
+    {
+        var currentSelection = SettingsViewModel?.SelectedBlenderExecutable;
+        return requestVersion == _validationRequestVersion &&
+               currentSelection != null &&
+               string.Equals(currentSelection.Path, blenderExecutable.Path, StringComparison.Ordinal);
     }
 
 
@@ -354,7 +388,7 @@ public partial class MainRenderViewModel : ViewModelBase
                 var selectedBlender = SettingsViewModel?.SelectedBlenderExecutable;
                 if (selectedBlender != null)
                 {
-                    _ = Task.Run(async () => await LoadBlenderInfoAsync(selectedBlender, CancellationToken.None));
+                    ValidateSelectedBlender();
                 }
             }
         }
@@ -390,7 +424,7 @@ public partial class MainRenderViewModel : ViewModelBase
             {
                 Console.WriteLine("[MainRenderViewModel] 无法获取DialogManager，跳过警告弹窗");
                 // 如果无法获取DialogManager，直接执行切换
-                Task.Run(async () => await LoadBlenderInfoAsync(selectedBlender, CancellationToken.None));
+                ValidateSelectedBlender();
                 return;
             }
             
@@ -408,7 +442,7 @@ public partial class MainRenderViewModel : ViewModelBase
                 {
                     // 用户确认切换，执行切换
                     Console.WriteLine($"[MainRenderViewModel] 用户确认切换Blender到: {selectedBlender.Path}");
-                    Task.Run(async () => await LoadBlenderInfoAsync(selectedBlender, CancellationToken.None));
+                    ValidateSelectedBlender();
                 })
                 .Dismiss().ByClickingBackground()
                 .TryShow();
