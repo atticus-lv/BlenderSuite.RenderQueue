@@ -11,6 +11,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.Business.Persistence;
@@ -25,6 +26,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
     private readonly IBlenderWorkerHost _workerHost;
     private readonly IRenderTaskExecutionService _executionService;
     private readonly IDataPersistenceService _dataPersistenceService;
+    private readonly IRenderLogService _logService;
     private readonly List<Task> _runningTasks = [];
     private readonly object _queueLock = new();
     private readonly Queue<TimeSpan> _recentFrameRenderTimes = new();
@@ -52,11 +54,13 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
     public RenderQueueApplicationService(
         IBlenderWorkerHost workerHost,
         IRenderTaskExecutionService executionService,
-        IDataPersistenceService dataPersistenceService)
+        IDataPersistenceService dataPersistenceService,
+        IRenderLogService logService)
     {
         _workerHost = workerHost;
         _executionService = executionService;
         _dataPersistenceService = dataPersistenceService;
+        _logService = logService;
 
         RenderTasks = [];
         _remainingTimeTimer = new System.Timers.Timer(1000);
@@ -133,6 +137,13 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
         if (!string.Equals(previousPath, blenderPath, StringComparison.Ordinal))
         {
+            _logService.Write(
+                string.IsNullOrWhiteSpace(blenderPath) ? RenderLogLevel.Warning : RenderLogLevel.Info,
+                RenderLogScope.System,
+                string.IsNullOrWhiteSpace(blenderPath)
+                    ? "已清除 Blender 路径。"
+                    : $"已更新 Blender 路径: {blenderPath}",
+                source: nameof(RenderQueueApplicationService));
             _ = Task.Run(async () =>
             {
                 try
@@ -142,6 +153,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[RenderQueueApplicationService] Failed to shutdown worker on path change: {ex.Message}");
+                    _logService.Write(RenderLogLevel.Warning, RenderLogScope.Worker, $"切换 Blender 路径时关闭 worker 失败: {ex.Message}", source: nameof(RenderQueueApplicationService));
                 }
             });
         }
@@ -243,6 +255,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
     public void RemoveAllTasks()
     {
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, $"清空全部任务，数量: {RenderTasks.Count}", source: nameof(RenderQueueApplicationService));
         foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
         {
             _executionService.Stop(task);
@@ -325,6 +338,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
         _queueState = QueueState.Running;
         _queueStatusText = "Queue_Running";
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "队列开始运行。", source: nameof(RenderQueueApplicationService));
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Started"));
 
         _recentFrameRenderTimes.Clear();
@@ -343,6 +357,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
         _queueState = QueueState.Idle;
         _queueStatusText = "Queue_Stopped";
+        _logService.Write(RenderLogLevel.Warning, RenderLogScope.Queue, "队列已停止。", source: nameof(RenderQueueApplicationService));
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Stopped"));
         CurrentRenderingTask = null;
         _remainingTimeTimer.Stop();
@@ -382,6 +397,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
         _queueState = QueueState.Paused;
         _queueStatusText = "Queue_Paused";
+        _logService.Write(RenderLogLevel.Warning, RenderLogScope.Queue, "队列已暂停。", source: nameof(RenderQueueApplicationService));
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Paused"));
         _remainingTimeTimer.Stop();
         PublishSnapshot();
@@ -404,6 +420,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
         _queueState = QueueState.Running;
         _queueStatusText = "Queue_Running";
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "队列已恢复运行。", source: nameof(RenderQueueApplicationService));
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Resumed"));
         _remainingTimeTimer.Start();
         PublishSnapshot();
@@ -493,6 +510,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
             SubscribeToTaskEvents(newTask);
             newTask.SetQueueRunningState(_queueState == QueueState.Running);
             setSelectedTask(newTask);
+            WriteTaskEvent(newTask, RenderLogScope.Task, $"任务已复制入队: {Path.GetFileName(newTask.BlendFilePath)}");
 
             if (IsBlenderServiceReady())
             {
@@ -577,6 +595,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                 RenderTasks.Add(task);
                 SubscribeToTaskEvents(task);
                 task.SetQueueRunningState(_queueState == QueueState.Running);
+                WriteTaskEvent(task, RenderLogScope.Submission, $"submission 已接收并入队: {Path.GetFileName(task.BlendFilePath)}");
 
                 if (IsBlenderServiceReady())
                 {
@@ -605,6 +624,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
             catch (Exception ex)
             {
                 Console.WriteLine($"[RenderQueueApplicationService] Failed to submit task locally: {ex.Message}");
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"本地 submission 入队失败: {ex.Message}", source: nameof(RenderQueueApplicationService));
                 return BuildSubmissionResponse(false, ex.Message);
             }
         }).GetTask();
@@ -630,6 +650,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
             }
 
             await StartQueueAsync();
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Submission, "submission 触发队列启动成功。", source: nameof(RenderQueueApplicationService));
             return BuildSubmissionResponse(true, "Queue started successfully.");
         });
     }
@@ -646,6 +667,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                 RenderTasks.Add(task);
                 SubscribeToTaskEvents(task);
                 task.SetQueueRunningState(_queueState == QueueState.Running);
+                WriteTaskEvent(task, RenderLogScope.Recovery, "已从持久化数据恢复任务。");
 
                 var savedOverrideScene = taskData.RenderTask.Override?.OverrideScene;
                 if (IsBlenderServiceReady())
@@ -700,6 +722,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
             RenderTasks.Add(task);
             SubscribeToTaskEvents(task);
             task.SetQueueRunningState(_queueState == QueueState.Running);
+            WriteTaskEvent(task, RenderLogScope.Task, $"任务已入队: {Path.GetFileName(blendFilePath)}");
 
             StatusMessageChanged?.Invoke(this,
                 string.Format(Localizer.Localizer.Instance["Toast_TaskAdded"], Path.GetFileName(blendFilePath)));
@@ -765,6 +788,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
         }
 
         CurrentRenderingTask = taskToStart;
+        WriteTaskEvent(taskToStart, RenderLogScope.Queue, _pausedTask == taskToStart ? "从暂停点继续当前任务。" : "队列开始调度任务。");
         PublishSnapshot();
 
         var taskCopy = taskToStart;
@@ -776,6 +800,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                 try
                 {
                     await _workerHost.EnsureReadyAsync(_blenderPath!, CancellationToken.None);
+                    WriteTaskEvent(taskCopy, RenderLogScope.Worker, "Blender worker 已就绪。");
 
                     if (_pausedTask == taskCopy && _pausedFrame > 0)
                     {
@@ -791,6 +816,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[RenderQueueApplicationService] Failed while starting queued task {Path.GetFileName(taskCopy.BlendFilePath)}: {ex}");
+                    WriteTaskEvent(taskCopy, RenderLogScope.Queue, $"启动任务失败: {ex.Message}", RenderLogLevel.Error);
                 }
                 finally
                 {
@@ -898,6 +924,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
         task.SetVideoCodec(_videoCodec);
         task.SetVideoQuality(_videoQuality);
         task.SetProcessService(_processService);
+        task.AttachLogService(_logService);
     }
 
     private void RemoveTaskCore(RenderTaskViewModel taskToRemove, RenderTaskViewModel? selectedTask,
@@ -919,6 +946,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
         UnsubscribeFromTaskEvents(taskToRemove);
         RenderTasks.Remove(taskToRemove);
+        taskToRemove.DetachLogService();
         taskToRemove.Dispose();
 
         if (wasSelected)
@@ -1117,6 +1145,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                 {
                     _queueStatusText = "Queue_Completed";
                     _queueState = QueueState.Completed;
+                    _logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "队列已完成。", source: nameof(RenderQueueApplicationService));
                     _ = HandlePostRenderBehaviorAsync();
                 }
                 else
@@ -1297,9 +1326,20 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
         foreach (var task in RenderTasks.ToList())
         {
             UnsubscribeFromTaskEvents(task);
+            task.DetachLogService();
             task.Dispose();
         }
 
         RenderTasks.Clear();
+    }
+
+    private void WriteTaskEvent(
+        RenderTaskViewModel task,
+        RenderLogScope scope,
+        string message,
+        RenderLogLevel level = RenderLogLevel.Info,
+        IReadOnlyDictionary<string, string>? metadata = null)
+    {
+        _logService.Write(level, scope, message, task.Id, task.BlendFilePath, nameof(RenderQueueApplicationService), metadata);
     }
 }

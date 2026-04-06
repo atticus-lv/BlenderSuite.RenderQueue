@@ -17,6 +17,7 @@ public class ViewLocator : IDataTemplate
         { typeof(MainWindowViewModel), () => new MainWindow() },
         { typeof(MainRenderViewModel), () => new MainRenderView() },
         { typeof(RenderQueueViewModel), () => new RenderQueueView() },
+        { typeof(GlobalLogViewModel), () => new GlobalLogView() },
         { typeof(RenderTaskViewModel), () => new RenderTaskView() },
         { typeof(BlendScenePropertiesViewModel), () => new BlendScenePropertiesView() },
         { typeof(ImagePreviewWindowViewModel), () => new ImagePreviewWindow() },

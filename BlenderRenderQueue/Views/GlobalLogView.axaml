@@ -1,0 +1,87 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:BlenderRenderQueue.ViewModels"
+             xmlns:logVm="clr-namespace:BlenderRenderQueue.ViewModels.Logs"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d"
+             x:Class="BlenderRenderQueue.Views.GlobalLogView"
+             x:CompileBindings="False">
+
+    <Grid RowDefinitions="Auto,*" Margin="8">
+        <StackPanel Spacing="8">
+            <TextBlock Text="Logs" FontSize="22" FontWeight="SemiBold" />
+            <WrapPanel Orientation="Horizontal" ItemWidth="220">
+                <TextBox Watermark="Search message or path"
+                         Text="{Binding SearchText}"
+                         MinWidth="220" />
+                <ComboBox ItemsSource="{Binding ScopeOptions}"
+                          SelectedItem="{Binding SelectedScope}"
+                          MinWidth="180" />
+                <ComboBox ItemsSource="{Binding LevelOptions}"
+                          SelectedItem="{Binding SelectedLevel}"
+                          MinWidth="180" />
+                <ComboBox ItemsSource="{Binding SessionOptions}"
+                          SelectedItem="{Binding SelectedSession}"
+                          MinWidth="180" />
+                <ComboBox ItemsSource="{Binding TaskOptions}"
+                          SelectedItem="{Binding SelectedTask}"
+                          MinWidth="220">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Label}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="Refresh" Command="{Binding RefreshEntriesCommand}" Classes="Rounded" />
+                <Button Content="Clear History" Command="{Binding ClearHistoryCommand}" Classes="Rounded" />
+            </WrapPanel>
+        </StackPanel>
+
+        <Border Grid.Row="1" Margin="0 12 0 0" Padding="8">
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock Text="No log events match the current filters."
+                           IsVisible="{Binding !HasEntries}"
+                           Opacity="0.7"
+                           Margin="8" />
+
+                <ScrollViewer Grid.Row="1"
+                              IsVisible="{Binding HasEntries}"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Entries}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <suki:GlassCard Margin="0 0 0 8" IsAnimated="False">
+                                    <StackPanel Spacing="8" Margin="12">
+                                        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+                                            <SelectableTextBlock Grid.Column="0" Text="{Binding TimestampText}" FontWeight="SemiBold" />
+                                            <Border Grid.Column="1" CornerRadius="10" Padding="8,2" Background="#223B82F6">
+                                                <TextBlock Text="{Binding ScopeText}" FontSize="11" />
+                                            </Border>
+                                            <Border Grid.Column="2" CornerRadius="10" Padding="8,2" Background="#22F59E0B">
+                                                <TextBlock Text="{Binding LevelText}" FontSize="11" />
+                                            </Border>
+                                            <SelectableTextBlock Grid.Column="3" Text="{Binding TaskText}" Opacity="0.7" />
+                                            <Button Grid.Column="4"
+                                                    Content="Open Task"
+                                                    Command="{Binding NavigateToTaskCommand}"
+                                                    Classes="Rounded"
+                                                    IsVisible="{Binding HasTask}" />
+                                        </Grid>
+
+                                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="14" />
+
+                                        <SelectableTextBlock Text="{Binding SessionText}" FontSize="11" Opacity="0.6" />
+                                    </StackPanel>
+                                </suki:GlassCard>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

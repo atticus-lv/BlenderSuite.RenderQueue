@@ -1,4 +1,5 @@
 using System;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Application.Queue;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.Extensions;
@@ -22,6 +23,9 @@ public static class AppServices
 
         services.AddSingleton<ISettingsPersistenceService, SettingsPersistenceService>();
         services.AddSingleton<IDataPersistenceService, DataPersistenceService>();
+        services.AddSingleton<IRenderLogStore, RenderLogStore>();
+        services.AddSingleton<ILogPersistenceService, JsonLinesLogPersistenceService>();
+        services.AddSingleton<IRenderLogService, RenderLogService>();
         services.AddSingleton<IBlenderCliInfoService, BlenderCliInfoService>();
         services.AddSingleton<IBlenderExtensionManager, BlenderExtensionManager>();
         services.AddSingleton<IBlenderWorkerHost, PythonConsoleWorkerHost>();
@@ -29,6 +33,7 @@ public static class AppServices
         services.AddSingleton<IRenderQueueApplicationService, RenderQueueApplicationService>();
         services.AddSingleton<RenderQueueViewModel>();
         services.AddSingleton<ILocalSubmissionHost, LocalSubmissionHost>();
+        services.AddSingleton<GlobalLogViewModel>();
 
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<MainRenderViewModel>();

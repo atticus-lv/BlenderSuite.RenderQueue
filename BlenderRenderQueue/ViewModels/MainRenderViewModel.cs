@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Submission;
 using BlenderRenderQueue.Services.UI;
@@ -24,6 +26,12 @@ public partial class MainRenderViewModel : ViewModelBase
 
     [ObservableProperty]
     private RenderQueueViewModel _renderQueue;
+
+    [ObservableProperty]
+    private GlobalLogViewModel _globalLog;
+
+    [ObservableProperty]
+    private int _selectedNavigationIndex;
 
     [ObservableProperty]
     private bool _isBlenderPathValid;
@@ -58,13 +66,21 @@ public partial class MainRenderViewModel : ViewModelBase
 
     // 内部状态
     private BlenderProcessService? _blenderProcessService;
+    private readonly IRenderLogService _logService;
     private CancellationTokenSource? _versionCts;
     public Task InitialLoadTask { get; }
 
 
-    public MainRenderViewModel(SettingsViewModel settingsViewModel, RenderQueueViewModel renderQueue)
+    public MainRenderViewModel(
+        SettingsViewModel settingsViewModel,
+        RenderQueueViewModel renderQueue,
+        GlobalLogViewModel globalLog,
+        IRenderLogService logService)
     {
+        _logService = logService;
         RenderQueue = renderQueue;
+        GlobalLog = globalLog;
+        GlobalLog.TaskNavigationRequested += OnGlobalLogTaskNavigationRequested;
 
         // 订阅渲染队列事件
         RenderQueue.QueueStatusChanged += OnQueueStatusChanged;
@@ -105,6 +121,7 @@ public partial class MainRenderViewModel : ViewModelBase
             ClearBlenderInfo();
             CleanupBlenderService();
             StatusMessage = "Blender_PathInvalid";
+            _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, "未选择 Blender 可执行文件。", source: nameof(MainRenderViewModel));
             return;
         }
 
@@ -116,6 +133,7 @@ public partial class MainRenderViewModel : ViewModelBase
             ClearBlenderInfo();
             CleanupBlenderService();
             StatusMessage = "Blender_PathInvalid";
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Blender 路径不存在: {selectedBlender.Path}", source: nameof(MainRenderViewModel));
             return;
         }
 
@@ -130,6 +148,7 @@ public partial class MainRenderViewModel : ViewModelBase
         {
             IsLoadingBlenderInfo = true;
             StatusMessage = "正在加载Blender信息...";
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"开始验证 Blender: {blenderExecutable.Path}", source: nameof(MainRenderViewModel));
 
             var svc = new BlenderCliInfoService();
             var info = await svc.GetVersionInfoAsync(blenderExecutable.Path, cancellationToken);
@@ -175,10 +194,24 @@ public partial class MainRenderViewModel : ViewModelBase
                     _blenderProcessService = null;
                 }
             });
+
+            _logService.Write(
+                RenderLogLevel.Info,
+                RenderLogScope.System,
+                $"Blender {info.Version} 已就绪",
+                source: nameof(MainRenderViewModel),
+                metadata: new Dictionary<string, string>
+                {
+                    ["path"] = blenderExecutable.Path,
+                    ["platform"] = info.Platform ?? string.Empty,
+                    ["branch"] = info.Branch ?? string.Empty
+                });
         }
         catch (Exception ex)
         {
             if (!cancellationToken.IsCancellationRequested)
+            {
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Blender 验证失败: {ex.Message}", source: nameof(MainRenderViewModel));
                 Dispatcher.UIThread.Post(() =>
                 {
                     IsLoadingBlenderInfo = false;
@@ -189,6 +222,7 @@ public partial class MainRenderViewModel : ViewModelBase
                     ClearBlenderInfo();
                     CleanupBlenderService();
                 });
+            }
         }
     }
 
@@ -599,6 +633,16 @@ public partial class MainRenderViewModel : ViewModelBase
         StatusMessage = message;
     }
 
+    private void OnGlobalLogTaskNavigationRequested(object? sender, Guid taskId)
+    {
+        if (!RenderQueue.SelectTask(taskId))
+        {
+            return;
+        }
+
+        SelectedNavigationIndex = 0;
+    }
+
     private void OnTaskCompleted(object? sender, TaskCompletedEventArgs e)
     {
         var taskName = Path.GetFileName(e.Task.BlendFilePath);
@@ -636,6 +680,8 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueue.StatusMessageChanged -= OnRenderQueueStatusMessageChanged;
         RenderQueue.ConfirmDialogRequested -= OnConfirmDialogRequested;
         RenderQueue.PropertyChanged -= OnRenderQueuePropertyChanged;
+        GlobalLog.TaskNavigationRequested -= OnGlobalLogTaskNavigationRequested;
+        GlobalLog.Dispose();
 
         if (SettingsViewModel != null)
         {

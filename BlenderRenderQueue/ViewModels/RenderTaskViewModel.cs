@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Collections.Concurrent;
 using BlenderRenderQueue.Models;
 using Avalonia.Media.Imaging;
 using System.IO;
@@ -16,9 +15,11 @@ using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.UI;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Localizer;
+using BlenderRenderQueue.ViewModels.Logs;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -347,9 +348,18 @@ public partial class RenderTaskViewModel : ViewModelBase
     private string _outputLog = string.Empty;
 
     [ObservableProperty]
+    private ObservableCollection<TaskLogEntryViewModel> _timelineEntries = [];
+
+    [ObservableProperty]
+    private ObservableCollection<TaskLogEntryViewModel> _debugEntries = [];
+
+    [ObservableProperty]
+    private string _debugLogText = string.Empty;
+
+    [ObservableProperty]
     private BlendScenePropertiesViewModel _scenePropertiesView = new();
 
-    partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel? value)
+    partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel value)
     {
         OnPropertyChanged(nameof(FinalSceneProperties));
         OnPropertyChanged(nameof(FramePathDirectory));
@@ -599,15 +609,8 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     // 内部状态
     private IBlenderWorkerHost? _currentBlenderProcess;
-    private readonly ConcurrentQueue<string> _logQueue = new();
-    private readonly System.Timers.Timer _logTimer;
-    private const int MaxLogLines = 1000;
-    private int _logLineCount = 0;
-    private volatile bool _isFlushing = false;
-    private readonly Lock _logLock = new();
-    private DateTime _lastFlushTime = DateTime.MinValue;
-    private const int MinFlushIntervalMs = 50;
-    private const int MaxBatchSize = 100;
+    private IRenderLogService? _logService;
+    private DateTimeOffset? _logClearCutoff;
 
     // 事件
     public event EventHandler<RenderTaskStatusChangedEventArgs>? StatusChanged;
@@ -615,12 +618,6 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public RenderTaskViewModel()
     {
-        // 日志批量刷新
-        _logTimer = new System.Timers.Timer(200);
-        _logTimer.Elapsed += (_, __) => FlushLogQueue();
-        _logTimer.AutoReset = true;
-        _logTimer.Start();
-
         // 手动触发ScenePropertiesView的初始化
         OnScenePropertiesViewChanged(ScenePropertiesView);
     }
@@ -1011,13 +1008,13 @@ public partial class RenderTaskViewModel : ViewModelBase
     [RelayCommand]
     private void ClearLog()
     {
+        _logClearCutoff = DateTimeOffset.UtcNow;
+        TimelineEntries.Clear();
+        DebugEntries.Clear();
+        DebugLogText = string.Empty;
         OutputLog = string.Empty;
-        _logLineCount = 0;
-        // 清空队列中的待处理日志
-        while (_logQueue.TryDequeue(out _))
-        { }
-
-        EnqueueLog("日志已清空");
+        OnPropertyChanged(nameof(HasTimelineEntries));
+        OnPropertyChanged(nameof(HasDebugEntries));
     }
 
     [RelayCommand]
@@ -1025,6 +1022,17 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         IsLogPaused = !IsLogPaused;
         LogPauseButtonText = IsLogPaused ? "Resume Log" : "Stop Log";
+    }
+
+    [RelayCommand]
+    private async Task CopyDebugDiagnostics()
+    {
+        if (string.IsNullOrWhiteSpace(DebugLogText))
+        {
+            return;
+        }
+
+        await ClipboardHelper.SetText(DebugLogText, this);
     }
 
     [RelayCommand]
@@ -1274,8 +1282,6 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     internal void HandleRawOutputLine(string line, IRenderOutputParser parser)
     {
-        EnqueueLog($"[OUT] {line}");
-
         try
         {
             var events = parser.ParseLine(line);
@@ -1294,13 +1300,37 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            EnqueueLog($"[WARN] 解析渲染输出失败: {ex.Message}");
+            _logService?.Write(
+                RenderLogLevel.Warning,
+                RenderLogScope.Task,
+                $"解析渲染输出失败: {ex.Message}",
+                Id,
+                BlendFilePath,
+                nameof(RenderTaskViewModel),
+                new Dictionary<string, string>
+                {
+                    ["audience"] = "debug",
+                    ["kind"] = "parser_error",
+                    ["line"] = line
+                });
         }
     }
 
     internal void HandleRawErrorLine(string line)
     {
-        EnqueueLog($"[ERR] {line}");
+        _logService?.Write(
+            RenderLogLevel.Debug,
+            RenderLogScope.Worker,
+            line,
+            Id,
+            BlendFilePath,
+            nameof(RenderTaskViewModel),
+            new Dictionary<string, string>
+            {
+                ["audience"] = "debug",
+                ["kind"] = "raw",
+                ["stream"] = "stderr"
+            });
     }
 
     internal void ApplyProgress(RenderProgress p)
@@ -1414,88 +1444,37 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     private void EnqueueLog(string line)
     {
-        if (IsLogPaused) return;
-
-        // 简单的重复日志过滤
-        if (!string.IsNullOrWhiteSpace(line) && _logQueue.Count < 500) // 防止队列过大
+        if (IsLogPaused || string.IsNullOrWhiteSpace(line))
         {
-            _logQueue.Enqueue($"[{DateTime.Now:HH:mm:ss.fff}] {line}");
-        }
-    }
-
-    private void FlushLogQueue()
-    {
-        if (_logQueue.IsEmpty || IsLogPaused || _isFlushing) return;
-
-        // 防止频繁刷新
-        var now = DateTime.Now;
-        if ((now - _lastFlushTime).TotalMilliseconds < MinFlushIntervalMs) return;
-
-        lock (_logLock)
-        {
-            if (_isFlushing) return;
-            _isFlushing = true;
+            return;
         }
 
-        try
+        var (level, scope, message, audience, kind) = ClassifyLogLine(line);
+        if (_logService != null)
         {
-            var sb = new StringBuilder();
-            int dequeued = 0;
-
-            // 限制单次处理的日志数量，避免UI阻塞
-            while (_logQueue.TryDequeue(out var line) && dequeued < MaxBatchSize)
-            {
-                if (dequeued++ > 0) sb.AppendLine();
-                sb.Append(line);
-            }
-
-            var text = sb.ToString();
-            if (string.IsNullOrEmpty(text)) return;
-
-            _lastFlushTime = now;
-
-            // 使用低优先级调度，减少对UI的影响
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => { UpdateOutputLog(text); },
-                Avalonia.Threading.DispatcherPriority.Background);
-        }
-        finally
-        {
-            _isFlushing = false;
-        }
-    }
-
-    private void UpdateOutputLog(string newText)
-    {
-        // 将新文本追加到现有日志，并按行数限制截断最旧部分
-        if (string.IsNullOrEmpty(OutputLog))
-        {
-            OutputLog = newText;
-            _logLineCount = CountLines(OutputLog);
-        }
-        else
-        {
-            OutputLog += Environment.NewLine + newText;
-            _logLineCount += CountLines(newText);
+            _logService.Write(
+                level,
+                scope,
+                message,
+                Id,
+                BlendFilePath,
+                nameof(RenderTaskViewModel),
+                new Dictionary<string, string>
+                {
+                    ["audience"] = audience,
+                    ["kind"] = kind
+                });
+            return;
         }
 
-        if (_logLineCount > MaxLogLines)
+        var fallbackLine = $"[{DateTime.Now:HH:mm:ss}] {message}";
+        if (string.Equals(audience, "debug", StringComparison.Ordinal))
         {
-            // 只保留最后 MaxLogLines 行，使用更高效的字符串操作
-            var lines = OutputLog.Split(["\r\n", "\n"], StringSplitOptions.None);
-            var start = Math.Max(0, lines.Length - MaxLogLines);
-            OutputLog = string.Join(Environment.NewLine, lines, start, lines.Length - start);
-            _logLineCount = MaxLogLines;
+            DebugLogText = string.IsNullOrWhiteSpace(DebugLogText)
+                ? fallbackLine
+                : $"{DebugLogText}{Environment.NewLine}{fallbackLine}";
+            OutputLog = DebugLogText;
         }
-    }
-
-    private static int CountLines(string s)
-    {
-        if (string.IsNullOrEmpty(s)) return 0;
-        int count = 1;
-        for (int i = 0; i < s.Length; i++)
-            if (s[i] == '\n')
-                count++;
-        return count;
     }
 
     public void ResetProgress()
@@ -1508,10 +1487,192 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public void Dispose()
     {
-        _logTimer?.Stop();
-        _logTimer?.Dispose();
+        DetachLogService();
         FileInfo?.Dispose();
         RenderedImage?.Dispose();
+    }
+
+    public bool HasTimelineEntries => TimelineEntries.Count > 0;
+    public bool HasDebugEntries => DebugEntries.Count > 0;
+
+    partial void OnTimelineEntriesChanged(ObservableCollection<TaskLogEntryViewModel> value)
+    {
+        OnPropertyChanged(nameof(HasTimelineEntries));
+    }
+
+    partial void OnDebugEntriesChanged(ObservableCollection<TaskLogEntryViewModel> value)
+    {
+        OnPropertyChanged(nameof(HasDebugEntries));
+    }
+
+    internal void AttachLogService(IRenderLogService logService)
+    {
+        if (ReferenceEquals(_logService, logService))
+        {
+            return;
+        }
+
+        DetachLogService();
+        _logService = logService;
+        _logService.LogAppended += OnLogAppended;
+        RebuildLogProjection();
+    }
+
+    internal void DetachLogService()
+    {
+        if (_logService == null)
+        {
+            return;
+        }
+
+        _logService.LogAppended -= OnLogAppended;
+        _logService = null;
+    }
+
+    private void OnLogAppended(object? sender, RenderLogEvent logEvent)
+    {
+        if (!ShouldIncludeForTask(logEvent))
+        {
+            return;
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (!ShouldIncludeForTask(logEvent))
+            {
+                return;
+            }
+
+            if (ShouldIncludeInTimeline(logEvent))
+            {
+                TimelineEntries.Insert(0, new TaskLogEntryViewModel(logEvent));
+            }
+
+            if (ShouldIncludeInDebug(logEvent))
+            {
+                DebugEntries.Insert(0, new TaskLogEntryViewModel(logEvent));
+                RefreshDebugText();
+            }
+
+            OnPropertyChanged(nameof(HasTimelineEntries));
+            OnPropertyChanged(nameof(HasDebugEntries));
+        });
+    }
+
+    private void RebuildLogProjection()
+    {
+        TimelineEntries.Clear();
+        DebugEntries.Clear();
+        DebugLogText = string.Empty;
+        OutputLog = string.Empty;
+
+        if (_logService == null)
+        {
+            return;
+        }
+
+        var events = _logService.GetEvents(new RenderLogProjection
+        {
+            TaskId = Id,
+            IncludeDebug = true,
+            IncludeRaw = true
+        });
+
+        foreach (var logEvent in events.Reverse())
+        {
+            if (!ShouldIncludeForTask(logEvent))
+            {
+                continue;
+            }
+
+            if (ShouldIncludeInTimeline(logEvent))
+            {
+                TimelineEntries.Insert(0, new TaskLogEntryViewModel(logEvent));
+            }
+
+            if (ShouldIncludeInDebug(logEvent))
+            {
+                DebugEntries.Insert(0, new TaskLogEntryViewModel(logEvent));
+            }
+        }
+
+        RefreshDebugText();
+        OnPropertyChanged(nameof(HasTimelineEntries));
+        OnPropertyChanged(nameof(HasDebugEntries));
+    }
+
+    private bool ShouldIncludeForTask(RenderLogEvent logEvent)
+    {
+        if (logEvent.TaskId != Id)
+        {
+            return false;
+        }
+
+        return !_logClearCutoff.HasValue || logEvent.Timestamp >= _logClearCutoff.Value;
+    }
+
+    private static bool ShouldIncludeInTimeline(RenderLogEvent logEvent)
+    {
+        if (logEvent.Level == RenderLogLevel.Debug)
+        {
+            return false;
+        }
+
+        return !logEvent.Metadata.TryGetValue("audience", out var audience) ||
+               !string.Equals(audience, "debug", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ShouldIncludeInDebug(RenderLogEvent logEvent)
+    {
+        if (logEvent.Level == RenderLogLevel.Debug)
+        {
+            return true;
+        }
+
+        return logEvent.Metadata.TryGetValue("audience", out var audience) &&
+               string.Equals(audience, "debug", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RefreshDebugText()
+    {
+        DebugLogText = string.Join(
+            Environment.NewLine,
+            DebugEntries
+                .OrderBy(entry => entry.Event.Timestamp)
+                .Select(entry => $"[{entry.Event.Timestamp.ToLocalTime():HH:mm:ss}] [{entry.LevelText}] {entry.Message}"));
+        OutputLog = DebugLogText;
+    }
+
+    private static (RenderLogLevel Level, RenderLogScope Scope, string Message, string Audience, string Kind)
+        ClassifyLogLine(string line)
+    {
+        var trimmed = line.Trim();
+        if (trimmed.StartsWith("[ERROR]", StringComparison.OrdinalIgnoreCase))
+        {
+            return (RenderLogLevel.Error, RenderLogScope.System, trimmed[7..].Trim(), "timeline", "message");
+        }
+
+        if (trimmed.StartsWith("[WARN]", StringComparison.OrdinalIgnoreCase))
+        {
+            return (RenderLogLevel.Warning, RenderLogScope.System, trimmed[6..].Trim(), "debug", "message");
+        }
+
+        if (trimmed.StartsWith("[QUERY]", StringComparison.OrdinalIgnoreCase))
+        {
+            return (RenderLogLevel.Info, RenderLogScope.Task, trimmed[7..].Trim(), "timeline", "message");
+        }
+
+        if (trimmed.StartsWith("[REFRESH]", StringComparison.OrdinalIgnoreCase))
+        {
+            return (RenderLogLevel.Info, RenderLogScope.Task, trimmed[9..].Trim(), "timeline", "message");
+        }
+
+        if (trimmed.StartsWith("[INFO]", StringComparison.OrdinalIgnoreCase))
+        {
+            return (RenderLogLevel.Info, RenderLogScope.System, trimmed[6..].Trim(), "timeline", "message");
+        }
+
+        return (RenderLogLevel.Info, RenderLogScope.Task, trimmed, "timeline", "message");
     }
 }
 

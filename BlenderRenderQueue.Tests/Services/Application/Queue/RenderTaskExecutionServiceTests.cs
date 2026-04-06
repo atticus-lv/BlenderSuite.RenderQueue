@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Application.Queue;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.ViewModels;
@@ -20,6 +21,8 @@ public sealed class RenderTaskExecutionServiceTests
         using var tempBlend = TemporaryFile.Create(".blend");
         var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
         var workerHost = new FakeBlenderWorkerHost();
+        var logService = TestLogServiceFactory.Create();
+        task.AttachLogService(logService);
         workerHost.RenderTaskHandler = async (request, cancellationToken) =>
         {
             workerHost.EmitOutput("Rendering single frame (frame 1)");
@@ -36,7 +39,7 @@ public sealed class RenderTaskExecutionServiceTests
             };
         };
 
-        var sut = new RenderTaskExecutionService();
+        var sut = new RenderTaskExecutionService(logService);
 
         await sut.StartAsync(task, workerHost);
         await DrainUiAsync();
@@ -56,6 +59,8 @@ public sealed class RenderTaskExecutionServiceTests
         using var tempBlend = TemporaryFile.Create(".blend");
         var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
         task.SetGlobalMaxRetryAttempts(2);
+        var logService = TestLogServiceFactory.Create();
+        task.AttachLogService(logService);
 
         var firstCall = true;
         var workerHost = new FakeBlenderWorkerHost();
@@ -87,7 +92,7 @@ public sealed class RenderTaskExecutionServiceTests
             };
         };
 
-        var sut = new RenderTaskExecutionService();
+        var sut = new RenderTaskExecutionService(logService);
 
         await sut.StartAsync(task, workerHost);
         await DrainUiAsync();
@@ -105,6 +110,8 @@ public sealed class RenderTaskExecutionServiceTests
         using var tempBlend = TemporaryFile.Create(".blend");
         var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
         task.SetGlobalMaxRetryAttempts(3);
+        var logService = TestLogServiceFactory.Create();
+        task.AttachLogService(logService);
 
         var workerHost = new FakeBlenderWorkerHost();
         workerHost.RenderTaskHandler = (request, cancellationToken) =>
@@ -113,7 +120,7 @@ public sealed class RenderTaskExecutionServiceTests
             throw new InvalidOperationException("File format is not supported");
         };
 
-        var sut = new RenderTaskExecutionService();
+        var sut = new RenderTaskExecutionService(logService);
 
         await sut.StartAsync(task, workerHost);
         await DrainUiAsync();

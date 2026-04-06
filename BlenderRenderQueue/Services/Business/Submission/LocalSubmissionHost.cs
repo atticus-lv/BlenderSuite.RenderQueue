@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Application.Queue;
 
 namespace BlenderRenderQueue.Services.Business.Submission;
@@ -15,6 +16,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
 {
     private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
     private readonly IRenderQueueApplicationService _queueApplicationService;
+    private readonly IRenderLogService _logService;
     private readonly JsonSerializerOptions _wireJsonOptions = new()
     {
         PropertyNamingPolicy = null,
@@ -32,9 +34,10 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
     private Thread? _acceptLoopThread;
     private bool _disposed;
 
-    public LocalSubmissionHost(IRenderQueueApplicationService queueApplicationService)
+    public LocalSubmissionHost(IRenderQueueApplicationService queueApplicationService, IRenderLogService logService)
     {
         _queueApplicationService = queueApplicationService;
+        _logService = logService;
     }
 
     public SubmissionEndpointInfo? CurrentEndpoint { get; private set; }
@@ -75,6 +78,11 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
             await ProbeReadyAsync(cancellationToken);
             await WriteEndpointFileAsync(CurrentEndpoint, cancellationToken);
             Console.WriteLine($"[LocalSubmissionHost] Listening on {CurrentEndpoint.Host}:{CurrentEndpoint.Port}");
+            _logService.Write(
+                RenderLogLevel.Info,
+                RenderLogScope.Submission,
+                $"本地 submission host 已启动: {CurrentEndpoint.Host}:{CurrentEndpoint.Port}",
+                source: nameof(LocalSubmissionHost));
         }
         finally
         {
@@ -120,6 +128,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
             CurrentEndpoint = null;
 
             DeleteEndpointFile();
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Submission, "本地 submission host 已停止。", source: nameof(LocalSubmissionHost));
         }
         finally
         {
@@ -173,6 +182,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
             {
                 client?.Dispose();
                 Console.WriteLine($"[LocalSubmissionHost] Accept loop error: {ex.Message}");
+                _logService.Write(RenderLogLevel.Warning, RenderLogScope.Submission, $"submission host 接收请求失败: {ex.Message}", source: nameof(LocalSubmissionHost));
                 if (cancellationToken.IsCancellationRequested)
                 {
                     break;
@@ -235,6 +245,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
             catch (Exception ex)
             {
                 Console.WriteLine($"[LocalSubmissionHost] Client handling error: {ex.Message}");
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"submission 请求处理失败: {ex.Message}", source: nameof(LocalSubmissionHost));
                 WriteResponse(stream, new SubmissionWireResponse
                 {
                     Ok = false,
@@ -282,6 +293,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
         switch (request.Command)
         {
             case "ping":
+                _logService.Write(RenderLogLevel.Debug, RenderLogScope.Submission, "收到 submission ping。", source: nameof(LocalSubmissionHost));
                 return new SubmissionWireResponse
                 {
                     RequestId = request.RequestId,
@@ -290,6 +302,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                     QueueState = _queueApplicationService.Snapshot.State.ToString()
                 };
             case "start_queue":
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.Submission, "收到 start_queue 请求。", source: nameof(LocalSubmissionHost));
                 var startResponse = await _queueApplicationService.StartQueueFromSubmissionAsync(cancellationToken);
                 return new SubmissionWireResponse
                 {
@@ -325,6 +338,13 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
 
                 var submissionResponse =
                     await _queueApplicationService.SubmitTaskAsync(submissionRequest, cancellationToken);
+                _logService.Write(
+                    submissionResponse.Ok ? RenderLogLevel.Info : RenderLogLevel.Error,
+                    RenderLogScope.Submission,
+                    submissionResponse.Ok
+                        ? $"收到任务提交: {submissionRequest.Filepath}"
+                        : $"任务提交失败: {submissionResponse.Message}",
+                    source: nameof(LocalSubmissionHost));
                 return new SubmissionWireResponse
                 {
                     RequestId = request.RequestId,

@@ -254,6 +254,18 @@ public partial class RenderQueueViewModel : ViewModelBase
     public Task<LocalSubmissionResponse> StartQueueFromSubmissionAsync(System.Threading.CancellationToken cancellationToken = default)
         => _queueService.StartQueueFromSubmissionAsync(cancellationToken);
 
+    public bool SelectTask(Guid taskId)
+    {
+        var task = RenderTasks.FirstOrDefault(item => item.Id == taskId);
+        if (task == null)
+        {
+            return false;
+        }
+
+        SelectedTask = task;
+        return true;
+    }
+
     private void OnSnapshotChanged(object? sender, RenderQueueSnapshot e)
     {
         NotifyStateChanged();

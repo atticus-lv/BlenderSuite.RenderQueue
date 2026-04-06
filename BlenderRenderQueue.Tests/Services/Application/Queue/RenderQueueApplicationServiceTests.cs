@@ -24,7 +24,8 @@ public sealed class RenderQueueApplicationServiceTests
         var workerHost = new FakeBlenderWorkerHost();
         var executionService = new FakeRenderTaskExecutionService();
         var persistenceService = new FakeDataPersistenceService();
-        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService);
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
 
         var response = await sut.SubmitTaskAsync(new LocalSubmissionRequest
         {
@@ -58,7 +59,8 @@ public sealed class RenderQueueApplicationServiceTests
         var workerHost = new FakeBlenderWorkerHost();
         var executionService = new FakeRenderTaskExecutionService();
         var persistenceService = new FakeDataPersistenceService();
-        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService);
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
         sut.SetBlenderPath(blenderExecutable.Path);
 
         await sut.SubmitTaskAsync(new LocalSubmissionRequest

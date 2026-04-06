@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.ViewModels;
@@ -13,6 +15,12 @@ namespace BlenderRenderQueue.Services.Application.Queue;
 public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
 {
     private readonly ConcurrentDictionary<Guid, ExecutionContext> _contexts = new();
+    private readonly IRenderLogService _logService;
+
+    public RenderTaskExecutionService(IRenderLogService logService)
+    {
+        _logService = logService;
+    }
 
     public Task StartAsync(RenderTaskViewModel task, IBlenderWorkerHost workerHost)
     {
@@ -29,12 +37,14 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         if (!_contexts.TryGetValue(task.Id, out var context))
         {
             task.LogLine("正在暂停渲染...");
+            WriteTaskEvent(task, RenderLogScope.Task, "用户请求暂停渲染。");
             task.FinalizePaused();
             return Task.CompletedTask;
         }
 
         context.CancellationRequested = true;
         task.LogLine("正在暂停渲染...");
+        WriteTaskEvent(task, RenderLogScope.Task, "用户请求暂停渲染。");
         task.FinalizePaused();
 
         _ = Task.Run(async () =>
@@ -60,11 +70,13 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
     {
         if (!_contexts.TryGetValue(task.Id, out var context))
         {
+            WriteTaskEvent(task, RenderLogScope.Task, "用户请求停止渲染。");
             task.FinalizeStopped();
             return;
         }
 
         context.CancellationRequested = true;
+        WriteTaskEvent(task, RenderLogScope.Task, "用户请求停止渲染。");
 
         _ = Task.Run(async () =>
         {
@@ -75,6 +87,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
             catch (Exception ex)
             {
                 task.LogLine($"停止渲染失败: {ex.Message}");
+                WriteTaskEvent(task, RenderLogScope.Task, $"停止渲染失败: {ex.Message}", RenderLogLevel.Warning);
             }
             finally
             {
@@ -127,16 +140,28 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
 
             var request = task.BuildWorkerRequest(resumeFromFrame);
             task.SetStatusDetail(string.Empty);
-            task.LogLine($"{(isResume ? "恢复渲染" : "开始渲染")}: {task.DescribeWorkerRequest(request)}");
+            WriteTaskEvent(
+                task,
+                RenderLogScope.Task,
+                $"{(isResume ? "恢复渲染" : "开始渲染")}: {task.DescribeWorkerRequest(request)}",
+                metadata: new Dictionary<string, string>
+                {
+                    ["kind"] = isResume ? "resume" : "start"
+                });
 
             var response = await ExecuteRenderWithRecoveryAsync(context, request, renderPipelineVersion);
-            task.LogLine(isResume
-                ? (response.OutputVerified ? "恢复渲染输出已校验" : "恢复渲染完成，但未能校验输出文件")
-                : (response.OutputVerified ? "渲染输出已校验" : "渲染已完成，但未能校验输出文件"));
+            WriteTaskEvent(
+                task,
+                response.OutputVerified ? RenderLogScope.Task : RenderLogScope.Recovery,
+                isResume
+                    ? (response.OutputVerified ? "恢复渲染输出已校验" : "恢复渲染完成，但未能校验输出文件")
+                    : (response.OutputVerified ? "渲染输出已校验" : "渲染已完成，但未能校验输出文件"),
+                response.OutputVerified ? RenderLogLevel.Info : RenderLogLevel.Warning);
 
             EnsureRenderPipelineIsCurrent(task, context, renderPipelineVersion);
             if (task.Status == RenderTaskStatus.Running)
             {
+                WriteTaskEvent(task, RenderLogScope.Task, "渲染任务完成。");
                 task.FinalizeCompleted();
             }
         }
@@ -144,11 +169,13 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         {
             if (context.CancellationRequested || ex.CancellationToken.IsCancellationRequested)
             {
+                WriteTaskEvent(task, RenderLogScope.Task, isResume ? "恢复渲染任务被用户取消。" : "渲染任务被用户取消。", RenderLogLevel.Warning);
                 task.FinalizeCancelled(isResume ? "恢复渲染任务被用户取消" : "渲染任务被用户取消");
             }
             else
             {
                 var detail = BuildFinalFailureDetail(context, ex);
+                WriteTaskEvent(task, RenderLogScope.Recovery, $"{(isResume ? "恢复渲染任务" : "渲染任务")}超时: {detail}", RenderLogLevel.Error);
                 task.FinalizeFailed(detail, $"{(isResume ? "恢复渲染任务" : "渲染任务")}超时: {detail}");
             }
         }
@@ -156,10 +183,12 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         {
             if (context.CancellationRequested)
             {
+                WriteTaskEvent(task, RenderLogScope.Task, isResume ? "恢复渲染被用户取消。" : "渲染操作被用户取消。", RenderLogLevel.Warning);
                 task.FinalizeCancelled(isResume ? "恢复渲染被用户取消" : "渲染操作被用户取消");
             }
             else
             {
+                WriteTaskEvent(task, RenderLogScope.Recovery, $"{(isResume ? "恢复渲染" : "渲染")}操作被取消: {ex.Message}", RenderLogLevel.Warning);
                 task.FinalizeCancelled($"{(isResume ? "恢复渲染" : "渲染")}操作被取消: {ex.Message}");
             }
         }
@@ -169,12 +198,14 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
             {
                 if (task.Status != RenderTaskStatus.Paused)
                 {
+                    WriteTaskEvent(task, RenderLogScope.Task, isResume ? "恢复渲染已取消。" : "渲染已取消。", RenderLogLevel.Warning);
                     task.FinalizeCancelled(isResume ? "恢复渲染已取消" : "渲染已取消");
                 }
             }
             else
             {
                 var detail = BuildFinalFailureDetail(context, ex);
+                WriteTaskEvent(task, RenderLogScope.Recovery, $"{(isResume ? "恢复渲染" : "渲染")}失败: {detail}", RenderLogLevel.Error);
                 task.FinalizeFailed(detail, $"{(isResume ? "恢复渲染" : "渲染")}失败: {detail}");
             }
         }
@@ -209,6 +240,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
             {
                 var resumeFrame = context.Task.GetResumeFrameForRetry(request);
                 var reason = GetRecoverableFailureReason(context, ex);
+                context.LastRecoveryReason = reason;
                 var recovered = await TryRecoverAndRetryAsync(context, reason, resumeFrame);
                 if (!recovered)
                 {
@@ -217,7 +249,14 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
 
                 EnsureRenderPipelineIsCurrent(context.Task, context, renderPipelineVersion);
                 request = context.Task.BuildWorkerRequest(resumeFrame);
-                context.Task.LogLine($"自动恢复成功，继续渲染: {context.Task.DescribeWorkerRequest(request)}");
+                WriteTaskEvent(
+                    context.Task,
+                    RenderLogScope.Recovery,
+                    $"自动恢复成功，继续渲染: {context.Task.DescribeWorkerRequest(request)}",
+                    metadata: new Dictionary<string, string>
+                    {
+                        ["resume_frame"] = resumeFrame.ToString()
+                    });
             }
         }
     }
@@ -406,7 +445,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
     {
         if (context.AutomaticRecoveryAttempts >= context.MaxRetryAttempts)
         {
-            context.Task.LogLine($"{reason}，已达到最大自动重试次数 ({context.MaxRetryAttempts})。");
+            WriteTaskEvent(context.Task, RenderLogScope.Recovery, $"{reason}，已达到最大自动重试次数 ({context.MaxRetryAttempts})。", RenderLogLevel.Error);
             return false;
         }
 
@@ -415,13 +454,21 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
             "RenderTask_StatusDetail_RecoveringWorker",
             context.AutomaticRecoveryAttempts,
             context.MaxRetryAttempts));
-        context.Task.LogLine($"{reason}，尝试自动恢复 ({context.AutomaticRecoveryAttempts}/{context.MaxRetryAttempts})...");
+        WriteTaskEvent(
+            context.Task,
+            RenderLogScope.Recovery,
+            $"{reason}，尝试自动恢复 ({context.AutomaticRecoveryAttempts}/{context.MaxRetryAttempts})...",
+            RenderLogLevel.Warning);
 
         try
         {
             context.SuppressUnexpectedExitHandling = true;
             var recoveryResult = await context.WorkerHost.RecoverAsync();
-            context.Task.LogLine(recoveryResult.Message);
+            WriteTaskEvent(
+                context.Task,
+                RenderLogScope.Recovery,
+                recoveryResult.Message,
+                recoveryResult.Recovered ? RenderLogLevel.Info : RenderLogLevel.Error);
             if (!recoveryResult.Recovered)
             {
                 return false;
@@ -431,7 +478,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         }
         catch (Exception ex)
         {
-            context.Task.LogLine($"自动恢复失败: {ex.Message}");
+            WriteTaskEvent(context.Task, RenderLogScope.Recovery, $"自动恢复失败: {ex.Message}", RenderLogLevel.Error);
             return false;
         }
         finally
@@ -478,7 +525,16 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
                 return;
             }
 
-            context.Task.LogLine($"Blender进程异常退出，退出码: {exitCode}");
+            WriteTaskEvent(
+                context.Task,
+                RenderLogScope.Worker,
+                $"Blender 进程异常退出，退出码: {exitCode}",
+                exitCode == 0 ? RenderLogLevel.Warning : RenderLogLevel.Error,
+                metadata: new Dictionary<string, string>
+                {
+                    ["kind"] = "worker_exit",
+                    ["exit_code"] = exitCode.ToString()
+                });
             context.LastActivityTime = DateTime.UtcNow;
 
             if (context.CancellationRequested || context.SuppressUnexpectedExitHandling || exitCode == 0)
@@ -550,10 +606,21 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         public bool SuppressUnexpectedExitHandling { get; set; }
         public int RenderPipelineVersion { get; set; }
         public long ActiveWorkerProcessGeneration { get; set; }
+        public string LastRecoveryReason { get; set; } = string.Empty;
         public Action<string>? OutputHandler { get; set; }
         public Action<string>? ErrorHandler { get; set; }
         public Action<int>? ExitHandler { get; set; }
         public int TaskTimeoutSeconds => Task.GetGlobalRenderTimeoutSeconds();
         public int MaxRetryAttempts => Task.GetGlobalMaxRetryAttempts();
+    }
+
+    private void WriteTaskEvent(
+        RenderTaskViewModel task,
+        RenderLogScope scope,
+        string message,
+        RenderLogLevel level = RenderLogLevel.Info,
+        IReadOnlyDictionary<string, string>? metadata = null)
+    {
+        _logService.Write(level, scope, message, task.Id, task.BlendFilePath, nameof(RenderTaskExecutionService), metadata);
     }
 }
