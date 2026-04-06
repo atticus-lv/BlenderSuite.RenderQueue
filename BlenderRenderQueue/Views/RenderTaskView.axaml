@@ -254,18 +254,21 @@
                                             <ItemsControl ItemsSource="{Binding TimelineEntries}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="logVm:TaskLogEntryViewModel">
-                                                        <suki:GlassCard Margin="0 0 0 8" IsAnimated="False">
-                                                            <StackPanel Spacing="6" Margin="12">
-                                                                <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="8">
-                                                                    <SelectableTextBlock Grid.Column="0" Text="{Binding TimeText}" FontWeight="SemiBold" />
-                                                                    <Border Grid.Column="1" CornerRadius="10" Padding="8,2" Background="#223B82F6">
-                                                                        <TextBlock Text="{Binding ScopeText}" FontSize="11" />
+                                                        <suki:GlassCard Margin="0 0 0 4" IsAnimated="False" Padding="0">
+                                                            <StackPanel Spacing="3" Margin="6">
+                                                                <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="5">
+                                                                    <SelectableTextBlock Grid.Column="0"
+                                                                                         Text="{Binding TimeText}"
+                                                                                         FontWeight="SemiBold"
+                                                                                         FontSize="12" />
+                                                                    <Border Grid.Column="1" CornerRadius="8" Padding="5,1" Background="#223B82F6">
+                                                                        <TextBlock Text="{Binding ScopeText}" FontSize="10" />
                                                                     </Border>
-                                                                    <Border Grid.Column="2" CornerRadius="10" Padding="8,2" Background="#2210B981">
-                                                                        <TextBlock Text="{Binding LevelText}" FontSize="11" />
+                                                                    <Border Grid.Column="2" CornerRadius="8" Padding="5,1" Background="#2210B981">
+                                                                        <TextBlock Text="{Binding LevelText}" FontSize="10" />
                                                                     </Border>
                                                                 </Grid>
-                                                                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+                                                                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="12" />
                                                             </StackPanel>
                                                         </suki:GlassCard>
                                                     </DataTemplate>
@@ -289,16 +292,20 @@
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate x:DataType="logVm:TaskLogEntryViewModel">
                                                         <Border Margin="0 0 0 8"
-                                                                Padding="10"
-                                                                CornerRadius="8"
+                                                                Padding="8"
+                                                                CornerRadius="6"
                                                                 Background="#11000000">
-                                                            <StackPanel Spacing="4">
-                                                                <SelectableTextBlock Text="{Binding TimestampText}" FontWeight="SemiBold" />
-                                                                <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+                                                            <StackPanel Spacing="3">
+                                                                <SelectableTextBlock Text="{Binding TimestampText}"
+                                                                                     FontWeight="SemiBold"
+                                                                                     FontSize="12" />
+                                                                <SelectableTextBlock Text="{Binding Message}"
+                                                                                     TextWrapping="Wrap"
+                                                                                     FontSize="12" />
                                                                 <SelectableTextBlock Text="{Binding MetadataText}"
                                                                                      TextWrapping="Wrap"
                                                                                      FontFamily="Consolas"
-                                                                                     FontSize="11"
+                                                                                     FontSize="10"
                                                                                      Opacity="0.7"
                                                                                      IsVisible="{Binding HasMetadata}" />
                                                             </StackPanel>
@@ -313,12 +320,12 @@
                                                  TextWrapping="Wrap"
                                                  IsReadOnly="True"
                                                  AcceptsReturn="True"
-                                                 MinHeight="120"
+                                                 MinHeight="96"
                                                  BorderThickness="0"
                                                  Background="Transparent"
                                                  FontFamily="Consolas"
-                                                 FontSize="12"
-                                                 Padding="8" />
+                                                 FontSize="11"
+                                                 Padding="6" />
                                     </Grid>
                                 </TabItem>
                             </TabControl>
