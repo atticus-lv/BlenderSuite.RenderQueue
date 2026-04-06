@@ -29,6 +29,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
     private readonly IRenderLogService _logService;
     private readonly List<Task> _runningTasks = [];
     private readonly object _queueLock = new();
+    private readonly object _saveStateLock = new();
     private readonly Queue<TimeSpan> _recentFrameRenderTimes = new();
     private const int MaxRecentFrames = 3;
     private readonly System.Timers.Timer _remainingTimeTimer;
@@ -36,7 +37,6 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
     private RenderTaskViewModel? _pausedTask;
     private int _pausedFrame;
     private BlenderProcessService? _blenderProcessService;
-    private BlenderVideoService? _blenderVideoService;
     private BlenderProcessService? _processService;
     private string? _blenderPath;
     private int _globalRenderTimeoutSeconds = 300;
@@ -49,6 +49,8 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
     private int _activeTaskCount;
     private int _completedTaskCount;
     private int _failedTaskCount;
+    private bool _savePending;
+    private bool _saveWorkerRunning;
     private bool _disposed;
 
     public RenderQueueApplicationService(
@@ -127,8 +129,6 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
         _processService = null;
 
         _blenderPath = blenderPath;
-        _blenderVideoService = null;
-
         if (!string.IsNullOrWhiteSpace(blenderPath))
         {
             _processService = new BlenderProcessService(blenderPath);
@@ -1062,29 +1062,67 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
             .ContinueWith(t => t.Result ?? Enumerable.Empty<string>());
     }
 
-    private async void AutoSaveQueueData()
+    private void AutoSaveQueueData()
+    {
+        lock (_saveStateLock)
+        {
+            _savePending = true;
+            if (_saveWorkerRunning)
+            {
+                return;
+            }
+
+            _saveWorkerRunning = true;
+        }
+
+        _ = RunAutoSaveLoopAsync();
+    }
+
+    private async Task RunAutoSaveLoopAsync()
     {
         try
         {
-            await SaveQueueDataAsync();
+            while (true)
+            {
+                lock (_saveStateLock)
+                {
+                    if (!_savePending)
+                    {
+                        _saveWorkerRunning = false;
+                        return;
+                    }
+
+                    _savePending = false;
+                }
+
+                var appData = await Dispatcher.UIThread.InvokeAsync(BuildAppDataSnapshot).GetTask();
+                var saved = await _dataPersistenceService.SaveDataAsync(appData);
+                if (!saved)
+                {
+                    Console.WriteLine("[RenderQueueApplicationService] Auto-save request completed with persistence failure.");
+                }
+            }
         }
         catch (Exception ex)
         {
+            lock (_saveStateLock)
+            {
+                _saveWorkerRunning = false;
+            }
+
             Console.WriteLine($"[RenderQueueApplicationService] Error in auto-save: {ex.Message}");
         }
     }
 
-    private async Task SaveQueueDataAsync()
+    private AppData BuildAppDataSnapshot()
     {
-        var appData = new AppData
+        return new AppData
         {
             RenderQueue = RenderTasks.Select(task => new RenderTaskData
             {
                 RenderTask = CreateRenderTaskInfo(task)
             }).ToList()
         };
-
-        await _dataPersistenceService.SaveDataAsync(appData);
     }
 
     private static RenderTaskInfo CreateRenderTaskInfo(RenderTaskViewModel task)

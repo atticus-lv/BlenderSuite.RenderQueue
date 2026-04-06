@@ -90,10 +90,10 @@ internal sealed class DesignTimeQueueApplicationService : IRenderQueueApplicatio
     public bool AutoStartNext { get; set; } = true;
     public PostRenderBehavior PostRenderBehavior { get; set; } = PostRenderBehavior.None;
     public event EventHandler<RenderQueueSnapshot>? SnapshotChanged;
-    public event EventHandler<QueueStatusChangedEventArgs>? QueueStatusChanged;
-    public event EventHandler<TaskCompletedEventArgs>? TaskCompleted;
-    public event EventHandler<string>? StatusMessageChanged;
-    public event EventHandler<ConfirmDialogRequestedEventArgs>? ConfirmDialogRequested;
+    public event EventHandler<QueueStatusChangedEventArgs>? QueueStatusChanged { add { } remove { } }
+    public event EventHandler<TaskCompletedEventArgs>? TaskCompleted { add { } remove { } }
+    public event EventHandler<string>? StatusMessageChanged { add { } remove { } }
+    public event EventHandler<ConfirmDialogRequestedEventArgs>? ConfirmDialogRequested { add { } remove { } }
 
     public void SetDesignState(
         IReadOnlyList<RenderTaskViewModel> tasks,
@@ -165,9 +165,9 @@ internal sealed class DesignTimeQueueApplicationService : IRenderQueueApplicatio
 internal sealed class DesignTimeWorkerHost : IBlenderWorkerHost
 {
     public BlenderWorkerHostState State { get; } = new();
-    public event System.Action<string>? OnOutputReceived;
-    public event System.Action<string>? OnErrorReceived;
-    public event System.Action<int>? OnProcessExited;
+    public event System.Action<string>? OnOutputReceived { add { } remove { } }
+    public event System.Action<string>? OnErrorReceived { add { } remove { } }
+    public event System.Action<int>? OnProcessExited { add { } remove { } }
 
     public Task EnsureReadyAsync(string blenderExecutablePath, CancellationToken cancellationToken = default) => Task.CompletedTask;
 

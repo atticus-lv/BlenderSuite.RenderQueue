@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Browser" />
-    <PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" />
   </ItemGroup>
 
   <ItemGroup>

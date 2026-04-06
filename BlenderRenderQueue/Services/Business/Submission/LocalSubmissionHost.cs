@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -29,6 +31,8 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
         WriteIndented = true
     };
 
+    private readonly object _clientTasksLock = new();
+    private readonly HashSet<Task> _clientTasks = [];
     private CancellationTokenSource? _hostCts;
     private TcpListener? _listener;
     private Thread? _acceptLoopThread;
@@ -123,6 +127,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
 
             _listener = null;
             _acceptLoopThread = null;
+            await WaitForClientTasksAsync(cancellationToken);
             _hostCts?.Dispose();
             _hostCts = null;
             CurrentEndpoint = null;
@@ -166,7 +171,8 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
             try
             {
                 client = _listener.AcceptTcpClient();
-                HandleClient(client, cancellationToken);
+                TrackClientTask(HandleClientAsync(client, cancellationToken));
+                client = null;
             }
             catch (ObjectDisposedException)
             {
@@ -193,99 +199,79 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
         }
     }
 
-    private void HandleClient(TcpClient client, CancellationToken cancellationToken)
+    private async Task HandleClientAsync(TcpClient client, CancellationToken cancellationToken)
     {
-        using (client)
+        using var requestCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        requestCts.CancelAfter(TimeSpan.FromSeconds(5));
+        using var _ = client;
+        client.ReceiveTimeout = 2000;
+        client.SendTimeout = 2000;
+        await using var stream = client.GetStream();
+
+        try
         {
-            client.ReceiveTimeout = 2000;
-            client.SendTimeout = 2000;
-            using var stream = client.GetStream();
+            var requestLine = await ReadRequestLineAsync(stream, requestCts.Token);
+            if (string.IsNullOrWhiteSpace(requestLine))
+            {
+                await WriteResponseAsync(stream, new SubmissionWireResponse
+                {
+                    Ok = false,
+                    Message = "Empty submission request.",
+                    QueueState = _queueApplicationService.Snapshot.State.ToString()
+                }, requestCts.Token);
+                return;
+            }
+
+            var request = JsonSerializer.Deserialize<SubmissionWireRequest>(requestLine, _wireJsonOptions);
+            if (request == null)
+            {
+                await WriteResponseAsync(stream, new SubmissionWireResponse
+                {
+                    Ok = false,
+                    Message = "Invalid submission payload.",
+                    QueueState = _queueApplicationService.Snapshot.State.ToString()
+                }, requestCts.Token);
+                return;
+            }
+
+            if (!string.Equals(request.Token, CurrentEndpoint?.Token, StringComparison.Ordinal))
+            {
+                await WriteResponseAsync(stream, new SubmissionWireResponse
+                {
+                    RequestId = request.RequestId,
+                    Ok = false,
+                    Message = "Invalid submission token.",
+                    QueueState = _queueApplicationService.Snapshot.State.ToString()
+                }, requestCts.Token);
+                return;
+            }
+
+            var response = await HandleRequestAsync(request, requestCts.Token);
+            await WriteResponseAsync(stream, response, requestCts.Token);
+        }
+        catch (OperationCanceledException) when (requestCts.IsCancellationRequested)
+        {
+            _logService.Write(RenderLogLevel.Warning, RenderLogScope.Submission, "submission 请求处理超时或已取消。", source: nameof(LocalSubmissionHost));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[LocalSubmissionHost] Client handling error: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"submission 请求处理失败: {ex.Message}", source: nameof(LocalSubmissionHost));
 
             try
             {
-                var requestLine = ReadRequestLine(stream, cancellationToken);
-                if (string.IsNullOrWhiteSpace(requestLine))
-                {
-                    WriteResponse(stream, new SubmissionWireResponse
-                    {
-                        Ok = false,
-                        Message = "Empty submission request.",
-                        QueueState = _queueApplicationService.Snapshot.State.ToString()
-                    });
-                    return;
-                }
-
-                var request = JsonSerializer.Deserialize<SubmissionWireRequest>(requestLine, _wireJsonOptions);
-                if (request == null)
-                {
-                    WriteResponse(stream, new SubmissionWireResponse
-                    {
-                        Ok = false,
-                        Message = "Invalid submission payload.",
-                        QueueState = _queueApplicationService.Snapshot.State.ToString()
-                    });
-                    return;
-                }
-
-                if (!string.Equals(request.Token, CurrentEndpoint?.Token, StringComparison.Ordinal))
-                {
-                    WriteResponse(stream, new SubmissionWireResponse
-                    {
-                        RequestId = request.RequestId,
-                        Ok = false,
-                        Message = "Invalid submission token.",
-                        QueueState = _queueApplicationService.Snapshot.State.ToString()
-                    });
-                    return;
-                }
-
-                var response = HandleRequestAsync(request, cancellationToken).GetAwaiter().GetResult();
-                WriteResponse(stream, response);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[LocalSubmissionHost] Client handling error: {ex.Message}");
-                _logService.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"submission 请求处理失败: {ex.Message}", source: nameof(LocalSubmissionHost));
-                WriteResponse(stream, new SubmissionWireResponse
+                await WriteResponseAsync(stream, new SubmissionWireResponse
                 {
                     Ok = false,
                     Message = ex.Message,
                     QueueState = _queueApplicationService.Snapshot.State.ToString()
-                });
+                }, CancellationToken.None);
+            }
+            catch
+            {
+                // ignored
             }
         }
-    }
-
-    private static string ReadRequestLine(NetworkStream stream, CancellationToken cancellationToken)
-    {
-        using var buffer = new MemoryStream();
-        var chunk = new byte[1024];
-
-        while (true)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var bytesRead = stream.Read(chunk, 0, chunk.Length);
-            if (bytesRead <= 0)
-            {
-                break;
-            }
-
-            var newlineIndex = Array.IndexOf(chunk, (byte)'\n', 0, bytesRead);
-            if (newlineIndex >= 0)
-            {
-                buffer.Write(chunk, 0, newlineIndex);
-                break;
-            }
-
-            buffer.Write(chunk, 0, bytesRead);
-
-            if (buffer.Length > 64 * 1024)
-            {
-                throw new InvalidOperationException("Submission request exceeded the 64 KB limit.");
-            }
-        }
-
-        return Encoding.UTF8.GetString(buffer.ToArray()).Trim();
     }
 
     private async Task<SubmissionWireResponse> HandleRequestAsync(SubmissionWireRequest request, CancellationToken cancellationToken)
@@ -473,11 +459,50 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
         return Encoding.UTF8.GetString(buffer.ToArray()).Trim();
     }
 
-    private void WriteResponse(NetworkStream stream, SubmissionWireResponse response)
+    private async Task WriteResponseAsync(NetworkStream stream, SubmissionWireResponse response, CancellationToken cancellationToken)
     {
         var payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response, _wireJsonOptions) + "\n");
-        stream.Write(payload, 0, payload.Length);
-        stream.Flush();
+        await stream.WriteAsync(payload, cancellationToken);
+        await stream.FlushAsync(cancellationToken);
+    }
+
+    private void TrackClientTask(Task clientTask)
+    {
+        lock (_clientTasksLock)
+        {
+            _clientTasks.Add(clientTask);
+        }
+
+        _ = clientTask.ContinueWith(task =>
+        {
+            lock (_clientTasksLock)
+            {
+                _clientTasks.Remove(task);
+            }
+        }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+    }
+
+    private async Task WaitForClientTasksAsync(CancellationToken cancellationToken)
+    {
+        Task[] tasks;
+        lock (_clientTasksLock)
+        {
+            tasks = _clientTasks.ToArray();
+        }
+
+        if (tasks.Length == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.WhenAny(Task.WhenAll(tasks), Task.Delay(TimeSpan.FromSeconds(2), cancellationToken));
+        }
+        catch
+        {
+            // ignored
+        }
     }
 
     private void ThrowIfDisposed()

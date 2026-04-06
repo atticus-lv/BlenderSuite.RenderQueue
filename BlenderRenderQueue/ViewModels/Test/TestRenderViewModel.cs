@@ -163,40 +163,27 @@ public partial class TestRenderViewModel : ViewModelBase
 	private async Task BrowseBlendFile()
 	{
 		var path = await this.SelectFile("选择 blend 文件", GetBlendFileTypes());
-		if (!string.IsNullOrWhiteSpace(path))
-		{
-			BlendFilePath = path;
-			// 选择完文件后，通过FilePropertiesViewModel加载所有属性
-			try
+			if (!string.IsNullOrWhiteSpace(path))
 			{
-				_processService ??= new BlenderProcessService(BlenderPath);
-				EnqueueLog("[QUERY] 开始加载文件属性...");
-				void TmpOut(string line) => EnqueueLog($"[QOUT] {line}");
-				void TmpErr(string line) => EnqueueLog($"[QERR] {line}");
-				// _exe.OnOutputReceived += TmpOut;
-				// _exe.OnErrorReceived += TmpErr;
-
+				BlendFilePath = path;
+				// 选择完文件后，通过FilePropertiesViewModel加载所有属性
 				try
 				{
+					_processService ??= new BlenderProcessService(BlenderPath);
+					EnqueueLog("[QUERY] 开始加载文件属性...");
 					await ScenePropertiesViewModel.LoadPropertiesAsync(BlenderPath, BlendFilePath);
-					
+
 					// 从FilePropertiesViewModel获取帧范围信息
 					StartFrame = ScenePropertiesViewModel.SceneProperties.FrameStart;
 					EndFrame = ScenePropertiesViewModel.SceneProperties.FrameEnd;
 					EnqueueLog($"[QUERY] 文件属性加载完成: 帧范围 {StartFrame}..{EndFrame}");
 				}
-				finally
+				catch (Exception ex)
 				{
-					// _processService.OnOutputReceived -= TmpOut;
-					// _processService.OnErrorReceived -= TmpErr;
+					EnqueueLog($"[QUERY] 加载文件属性失败: {ex.Message}");
 				}
 			}
-			catch (Exception ex)
-			{
-				EnqueueLog($"[QUERY] 加载文件属性失败: {ex.Message}");
-			}
 		}
-	}
 
 	private static IEnumerable<FilePickerFileType> GetBlendFileTypes()
 	{

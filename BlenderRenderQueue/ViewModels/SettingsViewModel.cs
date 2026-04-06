@@ -135,9 +135,6 @@ public partial class SettingsViewModel : ViewModelBase
     // 事件：当Blender验证状态发生变化时通知
     public event EventHandler<BlenderValidationChangedEventArgs>? BlenderValidationChanged;
 
-    // 事件：当运行任务状态发生变化时通知
-    public event EventHandler<bool>? RunningTasksStatusChanged;
-
     public SettingsViewModel(
         ISettingsPersistenceService settingsPersistenceService,
         IBlenderExtensionManager blenderExtensionManager)

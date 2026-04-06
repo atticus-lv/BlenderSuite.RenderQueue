@@ -46,7 +46,7 @@ public class Localizer : INotifyPropertyChanged
 {
     private const string IndexerName = "Item";
     private const string IndexerArrayName = "Item[]";
-    private Dictionary<string, string>? _mStrings = null;
+    private Dictionary<string, string>? _mStrings;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -67,20 +67,20 @@ public class Localizer : INotifyPropertyChanged
         using (StreamReader sr = new StreamReader(AssetLoader.Open(uri), Encoding.UTF8))
         {
             string jsonString = sr.ReadToEnd();
-            _mStrings = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonString, _jsonOptions);
+            _mStrings = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonString, _jsonOptions) ?? [];
         }
 
         Invalidate();
         return true;
     }
 
-    public string Language { get; private set; }
+    public string Language { get; private set; } = string.Empty;
 
     public string this[string key]
     {
         get
         {
-            if (_mStrings != null && _mStrings.TryGetValue(key, out string res))
+            if (_mStrings != null && _mStrings.TryGetValue(key, out var res))
                 return res.Replace("\\n", "\n");
 
             return $"{Language}:{key}";

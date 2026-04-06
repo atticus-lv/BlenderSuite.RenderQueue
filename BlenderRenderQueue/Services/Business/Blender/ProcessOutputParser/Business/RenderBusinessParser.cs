@@ -12,7 +12,6 @@ namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Busin
 public class RenderBusinessParser : IBusinessParser<RenderEvent>
 {
     private RenderProgress _current = new();
-    private bool _isAnimation;
     private int _currentFrame;
     private int? _startFrame;
     private int? _endFrame;
@@ -34,7 +33,6 @@ public class RenderBusinessParser : IBusinessParser<RenderEvent>
         var mAnim = RxAnimation.Match(line);
         if (mAnim.Success)
         {
-            _isAnimation = true;
             _startFrame = int.Parse(mAnim.Groups["start"].Value, CultureInfo.InvariantCulture);
             _endFrame = int.Parse(mAnim.Groups["end"].Value, CultureInfo.InvariantCulture);
             _current = new RenderProgress
@@ -54,7 +52,6 @@ public class RenderBusinessParser : IBusinessParser<RenderEvent>
         var mSingle = RxSingleFrame.Match(line);
         if (mSingle.Success)
         {
-            _isAnimation = false;
             _currentFrame = int.Parse(mSingle.Groups["frame"].Value, CultureInfo.InvariantCulture);
             _current = new RenderProgress
             {
@@ -102,7 +99,6 @@ public class RenderBusinessParser : IBusinessParser<RenderEvent>
     public void Reset()
     {
         _current = new RenderProgress();
-        _isAnimation = false;
         _currentFrame = 0;
         _startFrame = null;
         _endFrame = null;

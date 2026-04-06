@@ -106,12 +106,7 @@ public static class ClipboardHelper
 
     public static bool SetPng(string srcPng)
     {
-        byte[] data;
-        using (var img = new FileStream(srcPng, FileMode.Open, FileAccess.Read))
-        {
-            data = new byte[img.Length];
-            img.Read(data, 0, data.Length);
-        }
+        var data = File.ReadAllBytes(srcPng);
 
         int size = data.Length;
         IntPtr hMem = GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)size);
@@ -288,7 +283,8 @@ public static class ClipboardHelper
             
             if (topLevel?.Clipboard != null)
             {
-                return await topLevel.Clipboard.GetTextAsync();
+                using var data = await topLevel.Clipboard.TryGetDataAsync();
+                return data == null ? null : await data.TryGetTextAsync();
             }
             
             return null;
@@ -319,7 +315,8 @@ public static class ClipboardHelper
             
             if (topLevel?.Clipboard != null)
             {
-                return await topLevel.Clipboard.GetTextAsync();
+                using var data = await topLevel.Clipboard.TryGetDataAsync();
+                return data == null ? null : await data.TryGetTextAsync();
             }
             
             return null;

@@ -139,7 +139,7 @@ public abstract class DropBehaviorBase : Behavior<Control>
             return;
         }
 
-        var parameter = PassEventArgsToCommand ? (object)e : e.Data;
+        var parameter = PassEventArgsToCommand ? (object)e : e.DataTransfer;
         
         if (Command.CanExecute(parameter))
         {
@@ -152,4 +152,3 @@ public abstract class DropBehaviorBase : Behavior<Control>
         return sender is Control control ? control.DataContext : null;
     }
 }
-

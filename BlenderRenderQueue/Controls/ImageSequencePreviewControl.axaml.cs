@@ -50,7 +50,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     private string _errorMessage = string.Empty;
     private bool _hasImages;
     private ObservableCollection<string> _imageFiles = new();
-    private Bitmap?[] _imageCache;
+    private Bitmap?[] _imageCache = [];
     private FileSystemWatcher? _fileWatcher;
     private readonly object _lockObject = new object();
 
@@ -395,7 +395,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
                 bitmap?.Dispose();
             }
 
-            _imageCache = null;
+            _imageCache = [];
         }
 
         _imageFiles.Clear();
@@ -585,6 +585,9 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
     private void Button_OnClick(object? sender, RoutedEventArgs e)
     {
-        var success = FileSystemHelper.OpenFileDirectory(FolderPath);
+        if (!string.IsNullOrWhiteSpace(FolderPath))
+        {
+            FileSystemHelper.OpenFileDirectory(FolderPath);
+        }
     }
 }

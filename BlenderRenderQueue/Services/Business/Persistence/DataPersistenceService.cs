@@ -42,21 +42,34 @@ public class DataPersistenceService : IDataPersistenceService
 
     public async Task<bool> SaveDataAsync(AppData data)
     {
+        string? tempFilePath = null;
         try
         {
             Console.WriteLine($"[DataPersistenceService] Saving data to: {_dataFilePath}");
 
-            // 序列化为 JSON
             var json = JsonSerializer.Serialize(data, _jsonOptions);
+            tempFilePath = $"{_dataFilePath}.{Guid.NewGuid():N}.tmp";
 
-            // 异步写入文件
-            await File.WriteAllTextAsync(_dataFilePath, json);
+            await File.WriteAllTextAsync(tempFilePath, json);
+            File.Move(tempFilePath, _dataFilePath, overwrite: true);
 
             Console.WriteLine($"[DataPersistenceService] ✅ Data saved successfully");
             return true;
         }
         catch (Exception ex)
         {
+            if (!string.IsNullOrWhiteSpace(tempFilePath) && File.Exists(tempFilePath))
+            {
+                try
+                {
+                    File.Delete(tempFilePath);
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+
             Console.WriteLine($"[DataPersistenceService] ❌ Error saving data: {ex.Message}");
             return false;
         }

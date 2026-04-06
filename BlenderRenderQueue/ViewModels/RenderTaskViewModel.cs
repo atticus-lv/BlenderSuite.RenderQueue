@@ -482,7 +482,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
             if (!OverrideScene && string.IsNullOrEmpty(SelectedSceneName))
             {
-                SelectedSceneName = ScenePropertiesView.SelectedSceneName;
+                SelectedSceneName = ScenePropertiesView.SelectedSceneName ?? string.Empty;
             }
 
             OnPropertyChanged(nameof(DisplayStartFrame));
@@ -557,7 +557,6 @@ public partial class RenderTaskViewModel : ViewModelBase
     // 全局超时设置（从SettingsViewModel获取）
     private int _globalRenderTimeoutSeconds = 300; // 默认5分钟
     private int _globalMaxRetryAttempts = 3; // 默认最大重试3次
-    private int _currentFrameRetryAttempts = 0; // 当前帧的重试次数
 
     // 视频生成相关设置
     private string _videoCodec = "H264"; // 默认使用H264编码
@@ -603,13 +602,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             return !string.IsNullOrEmpty(framePath) ? Path.GetDirectoryName(framePath)?.Replace("\\", "/") : null;
         }
     }
-
-    // 保存停止时的进度状态
-    private int _lastCompletedFrame = 0;
-    private bool _wasStopped = false;
-
     // 内部状态
-    private IBlenderWorkerHost? _currentBlenderProcess;
     private IRenderLogService? _logService;
     private DateTimeOffset? _logClearCutoff;
 
@@ -857,7 +850,7 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 如果没有覆写场景，设置默认场景名称
             if (!OverrideScene && string.IsNullOrEmpty(SelectedSceneName))
             {
-                SelectedSceneName = ScenePropertiesView.SelectedSceneName;
+                SelectedSceneName = ScenePropertiesView.SelectedSceneName ?? string.Empty;
             }
 
             // 触发显示属性更新
@@ -1392,8 +1385,6 @@ public partial class RenderTaskViewModel : ViewModelBase
                 break;
             case RenderStarted rs:
                 EnqueueLog($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
-                // 重置当前帧的重试计数器
-                _currentFrameRetryAttempts = 0;
                 break;
             case RenderSaved saved:
                 EnqueueLog($"已保存: {saved.Path} (帧 {saved.Frame})");
@@ -1402,8 +1393,6 @@ public partial class RenderTaskViewModel : ViewModelBase
                 break;
             case RenderCompletedFrame done:
                 EnqueueLog($"帧 {done.Frame} 完成，用时 {done.Time}");
-                // 帧完成时重置帧重试计数器
-                _currentFrameRetryAttempts = 0;
                 break;
             case RenderCompletedAll:
                 EnqueueLog("全部帧完成");
@@ -1431,12 +1420,6 @@ public partial class RenderTaskViewModel : ViewModelBase
         if (status is RenderTaskStatus.Pending or RenderTaskStatus.Completed or RenderTaskStatus.Cancelled)
         {
             StatusDetailText = string.Empty;
-        }
-
-        // 当任务完成时，重置帧重试计数器
-        if (status is RenderTaskStatus.Completed or RenderTaskStatus.Cancelled or RenderTaskStatus.Failed)
-        {
-            _currentFrameRetryAttempts = 0;
         }
 
         // 触发状态变化事件

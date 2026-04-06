@@ -70,8 +70,11 @@ public class ParsePipeline
                         }
                         
                         // 生成事件
-                        var events = (List<object>)generateEventsMethod.Invoke(parserObj, new object[] { info });
-                        result.Events.AddRange(events);
+                        var events = generateEventsMethod.Invoke(parserObj, new object[] { info }) as IEnumerable<object>;
+                        if (events != null)
+                        {
+                            result.Events.AddRange(events);
+                        }
                     }
                     break;
                 }
