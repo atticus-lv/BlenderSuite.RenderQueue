@@ -52,10 +52,6 @@ dotnet build BlenderRenderQueue/BlenderRenderQueue.csproj
 Windows 下项目提供了便捷的构建脚本来创建完整的安装程序：
 
 ```bash
-# 进入项目目录
-cd BlenderRenderQueue
-
-# 运行AOT构建和安装程序创建脚本
 make_aot_installer.bat
 ```
 
@@ -64,6 +60,21 @@ make_aot_installer.bat
 1. 使用AOT编译发布应用程序
 2. 创建Windows安装程序
 3. 打开输出文件夹
+
+macOS 下项目提供了 AOT 发布并生成 `.dmg` 的脚本：
+
+```bash
+chmod +x make_macos_aot_dmg.sh
+./make_macos_aot_dmg.sh
+```
+
+可选参数：
+
+```bash
+./make_macos_aot_dmg.sh osx-arm64
+./make_macos_aot_dmg.sh osx-x64
+./make_macos_aot_dmg.sh --no-open
+```
 
 #### 手动构建选项
 
@@ -76,13 +87,13 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishAot=true -o
 **macOS 发布 (Apple Silicon)**
 
 ```bash
-dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained false
+dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=true
 ```
 
 **macOS 发布 (Intel)**
 
 ```bash
-dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-x64 --self-contained false
+dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-x64 --self-contained true -p:PublishAot=true
 ```
 
 **标准发布**

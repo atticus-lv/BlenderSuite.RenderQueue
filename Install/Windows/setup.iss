@@ -1,8 +1,22 @@
 ; 定义应用程序信息
+#ifndef MyAppName
 #define MyAppName "BlenderRenderQueue"
+#endif
+#ifndef MyAppVersion
 #define MyAppVersion "0.5.8.3"
+#endif
+#ifndef MyAppPublisher
 #define MyAppPublisher "Atticus"
+#endif
+#ifndef MyAppExeName
 #define MyAppExeName "BlenderRenderQueue.exe"
+#endif
+#ifndef MyPublishDir
+#define MyPublishDir "..\Publish"
+#endif
+#ifndef MyOutputDir
+#define MyOutputDir "Output"
+#endif
 
 ; 添加UTF-8编码声明
 #pragma coding UTF-8
@@ -19,7 +33,7 @@ ArchitecturesInstallIn64BitMode=x64
 
 DefaultDirName={commonpf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-OutputDir=Output
+OutputDir={#MyOutputDir}
 OutputBaseFilename={#MyAppName}-{#MyAppVersion}.Setup
 
 SetupIconFile=..\..\BlenderRenderQueue\Assets\logo.ico
@@ -39,7 +53,7 @@ Name: "chinesesimplified"; MessagesFile: ".\Languages\ChineseSimplified.isl"; Li
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}";
 
 [Files]
-Source: "..\Publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; \
+Source: "{#MyPublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; \
     Excludes: "*.pdb,__pycache__"
 
 [Dirs]
