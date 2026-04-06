@@ -143,6 +143,16 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
             task.SetProcessService(_processService);
         }
 
+        if (IsBlenderServiceReady())
+        {
+            foreach (var task in RenderTasks.Where(ShouldBackfillTaskProperties))
+            {
+                _ = LoadTaskPropertiesWithLimitAsync(
+                    task,
+                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to backfill task properties: {ex.Message}"));
+            }
+        }
+
         if (!string.Equals(previousPath, blenderPath, StringComparison.Ordinal))
         {
             _logService.Write(
@@ -1106,6 +1116,15 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                 RenderTask = CreateRenderTaskInfo(task)
             }).ToList()
         };
+    }
+
+    private static bool ShouldBackfillTaskProperties(RenderTaskViewModel task)
+    {
+        return task.IsValid &&
+               !string.IsNullOrWhiteSpace(task.BlendFilePath) &&
+               File.Exists(task.BlendFilePath) &&
+               !task.ScenePropertiesView.IsLoading &&
+               !task.ScenePropertiesView.SelectedSceneProperties.IsLoaded;
     }
 
     private async Task LoadTaskPropertiesWithLimitAsync(

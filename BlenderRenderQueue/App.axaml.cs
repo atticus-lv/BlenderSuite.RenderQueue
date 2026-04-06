@@ -88,8 +88,6 @@ public partial class App : Application
 
         try
         {
-            var mainRenderViewModel = AppServices.Instance.GetRequiredService<MainRenderViewModel>();
-            await mainRenderViewModel.InitialLoadTask;
             await _localSubmissionHost.StartAsync();
         }
         catch (Exception ex)

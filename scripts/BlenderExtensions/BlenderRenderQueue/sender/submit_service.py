@@ -21,14 +21,43 @@ STARTUP_POLL_INTERVAL_SECONDS = 0.4
 
 
 def _get_preferences():
-    addon = bpy.context.preferences.addons.get(__package__.split(".")[0])
-    return addon.preferences if addon else None
+    package_name = __package__ or ""
+    package_parts = package_name.split(".")
+
+    candidates = []
+    for length in range(len(package_parts), 0, -1):
+        candidate = ".".join(package_parts[:length])
+        if candidate:
+            candidates.append(candidate)
+
+    if package_parts and package_parts[0] == "bl_ext" and len(package_parts) >= 3:
+        candidates.append(".".join(package_parts[:3]))
+
+    if package_parts:
+        candidates.append(package_parts[-1])
+
+    seen = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+
+        addon = bpy.context.preferences.addons.get(candidate)
+        if addon:
+            return addon.preferences
+
+    return None
 
 
 def _find_app_launch_target() -> str | None:
     prefs = _get_preferences()
-    if prefs and prefs.app_launch_path and os.path.exists(prefs.app_launch_path):
-        return prefs.app_launch_path
+    app_launch_path = prefs.app_launch_path if prefs else ""
+    return find_app_launch_target(app_launch_path)
+
+
+def find_app_launch_target(app_launch_path: str = "") -> str | None:
+    if app_launch_path and os.path.exists(app_launch_path):
+        return app_launch_path
 
     explicit_path = os.environ.get("BRQ_APP_PATH")
     if explicit_path and os.path.exists(explicit_path):
@@ -141,6 +170,10 @@ def _send_request(endpoint: dict, command: str, payload: dict | None = None) -> 
 
 
 def _wait_for_endpoint(report_callback) -> dict:
+    return wait_for_endpoint(report_callback)
+
+
+def wait_for_endpoint(report_callback=None) -> dict:
     deadline = time.time() + STARTUP_TIMEOUT_SECONDS
     last_error = "Desktop app did not publish a submission endpoint."
 
@@ -157,11 +190,19 @@ def _wait_for_endpoint(report_callback) -> dict:
 
         time.sleep(STARTUP_POLL_INTERVAL_SECONDS)
 
-    report_callback({"WARNING"}, f"Failed to connect to BlenderRenderQueue after startup: {last_error}")
+    if report_callback is not None:
+        report_callback({"WARNING"}, f"Failed to connect to BlenderRenderQueue after startup: {last_error}")
     raise RuntimeError(last_error)
 
 
 def _ensure_endpoint(report_callback) -> dict:
+    prefs = _get_preferences()
+    auto_start_app = bool(prefs and prefs.auto_start_app)
+    app_launch_path = prefs.app_launch_path if prefs else ""
+    return ensure_endpoint(auto_start_app, app_launch_path, report_callback)
+
+
+def ensure_endpoint(auto_start_app: bool, app_launch_path: str = "", report_callback=None) -> dict:
     endpoint = _read_endpoint_info()
     if endpoint:
         try:
@@ -171,30 +212,33 @@ def _ensure_endpoint(report_callback) -> dict:
         except Exception:
             pass
 
-    prefs = _get_preferences()
-    if prefs and not prefs.auto_start_app:
+    if not auto_start_app:
         raise RuntimeError("BlenderRenderQueue is not running and auto-start is disabled.")
 
-    launch_target = _find_app_launch_target()
+    launch_target = find_app_launch_target(app_launch_path)
     if not launch_target:
         raise RuntimeError("BlenderRenderQueue is not running and no launch target was found.")
 
     _launch_app(launch_target)
-    return _wait_for_endpoint(report_callback)
+    return wait_for_endpoint(report_callback)
 
 
-def submit_task(
+def submit_task_payload(
+    blend_file_path: str,
     scene_name: str,
     override_frame_range: bool,
     frame_start: int,
     frame_end: int,
-    report_callback,
+    *,
+    auto_start_app: bool,
+    app_launch_path: str = "",
+    auto_start_queue: bool = False,
+    report_callback=None,
 ) -> dict:
-    blend_file_path = bpy.data.filepath
     if not blend_file_path:
         raise RuntimeError("Save the .blend file before submitting it to BlenderRenderQueue.")
 
-    endpoint = _ensure_endpoint(report_callback)
+    endpoint = ensure_endpoint(auto_start_app, app_launch_path, report_callback)
 
     payload = {
         "filepath": blend_file_path,
@@ -210,9 +254,38 @@ def submit_task(
     if not response.get("ok"):
         raise RuntimeError(response.get("message") or "Desktop app rejected the submission.")
 
-    if _should_auto_start_queue():
+    if auto_start_queue:
         start_response = _send_request(endpoint, "start_queue")
         if not start_response.get("ok"):
             raise RuntimeError(start_response.get("message") or "Desktop app rejected the queue start request.")
 
     return response
+
+
+def submit_task(
+    scene_name: str,
+    override_frame_range: bool,
+    frame_start: int,
+    frame_end: int,
+    report_callback,
+) -> dict:
+    blend_file_path = bpy.data.filepath
+    if not blend_file_path:
+        raise RuntimeError("Save the .blend file before submitting it to BlenderRenderQueue.")
+
+    prefs = _get_preferences()
+    auto_start_app = bool(prefs and prefs.auto_start_app)
+    app_launch_path = prefs.app_launch_path if prefs else ""
+    auto_start_queue = _should_auto_start_queue()
+
+    return submit_task_payload(
+        blend_file_path,
+        scene_name,
+        override_frame_range,
+        frame_start,
+        frame_end,
+        auto_start_app=auto_start_app,
+        app_launch_path=app_launch_path,
+        auto_start_queue=auto_start_queue,
+        report_callback=report_callback,
+    )

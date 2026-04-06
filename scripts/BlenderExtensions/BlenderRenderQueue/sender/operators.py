@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import os
+import queue
+import threading
 
 import bpy
 from bpy.props import BoolProperty, EnumProperty, IntProperty
 from bpy.types import Operator
 
-from .submit_service import submit_task
+from .submit_service import _get_preferences, submit_task_payload
 
 
 def enum_scene_items_callback(scene, context):
@@ -20,6 +22,10 @@ class BRQ_OT_submit_scene(Operator):
     bl_label = "Submit Scene to Queue"
     bl_description = "Submit current scene to BlenderRenderQueue"
     bl_options = {"REGISTER", "UNDO"}
+
+    _timer = None
+    _worker_thread = None
+    _result_queue = None
 
     scene_name: EnumProperty(name="Scene", items=enum_scene_items_callback)
 
@@ -49,26 +55,96 @@ class BRQ_OT_submit_scene(Operator):
             self.report({"ERROR"}, "Save the .blend file before submitting it to BlenderRenderQueue.")
             return {"CANCELLED"}
 
+        prefs = _get_preferences()
+        auto_start_app = bool(prefs and prefs.auto_start_app)
+        app_launch_path = prefs.app_launch_path if prefs else ""
+        auto_start_queue = bool(prefs and prefs.auto_start_queue_after_submit)
+
+        self._result_queue = queue.Queue()
+        self._worker_thread = threading.Thread(
+            target=self._submit_worker,
+            kwargs={
+                "result_queue": self._result_queue,
+                "blend_file_path": bpy.data.filepath,
+                "scene_name": self.scene_name,
+                "override_frame_range": self.override_frame_range,
+                "frame_start": self.frame_start,
+                "frame_end": self.frame_end,
+                "auto_start_app": auto_start_app,
+                "app_launch_path": app_launch_path,
+                "auto_start_queue": auto_start_queue,
+            },
+            daemon=True,
+        )
+        self._worker_thread.start()
+
+        window_manager = context.window_manager
+        self._timer = window_manager.event_timer_add(0.2, window=context.window)
+        window_manager.modal_handler_add(self)
+        self.report({"INFO"}, "Submitting scene to BlenderRenderQueue...")
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event):
+        if event.type != "TIMER" or self._result_queue is None:
+            return {"PASS_THROUGH"}
+
         try:
-            response = submit_task(
-                self.scene_name,
-                self.override_frame_range,
-                self.frame_start,
-                self.frame_end,
-                self.report,
+            status, payload = self._result_queue.get_nowait()
+        except queue.Empty:
+            if self._worker_thread is not None and self._worker_thread.is_alive():
+                return {"PASS_THROUGH"}
+
+            self._finish_modal(context)
+            self.report({"ERROR"}, "Failed to submit scene: unknown background error.")
+            return {"CANCELLED"}
+
+        self._finish_modal(context)
+
+        if status == "ok":
+            message = payload.get("message") or f"Scene '{self.scene_name}' submitted to queue successfully."
+            self.report({"INFO"}, message)
+            return {"FINISHED"}
+
+        self.report({"ERROR"}, f"Failed to submit scene: {payload}")
+        return {"CANCELLED"}
+
+    def cancel(self, context):
+        self._finish_modal(context)
+
+    def _finish_modal(self, context):
+        if self._timer is not None:
+            context.window_manager.event_timer_remove(self._timer)
+            self._timer = None
+        self._worker_thread = None
+        self._result_queue = None
+
+    def _submit_worker(
+        self,
+        *,
+        result_queue,
+        blend_file_path: str,
+        scene_name: str,
+        override_frame_range: bool,
+        frame_start: int,
+        frame_end: int,
+        auto_start_app: bool,
+        app_launch_path: str,
+        auto_start_queue: bool,
+    ):
+        try:
+            response = submit_task_payload(
+                blend_file_path,
+                scene_name,
+                override_frame_range,
+                frame_start,
+                frame_end,
+                auto_start_app=auto_start_app,
+                app_launch_path=app_launch_path,
+                auto_start_queue=auto_start_queue,
             )
-
-            if response.get("ok"):
-                message = response.get("message") or f"Scene '{self.scene_name}' submitted to queue successfully."
-                self.report({"INFO"}, message)
-                return {"FINISHED"}
-
-            message = response.get("message") or "Failed to submit scene."
-            self.report({"ERROR"}, message)
-            return {"CANCELLED"}
+            result_queue.put(("ok", response))
         except Exception as exc:
-            self.report({"ERROR"}, f"Failed to submit scene: {exc}")
-            return {"CANCELLED"}
+            result_queue.put(("error", str(exc)))
 
     def invoke(self, context, event):
         scene = context.scene
