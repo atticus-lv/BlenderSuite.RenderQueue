@@ -1,8 +1,12 @@
+using System;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Queue;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
+using BlenderRenderQueue.Services.Business.Submission;
 
 namespace BlenderRenderQueue.ViewModels.DesignTime;
 
@@ -11,8 +15,10 @@ namespace BlenderRenderQueue.ViewModels.DesignTime;
 /// </summary>
 public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
 {
-    public DesignTimeRenderQueueViewModel() : base(new DesignTimeWorkerHost())
+    public DesignTimeRenderQueueViewModel() : base(new DesignTimeQueueApplicationService())
     {
+        var service = (DesignTimeQueueApplicationService)QueueService;
+
         // 创建多个设计时任务
         var task1 = new DesignTimeRenderTaskViewModel();
         task1.BlendFilePath = @"C:\Users\Design\Documents\Blender\Animation1.blend";
@@ -59,32 +65,101 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
         task5.OverallProgress01 = 0.0;
         task5.OverrideScene = true;
         task5.SelectedSceneName = "Animation";
-        
-        // 设置任务集合
-        RenderTasks = new ObservableCollection<RenderTaskViewModel>
-        {
-            task1, task2, task3, task4, task5
-        };
-        
-        // 设置选中任务
+
+        service.SetDesignState(
+            [
+                task1, task2, task3, task4, task5
+            ],
+            task1,
+            QueueExecutionState.Running,
+            1,
+            1,
+            1,
+            "运行中 (1 个任务)",
+            "00:05:30");
+
         SelectedTask = task1;
-        
-        // 设置当前渲染任务
-        CurrentRenderingTask = task1;
-        
-        // 设置队列状态
-        QueueState = QueueState.Running;
-        ActiveTaskCount = 1;
-        CompletedTaskCount = 1;
-        FailedTaskCount = 1;
-        QueueStatusText = "运行中 (1 个任务)";
-        
-        // 设置其他属性
-        AutoStartNext = true;
-        
-        // 设置模拟的剩余时间
-        RemainingTimeText = "00:05:30";
     }
+}
+
+internal sealed class DesignTimeQueueApplicationService : IRenderQueueApplicationService
+{
+    public ObservableCollection<RenderTaskViewModel> RenderTasks { get; } = [];
+    public RenderTaskViewModel? CurrentRenderingTask { get; private set; }
+    public RenderQueueSnapshot Snapshot { get; private set; } = new();
+    public bool AutoStartNext { get; set; } = true;
+    public PostRenderBehavior PostRenderBehavior { get; set; } = PostRenderBehavior.None;
+    public event EventHandler<RenderQueueSnapshot>? SnapshotChanged;
+    public event EventHandler<QueueStatusChangedEventArgs>? QueueStatusChanged;
+    public event EventHandler<TaskCompletedEventArgs>? TaskCompleted;
+    public event EventHandler<string>? StatusMessageChanged;
+    public event EventHandler<ConfirmDialogRequestedEventArgs>? ConfirmDialogRequested;
+
+    public void SetDesignState(
+        IReadOnlyList<RenderTaskViewModel> tasks,
+        RenderTaskViewModel? currentTask,
+        QueueExecutionState state,
+        int activeTaskCount,
+        int completedTaskCount,
+        int failedTaskCount,
+        string queueStatusText,
+        string remainingTimeText)
+    {
+        RenderTasks.Clear();
+        foreach (var task in tasks)
+        {
+            RenderTasks.Add(task);
+        }
+
+        CurrentRenderingTask = currentTask;
+        Snapshot = new RenderQueueSnapshot
+        {
+            State = state,
+            CurrentTaskId = currentTask?.Id,
+            ActiveTaskCount = activeTaskCount,
+            CompletedTaskCount = completedTaskCount,
+            FailedTaskCount = failedTaskCount,
+            QueueStatusText = queueStatusText,
+            RemainingTimeText = remainingTimeText,
+            AutoStartNext = AutoStartNext,
+            PostRenderBehavior = PostRenderBehavior,
+            CanStartQueue = true,
+            CanStopQueue = true,
+            CanPauseQueue = true,
+            CanResumeQueue = false,
+            CanClearTasks = true
+        };
+
+        SnapshotChanged?.Invoke(this, Snapshot);
+    }
+
+    public void SetGlobalRenderTimeout(int timeoutSeconds) { }
+    public void SetGlobalMaxRetryAttempts(int maxRetryAttempts) { }
+    public void SetVideoCodec(string codec) { }
+    public void SetVideoQuality(string quality) { }
+    public void SetBlenderPath(string blenderPath) { }
+    public bool IsBlenderServiceReady() => true;
+    public Task AddTaskAsync() => Task.CompletedTask;
+    public Task AddMultipleTasksAsync() => Task.CompletedTask;
+    public void AddDroppedFiles(IEnumerable<Avalonia.Platform.Storage.IStorageItem> files) { }
+    public void RemoveSelectedTask(RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask) { }
+    public void RemoveTask(RenderTaskViewModel? taskToRemove, RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask) { }
+    public void RemoveAllTasks() { }
+    public void RemoveCompletedTasks() { }
+    public Task StartQueueAsync() => Task.CompletedTask;
+    public void StopQueue() { }
+    public void PauseQueue() { }
+    public Task ResumeQueueAsync() => Task.CompletedTask;
+    public void MoveTaskUp(RenderTaskViewModel? selectedTask) { }
+    public void MoveTaskDown(RenderTaskViewModel? selectedTask) { }
+    public void MoveTaskToTop(RenderTaskViewModel? selectedTask) { }
+    public void MoveTaskToBottom(RenderTaskViewModel? selectedTask) { }
+    public void CopyTask(RenderTaskViewModel? taskToCopy, Action<RenderTaskViewModel?> setSelectedTask) { }
+    public void RequestRemoveAllTasksConfirmation() { }
+    public Task<LocalSubmissionResponse> SubmitTaskAsync(LocalSubmissionRequest request, CancellationToken cancellationToken = default) => Task.FromResult(new LocalSubmissionResponse());
+    public Task<LocalSubmissionResponse> StartQueueFromSubmissionAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LocalSubmissionResponse());
+    public Task LoadQueueDataAsync() => Task.CompletedTask;
+    public void Dispose() { }
 }
 
 internal sealed class DesignTimeWorkerHost : IBlenderWorkerHost

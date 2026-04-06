@@ -7,14 +7,14 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using BlenderRenderQueue.ViewModels;
+using BlenderRenderQueue.Services.Application.Queue;
 
 namespace BlenderRenderQueue.Services.Business.Submission;
 
 public sealed class LocalSubmissionHost : ILocalSubmissionHost
 {
     private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
-    private readonly RenderQueueViewModel _renderQueueViewModel;
+    private readonly IRenderQueueApplicationService _queueApplicationService;
     private readonly JsonSerializerOptions _wireJsonOptions = new()
     {
         PropertyNamingPolicy = null,
@@ -32,9 +32,9 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
     private Thread? _acceptLoopThread;
     private bool _disposed;
 
-    public LocalSubmissionHost(RenderQueueViewModel renderQueueViewModel)
+    public LocalSubmissionHost(IRenderQueueApplicationService queueApplicationService)
     {
-        _renderQueueViewModel = renderQueueViewModel;
+        _queueApplicationService = queueApplicationService;
     }
 
     public SubmissionEndpointInfo? CurrentEndpoint { get; private set; }
@@ -200,7 +200,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                     {
                         Ok = false,
                         Message = "Empty submission request.",
-                        QueueState = _renderQueueViewModel.QueueState.ToString()
+                        QueueState = _queueApplicationService.Snapshot.State.ToString()
                     });
                     return;
                 }
@@ -212,7 +212,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                     {
                         Ok = false,
                         Message = "Invalid submission payload.",
-                        QueueState = _renderQueueViewModel.QueueState.ToString()
+                        QueueState = _queueApplicationService.Snapshot.State.ToString()
                     });
                     return;
                 }
@@ -224,7 +224,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                         RequestId = request.RequestId,
                         Ok = false,
                         Message = "Invalid submission token.",
-                        QueueState = _renderQueueViewModel.QueueState.ToString()
+                        QueueState = _queueApplicationService.Snapshot.State.ToString()
                     });
                     return;
                 }
@@ -239,7 +239,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                 {
                     Ok = false,
                     Message = ex.Message,
-                    QueueState = _renderQueueViewModel.QueueState.ToString()
+                    QueueState = _queueApplicationService.Snapshot.State.ToString()
                 });
             }
         }
@@ -287,10 +287,10 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                     RequestId = request.RequestId,
                     Ok = true,
                     Message = "pong",
-                    QueueState = _renderQueueViewModel.QueueState.ToString()
+                    QueueState = _queueApplicationService.Snapshot.State.ToString()
                 };
             case "start_queue":
-                var startResponse = await _renderQueueViewModel.StartQueueFromSubmissionAsync(cancellationToken);
+                var startResponse = await _queueApplicationService.StartQueueFromSubmissionAsync(cancellationToken);
                 return new SubmissionWireResponse
                 {
                     RequestId = request.RequestId,
@@ -307,7 +307,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                         RequestId = request.RequestId,
                         Ok = false,
                         Message = "submit_task requires a payload.",
-                        QueueState = _renderQueueViewModel.QueueState.ToString()
+                        QueueState = _queueApplicationService.Snapshot.State.ToString()
                     };
                 }
 
@@ -319,12 +319,12 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                         RequestId = request.RequestId,
                         Ok = false,
                         Message = "submit_task payload is invalid.",
-                        QueueState = _renderQueueViewModel.QueueState.ToString()
+                        QueueState = _queueApplicationService.Snapshot.State.ToString()
                     };
                 }
 
                 var submissionResponse =
-                    await _renderQueueViewModel.SubmitTaskAsync(submissionRequest, cancellationToken);
+                    await _queueApplicationService.SubmitTaskAsync(submissionRequest, cancellationToken);
                 return new SubmissionWireResponse
                 {
                     RequestId = request.RequestId,
@@ -339,7 +339,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                     RequestId = request.RequestId,
                     Ok = false,
                     Message = $"Unknown submission command: {request.Command}",
-                    QueueState = _renderQueueViewModel.QueueState.ToString()
+                    QueueState = _queueApplicationService.Snapshot.State.ToString()
                 };
         }
     }

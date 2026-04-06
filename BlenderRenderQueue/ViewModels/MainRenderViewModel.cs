@@ -626,13 +626,6 @@ public partial class MainRenderViewModel : ViewModelBase
         // 可以在这里添加额外的进度处理逻辑
     }
 
-    public Task<LocalSubmissionResponse> SubmitTaskAsync(LocalSubmissionRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        return RenderQueue.SubmitTaskAsync(request, cancellationToken);
-    }
-
-
     public void Dispose()
     {
         _versionCts?.Cancel();
