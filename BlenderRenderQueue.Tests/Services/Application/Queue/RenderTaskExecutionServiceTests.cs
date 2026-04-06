@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Headless.XUnit;
@@ -133,8 +134,91 @@ public sealed class RenderTaskExecutionServiceTests
         task.Dispose();
     }
 
+    [AvaloniaFact]
+    public async Task PauseAsync_KeepsTaskInPausedState()
+    {
+        using var tempBlend = TemporaryFile.Create(".blend");
+        var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
+        var logService = TestLogServiceFactory.Create();
+        task.AttachLogService(logService);
+
+        var workerHost = new FakeBlenderWorkerHost();
+        workerHost.RenderTaskHandler = async (request, cancellationToken) =>
+        {
+            workerHost.EmitOutput("Rendering single frame (frame 1)");
+            workerHost.EmitOutput("Rendering frame 1");
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            return new BlenderWorkerResponse
+            {
+                Ok = true,
+                WorkerState = "completed",
+                OutputVerified = true
+            };
+        };
+
+        var sut = new RenderTaskExecutionService(logService);
+
+        var startTask = sut.StartAsync(task, workerHost);
+        await WaitUntilAsync(() => task.Status == RenderTaskStatus.Running);
+
+        await sut.PauseAsync(task);
+        await startTask;
+        await DrainUiAsync();
+
+        Assert.Equal(RenderTaskStatus.Paused, task.Status);
+        Assert.Equal(1, workerHost.CancelCalls);
+        Assert.Equal(0, GetExecutionContextCount(sut));
+
+        task.Dispose();
+    }
+
+    [AvaloniaFact]
+    public async Task StartAsync_RemovesExecutionContext_AfterCompletion()
+    {
+        using var tempBlend = TemporaryFile.Create(".blend");
+        var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
+        var workerHost = new FakeBlenderWorkerHost();
+        var logService = TestLogServiceFactory.Create();
+        task.AttachLogService(logService);
+
+        var sut = new RenderTaskExecutionService(logService);
+
+        await sut.StartAsync(task, workerHost);
+        await DrainUiAsync();
+
+        Assert.Equal(RenderTaskStatus.Completed, task.Status);
+        Assert.Equal(0, GetExecutionContextCount(sut));
+
+        task.Dispose();
+    }
+
     private static Task DrainUiAsync()
     {
         return Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background).GetTask();
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 2000)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (predicate())
+            {
+                return;
+            }
+
+            await Task.Delay(25);
+        }
+
+        Assert.True(predicate(), "Condition was not met within the allotted timeout.");
+    }
+
+    private static int GetExecutionContextCount(RenderTaskExecutionService sut)
+    {
+        var field = typeof(RenderTaskExecutionService).GetField("_contexts", BindingFlags.Instance | BindingFlags.NonPublic);
+        var contexts = field?.GetValue(sut);
+        Assert.NotNull(contexts);
+        var countProperty = contexts.GetType().GetProperty("Count", BindingFlags.Instance | BindingFlags.Public);
+        return Assert.IsType<int>(countProperty?.GetValue(contexts));
     }
 }

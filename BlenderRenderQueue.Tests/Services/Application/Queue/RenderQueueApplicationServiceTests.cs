@@ -140,6 +140,37 @@ public sealed class RenderQueueApplicationServiceTests
         Assert.False(task.CanGenerateVideo);
     }
 
+    [AvaloniaFact]
+    public async Task StartQueueAsync_ConcurrentCalls_DoNotStartSameTaskTwice()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        using var blenderExecutable = TemporaryFile.Create(".exe");
+
+        var workerHost = new FakeBlenderWorkerHost();
+        var executionService = new FakeRenderTaskExecutionService();
+        var persistenceService = new FakeDataPersistenceService();
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
+        sut.SetBlenderPath(blenderExecutable.Path);
+        sut.AddDroppedFiles([blendFile.Path]);
+
+        var unblockExecution = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        executionService.StartHandler = async (task, host) =>
+        {
+            task.BeginRenderExecution(isResume: false, resetRetryBudget: true);
+            await unblockExecution.Task;
+            task.FinalizeCompleted();
+        };
+
+        await Task.WhenAll(sut.StartQueueAsync(), sut.StartQueueAsync());
+        await WaitUntilAsync(() => executionService.StartCalls >= 1);
+
+        Assert.Equal(1, executionService.StartCalls);
+
+        unblockExecution.SetResult();
+        await WaitUntilAsync(() => sut.Snapshot.State == QueueExecutionState.Completed);
+    }
+
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 2000)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);

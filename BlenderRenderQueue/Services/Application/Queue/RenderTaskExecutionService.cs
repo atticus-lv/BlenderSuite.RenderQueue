@@ -43,6 +43,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         }
 
         context.CancellationRequested = true;
+        context.PauseRequested = true;
         task.LogLine("正在暂停渲染...");
         WriteTaskEvent(task, RenderLogScope.Task, "用户请求暂停渲染。");
         task.FinalizePaused();
@@ -60,6 +61,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
             finally
             {
                 DetachContext(context);
+                RemoveContextIfCurrent(task.Id, context);
             }
         });
 
@@ -76,6 +78,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         }
 
         context.CancellationRequested = true;
+        context.PauseRequested = false;
         WriteTaskEvent(task, RenderLogScope.Task, "用户请求停止渲染。");
 
         _ = Task.Run(async () =>
@@ -92,6 +95,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
             finally
             {
                 DetachContext(context);
+                RemoveContextIfCurrent(task.Id, context);
                 task.FinalizeStopped();
             }
         });
@@ -124,6 +128,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
             context.RenderPipelineVersion++;
             var renderPipelineVersion = context.RenderPipelineVersion;
             context.CancellationRequested = false;
+            context.PauseRequested = false;
             context.LastActivityTime = DateTime.UtcNow;
             context.WorkerExitedUnexpectedly = false;
             context.LastWorkerExitCode = 0;
@@ -167,7 +172,15 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         }
         catch (TaskCanceledException ex)
         {
-            if (context.CancellationRequested || ex.CancellationToken.IsCancellationRequested)
+            if (context.PauseRequested)
+            {
+                WriteTaskEvent(task, RenderLogScope.Task, isResume ? "恢复渲染已暂停。" : "渲染任务已暂停。", RenderLogLevel.Info);
+                if (task.Status != RenderTaskStatus.Paused)
+                {
+                    task.FinalizePaused();
+                }
+            }
+            else if (context.CancellationRequested || ex.CancellationToken.IsCancellationRequested)
             {
                 WriteTaskEvent(task, RenderLogScope.Task, isResume ? "恢复渲染任务被用户取消。" : "渲染任务被用户取消。", RenderLogLevel.Warning);
                 task.FinalizeCancelled(isResume ? "恢复渲染任务被用户取消" : "渲染任务被用户取消");
@@ -181,7 +194,15 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         }
         catch (OperationCanceledException ex)
         {
-            if (context.CancellationRequested)
+            if (context.PauseRequested)
+            {
+                WriteTaskEvent(task, RenderLogScope.Task, isResume ? "恢复渲染已暂停。" : "渲染操作已暂停。", RenderLogLevel.Info);
+                if (task.Status != RenderTaskStatus.Paused)
+                {
+                    task.FinalizePaused();
+                }
+            }
+            else if (context.CancellationRequested)
             {
                 WriteTaskEvent(task, RenderLogScope.Task, isResume ? "恢复渲染被用户取消。" : "渲染操作被用户取消。", RenderLogLevel.Warning);
                 task.FinalizeCancelled(isResume ? "恢复渲染被用户取消" : "渲染操作被用户取消");
@@ -194,7 +215,15 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         }
         catch (Exception ex)
         {
-            if (context.CancellationRequested)
+            if (context.PauseRequested)
+            {
+                if (task.Status != RenderTaskStatus.Paused)
+                {
+                    WriteTaskEvent(task, RenderLogScope.Task, isResume ? "恢复渲染已暂停。" : "渲染已暂停。", RenderLogLevel.Info);
+                    task.FinalizePaused();
+                }
+            }
+            else if (context.CancellationRequested)
             {
                 if (task.Status != RenderTaskStatus.Paused)
                 {
@@ -214,6 +243,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
             if (task.Status != RenderTaskStatus.Running)
             {
                 DetachContext(context);
+                RemoveContextIfCurrent(task.Id, context);
             }
         }
     }
@@ -573,6 +603,14 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         context.ExitHandler = null;
     }
 
+    private void RemoveContextIfCurrent(Guid taskId, ExecutionContext context)
+    {
+        if (_contexts.TryGetValue(taskId, out var current) && ReferenceEquals(current, context))
+        {
+            _contexts.TryRemove(taskId, out _);
+        }
+    }
+
     private static void EnsureRenderPipelineIsCurrent(RenderTaskViewModel task, ExecutionContext context, int renderPipelineVersion)
     {
         if (task.Status != RenderTaskStatus.Running)
@@ -599,6 +637,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         public IBlenderWorkerHost WorkerHost { get; set; }
         public IRenderOutputParser OutputParser { get; set; }
         public bool CancellationRequested { get; set; }
+        public bool PauseRequested { get; set; }
         public DateTime LastActivityTime { get; set; } = DateTime.UtcNow;
         public int AutomaticRecoveryAttempts { get; set; }
         public bool WorkerExitedUnexpectedly { get; set; }

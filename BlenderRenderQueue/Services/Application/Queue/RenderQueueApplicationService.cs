@@ -28,7 +28,9 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
     private readonly IDataPersistenceService _dataPersistenceService;
     private readonly IRenderLogService _logService;
     private readonly SemaphoreSlim _taskPropertiesLoadLimiter = new(1, 1);
+    private readonly SemaphoreSlim _schedulerLock = new(1, 1);
     private readonly List<Task> _runningTasks = [];
+    private readonly HashSet<Guid> _scheduledTaskIds = [];
     private readonly object _queueLock = new();
     private readonly object _saveStateLock = new();
     private readonly Queue<TimeSpan> _recentFrameRenderTimes = new();
@@ -724,88 +726,102 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
     private async Task StartNextAvailableTasksAsync()
     {
-        if (_queueState != QueueState.Running)
+        await _schedulerLock.WaitAsync();
+        try
         {
-            return;
-        }
-
-        var runningTasks = RenderTasks.Where(t => t.Status == RenderTaskStatus.Running).ToList();
-        foreach (var task in runningTasks)
-        {
-            _executionService.Stop(task);
-        }
-
-        await Task.Delay(100);
-
-        RenderTaskViewModel? taskToStart;
-        if (_pausedTask is { Enable: true, IsValid: true } && RenderTasks.Contains(_pausedTask))
-        {
-            taskToStart = _pausedTask;
-        }
-        else
-        {
-            if (_pausedTask != null && !RenderTasks.Contains(_pausedTask))
+            if (_queueState != QueueState.Running)
             {
-                _pausedTask = null;
-                _pausedFrame = 0;
+                return;
             }
 
-            taskToStart = RenderTasks.FirstOrDefault(t => t.Status == RenderTaskStatus.Pending && t.Enable && t.IsValid);
-        }
-
-        if (taskToStart == null)
-        {
-            CurrentRenderingTask = null;
-            PublishSnapshot();
-            return;
-        }
-
-        CurrentRenderingTask = taskToStart;
-        WriteTaskEvent(taskToStart, RenderLogScope.Queue, _pausedTask == taskToStart ? "从暂停点继续当前任务。" : "队列开始调度任务。");
-        PublishSnapshot();
-
-        var taskCopy = taskToStart;
-        var runningTaskRef = new Task[1];
-        lock (_queueLock)
-        {
-            runningTaskRef[0] = Task.Run(async () =>
+            lock (_queueLock)
             {
-                try
+                if (_scheduledTaskIds.Count > 0 || RenderTasks.Any(t => t.Status == RenderTaskStatus.Running))
                 {
-                    await _workerHost.EnsureReadyAsync(_blenderPath!, CancellationToken.None);
-                    WriteTaskEvent(taskCopy, RenderLogScope.Worker, "Blender worker 已就绪。");
-
-                    if (_pausedTask == taskCopy && _pausedFrame > 0)
-                    {
-                        await _executionService.ResumeAsync(taskCopy, _workerHost, _pausedFrame);
-                        _pausedTask = null;
-                        _pausedFrame = 0;
-                    }
-                    else
-                    {
-                        await _executionService.StartAsync(taskCopy, _workerHost);
-                    }
+                    return;
                 }
-                catch (Exception ex)
+            }
+
+            RenderTaskViewModel? taskToStart;
+            if (_pausedTask is { Enable: true, IsValid: true } && RenderTasks.Contains(_pausedTask))
+            {
+                taskToStart = _pausedTask;
+            }
+            else
+            {
+                if (_pausedTask != null && !RenderTasks.Contains(_pausedTask))
                 {
-                    Console.WriteLine($"[RenderQueueApplicationService] Failed while starting queued task {Path.GetFileName(taskCopy.BlendFilePath)}: {ex}");
-                    WriteTaskEvent(taskCopy, RenderLogScope.Queue, $"启动任务失败: {ex.Message}", RenderLogLevel.Error);
+                    _pausedTask = null;
+                    _pausedFrame = 0;
                 }
-                finally
+
+                taskToStart = RenderTasks.FirstOrDefault(t =>
+                    t.Status == RenderTaskStatus.Pending &&
+                    t.Enable &&
+                    t.IsValid &&
+                    !_scheduledTaskIds.Contains(t.Id));
+            }
+
+            if (taskToStart == null)
+            {
+                CurrentRenderingTask = null;
+                PublishSnapshot();
+                return;
+            }
+
+            CurrentRenderingTask = taskToStart;
+            WriteTaskEvent(taskToStart, RenderLogScope.Queue, _pausedTask == taskToStart ? "从暂停点继续当前任务。" : "队列开始调度任务。");
+            PublishSnapshot();
+
+            var taskCopy = taskToStart;
+            var runningTaskRef = new Task[1];
+            lock (_queueLock)
+            {
+                _scheduledTaskIds.Add(taskCopy.Id);
+                runningTaskRef[0] = Task.Run(async () =>
                 {
-                    lock (_queueLock)
+                    try
                     {
-                        _runningTasks.RemoveAll(t => t == runningTaskRef[0]);
-                    }
+                        await _workerHost.EnsureReadyAsync(_blenderPath!, CancellationToken.None);
+                        WriteTaskEvent(taskCopy, RenderLogScope.Worker, "Blender worker 已就绪。");
 
-                    if (AutoStartNext && _queueState == QueueState.Running)
+                        if (_pausedTask == taskCopy && _pausedFrame > 0)
+                        {
+                            await _executionService.ResumeAsync(taskCopy, _workerHost, _pausedFrame);
+                            _pausedTask = null;
+                            _pausedFrame = 0;
+                        }
+                        else
+                        {
+                            await _executionService.StartAsync(taskCopy, _workerHost);
+                        }
+                    }
+                    catch (Exception ex)
                     {
-                        await StartNextAvailableTasksAsync();
+                        Console.WriteLine($"[RenderQueueApplicationService] Failed while starting queued task {Path.GetFileName(taskCopy.BlendFilePath)}: {ex}");
+                        WriteTaskEvent(taskCopy, RenderLogScope.Queue, $"启动任务失败: {ex.Message}", RenderLogLevel.Error);
                     }
-                }
-            });
+                    finally
+                    {
+                        lock (_queueLock)
+                        {
+                            _runningTasks.RemoveAll(t => t == runningTaskRef[0]);
+                            _scheduledTaskIds.Remove(taskCopy.Id);
+                        }
 
-            _runningTasks.Add(runningTaskRef[0]);
+                        if (AutoStartNext && _queueState == QueueState.Running)
+                        {
+                            await StartNextAvailableTasksAsync();
+                        }
+                    }
+                });
+
+                _runningTasks.Add(runningTaskRef[0]);
+            }
+        }
+        finally
+        {
+            _schedulerLock.Release();
         }
     }
 
