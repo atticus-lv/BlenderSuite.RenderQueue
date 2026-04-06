@@ -1,0 +1,133 @@
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
+using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Queue;
+using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
+using BlenderRenderQueue.ViewModels;
+using Xunit;
+
+namespace BlenderRenderQueue.Tests.Services.Application.Queue;
+
+public sealed class RenderTaskExecutionServiceTests
+{
+    [AvaloniaFact]
+    public async Task StartAsync_CompletesTask_AndProjectsProgressFromWorkerOutput()
+    {
+        using var tempBlend = TemporaryFile.Create(".blend");
+        var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
+        var workerHost = new FakeBlenderWorkerHost();
+        workerHost.RenderTaskHandler = async (request, cancellationToken) =>
+        {
+            workerHost.EmitOutput("Rendering single frame (frame 1)");
+            workerHost.EmitOutput("Rendering frame 1");
+            workerHost.EmitOutput("Start rendering: Scene, ViewLayer");
+            workerHost.EmitOutput("Engine: Cycles");
+            workerHost.EmitOutput("Mem: 512M | Sample 8/8");
+            await Task.Delay(20);
+            return new BlenderWorkerResponse
+            {
+                Ok = true,
+                WorkerState = "completed",
+                OutputVerified = true
+            };
+        };
+
+        var sut = new RenderTaskExecutionService();
+
+        await sut.StartAsync(task, workerHost);
+        await DrainUiAsync();
+
+        Assert.Equal(RenderTaskStatus.Completed, task.Status);
+        Assert.Equal("8/8", task.SampleText);
+        Assert.Equal(1.0, task.Progress01, 3);
+        Assert.Equal(1.0, task.OverallProgress01, 3);
+        Assert.NotNull(task.EndTime);
+
+        task.Dispose();
+    }
+
+    [AvaloniaFact]
+    public async Task StartAsync_RecoversUnexpectedExit_AndRetriesWithinSameTask()
+    {
+        using var tempBlend = TemporaryFile.Create(".blend");
+        var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
+        task.SetGlobalMaxRetryAttempts(2);
+
+        var firstCall = true;
+        var workerHost = new FakeBlenderWorkerHost();
+        workerHost.RenderTaskHandler = async (request, cancellationToken) =>
+        {
+            if (firstCall)
+            {
+                firstCall = false;
+                _ = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    await Task.Delay(150);
+                    workerHost.State.LastErrorCategory = "unexpected_exit";
+                    workerHost.EmitExit(139);
+                });
+
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+                throw new OperationCanceledException(cancellationToken);
+            }
+
+            workerHost.EmitOutput("Rendering single frame (frame 1)");
+            workerHost.EmitOutput("Rendering frame 1");
+            workerHost.EmitOutput("Engine: Cycles");
+            workerHost.EmitOutput("Mem: 256M | Sample 4/4");
+            return new BlenderWorkerResponse
+            {
+                Ok = true,
+                WorkerState = "completed",
+                OutputVerified = true
+            };
+        };
+
+        var sut = new RenderTaskExecutionService();
+
+        await sut.StartAsync(task, workerHost);
+        await DrainUiAsync();
+
+        Assert.Equal(RenderTaskStatus.Completed, task.Status);
+        Assert.Equal(1, workerHost.RecoverCalls);
+        Assert.Equal(2, workerHost.RenderTaskCalls);
+
+        task.Dispose();
+    }
+
+    [AvaloniaFact]
+    public async Task StartAsync_DoesNotRecover_ForFileErrors()
+    {
+        using var tempBlend = TemporaryFile.Create(".blend");
+        var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
+        task.SetGlobalMaxRetryAttempts(3);
+
+        var workerHost = new FakeBlenderWorkerHost();
+        workerHost.RenderTaskHandler = (request, cancellationToken) =>
+        {
+            workerHost.State.LastErrorCategory = "file_error";
+            throw new InvalidOperationException("File format is not supported");
+        };
+
+        var sut = new RenderTaskExecutionService();
+
+        await sut.StartAsync(task, workerHost);
+        await DrainUiAsync();
+
+        Assert.Equal(RenderTaskStatus.Failed, task.Status);
+        Assert.Equal(0, workerHost.RecoverCalls);
+        Assert.Equal(1, workerHost.RenderTaskCalls);
+        Assert.False(string.IsNullOrWhiteSpace(task.StatusDetailText));
+
+        task.Dispose();
+    }
+
+    private static Task DrainUiAsync()
+    {
+        return Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background).GetTask();
+    }
+}
