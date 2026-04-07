@@ -1,6 +1,6 @@
 # QueueClient 归档说明
 
-`Client/` 目录下的 `QueueClient`、`QueueClient.Desktop`、`QueueClient.Browser`、`QueueClient.Android` 是一组历史实验项目，用于验证“通过手机或其他终端查看渲染进度”的想法。
+`experimental/Client/` 目录下的 `QueueClient`、`QueueClient.Desktop`、`QueueClient.Browser`、`QueueClient.Android` 是一组历史实验项目，用于验证“通过手机或其他终端查看渲染进度”的想法。
 
 当前这些项目已从 solution 主线中移除，但源码仍保留在仓库里，原因如下：
 

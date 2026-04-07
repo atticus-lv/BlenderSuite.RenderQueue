@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderRenderQueue", "BlenderRenderQueue\BlenderRenderQueue.csproj", "{8792E03B-36C8-45F4-94CC-F6825382E0C6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderRenderQueue", "src\BlenderRenderQueue\BlenderRenderQueue.csproj", "{8792E03B-36C8-45F4-94CC-F6825382E0C6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3DA99C4E-89E3-4049-9C22-0A7EC60D83D8}"
 	ProjectSection(SolutionItems) = preProject
 		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderRenderQueue.Tests", "BlenderRenderQueue.Tests\BlenderRenderQueue.Tests.csproj", "{C00F98D2-7B89-4C4F-963D-E7063F9E8511}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlenderRenderQueue.Tests", "tests\BlenderRenderQueue.Tests\BlenderRenderQueue.Tests.csproj", "{C00F98D2-7B89-4C4F-963D-E7063F9E8511}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

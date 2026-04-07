@@ -20,7 +20,7 @@ goto usage_error
 :args_done
 
 for %%I in ("%~dp0..\..") do set "REPO_ROOT=%%~fI"
-set "PROJECT_FILE=%REPO_ROOT%\BlenderRenderQueue\BlenderRenderQueue.csproj"
+set "PROJECT_FILE=%REPO_ROOT%\src\BlenderRenderQueue\BlenderRenderQueue.csproj"
 set "PUBLISH_DIR=%REPO_ROOT%\Install\Windows\publish\aot\win-x64"
 set "OUTPUT_DIR=%REPO_ROOT%\Install\Windows\output"
 set "INNO_SCRIPT=%REPO_ROOT%\Install\Windows\setup.iss"

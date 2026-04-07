@@ -47,6 +47,15 @@ dotnet build BlenderSuite.RenderQueue.sln
 dotnet test BlenderSuite.RenderQueue.sln
 ```
 
+## 目录约定
+
+- `src/`：主线产品源码
+- `tests/`：测试项目
+- `scripts/`：构建与发布脚本
+- `docs/`：项目文档
+- `Install/`：安装包与打包相关资源
+- `experimental/`：历史实验代码与原型验证项目
+
 ## 统一发布脚本
 
 所有实际发布逻辑统一放在 `scripts/release/` 下。
@@ -124,19 +133,19 @@ chmod +x scripts/release/build-macos-dmg.sh
 ### Windows Native AOT
 
 ```bash
-dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r win-x64 --self-contained true -p:PublishAot=true -o Install/Windows/publish/aot/win-x64
+dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r win-x64 --self-contained true -p:PublishAot=true -o Install/Windows/publish/aot/win-x64
 ```
 
 ### macOS Native AOT
 
 ```bash
-dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=true -o Install/macOS/publish/aot/osx-arm64
+dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=true -o Install/macOS/publish/aot/osx-arm64
 ```
 
 ### macOS 非 AOT
 
 ```bash
-dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=false -o Install/macOS/publish/non-aot/osx-arm64
+dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=false -o Install/macOS/publish/non-aot/osx-arm64
 ```
 
 ### Windows Inno Setup
@@ -153,7 +162,7 @@ dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-ar
 
 ## 归档实验
 
-`Client/` 下保留了一组历史远程监控客户端实验代码，包括 Desktop、Browser、Android 三个目标。它们当前不属于主线产品范围，后续远程查看能力会优先迁移到统一的 Web Dashboard/官网体系。
+`experimental/Client/` 下保留了一组历史远程监控客户端实验代码，包括 Desktop、Browser、Android 三个目标。它们当前不属于主线产品范围，后续远程查看能力会优先迁移到统一的 Web Dashboard/官网体系。
 
 如需继续研究这部分代码，请先阅读：
 

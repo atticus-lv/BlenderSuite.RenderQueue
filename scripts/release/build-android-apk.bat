@@ -20,7 +20,7 @@ goto usage_error
 
 :args_done
 for %%I in ("%~dp0..\..") do set "REPO_ROOT=%%~fI"
-set "PROJECT_FILE=%REPO_ROOT%\Client\QueueClient.Android\QueueClient.Android.csproj"
+set "PROJECT_FILE=%REPO_ROOT%\experimental\Client\QueueClient.Android\QueueClient.Android.csproj"
 set "PUBLISH_DIR=%REPO_ROOT%\Install\Android\publish\android-arm64"
 set "OUTPUT_DIR=%REPO_ROOT%\Install\Android\output"
 set "CONFIGURATION=Release"
