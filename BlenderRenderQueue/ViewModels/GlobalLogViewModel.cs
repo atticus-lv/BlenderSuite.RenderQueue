@@ -170,7 +170,8 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         get => _selectedTask;
         set
         {
-            if (SetProperty(ref _selectedTask, value) && !_isRefreshing)
+            var next = value ?? TaskFilterOption.All;
+            if (SetProperty(ref _selectedTask, next) && !_isRefreshing)
             {
                 RequestRefresh();
             }
@@ -250,7 +251,8 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
             .OrderBy(option => option.Label, StringComparer.OrdinalIgnoreCase));
 
         ReplaceTaskOptions(options);
-        var existing = TaskOptions.FirstOrDefault(option => option.TaskId == SelectedTask.TaskId) ?? TaskOptions[0];
+        var selectedTaskId = _selectedTask?.TaskId;
+        var existing = TaskOptions.FirstOrDefault(option => option.TaskId == selectedTaskId) ?? TaskOptions[0];
         SetProperty(ref _selectedTask, existing, nameof(SelectedTask));
     }
 
@@ -273,7 +275,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
         return new RenderLogProjection
         {
-            TaskId = SelectedTask.TaskId,
+            TaskId = _selectedTask?.TaskId,
             CurrentSessionOnly = string.Equals(SelectedSession, CurrentSession, StringComparison.Ordinal),
             HistoricalOnly = string.Equals(SelectedSession, HistoryOnly, StringComparison.Ordinal),
             IncludeDebug = string.Equals(SelectedLevel, AllLevels, StringComparison.Ordinal),
