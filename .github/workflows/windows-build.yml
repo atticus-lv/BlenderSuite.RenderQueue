@@ -39,7 +39,7 @@ jobs:
         
     - name: Build Installer
       run: |
-        ./make_aot_installer.bat
+        ./scripts/release/build-windows-aot-installer.bat
       
     - name: Get Version
       id: get_version

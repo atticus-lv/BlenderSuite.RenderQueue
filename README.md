@@ -1,6 +1,6 @@
 ﻿# Blender Render Queue
 
-Blender Render Queue 是一个面向 Blender 工作流的队列渲染工具。当前仓库包含主桌面应用、Android 客户端、Browser 客户端，以及对应平台的发布与安装包脚本。
+Blender Render Queue 是一个面向 Blender 工作流的队列渲染工具。当前仓库主线聚焦桌面应用、测试，以及对应平台的发布与安装包脚本。
 
 ## 当前状态
 
@@ -14,13 +14,13 @@ Blender Render Queue 是一个面向 Blender 工作流的队列渲染工具。�
 - 深色/浅色主题切换
 - Windows 安装包构建
 - macOS `.dmg` 打包
-- Android `apk` 打包
 
 ### 进行中
 
 - Linux 桌面支持
 - macOS 签名与公证流程
 - CI/CD 多平台发布
+- 官网与授权服务
 
 ## 环境要求
 
@@ -49,20 +49,20 @@ dotnet test BlenderSuite.RenderQueue.sln
 
 ## 统一发布脚本
 
-所有实际发布逻辑统一放在 `scripts/release/` 下，仓库根目录只保留便于使用的入口脚本。
+所有实际发布逻辑统一放在 `scripts/release/` 下。
 
 ### Windows
 
 构建 Native AOT 安装包：
 
 ```bat
-make_windows_aot_installer.bat
+scripts\release\build-windows-aot-installer.bat
 ```
 
 可选参数：
 
 ```bat
-make_windows_aot_installer.bat --no-open
+scripts\release\build-windows-aot-installer.bat --no-open
 ```
 
 产物目录：
@@ -70,37 +70,33 @@ make_windows_aot_installer.bat --no-open
 - 发布目录：`Install/Windows/publish/aot/win-x64`
 - 安装包目录：`Install/Windows/output`
 
-兼容旧入口：
-
-- `make_aot_installer.bat`
-
 ### macOS
 
 构建 Native AOT `.dmg`：
 
 ```bash
-chmod +x make_macos_aot_dmg.sh
-./make_macos_aot_dmg.sh
+chmod +x scripts/release/build-macos-aot-dmg.sh
+./scripts/release/build-macos-aot-dmg.sh
 ```
 
 构建非 AOT `.dmg`：
 
 ```bash
-chmod +x make_macos_dmg.sh
-./make_macos_dmg.sh
+chmod +x scripts/release/build-macos-dmg.sh
+./scripts/release/build-macos-dmg.sh
 ```
 
 常用参数：
 
 ```bash
-./make_macos_aot_dmg.sh osx-arm64
-./make_macos_aot_dmg.sh osx-x64
-./make_macos_aot_dmg.sh --install
-./make_macos_aot_dmg.sh --no-open
-./make_macos_dmg.sh osx-arm64
-./make_macos_dmg.sh osx-x64
-./make_macos_dmg.sh --install
-./make_macos_dmg.sh --no-open
+./scripts/release/build-macos-aot-dmg.sh osx-arm64
+./scripts/release/build-macos-aot-dmg.sh osx-x64
+./scripts/release/build-macos-aot-dmg.sh --install
+./scripts/release/build-macos-aot-dmg.sh --no-open
+./scripts/release/build-macos-dmg.sh osx-arm64
+./scripts/release/build-macos-dmg.sh osx-x64
+./scripts/release/build-macos-dmg.sh --install
+./scripts/release/build-macos-dmg.sh --no-open
 ```
 
 产物目录：
@@ -109,29 +105,6 @@ chmod +x make_macos_dmg.sh
 - 符号目录：`Install/macOS/symbols/{aot|non-aot}/<RID>`
 - 安装包目录：`Install/macOS/output`
 
-### Android
-
-构建 ARM64 `apk`：
-
-```bat
-make_android_apk.bat
-```
-
-可选参数：
-
-```bat
-make_android_apk.bat --no-open
-```
-
-产物目录：
-
-- 发布目录：`Install/Android/publish/android-arm64`
-- 安装包目录：`Install/Android/output`
-
-兼容旧入口：
-
-- `make_android_installer.bat`
-
 ## 直接调用底层脚本
 
 如果你需要在 CI 或自定义流程中直接调用脚本，请使用：
@@ -139,7 +112,6 @@ make_android_apk.bat --no-open
 - `scripts/release/build-windows-aot-installer.bat`
 - `scripts/release/build-macos-dmg.sh`
 - `scripts/release/build-macos-aot-dmg.sh`
-- `scripts/release/build-android-apk.bat`
 - `scripts/release/install-macos-app.sh`
 
 其中：
@@ -167,12 +139,6 @@ dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-ar
 dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=false -o Install/macOS/publish/non-aot/osx-arm64
 ```
 
-### Android APK
-
-```bash
-dotnet publish Client/QueueClient.Android/QueueClient.Android.csproj -c Release -f net10.0-android -p:RuntimeIdentifier=android-arm64 -p:AndroidPackageFormat=apk -o Install/Android/publish/android-arm64
-```
-
 ### Windows Inno Setup
 
 ```bat
@@ -183,8 +149,15 @@ dotnet publish Client/QueueClient.Android/QueueClient.Android.csproj -c Release 
 
 - Windows：完整支持，包含 Inno Setup 安装程序
 - macOS：完整支持 `.dmg` 打包，签名与公证待补充
-- Android：支持 ARM64 `apk`
 - Linux：待支持
+
+## 归档实验
+
+`Client/` 下保留了一组历史远程监控客户端实验代码，包括 Desktop、Browser、Android 三个目标。它们当前不属于主线产品范围，后续远程查看能力会优先迁移到统一的 Web Dashboard/官网体系。
+
+如需继续研究这部分代码，请先阅读：
+
+- [QueueClient 归档说明](docs/queue-client-archive.md)
 
 ## 许可证
 
