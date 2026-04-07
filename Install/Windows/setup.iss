@@ -12,10 +12,10 @@
 #define MyAppExeName "BlenderRenderQueue.exe"
 #endif
 #ifndef MyPublishDir
-#define MyPublishDir "..\Publish"
+#define MyPublishDir ".\publish\aot\win-x64"
 #endif
 #ifndef MyOutputDir
-#define MyOutputDir "Output"
+#define MyOutputDir ".\output"
 #endif
 
 ; 添加UTF-8编码声明

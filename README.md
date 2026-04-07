@@ -1,205 +1,194 @@
 ﻿# Blender Render Queue
 
-一个用于 Blender 的队列渲染工具，当前主桌面应用支持 Windows 和 macOS 构建运行，并支持多语言界面与跨平台部署。
+Blender Render Queue 是一个面向 Blender 工作流的队列渲染工具。当前仓库包含主桌面应用、Android 客户端、Browser 客户端，以及对应平台的发布与安装包脚本。
 
-## 功能特性
+## 当前状态
 
-### 已实现功能 ✅
+### 已完成
 
-- 🎬 **队列渲染** 
-  - 拖拽排序，启用/禁用
-  - 状态提示
-  - 场景/帧范围覆写
-  - 暂停渲染/恢复渲染
-  - 可选blender
-  - 合成视频
-
-- 📦 **Windows安装程序** - 使用Inno Setup创建专业的Windows安装包
-- ⚡ **AOT编译** - 支持Ahead-of-Time编译，获得更小的文件体积和更快的启动速度
-- 🔧 **现代化UI** - 基于Avalonia UI框架的现代化界面
-- 🌍 **多语言支持** - 应用程序界面支持中文和英文切换
+- 队列渲染
+- 场景/帧范围覆写
+- 暂停/恢复渲染
+- 视频合成
+- 中英文界面切换
 - 深色/浅色主题切换
+- Windows 安装包构建
+- macOS `.dmg` 打包
+- Android `apk` 打包
 
-### 计划中功能 🚧
+### 进行中
 
-- 🖥️ **Linux 支持** - 继续完善跨平台桌面支持
-- 📦 **安装包完善** - 补充 macOS `.dmg` 等分发流程
+- Linux 桌面支持
+- macOS 签名与公证流程
+- CI/CD 多平台发布
 
-## 开发环境配置
+## 环境要求
 
-### 1. 安装必要工具
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+- Windows 安装包打包额外需要 [Inno Setup 6](https://jrsoftware.org/isdl.php)
+- macOS `.dmg` 打包需要系统自带的 `hdiutil`、`sips`、`iconutil`
 
-1. **下载并安装 [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)**
-2. (Windows) **下载并安装 [Inno Setup 6](https://jrsoftware.org/isdl.php)**
-
-### 2. 克隆项目
+## 本地开发
 
 ```bash
 git clone <repository-url>
 cd BlenderSuite.RenderQueue
 ```
 
-### 3. 构建项目
-
-#### 调试构建
+调试构建：
 
 ```bash
-dotnet build BlenderRenderQueue/BlenderRenderQueue.csproj
+dotnet build BlenderSuite.RenderQueue.sln
 ```
 
-#### 发布构建
-
-Windows 下项目提供了便捷的构建脚本来创建完整的安装程序：
+测试：
 
 ```bash
-make_aot_installer.bat
+dotnet test BlenderSuite.RenderQueue.sln
 ```
 
-这个脚本会自动完成以下步骤：
+## 统一发布脚本
 
-1. 使用AOT编译发布应用程序
-2. 创建Windows安装程序
-3. 打开输出文件夹
+所有实际发布逻辑统一放在 `scripts/release/` 下，仓库根目录只保留便于使用的入口脚本。
 
-macOS 下项目提供了两套发布并生成 `.dmg` 的脚本：
+### Windows
+
+构建 Native AOT 安装包：
+
+```bat
+make_windows_aot_installer.bat
+```
+
+可选参数：
+
+```bat
+make_windows_aot_installer.bat --no-open
+```
+
+产物目录：
+
+- 发布目录：`Install/Windows/publish/aot/win-x64`
+- 安装包目录：`Install/Windows/output`
+
+兼容旧入口：
+
+- `make_aot_installer.bat`
+
+### macOS
+
+构建 Native AOT `.dmg`：
 
 ```bash
 chmod +x make_macos_aot_dmg.sh
 ./make_macos_aot_dmg.sh
 ```
 
+构建非 AOT `.dmg`：
+
 ```bash
 chmod +x make_macos_dmg.sh
 ./make_macos_dmg.sh
 ```
 
-可选参数：
+常用参数：
 
 ```bash
 ./make_macos_aot_dmg.sh osx-arm64
 ./make_macos_aot_dmg.sh osx-x64
+./make_macos_aot_dmg.sh --install
 ./make_macos_aot_dmg.sh --no-open
 ./make_macos_dmg.sh osx-arm64
 ./make_macos_dmg.sh osx-x64
+./make_macos_dmg.sh --install
 ./make_macos_dmg.sh --no-open
 ```
 
-#### 手动构建选项
+产物目录：
 
-**AOT发布 (推荐，最小体积)**
+- 发布目录：`Install/macOS/publish/{aot|non-aot}/<RID>`
+- 符号目录：`Install/macOS/symbols/{aot|non-aot}/<RID>`
+- 安装包目录：`Install/macOS/output`
 
-```bash
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishAot=true -o Install/Publish
+### Android
+
+构建 ARM64 `apk`：
+
+```bat
+make_android_apk.bat
 ```
 
-**macOS 发布 (Apple Silicon)**
+可选参数：
 
-```bash
-dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=true
+```bat
+make_android_apk.bat --no-open
 ```
 
-**macOS 发布 (Intel)**
+产物目录：
+
+- 发布目录：`Install/Android/publish/android-arm64`
+- 安装包目录：`Install/Android/output`
+
+兼容旧入口：
+
+- `make_android_installer.bat`
+
+## 直接调用底层脚本
+
+如果你需要在 CI 或自定义流程中直接调用脚本，请使用：
+
+- `scripts/release/build-windows-aot-installer.bat`
+- `scripts/release/build-macos-dmg.sh`
+- `scripts/release/build-macos-aot-dmg.sh`
+- `scripts/release/build-android-apk.bat`
+- `scripts/release/install-macos-app.sh`
+
+其中：
+
+- `build-macos-dmg.sh` 现在支持 `--aot` 参数
+- `build-macos-aot-dmg.sh` 是对 `build-macos-dmg.sh --aot` 的兼容包装
+
+## 手动发布命令
+
+### Windows Native AOT
 
 ```bash
-dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-x64 --self-contained true -p:PublishAot=true
+dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r win-x64 --self-contained true -p:PublishAot=true -o Install/Windows/publish/aot/win-x64
 ```
 
-**macOS 非 AOT 发布 (Apple Silicon)**
+### macOS Native AOT
 
 ```bash
-dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=false
+dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=true -o Install/macOS/publish/aot/osx-arm64
 ```
 
-**macOS 非 AOT 发布 (Intel)**
+### macOS 非 AOT
 
 ```bash
-dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-x64 --self-contained true -p:PublishAot=false
+dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=false -o Install/macOS/publish/non-aot/osx-arm64
 ```
 
-**标准发布**
+### Android APK
 
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained true -o Install/Publish
+dotnet publish Client/QueueClient.Android/QueueClient.Android.csproj -c Release -f net10.0-android -p:RuntimeIdentifier=android-arm64 -p:AndroidPackageFormat=apk -o Install/Android/publish/android-arm64
 ```
 
-**单文件发布**
+### Windows Inno Setup
 
-```bash
-dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o Install/Publish
+```bat
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyPublishDir="%CD%\Install\Windows\publish\aot\win-x64" /DMyOutputDir="%CD%\Install\Windows\output" .\Install\Windows\setup.iss
 ```
 
-**创建安装程序（Windows）**
+## 平台支持
 
-```bash
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" ".\Install\Windows\setup.iss"
-```
-
-## 安装程序特性
-
-### 多语言安装界面 ✅
-
-- **英语** - 默认语言
-- **简体中文** - 完整的中文安装界面支持
-
-### 许可协议 ✅
-
-- 根据用户选择的语言显示对应的许可协议
-- 中文许可协议：`Install/license_zh.txt`
-- 英文许可协议：`Install/license_en.txt`
-
-### 安装选项 ✅
-
-- 自动检测并卸载旧版本
-- 创建桌面快捷方式（可选）
-- 创建开始菜单快捷方式
-- 管理员权限安装
-
-### 平台支持
-
-- **Windows** ✅ - 完整支持，包含安装程序
-- **macOS** ✅ - 主桌面应用可构建运行，安装包流程待完善
-- **Linux** 🚧 - 待定
-
-## 开发说明
-
-### 技术栈
-
-- **.NET 10** - 应用程序框架
-- **Avalonia UI** - 跨平台UI框架
-- **Inno Setup** - Windows安装程序制作工具
-
-### 构建要求
-
-#### 当前支持
-
-- Windows 10/11 (64位)
-- macOS 13+（Apple Silicon / Intel）
-- .NET 10 SDK
-- Inno Setup 6（仅 Windows 打包需要）
-
-#### 计划支持 (跨平台)
-
-- **macOS**: macOS 10.15+ (Catalina)
-- **Linux**: 待定
-- **通用要求**: .NET 10 SDK, 对应平台的构建工具
-
-## 开发路线图
-
-### 跨平台支持计划 🚧
-
-- [ ] macOS 分发完善
-    - [ ] .dmg 安装包制作
-    - [ ] 签名与公证
-- [ ] Linux 支持
-- [ ] CI/CD 多平台构建
-
-### 技术改进计划 🚧
-
-- [ ] 插件系统架构
+- Windows：完整支持，包含 Inno Setup 安装程序
+- macOS：完整支持 `.dmg` 打包，签名与公证待补充
+- Android：支持 ARM64 `apk`
+- Linux：待支持
 
 ## 许可证
 
 本项目采用自定义许可协议，详见：
 
-- [中文许可协议](BlenderRenderQueue/Install/license_zh.txt)
-- [English License Agreement](BlenderRenderQueue/Install/license_en.txt)
+- [中文许可协议](Install/license_zh.txt)
+- [English License Agreement](Install/license_en.txt)
