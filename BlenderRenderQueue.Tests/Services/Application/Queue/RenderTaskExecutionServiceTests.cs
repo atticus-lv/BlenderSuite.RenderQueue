@@ -192,6 +192,31 @@ public sealed class RenderTaskExecutionServiceTests
         task.Dispose();
     }
 
+    [AvaloniaFact]
+    public async Task RefreshFilePropertiesAsync_WithRealBlender_DoesNotCrash_AndLoadsSceneData()
+    {
+        var blenderPath = "/Applications/Blender.app/Contents/MacOS/Blender";
+        var blendFilePath = "/tmp/brq-anim-square-fixed.blend";
+        if (!OperatingSystem.IsMacOS() || !File.Exists(blenderPath) || !File.Exists(blendFilePath))
+        {
+            return;
+        }
+
+        var task = new RenderTaskViewModel(blendFilePath, 1, 1, animation: false);
+        var logService = TestLogServiceFactory.Create();
+        task.AttachLogService(logService);
+
+        await task.LoadFilePropertiesAsync(blenderPath);
+        await task.RefreshFilePropertiesAsync(blenderPath);
+        await DrainUiAsync();
+
+        Assert.True(task.ScenePropertiesView.SelectedSceneProperties.IsLoaded);
+        Assert.NotEmpty(task.ScenePropertiesView.SceneNames);
+        Assert.False(task.ScenePropertiesView.IsLoading);
+
+        task.Dispose();
+    }
+
     private static Task DrainUiAsync()
     {
         return Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background).GetTask();

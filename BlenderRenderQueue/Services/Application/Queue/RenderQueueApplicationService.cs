@@ -561,6 +561,12 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
         {
             try
             {
+                _logService.Write(
+                    RenderLogLevel.Info,
+                    RenderLogScope.Submission,
+                    $"收到 submission 请求: {request.Filepath}, 场景={request.SceneName}, 覆写帧范围={request.OverrideFrameRange}, 帧={request.FrameStart}..{request.FrameEnd}",
+                    source: nameof(RenderQueueApplicationService));
+
                 if (string.IsNullOrWhiteSpace(request.Filepath))
                 {
                     return BuildSubmissionResponse(false, "Submission filepath is required.");
@@ -606,6 +612,13 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                 SubscribeToTaskEvents(task);
                 task.SetQueueRunningState(_queueState == QueueState.Running);
                 WriteTaskEvent(task, RenderLogScope.Submission, $"submission 已接收并入队: {Path.GetFileName(task.BlendFilePath)}");
+                _logService.Write(
+                    RenderLogLevel.Info,
+                    RenderLogScope.Submission,
+                    $"submission 任务已加入队列，当前任务总数: {RenderTasks.Count}",
+                    task.Id,
+                    task.BlendFilePath,
+                    nameof(RenderQueueApplicationService));
 
                 if (IsBlenderServiceReady())
                 {
@@ -663,14 +676,34 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
         try
         {
             var appData = await _dataPersistenceService.LoadDataAsync();
+            _logService.Write(
+                RenderLogLevel.Info,
+                RenderLogScope.Recovery,
+                $"开始加载持久化队列数据，任务数: {appData.RenderQueue.Count}",
+                source: nameof(RenderQueueApplicationService));
+            var existingTaskIds = RenderTasks.Select(t => t.Id).ToHashSet();
             foreach (var taskData in appData.RenderQueue)
             {
-                var task = new RenderTaskViewModel(taskData.RenderTask);
+                var persistedTask = taskData.RenderTask;
+                if (persistedTask.Id != Guid.Empty && existingTaskIds.Contains(persistedTask.Id))
+                {
+                    _logService.Write(
+                        RenderLogLevel.Info,
+                        RenderLogScope.Recovery,
+                        $"跳过已存在的持久化任务: {Path.GetFileName(persistedTask.Filepath)}",
+                        persistedTask.Id,
+                        persistedTask.Filepath,
+                        nameof(RenderQueueApplicationService));
+                    continue;
+                }
+
+                var task = new RenderTaskViewModel(persistedTask);
                 PrepareTask(task);
                 RenderTasks.Add(task);
                 SubscribeToTaskEvents(task);
                 task.SetQueueRunningState(_queueState == QueueState.Running);
                 WriteTaskEvent(task, RenderLogScope.Recovery, "已从持久化数据恢复任务。");
+                existingTaskIds.Add(task.Id);
 
                 var savedOverrideScene = taskData.RenderTask.Override?.OverrideScene;
                 if (IsBlenderServiceReady())
@@ -699,10 +732,12 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
             }
 
             PublishSnapshot();
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"持久化队列数据加载完成，当前任务总数: {RenderTasks.Count}", source: nameof(RenderQueueApplicationService));
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[RenderQueueApplicationService] Error loading queue data: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"加载持久化队列数据失败: {ex}", source: nameof(RenderQueueApplicationService));
         }
     }
 

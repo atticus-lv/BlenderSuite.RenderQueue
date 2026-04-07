@@ -61,11 +61,16 @@ make_aot_installer.bat
 2. 创建Windows安装程序
 3. 打开输出文件夹
 
-macOS 下项目提供了 AOT 发布并生成 `.dmg` 的脚本：
+macOS 下项目提供了两套发布并生成 `.dmg` 的脚本：
 
 ```bash
 chmod +x make_macos_aot_dmg.sh
 ./make_macos_aot_dmg.sh
+```
+
+```bash
+chmod +x make_macos_dmg.sh
+./make_macos_dmg.sh
 ```
 
 可选参数：
@@ -74,6 +79,9 @@ chmod +x make_macos_aot_dmg.sh
 ./make_macos_aot_dmg.sh osx-arm64
 ./make_macos_aot_dmg.sh osx-x64
 ./make_macos_aot_dmg.sh --no-open
+./make_macos_dmg.sh osx-arm64
+./make_macos_dmg.sh osx-x64
+./make_macos_dmg.sh --no-open
 ```
 
 #### 手动构建选项
@@ -94,6 +102,18 @@ dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-ar
 
 ```bash
 dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-x64 --self-contained true -p:PublishAot=true
+```
+
+**macOS 非 AOT 发布 (Apple Silicon)**
+
+```bash
+dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=false
+```
+
+**macOS 非 AOT 发布 (Intel)**
+
+```bash
+dotnet publish BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-x64 --self-contained true -p:PublishAot=false
 ```
 
 **标准发布**

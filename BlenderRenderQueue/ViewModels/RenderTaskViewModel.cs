@@ -458,6 +458,13 @@ public partial class RenderTaskViewModel : ViewModelBase
         try
         {
             EnqueueLog("[REFRESH] 开始刷新文件属性...");
+            _logService?.Write(
+                RenderLogLevel.Info,
+                RenderLogScope.Task,
+                $"开始刷新文件属性，Blender={blenderPath}, 文件={BlendFilePath}, IsLoading={ScenePropertiesView.IsLoading}, IsLoaded={ScenePropertiesView.SelectedSceneProperties.IsLoaded}",
+                Id,
+                BlendFilePath,
+                nameof(RenderTaskViewModel));
 
             var currentOverrideFrameRange = OverrideFrameRange;
             var currentStartFrame = StartFrame;
@@ -502,11 +509,13 @@ public partial class RenderTaskViewModel : ViewModelBase
             LoadFileInfo();
 
             EnqueueLog("[REFRESH] 文件属性刷新完成");
+            _logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, "文件属性刷新完成。", Id, BlendFilePath, nameof(RenderTaskViewModel));
             Console.WriteLine($"[RenderTaskViewModel] ✅ File properties refreshed successfully - overrides preserved");
         }
         catch (Exception ex)
         {
             EnqueueLog($"[REFRESH] 刷新文件属性失败: {ex.Message}");
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Task, $"刷新文件属性失败: {ex}", Id, BlendFilePath, nameof(RenderTaskViewModel));
             Console.WriteLine($"[RenderTaskViewModel] ❌ Failed to refresh file properties: {ex.Message}");
         }
     }

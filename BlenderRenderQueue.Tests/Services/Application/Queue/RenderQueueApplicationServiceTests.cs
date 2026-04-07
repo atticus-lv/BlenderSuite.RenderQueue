@@ -141,6 +141,50 @@ public sealed class RenderQueueApplicationServiceTests
     }
 
     [AvaloniaFact]
+    public async Task LoadQueueDataAsync_DoesNotDuplicate_TaskAlreadySubmittedDuringStartup()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+
+        var workerHost = new FakeBlenderWorkerHost();
+        var executionService = new FakeRenderTaskExecutionService();
+        var persistenceService = new FakeDataPersistenceService();
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
+
+        var submitResponse = await sut.SubmitTaskAsync(new LocalSubmissionRequest
+        {
+            Filepath = blendFile.Path,
+            Filename = Path.GetFileName(blendFile.Path)
+        });
+
+        var taskId = Guid.Parse(submitResponse.TaskId);
+        persistenceService.LoadedData = new AppData
+        {
+            RenderQueue =
+            [
+                new RenderTaskData
+                {
+                    RenderTask = new RenderTaskInfo
+                    {
+                        Id = taskId,
+                        Filename = Path.GetFileName(blendFile.Path),
+                        Filepath = blendFile.Path,
+                        StartFrame = 1,
+                        EndFrame = 1,
+                        Enable = true
+                    }
+                }
+            ]
+        };
+
+        await sut.LoadQueueDataAsync();
+        await DrainUiAsync();
+
+        Assert.Single(sut.RenderTasks);
+        Assert.Equal(taskId, sut.RenderTasks.Single().Id);
+    }
+
+    [AvaloniaFact]
     public async Task StartQueueAsync_ConcurrentCalls_DoNotStartSameTaskTwice()
     {
         using var blendFile = TemporaryFile.Create(".blend");
