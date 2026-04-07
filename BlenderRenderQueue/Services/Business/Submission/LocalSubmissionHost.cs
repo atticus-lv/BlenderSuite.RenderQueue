@@ -14,23 +14,52 @@ using BlenderRenderQueue.Services.Application.Queue;
 
 namespace BlenderRenderQueue.Services.Business.Submission;
 
+[JsonSerializable(typeof(SubmissionWireRequest))]
+[JsonSerializable(typeof(SubmissionWireResponse))]
+[JsonSerializable(typeof(SubmissionEndpointInfo))]
+[JsonSerializable(typeof(LocalSubmissionRequest))]
+internal partial class SubmissionJsonContext : JsonSerializerContext
+{
+}
+
+internal sealed class SubmissionWireRequest
+{
+    [JsonPropertyName("request_id")]
+    public string RequestId { get; init; } = string.Empty;
+
+    [JsonPropertyName("command")]
+    public string Command { get; init; } = string.Empty;
+
+    [JsonPropertyName("token")]
+    public string Token { get; init; } = string.Empty;
+
+    [JsonPropertyName("payload")]
+    public JsonElement? Payload { get; init; }
+}
+
+internal sealed class SubmissionWireResponse
+{
+    [JsonPropertyName("request_id")]
+    public string RequestId { get; init; } = string.Empty;
+
+    [JsonPropertyName("ok")]
+    public bool Ok { get; init; }
+
+    [JsonPropertyName("task_id")]
+    public string TaskId { get; init; } = string.Empty;
+
+    [JsonPropertyName("message")]
+    public string Message { get; init; } = string.Empty;
+
+    [JsonPropertyName("queue_state")]
+    public string QueueState { get; init; } = string.Empty;
+}
+
 public sealed class LocalSubmissionHost : ILocalSubmissionHost
 {
     private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
     private readonly IRenderQueueApplicationService _queueApplicationService;
     private readonly IRenderLogService _logService;
-    private readonly JsonSerializerOptions _wireJsonOptions = new()
-    {
-        PropertyNamingPolicy = null,
-        WriteIndented = false
-    };
-
-    private readonly JsonSerializerOptions _endpointJsonOptions = new()
-    {
-        PropertyNamingPolicy = null,
-        WriteIndented = true
-    };
-
     private readonly object _clientTasksLock = new();
     private readonly HashSet<Task> _clientTasks = [];
     private CancellationTokenSource? _hostCts;
@@ -222,7 +251,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                 return;
             }
 
-            var request = JsonSerializer.Deserialize<SubmissionWireRequest>(requestLine, _wireJsonOptions);
+            var request = JsonSerializer.Deserialize(requestLine, SubmissionJsonContext.Default.SubmissionWireRequest);
             if (request == null)
             {
                 await WriteResponseAsync(stream, new SubmissionWireResponse
@@ -310,7 +339,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                     };
                 }
 
-                var submissionRequest = request.Payload.Value.Deserialize<LocalSubmissionRequest>(_wireJsonOptions);
+                var submissionRequest = request.Payload.Value.Deserialize(SubmissionJsonContext.Default.LocalSubmissionRequest);
                 if (submissionRequest == null)
                 {
                     return new SubmissionWireResponse
@@ -378,13 +407,13 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
                     Command = "ping",
                     Token = CurrentEndpoint.Token,
                     Payload = null
-                }, _wireJsonOptions) + "\n");
+                }, SubmissionJsonContext.Default.SubmissionWireRequest) + "\n");
 
                 await stream.WriteAsync(payload, probeCts.Token);
                 await stream.FlushAsync(probeCts.Token);
 
                 var responseLine = await ReadRequestLineAsync(stream, probeCts.Token);
-                var response = JsonSerializer.Deserialize<SubmissionWireResponse>(responseLine, _wireJsonOptions);
+                var response = JsonSerializer.Deserialize(responseLine, SubmissionJsonContext.Default.SubmissionWireResponse);
                 if (response is { Ok: true } && string.Equals(response.Message, "pong", StringComparison.Ordinal))
                 {
                     return;
@@ -408,7 +437,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
         var endpointFilePath = SubmissionPaths.GetEndpointFilePath();
         await File.WriteAllTextAsync(
             endpointFilePath,
-            JsonSerializer.Serialize(endpointInfo, _endpointJsonOptions),
+            JsonSerializer.Serialize(endpointInfo, SubmissionJsonContext.Default.SubmissionEndpointInfo),
             cancellationToken);
     }
 
@@ -461,7 +490,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
 
     private async Task WriteResponseAsync(NetworkStream stream, SubmissionWireResponse response, CancellationToken cancellationToken)
     {
-        var payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response, _wireJsonOptions) + "\n");
+        var payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response, SubmissionJsonContext.Default.SubmissionWireResponse) + "\n");
         await stream.WriteAsync(payload, cancellationToken);
         await stream.FlushAsync(cancellationToken);
     }
@@ -511,38 +540,5 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
         {
             throw new ObjectDisposedException(nameof(LocalSubmissionHost));
         }
-    }
-
-    private sealed class SubmissionWireRequest
-    {
-        [JsonPropertyName("request_id")]
-        public string RequestId { get; init; } = string.Empty;
-
-        [JsonPropertyName("command")]
-        public string Command { get; init; } = string.Empty;
-
-        [JsonPropertyName("token")]
-        public string Token { get; init; } = string.Empty;
-
-        [JsonPropertyName("payload")]
-        public JsonElement? Payload { get; init; }
-    }
-
-    private sealed class SubmissionWireResponse
-    {
-        [JsonPropertyName("request_id")]
-        public string RequestId { get; init; } = string.Empty;
-
-        [JsonPropertyName("ok")]
-        public bool Ok { get; init; }
-
-        [JsonPropertyName("task_id")]
-        public string TaskId { get; init; } = string.Empty;
-
-        [JsonPropertyName("message")]
-        public string Message { get; init; } = string.Empty;
-
-        [JsonPropertyName("queue_state")]
-        public string QueueState { get; init; } = string.Empty;
     }
 }

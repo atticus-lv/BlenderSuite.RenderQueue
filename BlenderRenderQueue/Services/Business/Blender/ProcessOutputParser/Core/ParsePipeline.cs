@@ -9,9 +9,9 @@ namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 public class ParsePipeline
 {
     private readonly IErrorClassifier _errorClassifier;
-    private readonly List<object> _infoParsers;
+    private readonly List<IInfoParser> _infoParsers;
     
-    public ParsePipeline(IErrorClassifier errorClassifier, params object[] infoParsers)
+    public ParsePipeline(IErrorClassifier errorClassifier, params IInfoParser[] infoParsers)
     {
         _errorClassifier = errorClassifier;
         _infoParsers = infoParsers.ToList();
@@ -36,48 +36,35 @@ public class ParsePipeline
         }
         
         // 第二步：信息类型解析
-        foreach (var parserObj in _infoParsers)
+        foreach (var parser in _infoParsers)
         {
-            // 使用反射来调用泛型方法
-            var parserType = parserObj.GetType();
-            var tryParseMethod = parserType.GetMethod("TryParseInfoType");
-            var parseMethod = parserType.GetMethod("ParseInfo");
-            var generateEventsMethod = parserType.GetMethod("GenerateEvents");
-            
-            if (tryParseMethod != null && parseMethod != null && generateEventsMethod != null)
+            var infoType = parser.TryParseInfoType(line);
+            if (infoType.HasValue)
             {
-                var infoType = (InfoType?)tryParseMethod.Invoke(parserObj, new object[] { line });
-                if (infoType.HasValue)
+                result.InfoType = infoType.Value;
+                
+                // 解析具体信息
+                var info = parser.ParseInfoObject(line);
+                if (info != null)
                 {
-                    result.InfoType = infoType.Value;
-                    
-                    // 解析具体信息
-                    var info = parseMethod.Invoke(parserObj, new object[] { line });
-                    if (info != null)
+                    // 根据信息类型设置相应的属性
+                    switch (infoType.Value)
                     {
-                        // 根据信息类型设置相应的属性
-                        switch (infoType.Value)
-                        {
-                            case InfoType.RenderProgress:
-                                result.RenderProgress = info as BlenderRenderQueue.Models.RenderProgress;
-                                break;
-                            case InfoType.VideoProgress:
-                                result.VideoProgress = info as Models.VideoProgress;
-                                break;
-                            case InfoType.QueryResult:
-                                result.QueryResult = info as Models.QueryResult;
-                                break;
-                        }
-                        
-                        // 生成事件
-                        var events = generateEventsMethod.Invoke(parserObj, new object[] { info }) as IEnumerable<object>;
-                        if (events != null)
-                        {
-                            result.Events.AddRange(events);
-                        }
+                        case InfoType.RenderProgress:
+                            result.RenderProgress = info as BlenderRenderQueue.Models.RenderProgress;
+                            break;
+                        case InfoType.VideoProgress:
+                            result.VideoProgress = info as Models.VideoProgress;
+                            break;
+                        case InfoType.QueryResult:
+                            result.QueryResult = info as Models.QueryResult;
+                            break;
                     }
-                    break;
+
+                    result.Events.AddRange(parser.GenerateEventsObject(info));
                 }
+
+                break;
             }
         }
         

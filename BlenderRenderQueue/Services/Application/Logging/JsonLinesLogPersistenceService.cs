@@ -3,9 +3,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using BlenderRenderQueue.Services.Business.Submission;
 
 namespace BlenderRenderQueue.Services.Application.Logging;
+
+[JsonSerializable(typeof(RenderLogEvent))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
+internal partial class RenderLogJsonContext : JsonSerializerContext
+{
+}
 
 public sealed class JsonLinesLogPersistenceService : ILogPersistenceService
 {
@@ -15,7 +22,8 @@ public sealed class JsonLinesLogPersistenceService : ILogPersistenceService
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = false,
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        TypeInfoResolver = RenderLogJsonContext.Default
     };
 
     private readonly string _sessionsDirectory;
@@ -53,7 +61,7 @@ public sealed class JsonLinesLogPersistenceService : ILogPersistenceService
                             continue;
                         }
 
-                        var logEvent = JsonSerializer.Deserialize<RenderLogEvent>(line, _jsonOptions);
+                        var logEvent = JsonSerializer.Deserialize(line, RenderLogJsonContext.Default.RenderLogEvent);
                         if (logEvent != null)
                         {
                             events.Add(logEvent);
@@ -74,7 +82,7 @@ public sealed class JsonLinesLogPersistenceService : ILogPersistenceService
     {
         lock (_syncRoot)
         {
-            var line = JsonSerializer.Serialize(logEvent, _jsonOptions);
+            var line = JsonSerializer.Serialize(logEvent, RenderLogJsonContext.Default.RenderLogEvent);
             File.AppendAllText(_sessionFilePath, line + Environment.NewLine);
         }
     }

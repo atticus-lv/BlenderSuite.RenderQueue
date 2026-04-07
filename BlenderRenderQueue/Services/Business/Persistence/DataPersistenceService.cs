@@ -1,10 +1,21 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Models;
 
 namespace BlenderRenderQueue.Services.Business.Persistence;
+
+[JsonSerializable(typeof(AppData))]
+[JsonSerializable(typeof(RenderTaskData))]
+[JsonSerializable(typeof(RenderTaskInfo))]
+[JsonSerializable(typeof(OverrideData))]
+[JsonSerializable(typeof(OverrideFrameRangeData))]
+[JsonSerializable(typeof(OverrideSceneData))]
+internal partial class AppDataJsonContext : JsonSerializerContext
+{
+}
 
 /// <summary>
 /// 数据持久化服务实现
@@ -35,8 +46,7 @@ public class DataPersistenceService : IDataPersistenceService
             WriteIndented = true, // 格式化输出，便于阅读
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            // 使用 DefaultJsonTypeInfoResolver 来支持反射序列化，同时保持 AOT 兼容性
-            TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+            TypeInfoResolver = AppDataJsonContext.Default
         };
     }
 
@@ -47,7 +57,7 @@ public class DataPersistenceService : IDataPersistenceService
         {
             Console.WriteLine($"[DataPersistenceService] Saving data to: {_dataFilePath}");
 
-            var json = JsonSerializer.Serialize(data, _jsonOptions);
+            var json = JsonSerializer.Serialize(data, AppDataJsonContext.Default.AppData);
             tempFilePath = $"{_dataFilePath}.{Guid.NewGuid():N}.tmp";
 
             await File.WriteAllTextAsync(tempFilePath, json);
@@ -91,7 +101,7 @@ public class DataPersistenceService : IDataPersistenceService
             var json = await File.ReadAllTextAsync(_dataFilePath);
 
             // 反序列化 JSON
-            var data = JsonSerializer.Deserialize<AppData>(json, _jsonOptions);
+            var data = JsonSerializer.Deserialize(json, AppDataJsonContext.Default.AppData);
 
             if (data == null)
             {

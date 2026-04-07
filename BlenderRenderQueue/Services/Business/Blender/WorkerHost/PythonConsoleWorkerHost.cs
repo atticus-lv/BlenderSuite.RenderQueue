@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Services.Business.Blender.Extensions;
@@ -88,7 +89,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
     {
         var response = await SendRequestAsync(
             "ping",
-            new Dictionary<string, object?>(),
+            WorkerRequestPayload.Empty,
             RequestTimeout,
             cancellationToken);
 
@@ -100,7 +101,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
     public Task<BlenderWorkerResponse> QueryFileInfoAsync(CancellationToken cancellationToken = default)
     {
-        return SendRequestAsync("query_file_info", new Dictionary<string, object?>(), RequestTimeout, cancellationToken);
+        return SendRequestAsync("query_file_info", WorkerRequestPayload.Empty, RequestTimeout, cancellationToken);
     }
 
     public async Task<BlenderWorkerResponse> LoadFileAsync(string blendFilePath, CancellationToken cancellationToken = default)
@@ -112,7 +113,10 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
         var response = await SendRequestAsync(
             "load_file",
-            new Dictionary<string, object?> { ["filepath"] = blendFilePath },
+            new WorkerRequestPayload
+            {
+                Filepath = blendFilePath
+            },
             RequestTimeout,
             cancellationToken);
 
@@ -142,31 +146,14 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
         try
         {
-            var payload = new Dictionary<string, object?>();
-            if (!string.IsNullOrWhiteSpace(request.SceneName))
+            var payload = new WorkerRequestPayload
             {
-                payload["scene_name"] = request.SceneName;
-            }
-
-            if (request.SingleFrame.HasValue)
-            {
-                payload["single_frame"] = request.SingleFrame.Value;
-            }
-
-            if (request.FrameStart.HasValue)
-            {
-                payload["frame_start"] = request.FrameStart.Value;
-            }
-
-            if (request.FrameEnd.HasValue)
-            {
-                payload["frame_end"] = request.FrameEnd.Value;
-            }
-
-            if (!string.IsNullOrWhiteSpace(request.OutputPath))
-            {
-                payload["output_path"] = request.OutputPath;
-            }
+                SceneName = string.IsNullOrWhiteSpace(request.SceneName) ? null : request.SceneName,
+                SingleFrame = request.SingleFrame,
+                FrameStart = request.FrameStart,
+                FrameEnd = request.FrameEnd,
+                OutputPath = string.IsNullOrWhiteSpace(request.OutputPath) ? null : request.OutputPath
+            };
 
             var response = await SendRequestAsync("render_task", payload, RenderRequestTimeout, cancellationToken);
             response = response.WithOutputVerified(VerifyRenderOutput(request, response));
@@ -269,7 +256,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
             try
             {
-                await SendRequestAsync("shutdown", new Dictionary<string, object?>(), RequestTimeout, cancellationToken);
+                await SendRequestAsync("shutdown", WorkerRequestPayload.Empty, RequestTimeout, cancellationToken);
             }
             catch
             {
@@ -410,14 +397,16 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
         var bootstrapText = await File.ReadAllTextAsync(bootstrapPath, cancellationToken);
         var bootstrapBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(bootstrapText));
-        var configJson = JsonSerializer.Serialize(new
-        {
-            host = _connectionInfo!.Host,
-            port = _connectionInfo.Port,
-            token = _connectionInfo.Token,
-            app_instance_id = _appInstanceId,
-            log_path = GetWorkerLogPath()
-        });
+        var configJson = JsonSerializer.Serialize(
+            new WorkerBootstrapConfig
+            {
+                Host = _connectionInfo!.Host,
+                Port = _connectionInfo.Port,
+                Token = _connectionInfo.Token,
+                AppInstanceId = _appInstanceId,
+                LogPath = GetWorkerLogPath()
+            },
+            WorkerHostJsonContext.Default.WorkerBootstrapConfig);
 
         await SendConsoleCommandAsync("import base64, json", cancellationToken);
         await SendConsoleCommandAsync($"__brq_script = base64.b64decode('{bootstrapBase64}').decode('utf-8')", cancellationToken);
@@ -440,7 +429,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             {
                 var response = await SendRequestAsync(
                     "ping",
-                    new Dictionary<string, object?>(),
+                    WorkerRequestPayload.Empty,
                     RequestTimeout,
                     cancellationToken);
 
@@ -462,7 +451,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
     private async Task<BlenderWorkerResponse> SendRequestAsync(
         string command,
-        IReadOnlyDictionary<string, object?> payload,
+        WorkerRequestPayload payload,
         TimeSpan timeout,
         CancellationToken cancellationToken)
     {
@@ -486,15 +475,15 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
             using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
 
-            var request = new
+            var request = new WorkerWireRequest
             {
-                request_id = $"brq-{Interlocked.Increment(ref _requestSequence):D8}",
-                command,
-                token = _connectionInfo.Token,
-                payload
+                RequestId = $"brq-{Interlocked.Increment(ref _requestSequence):D8}",
+                Command = command,
+                Token = _connectionInfo.Token,
+                Payload = payload
             };
 
-            var json = JsonSerializer.Serialize(request);
+            var json = JsonSerializer.Serialize(request, WorkerHostJsonContext.Default.WorkerWireRequest);
             await writer.WriteLineAsync(json);
 
             var responseLine = await reader.ReadLineAsync(linkedCts.Token);
@@ -528,56 +517,28 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
     private BlenderWorkerResponse ParseResponse(string responseLine)
     {
-        using var document = JsonDocument.Parse(responseLine);
-        var root = document.RootElement;
-        var payload = root.TryGetProperty("payload", out var payloadElement)
-            ? payloadElement
-            : default;
+        var response = JsonSerializer.Deserialize(responseLine, WorkerHostJsonContext.Default.WorkerWireResponse)
+            ?? throw new InvalidOperationException("Worker returned an unreadable JSON response.");
+        var payload = response.Payload;
 
         return new BlenderWorkerResponse
         {
-            RequestId = root.TryGetProperty("request_id", out var requestIdElement)
-                ? requestIdElement.GetString() ?? string.Empty
-                : string.Empty,
-            Ok = root.TryGetProperty("ok", out var okElement) && okElement.GetBoolean(),
-            WorkerState = root.TryGetProperty("worker_state", out var workerStateElement)
-                ? workerStateElement.GetString() ?? string.Empty
-                : string.Empty,
-            Error = root.TryGetProperty("error", out var errorElement)
-                ? errorElement.GetString() ?? string.Empty
-                : string.Empty,
-            ErrorCategory = root.TryGetProperty("error_category", out var errorCategoryElement)
-                ? errorCategoryElement.GetString() ?? string.Empty
-                : string.Empty,
-            CurrentFile = payload.TryGetProperty("current_file", out var currentFileElement)
-                ? currentFileElement.GetString() ?? string.Empty
-                : string.Empty,
-            ActiveScene = payload.TryGetProperty("active_scene", out var activeSceneElement)
-                ? activeSceneElement.GetString() ?? string.Empty
-                : string.Empty,
-            Scenes = payload.TryGetProperty("scenes", out var scenesElement) && scenesElement.ValueKind == JsonValueKind.Array
-                ? scenesElement.EnumerateArray().Select(x => x.GetString() ?? string.Empty).ToArray()
-                : [],
-            Camera = payload.TryGetProperty("camera", out var cameraElement)
-                ? cameraElement.GetString() ?? string.Empty
-                : string.Empty,
-            FrameStart = payload.TryGetProperty("frame_start", out var frameStartElement) && frameStartElement.TryGetInt32(out var frameStart)
-                ? frameStart
-                : 0,
-            FrameEnd = payload.TryGetProperty("frame_end", out var frameEndElement) && frameEndElement.TryGetInt32(out var frameEnd)
-                ? frameEnd
-                : 0,
-            OutputPath = payload.TryGetProperty("output_path", out var outputPathElement)
-                ? outputPathElement.GetString() ?? string.Empty
-                : string.Empty,
-            IsSaved = payload.TryGetProperty("is_saved", out var isSavedElement) && isSavedElement.GetBoolean(),
-            OutputVerified = payload.TryGetProperty("output_verified", out var outputVerifiedElement) && outputVerifiedElement.GetBoolean(),
-            RenderStartedAt = payload.TryGetProperty("render_started_at", out var renderStartedAtElement)
-                ? renderStartedAtElement.GetString() ?? string.Empty
-                : string.Empty,
-            LastHeartbeatAt = payload.TryGetProperty("last_heartbeat_at", out var heartbeatElement)
-                ? heartbeatElement.GetString() ?? string.Empty
-                : string.Empty
+            RequestId = response.RequestId ?? string.Empty,
+            Ok = response.Ok,
+            WorkerState = response.WorkerState ?? string.Empty,
+            Error = response.Error ?? string.Empty,
+            ErrorCategory = response.ErrorCategory ?? string.Empty,
+            CurrentFile = payload?.CurrentFile ?? string.Empty,
+            ActiveScene = payload?.ActiveScene ?? string.Empty,
+            Scenes = payload?.Scenes ?? [],
+            Camera = payload?.Camera ?? string.Empty,
+            FrameStart = payload?.FrameStart ?? 0,
+            FrameEnd = payload?.FrameEnd ?? 0,
+            OutputPath = payload?.OutputPath ?? string.Empty,
+            IsSaved = payload?.IsSaved ?? false,
+            OutputVerified = payload?.OutputVerified ?? false,
+            RenderStartedAt = payload?.RenderStartedAt ?? string.Empty,
+            LastHeartbeatAt = payload?.LastHeartbeatAt ?? string.Empty
         };
     }
 
@@ -858,7 +819,7 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
         try
         {
             var json = await File.ReadAllTextAsync(metadataPath);
-            var metadata = JsonSerializer.Deserialize<WorkerProcessMetadata>(json);
+            var metadata = JsonSerializer.Deserialize(json, WorkerHostJsonContext.Default.WorkerProcessMetadata);
             if (metadata is null || metadata.ProcessId <= 0)
             {
                 DeleteWorkerProcessInfo();
@@ -930,7 +891,9 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             AppInstanceId = _appInstanceId
         };
 
-        File.WriteAllText(GetWorkerProcessInfoPath(), JsonSerializer.Serialize(metadata));
+        File.WriteAllText(
+            GetWorkerProcessInfoPath(),
+            JsonSerializer.Serialize(metadata, WorkerHostJsonContext.Default.WorkerProcessMetadata));
     }
 
     private void DeleteWorkerProcessInfo()
@@ -1278,12 +1241,137 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
             new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
-    private sealed class WorkerProcessMetadata
-    {
-        public int ProcessId { get; init; }
-        public string BlenderExecutablePath { get; init; } = string.Empty;
-        public string AppInstanceId { get; init; } = string.Empty;
-    }
+}
+
+[JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSerializable(typeof(WorkerBootstrapConfig))]
+[JsonSerializable(typeof(WorkerRequestPayload))]
+[JsonSerializable(typeof(WorkerWireRequest))]
+[JsonSerializable(typeof(WorkerWireResponse))]
+[JsonSerializable(typeof(WorkerResponsePayload))]
+[JsonSerializable(typeof(WorkerProcessMetadata))]
+internal partial class WorkerHostJsonContext : JsonSerializerContext
+{
+}
+
+internal sealed class WorkerBootstrapConfig
+{
+    [JsonPropertyName("host")]
+    public string Host { get; init; } = string.Empty;
+
+    [JsonPropertyName("port")]
+    public int Port { get; init; }
+
+    [JsonPropertyName("token")]
+    public string Token { get; init; } = string.Empty;
+
+    [JsonPropertyName("app_instance_id")]
+    public string AppInstanceId { get; init; } = string.Empty;
+
+    [JsonPropertyName("log_path")]
+    public string LogPath { get; init; } = string.Empty;
+}
+
+internal sealed class WorkerRequestPayload
+{
+    public static WorkerRequestPayload Empty { get; } = new();
+
+    [JsonPropertyName("filepath")]
+    public string? Filepath { get; init; }
+
+    [JsonPropertyName("scene_name")]
+    public string? SceneName { get; init; }
+
+    [JsonPropertyName("single_frame")]
+    public int? SingleFrame { get; init; }
+
+    [JsonPropertyName("frame_start")]
+    public int? FrameStart { get; init; }
+
+    [JsonPropertyName("frame_end")]
+    public int? FrameEnd { get; init; }
+
+    [JsonPropertyName("output_path")]
+    public string? OutputPath { get; init; }
+}
+
+internal sealed class WorkerWireRequest
+{
+    [JsonPropertyName("request_id")]
+    public string RequestId { get; init; } = string.Empty;
+
+    [JsonPropertyName("command")]
+    public string Command { get; init; } = string.Empty;
+
+    [JsonPropertyName("token")]
+    public string Token { get; init; } = string.Empty;
+
+    [JsonPropertyName("payload")]
+    public WorkerRequestPayload Payload { get; init; } = WorkerRequestPayload.Empty;
+}
+
+internal sealed class WorkerWireResponse
+{
+    [JsonPropertyName("request_id")]
+    public string? RequestId { get; init; }
+
+    [JsonPropertyName("ok")]
+    public bool Ok { get; init; }
+
+    [JsonPropertyName("worker_state")]
+    public string? WorkerState { get; init; }
+
+    [JsonPropertyName("payload")]
+    public WorkerResponsePayload? Payload { get; init; }
+
+    [JsonPropertyName("error")]
+    public string? Error { get; init; }
+
+    [JsonPropertyName("error_category")]
+    public string? ErrorCategory { get; init; }
+}
+
+internal sealed class WorkerResponsePayload
+{
+    [JsonPropertyName("current_file")]
+    public string? CurrentFile { get; init; }
+
+    [JsonPropertyName("active_scene")]
+    public string? ActiveScene { get; init; }
+
+    [JsonPropertyName("scenes")]
+    public string[]? Scenes { get; init; }
+
+    [JsonPropertyName("camera")]
+    public string? Camera { get; init; }
+
+    [JsonPropertyName("frame_start")]
+    public int? FrameStart { get; init; }
+
+    [JsonPropertyName("frame_end")]
+    public int? FrameEnd { get; init; }
+
+    [JsonPropertyName("output_path")]
+    public string? OutputPath { get; init; }
+
+    [JsonPropertyName("is_saved")]
+    public bool? IsSaved { get; init; }
+
+    [JsonPropertyName("output_verified")]
+    public bool? OutputVerified { get; init; }
+
+    [JsonPropertyName("render_started_at")]
+    public string? RenderStartedAt { get; init; }
+
+    [JsonPropertyName("last_heartbeat_at")]
+    public string? LastHeartbeatAt { get; init; }
+}
+
+internal sealed class WorkerProcessMetadata
+{
+    public int ProcessId { get; init; }
+    public string BlenderExecutablePath { get; init; } = string.Empty;
+    public string AppInstanceId { get; init; } = string.Empty;
 }
 
 internal static class BlenderWorkerResponseExtensions

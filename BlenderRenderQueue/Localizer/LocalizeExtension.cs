@@ -29,7 +29,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Data;
 using Avalonia.Markup.Xaml;
-using Avalonia.Markup.Xaml.MarkupExtensions;
 
 namespace BlenderRenderQueue.Localizer;
 
@@ -51,12 +50,13 @@ public class LocalizeExtension : MarkupExtension
         if (!string.IsNullOrWhiteSpace(Context))
             keyToUse = $"{Context}/{Key}";
 
-        var binding = new ReflectionBindingExtension($"[{keyToUse}]")
+        var binding = new Binding
         {
+            Path = $"[{keyToUse}]",
             Mode = BindingMode.OneWay,
             Source = Localizer.Instance,
         };
 
-        return binding.ProvideValue(serviceProvider);
+        return binding;
     }
 }

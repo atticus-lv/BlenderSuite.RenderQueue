@@ -58,10 +58,7 @@ sealed class Program
             }
 
             var json = File.ReadAllText(settingsFilePath);
-            var settings = JsonSerializer.Deserialize<SettingsData>(json, new JsonSerializerOptions
-            {
-                TypeInfoResolver = SettingsJsonContext.Default
-            });
+            var settings = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.SettingsData);
 
             if (settings?.UseGpu == true)
             {

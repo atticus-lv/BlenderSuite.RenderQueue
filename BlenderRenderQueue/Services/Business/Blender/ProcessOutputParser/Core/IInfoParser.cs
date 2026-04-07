@@ -2,11 +2,18 @@ using System.Collections.Generic;
 
 namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
+public interface IInfoParser
+{
+    new InfoType? TryParseInfoType(string line);
+    object? ParseInfoObject(string line);
+    IReadOnlyList<object> GenerateEventsObject(object info);
+}
+
 /// <summary>
 /// 信息解析器接口
 /// </summary>
 /// <typeparam name="T">解析的信息类型</typeparam>
-public interface IInfoParser<T>
+public interface IInfoParser<T> : IInfoParser
 {
     /// <summary>
     /// 解析信息类型
@@ -22,4 +29,11 @@ public interface IInfoParser<T>
     /// 生成事件
     /// </summary>
     List<object> GenerateEvents(T info);
+
+    object? IInfoParser.ParseInfoObject(string line) => ParseInfo(line);
+
+    IReadOnlyList<object> IInfoParser.GenerateEventsObject(object info)
+    {
+        return info is T typedInfo ? GenerateEvents(typedInfo) : [];
+    }
 }

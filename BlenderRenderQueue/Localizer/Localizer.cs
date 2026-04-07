@@ -67,7 +67,7 @@ public class Localizer : INotifyPropertyChanged
         using (StreamReader sr = new StreamReader(AssetLoader.Open(uri), Encoding.UTF8))
         {
             string jsonString = sr.ReadToEnd();
-            _mStrings = JsonSerializer.Deserialize<Dictionary<string, string>>(jsonString, _jsonOptions) ?? [];
+            _mStrings = JsonSerializer.Deserialize(jsonString, LocalizerJsonContext.Default.DictionaryStringString) ?? [];
         }
 
         Invalidate();

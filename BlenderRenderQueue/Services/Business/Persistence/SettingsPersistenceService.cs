@@ -56,7 +56,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService
             Console.WriteLine($"[SettingsPersistenceService] Saving settings to: {SettingsFilePath}");
 
             // 序列化并保存到文件
-            var json = JsonSerializer.Serialize(settings, JsonOptions);
+            var json = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.SettingsData);
             Console.WriteLine($"[SettingsPersistenceService] Serialized JSON: {json}");
             await File.WriteAllTextAsync(SettingsFilePath, json);
 
@@ -83,7 +83,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService
             var json = await File.ReadAllTextAsync(SettingsFilePath);
             Console.WriteLine($"[SettingsPersistenceService] Raw JSON content: {json}");
             
-            var settings = JsonSerializer.Deserialize<SettingsData>(json, JsonOptions);
+            var settings = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.SettingsData);
 
             if (settings == null)
             {
