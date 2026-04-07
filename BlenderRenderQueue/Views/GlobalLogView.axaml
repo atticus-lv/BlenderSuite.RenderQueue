@@ -55,7 +55,10 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
                 <Button Content="{i18n:Localize Queue_Refresh}" Command="{Binding RefreshEntriesCommand}" Classes="Rounded" />
-                <Button Content="{i18n:Localize GlobalLog_ClearHistory}" Command="{Binding ClearHistoryCommand}" Classes="Rounded" />
+                <Button Content="{i18n:Localize GlobalLog_ClearHistory}"
+                        Command="{Binding ClearHistoryCommand}"
+                        IsEnabled="{Binding HasHistoricalEntries}"
+                        Classes="Rounded" />
             </WrapPanel>
         </StackPanel>
 

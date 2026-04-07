@@ -45,6 +45,28 @@ public sealed class GlobalLogViewModelTests
     }
 
     [AvaloniaFact]
+    public void ClearHistory_IsDisabledWhenOnlyCurrentSessionEntriesExist()
+    {
+        var logService = TestLogServiceFactory.Create();
+        logService.Write(new RenderLogEvent
+        {
+            SessionId = logService.CurrentSessionId,
+            Level = RenderLogLevel.Info,
+            Scope = RenderLogScope.Queue,
+            Message = "Current event"
+        });
+
+        using var sut = new GlobalLogViewModel(logService);
+
+        Assert.False(sut.HasHistoricalEntries);
+
+        sut.ClearHistoryCommand.Execute(null);
+
+        Assert.Single(sut.Entries);
+        Assert.False(sut.HasHistoricalEntries);
+    }
+
+    [AvaloniaFact]
     public async Task ClearHistoryCommand_WithBoundView_RemovesHistoricalEntriesWithoutBreakingBindings()
     {
         var logService = TestLogServiceFactory.Create();
@@ -80,11 +102,13 @@ public sealed class GlobalLogViewModelTests
         sut.SelectedSession = "GlobalLog_Filter_HistoryOnly";
         await WaitForDebounceAsync();
         Assert.Single(sut.Entries);
+        Assert.True(sut.HasHistoricalEntries);
 
         sut.ClearHistoryCommand.Execute(null);
         await DrainUiAsync();
 
         Assert.Empty(sut.Entries);
+        Assert.False(sut.HasHistoricalEntries);
         Assert.Single(sut.TaskOptions);
         Assert.Null(sut.TaskOptions[0].TaskId);
         Assert.Equal(sut.TaskOptions[0], sut.SelectedTask);

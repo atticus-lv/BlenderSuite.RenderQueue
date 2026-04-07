@@ -60,6 +60,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
     private string _selectedSession = AllSessions;
     private TaskFilterOption _selectedTask = TaskFilterOption.All;
     private string _searchText = string.Empty;
+    private bool _hasHistoricalEntries;
 
     public GlobalLogViewModel(IRenderLogService logService)
     {
@@ -192,6 +193,12 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
     public string CurrentSessionId => _logService.CurrentSessionId;
     public bool HasEntries => Entries.Count > 0;
+    public bool HasHistoricalEntries
+    {
+        get => _hasHistoricalEntries;
+        private set => SetProperty(ref _hasHistoricalEntries, value);
+    }
+
     public IRelayCommand RefreshEntriesCommand { get; }
     public IRelayCommand ClearHistoryCommand { get; }
     public IRelayCommand ClearAllCommand { get; }
@@ -210,6 +217,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         _isRefreshing = true;
         try
         {
+            UpdateHistoryState();
             var events = _logService.GetEvents(BuildProjection());
             ReplaceEntries(events);
             RefreshTaskOptions(events);
@@ -222,6 +230,11 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
     private void ClearHistory()
     {
+        if (!HasHistoricalEntries)
+        {
+            return;
+        }
+
         _logService.ClearHistory();
         _refreshTimer.Stop();
         RefreshEntries();
@@ -343,6 +356,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
     private bool TryAppendEntry(RenderLogEvent logEvent)
     {
+        UpdateHistoryState();
         var projection = BuildProjection();
         if (!projection.Matches(logEvent, _logService.CurrentSessionId))
         {
@@ -398,6 +412,12 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         }
 
         OnPropertyChanged(nameof(TaskOptions));
+    }
+
+    private void UpdateHistoryState()
+    {
+        HasHistoricalEntries = _logService.GetEvents().Any(logEvent =>
+            !string.Equals(logEvent.SessionId, _logService.CurrentSessionId, StringComparison.Ordinal));
     }
 
     public sealed class TaskFilterOption
