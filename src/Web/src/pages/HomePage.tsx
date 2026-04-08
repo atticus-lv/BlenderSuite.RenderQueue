@@ -1,87 +1,91 @@
-import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
+import { motion, Reorder, useDragControls } from 'framer-motion'
+import { useState } from 'react'
 import { siteConfig } from '../content/site'
 import styles from './HomePage.module.css'
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { 
-    opacity: 1, 
-    transition: { staggerChildren: 0.15 } 
-  }
-}
+const initialItems = [
+  { id: '1', name: 'forest_scene.blend', range: '1-500', active: true, progress: null },
+  { id: '2', name: 'cube.blend', range: '1-250', active: true, progress: 80 },
+  { id: '3', name: 'logo_reveal.blend', range: '1-100', active: false, progress: null },
+]
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+function ReorderItem({ item, selectedId, setSelectedId, toggleItem }: any) {
+  const controls = useDragControls()
+  
+  return (
+    <Reorder.Item 
+      key={item.id} 
+      value={item} 
+      dragListener={false}
+      dragControls={controls}
+      className={`${styles.visualTask} ${item.progress ? styles.active : ''} ${selectedId === item.id ? styles.selected : ''}`}
+      onClick={() => setSelectedId(item.id)}
+    >
+      <div className={styles.statusIndicator} style={{ background: item.active ? '#39d353' : '#57606a' }} />
+      <div className={styles.taskInfo}>
+        <div style={{ fontWeight: 500 }}>{item.name}</div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Scene {item.range} {item.progress ? <span style={{color: '#f8d210'}}>*</span> : ''}</div>
+      </div>
+      
+      {item.progress !== null && (
+        <div className={styles.progressBarMini}>
+          <motion.div className={styles.progressInner} animate={{ width: ['0%', '100%'] }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }} />
+        </div>
+      )}
+      
+      {item.progress === null && (
+        <div 
+          className={`${styles.toggle} ${!item.active ? styles.inactive : ''}`} 
+          onClick={(e) => toggleItem(item.id, e)}
+        />
+      )}
+      
+      <div 
+        className={styles.handle} 
+        onPointerDown={(e) => {
+          setSelectedId(item.id);
+          controls.start(e);
+        }}
+      >
+        {[...Array(12)].map((_,i)=><span key={i}/>)}
+      </div>
+    </Reorder.Item>
+  )
 }
 
 export function HomePage() {
+  const [items, setItems] = useState(initialItems)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const toggleItem = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setItems(items.map(i => i.id === id ? { ...i, active: !i.active } : i))
+  }
+
   return (
-    <motion.div 
-      className={styles.page}
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
-      <motion.header className={styles.hero} variants={itemVariants}>
+    <motion.div className={styles.page} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <header className={styles.hero}>
         <div className={styles.heroContent}>
           <h1 className={styles.heroTitle}>渲染调度系统</h1>
           <p className={styles.summary}>
             基于 Avalonia 构建，运行于 Windows 与 macOS。支持 Blender 场景自动识别，提供任务排队、状态监控与渲染自动化处理。
           </p>
-          <div className={styles.heroSpecs}>
-            <div className={styles.spec}>
-              <span className={styles.specLabel}>架构</span>
-              <span className={styles.specValue}>Avalonia UI</span>
-            </div>
-            <div className={styles.spec}>
-              <span className={styles.specLabel}>平台</span>
-              <span className={styles.specValue}>Win / macOS</span>
-            </div>
-            <div className={styles.spec}>
-              <span className={styles.specLabel}>集成</span>
-              <span className={styles.specValue}>Blender 扩展</span>
-            </div>
-          </div>
         </div>
 
-        <motion.div 
-          className={styles.heroVisual}
-          whileHover={{ scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 100 }}
-        >
-          <div className={styles.visualTask}>
-            <div className={styles.statusIndicator} />
-            <div className={styles.taskInfo}>
-              <div style={{ fontWeight: 500 }}>cube</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Scene 1-1 *</div>
-            </div>
-          </div>
-          <div className={`${styles.visualTask} ${styles.active}`}>
-            <div className={styles.statusIndicator} />
-            <div className={styles.taskInfo}>
-              <div style={{ fontWeight: 500 }}>cube</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Scene 1-1 *</div>
-            </div>
-            <motion.div 
-              className={styles.progressBarMini}
-              initial={{ width: 0 }}
-              animate={{ width: '80%' }}
-              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+        <Reorder.Group axis="y" values={items} onReorder={setItems} className={styles.heroVisual} style={{ listStyle: 'none', padding: 0 }}>
+          {items.map((item) => (
+            <ReorderItem 
+              key={item.id} 
+              item={item} 
+              selectedId={selectedId} 
+              setSelectedId={setSelectedId} 
+              toggleItem={toggleItem} 
             />
-          </div>
-          <div className={styles.visualTask}>
-            <div className={`${styles.statusIndicator} ${styles.inactive}`} />
-            <div className={styles.taskInfo}>
-              <div style={{ fontWeight: 500 }}>cube</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Scene 1-1 *</div>
-            </div>
-          </div>
-        </motion.div>
-      </motion.header>
+          ))}
+        </Reorder.Group>
+      </header>
 
-      <motion.section className={styles.section} variants={itemVariants}>
+      <section className={styles.section}>
         <span className={styles.eyebrow}>Core Capabilities</span>
         <div className={styles.grid}>
           {[
@@ -93,14 +97,14 @@ export function HomePage() {
             <motion.article 
               key={i} 
               className={styles.item}
-              whileHover={{ y: -8, borderColor: 'rgba(20, 150, 255, 0.5)', backgroundColor: 'rgba(20, 150, 255, 0.03)' }}
+              whileHover={{ y: -4, borderColor: 'rgba(20, 150, 255, 0.5)' }}
             >
               <h3>{item.t}</h3>
               <p>{item.d}</p>
             </motion.article>
           ))}
         </div>
-      </motion.section>
+      </section>
     </motion.div>
   )
 }

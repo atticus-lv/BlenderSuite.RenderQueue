@@ -51,34 +51,144 @@ body {
   align-items: center;
   gap: 12px;
   position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
 }
 
-.visualTask.active {
-  background: rgba(20, 150, 255, 0.15);
-  border: 1px solid rgba(20, 150, 255, 0.3);
+.visualTask.selected {
+  border-color: var(--accent-blue);
+  background: rgba(20, 150, 255, 0.05);
+}
+
+.progressBarMini {
+  position: absolute;
+  bottom: 8px; 
+  left: 36px;
+  right: 120px;
+  height: 2px;
+  background: rgba(20, 150, 255, 0.4); /* 调亮进度条背景 */
+  border-radius: 1px;
+}
+
+.progressInner {
+  height: 100%;
+  background: #25a0ff; /* 调亮进度条颜色 */
+  box-shadow: 0 0 8px rgba(37, 160, 255, 0.6); /* 增加一点点光晕 */
+}
+
+.visualTask {
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  user-select: none;
+  cursor: grab;
+  margin-bottom: 8px;
+}
+
+.visualTask:active {
+  cursor: grabbing;
+}
+
+
+.progressInner {
+  height: 100%;
+  background: var(--accent-blue);
 }
 
 .statusIndicator {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #39d353;
+  flex-shrink: 0;
 }
 
-.statusIndicator.inactive {
-  background: #57606a;
-}
-
-.progressBarMini {
-  position: absolute;
-  bottom: 0; left: 0;
-  height: 2px;
+.toggle {
+  width: 36px;
+  height: 20px;
   background: var(--accent-blue);
+  border-radius: 10px;
+  position: relative;
+  margin-left: auto;
+  transition: background 0.2s;
 }
 
-.taskInfo {
+.toggle::after {
+  content: '';
+  position: absolute;
+  right: 2px; top: 2px;
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle.inactive {
+  background: #374151;
+}
+
+.toggle.inactive::after {
+  transform: translateX(-16px);
+}
+
+.handle {
+  width: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin-left: auto; /* 自动推到右侧 */
+  color: var(--text-dim);
+  cursor: grab;
+  padding: 8px 4px;
+}
+
+
+.visualTask {
+  padding: 12px 16px;
+  border-radius: 8px;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  user-select: none;
+}
+
+.visualTask:active {
+  cursor: default;
+}
+
+
+.handle span {
+  width: 2px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.visualTask {
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  user-select: none;
+}
+
+
+.handle span {
+  width: 3px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 50%;
 }
 
 @media (max-width: 900px) {
