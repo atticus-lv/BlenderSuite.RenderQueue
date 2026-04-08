@@ -21,8 +21,8 @@ goto usage_error
 :args_done
 for %%I in ("%~dp0..\..") do set "REPO_ROOT=%%~fI"
 set "PROJECT_FILE=%REPO_ROOT%\experimental\Client\QueueClient.Android\QueueClient.Android.csproj"
-set "PUBLISH_DIR=%REPO_ROOT%\Install\Android\publish\android-arm64"
-set "OUTPUT_DIR=%REPO_ROOT%\Install\Android\output"
+set "PUBLISH_DIR=%REPO_ROOT%\install\Android\publish\android-arm64"
+set "OUTPUT_DIR=%REPO_ROOT%\install\Android\output"
 set "CONFIGURATION=Release"
 set "TARGET_FRAMEWORK=net10.0-android"
 set "RID=android-arm64"
@@ -91,7 +91,7 @@ exit /b 0
 :usage
 echo Usage: build-android-apk.bat [--no-open]
 echo.
-echo Builds the Android ARM64 APK and copies the final artifact to Install\Android\output.
+echo Builds the Android ARM64 APK and copies the final artifact to install\Android\output.
 exit /b 0
 
 :usage_error

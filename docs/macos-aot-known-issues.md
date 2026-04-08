@@ -16,4 +16,4 @@ This list is for evidence tracking only. Do not use the AOT app as the primary b
 
 - Validate behavior first with the non-AOT package.
 - Only triage AOT-only failures after non-AOT behavior is confirmed.
-- Keep a matching `.dSYM` set under `Install/macOS/symbols/aot/<rid>/` for any AOT build used in testing.
+- Keep a matching `.dSYM` set under `install/macOS/symbols/aot/<rid>/` for any AOT build used in testing.

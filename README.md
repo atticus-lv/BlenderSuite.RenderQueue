@@ -53,7 +53,7 @@ dotnet test BlenderSuite.RenderQueue.sln
 - `tests/`：测试项目
 - `scripts/`：构建与发布脚本
 - `docs/`：项目文档
-- `Install/`：安装包与打包相关资源
+- `install/`：安装包与打包相关资源
 - `experimental/`：历史实验代码与原型验证项目
 
 ## 统一发布脚本
@@ -76,8 +76,8 @@ scripts\release\build-windows-aot-installer.bat --no-open
 
 产物目录：
 
-- 发布目录：`Install/Windows/publish/aot/win-x64`
-- 安装包目录：`Install/Windows/output`
+- 发布目录：`install/Windows/publish/aot/win-x64`
+- 安装包目录：`install/Windows/output`
 
 ### macOS
 
@@ -110,9 +110,9 @@ chmod +x scripts/release/build-macos-dmg.sh
 
 产物目录：
 
-- 发布目录：`Install/macOS/publish/{aot|non-aot}/<RID>`
-- 符号目录：`Install/macOS/symbols/{aot|non-aot}/<RID>`
-- 安装包目录：`Install/macOS/output`
+- 发布目录：`install/macOS/publish/{aot|non-aot}/<RID>`
+- 符号目录：`install/macOS/symbols/{aot|non-aot}/<RID>`
+- 安装包目录：`install/macOS/output`
 
 ## 直接调用底层脚本
 
@@ -133,25 +133,25 @@ chmod +x scripts/release/build-macos-dmg.sh
 ### Windows Native AOT
 
 ```bash
-dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r win-x64 --self-contained true -p:PublishAot=true -o Install/Windows/publish/aot/win-x64
+dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r win-x64 --self-contained true -p:PublishAot=true -o install/Windows/publish/aot/win-x64
 ```
 
 ### macOS Native AOT
 
 ```bash
-dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=true -o Install/macOS/publish/aot/osx-arm64
+dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=true -o install/macOS/publish/aot/osx-arm64
 ```
 
 ### macOS 非 AOT
 
 ```bash
-dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=false -o Install/macOS/publish/non-aot/osx-arm64
+dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=false -o install/macOS/publish/non-aot/osx-arm64
 ```
 
 ### Windows Inno Setup
 
 ```bat
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyPublishDir="%CD%\Install\Windows\publish\aot\win-x64" /DMyOutputDir="%CD%\Install\Windows\output" .\Install\Windows\setup.iss
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyPublishDir="%CD%\install\Windows\publish\aot\win-x64" /DMyOutputDir="%CD%\install\Windows\output" .\install\Windows\setup.iss
 ```
 
 ## 平台支持
@@ -172,5 +172,5 @@ dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r os
 
 本项目采用自定义许可协议，详见：
 
-- [中文许可协议](Install/license_zh.txt)
-- [English License Agreement](Install/license_en.txt)
+- [中文许可协议](install/license_zh.txt)
+- [English License Agreement](install/license_en.txt)

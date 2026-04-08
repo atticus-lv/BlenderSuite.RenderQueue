@@ -244,13 +244,15 @@ ClientBin/
 *.jfm
 
 # Release artifacts
-Install/Windows/Publish/
-Install/Windows/Output/
-Install/macOS/build/
-Install/macOS/publish/
-Install/macOS/staging/
-Install/macOS/output/
-Install/macOS/symbols/
+install/Windows/publish/
+install/Windows/output/
+install/macOS/build/
+install/macOS/publish/
+install/macOS/staging/
+install/macOS/output/
+install/macOS/symbols/
+src/Web/node_modules/
+src/Web/dist/
 *.dmg
 *.pfx
 *.publishsettings

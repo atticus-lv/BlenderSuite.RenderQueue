@@ -21,9 +21,9 @@ goto usage_error
 
 for %%I in ("%~dp0..\..") do set "REPO_ROOT=%%~fI"
 set "PROJECT_FILE=%REPO_ROOT%\src\BlenderRenderQueue\BlenderRenderQueue.csproj"
-set "PUBLISH_DIR=%REPO_ROOT%\Install\Windows\publish\aot\win-x64"
-set "OUTPUT_DIR=%REPO_ROOT%\Install\Windows\output"
-set "INNO_SCRIPT=%REPO_ROOT%\Install\Windows\setup.iss"
+set "PUBLISH_DIR=%REPO_ROOT%\install\Windows\publish\aot\win-x64"
+set "OUTPUT_DIR=%REPO_ROOT%\install\Windows\output"
+set "INNO_SCRIPT=%REPO_ROOT%\install\Windows\setup.iss"
 set "RID=win-x64"
 set "CONFIGURATION=Release"
 
@@ -93,7 +93,7 @@ exit /b 0
 echo Usage: build-windows-aot-installer.bat [--no-open]
 echo.
 echo Builds the Windows Native AOT publish and packages it with Inno Setup.
-echo Final installer output is written to Install\Windows\output.
+echo Final installer output is written to install\Windows\output.
 exit /b 0
 
 :usage_error
