@@ -2,7 +2,7 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -49,13 +49,15 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     private bool _hasError;
     private string _errorMessage = string.Empty;
     private bool _hasImages;
-    private ObservableCollection<string> _imageFiles = new();
+    private List<string> _imageFiles = [];
     private Bitmap?[] _imageCache = [];
     private FileSystemWatcher? _fileWatcher;
     private readonly SemaphoreSlim _sequenceLoadLock = new(1, 1);
     private CancellationTokenSource? _refreshDebounceCts;
     private int _loadRequestVersion;
+    private int _imageLoadRequestVersion;
     private bool _disposed;
+    private static readonly string[] ImageExtensions = [".jpg", ".jpeg", ".png"];
 
     public static readonly DirectProperty<ImageSequencePreviewControl, string?> FolderPathProperty =
         AvaloniaProperty.RegisterDirect<ImageSequencePreviewControl, string?>(
@@ -274,18 +276,20 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
                 return;
             }
 
-            IsLoading = true;
-            HasImages = false;
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsLoading = true;
+                HasImages = false;
+            });
             Console.WriteLine($"[ImageSequencePreviewControl] LoadImageSequence: '{folderPath}'");
 
             var files = await Task.Run(() =>
             {
-                var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
                 var allFiles = Directory.GetFiles(folderPath);
                 Console.WriteLine($"[ImageSequencePreviewControl] Found {allFiles.Length} total files in directory");
 
                 return allFiles
-                    .Where(file => imageExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
+                    .Where(file => ImageExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
                     .OrderBy(file => file)
                     .ToList();
             });
@@ -296,48 +300,20 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             }
 
             Console.WriteLine($"[ImageSequencePreviewControl] Found {files.Count} image files");
-
-            DisposeImageCache();
-            _imageFiles.Clear();
-            foreach (var file in files)
-            {
-                _imageFiles.Add(file);
-            }
-
-            if (_imageFiles.Count > 0)
-            {
-                HasImages = true;
-                MaxFrame = _imageFiles.Count - 1;
-
-                var targetFrame = (previousCurrentFrame >= 0 && previousCurrentFrame < _imageFiles.Count)
-                    ? previousCurrentFrame
-                    : 0;
-                _imageCache = new Bitmap?[_imageFiles.Count];
-                CurrentFrame = targetFrame;
-
-                Console.WriteLine(
-                    $"[ImageSequencePreviewControl] Successfully loaded {_imageFiles.Count} images, restored to frame {targetFrame}");
-
-                await LoadImageAsync(targetFrame);
-            }
-            else
-            {
-                Console.WriteLine("[ImageSequencePreviewControl] No image files found");
-                HasImages = false;
-                MaxFrame = 0;
-                CurrentFrame = 0;
-                CurrentImage = null;
-            }
+            await Dispatcher.UIThread.InvokeAsync(() => ApplyImageSequence(files, previousCurrentFrame));
         }
         catch (Exception ex)
         {
             Console.WriteLine($"加载图片序列失败: {ex.Message}");
-            SetError($"ImageSequence_LoadFailed:{ex.Message}");
-            ClearImages();
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                SetError($"ImageSequence_LoadFailed:{ex.Message}");
+                ClearImages();
+            });
         }
         finally
         {
-            IsLoading = false;
+            await Dispatcher.UIThread.InvokeAsync(() => IsLoading = false);
             _sequenceLoadLock.Release();
         }
     }
@@ -357,31 +333,55 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             return Task.CompletedTask;
         }
 
-        return LoadImageAsync(_currentFrame);
+        return LoadImageAsync(_currentFrame, _loadRequestVersion);
     }
 
-    private Task LoadImageAsync(int frameIndex)
+    private async Task LoadImageAsync(int frameIndex, int sequenceVersion)
     {
         if (frameIndex < 0 || frameIndex >= _imageFiles.Count)
-            return Task.CompletedTask;
+            return;
 
+        var filePath = _imageFiles[frameIndex];
+        var imageLoadVersion = Interlocked.Increment(ref _imageLoadRequestVersion);
+
+        Bitmap? bitmap = null;
         try
         {
-            var filePath = _imageFiles[frameIndex];
-            var bitmap = new Bitmap(filePath);
-            _imageCache[frameIndex] = bitmap;
-
-            if (frameIndex == _currentFrame)
+            bitmap = await Task.Run(() => new Bitmap(filePath));
+            await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                CurrentImage = bitmap;
-            }
+                if (_disposed ||
+                    sequenceVersion != _loadRequestVersion ||
+                    imageLoadVersion != _imageLoadRequestVersion ||
+                    frameIndex < 0 ||
+                    frameIndex >= _imageFiles.Count ||
+                    _imageCache.Length <= frameIndex ||
+                    !string.Equals(_imageFiles[frameIndex], filePath, StringComparison.Ordinal))
+                {
+                    bitmap.Dispose();
+                    return;
+                }
+
+                if (_imageCache[frameIndex] == null)
+                {
+                    _imageCache[frameIndex] = bitmap;
+                }
+                else
+                {
+                    bitmap.Dispose();
+                }
+
+                if (frameIndex == _currentFrame)
+                {
+                    CurrentImage = _imageCache[frameIndex];
+                }
+            });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"加载图片失败 {_imageFiles[frameIndex]}: {ex.Message}");
+            bitmap?.Dispose();
+            Console.WriteLine($"加载图片失败 {filePath}: {ex.Message}");
         }
-
-        return Task.CompletedTask;
     }
 
     private void UpdateFrameTexts()
@@ -403,12 +403,14 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
     private void ClearImages()
     {
+        Interlocked.Increment(ref _imageLoadRequestVersion);
         DisposeImageCache();
-        _imageFiles.Clear();
+        _imageFiles = [];
         HasImages = false;
         MaxFrame = 0;
         CurrentFrame = 0;
         CurrentImage = null;
+        UpdateFrameTexts();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -416,6 +418,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         base.OnDetachedFromVisualTree(e);
         CancelPendingRefresh();
         Interlocked.Increment(ref _loadRequestVersion);
+        Interlocked.Increment(ref _imageLoadRequestVersion);
         ClearImages();
         StopFileWatcher();
     }
@@ -471,11 +474,9 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
     private void OnFileChanged(object sender, FileSystemEventArgs e)
     {
-        // 检查是否是图片文件
-        var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
         var extension = Path.GetExtension(e.FullPath).ToLowerInvariant();
 
-        if (!imageExtensions.Contains(extension))
+        if (!ImageExtensions.Contains(extension))
             return;
 
         Console.WriteLine($"[ImageSequencePreviewControl] File {e.ChangeType}: {e.FullPath}");
@@ -484,12 +485,10 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
     private void OnFileRenamed(object sender, RenamedEventArgs e)
     {
-        // 检查是否是图片文件
-        var imageExtensions = new[] { ".jpg", ".jpeg", ".png" };
         var oldExtension = Path.GetExtension(e.OldFullPath).ToLowerInvariant();
         var newExtension = Path.GetExtension(e.FullPath).ToLowerInvariant();
 
-        if (!imageExtensions.Contains(oldExtension) && !imageExtensions.Contains(newExtension))
+        if (!ImageExtensions.Contains(oldExtension) && !ImageExtensions.Contains(newExtension))
             return;
 
         Console.WriteLine($"[ImageSequencePreviewControl] File renamed: {e.OldFullPath} -> {e.FullPath}");
@@ -597,7 +596,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
                 return;
             }
 
-            await Dispatcher.UIThread.InvokeAsync(async () => await RefreshImageSequenceAsync());
+            await RefreshImageSequenceAsync();
         }
         catch (OperationCanceledException)
         {
@@ -620,5 +619,35 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         }
 
         _imageCache = [];
+    }
+
+    private void ApplyImageSequence(IReadOnlyList<string> files, int previousCurrentFrame)
+    {
+        DisposeImageCache();
+        _imageFiles = files.ToList();
+
+        if (_imageFiles.Count == 0)
+        {
+            Console.WriteLine("[ImageSequencePreviewControl] No image files found");
+            HasImages = false;
+            MaxFrame = 0;
+            CurrentFrame = 0;
+            CurrentImage = null;
+            UpdateFrameTexts();
+            return;
+        }
+
+        HasImages = true;
+        MaxFrame = _imageFiles.Count - 1;
+        _imageCache = new Bitmap?[_imageFiles.Count];
+
+        var targetFrame = (previousCurrentFrame >= 0 && previousCurrentFrame < _imageFiles.Count)
+            ? previousCurrentFrame
+            : 0;
+        CurrentFrame = targetFrame;
+        UpdateFrameTexts();
+
+        Console.WriteLine(
+            $"[ImageSequencePreviewControl] Successfully loaded {_imageFiles.Count} images, restored to frame {targetFrame}");
     }
 }

@@ -28,12 +28,11 @@
                 BorderBrushDuringDrag="{DynamicResource SukiPrimaryColor}" />
         </i:Interaction.Behaviors>
         <Panel>
-            <ScrollViewer Classes="Stack">
-                <ListBox ItemsSource="{Binding RenderTasks}"
-                         Classes="WithoutCheck"
-                         SelectedItem="{Binding SelectedTask}"
-                         Margin="4"
-                         Name="TaskListBox">
+            <ListBox ItemsSource="{Binding RenderTasks}"
+                     Classes="WithoutCheck"
+                     SelectedItem="{Binding SelectedTask}"
+                     Margin="4"
+                     Name="TaskListBox">
                     <ListBox.Styles>
                         <Style Selector="ListBoxItem:pointerover /template/ Border">
                             <Setter Property="Background"
@@ -428,8 +427,7 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
 
-                </ListBox>
-            </ScrollViewer>
+            </ListBox>
             <TextBlock Text="{i18n:Localize Queue_DragFilesHere}" Foreground="Gray"
                        FontWeight="SemiBold"
                        HorizontalAlignment="Center"

@@ -308,6 +308,11 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
+            if (!string.Equals(e.SessionId, _logService.CurrentSessionId, StringComparison.Ordinal))
+            {
+                HasHistoricalEntries = true;
+            }
+
             if (_isRefreshing)
             {
                 RequestRefresh();
@@ -356,7 +361,6 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
     private bool TryAppendEntry(RenderLogEvent logEvent)
     {
-        UpdateHistoryState();
         var projection = BuildProjection();
         if (!projection.Matches(logEvent, _logService.CurrentSessionId))
         {
