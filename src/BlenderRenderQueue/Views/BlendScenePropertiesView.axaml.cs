@@ -1,5 +1,11 @@
+using System;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using BlenderRenderQueue.Helpers;
+using BlenderRenderQueue.ViewModels;
 
 namespace BlenderRenderQueue.Views;
 
@@ -30,5 +36,57 @@ public partial class BlendScenePropertiesView : UserControl
             // 标记事件已处理，防止默认的垂直滚动行为
             e.Handled = true;
         }
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+
+        if (DataContext is not BlendScenePropertiesViewModel viewModel)
+        {
+            return;
+        }
+
+        var owner = TryGetOwningTask();
+        if (owner == null)
+        {
+            return;
+        }
+
+        SelectionPerfTrace.Mark(owner.Id, owner.BlendFileName, "BlendSceneProperties.DataContextChanged",
+            $"sceneCount={viewModel.SceneNames.Count} isLoading={viewModel.IsLoading} selectedLoaded={viewModel.SelectedSceneProperties.IsLoaded}");
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            SelectionPerfTrace.Mark(owner.Id, owner.BlendFileName, "BlendSceneProperties.PostRender",
+                $"sceneCount={viewModel.SceneNames.Count}");
+        }, DispatcherPriority.Render);
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        var owner = TryGetOwningTask();
+        if (owner != null)
+        {
+            SelectionPerfTrace.Mark(owner.Id, owner.BlendFileName, "BlendSceneProperties.AttachedToVisualTree");
+        }
+    }
+
+    private RenderTaskViewModel? TryGetOwningTask()
+    {
+        var current = this.GetVisualParent();
+        while (current != null)
+        {
+            if (current is Control control && control.DataContext is RenderTaskViewModel task)
+            {
+                return task;
+            }
+
+            current = current.GetVisualParent();
+        }
+
+        return null;
     }
 }

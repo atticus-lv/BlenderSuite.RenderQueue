@@ -26,6 +26,7 @@ public enum PostRenderBehavior
 public partial class RenderQueueViewModel : ViewModelBase
 {
     private readonly IRenderQueueApplicationService _queueService;
+    private bool _hasPreheatedTaskDetail;
     protected internal IRenderQueueApplicationService QueueService => _queueService;
 
     [ObservableProperty]
@@ -37,6 +38,12 @@ public partial class RenderQueueViewModel : ViewModelBase
         {
             Console.WriteLine("[SelectionPerf] task=<null> stage=SelectedTaskChanged elapsed=0.0ms cleared selection");
             return;
+        }
+
+        if (!_hasPreheatedTaskDetail)
+        {
+            _hasPreheatedTaskDetail = true;
+            OnPropertyChanged(nameof(TaskDetailPreheatTask));
         }
 
         var details =
@@ -77,6 +84,7 @@ public partial class RenderQueueViewModel : ViewModelBase
             }
 
             NotifyStateChanged();
+            OnPropertyChanged(nameof(TaskDetailPreheatTask));
         };
 
         foreach (var task in RenderTasks)
@@ -89,6 +97,8 @@ public partial class RenderQueueViewModel : ViewModelBase
     }
 
     public ObservableCollection<RenderTaskViewModel> RenderTasks { get; }
+    public RenderTaskViewModel? TaskDetailPreheatTask =>
+        _hasPreheatedTaskDetail || SelectedTask != null ? null : RenderTasks.FirstOrDefault();
     public RenderTaskViewModel? CurrentRenderingTask => _queueService.CurrentRenderingTask;
     public QueueState QueueState => Snapshot.State switch
     {

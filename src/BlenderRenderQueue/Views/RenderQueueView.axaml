@@ -24,6 +24,17 @@
 
 
     <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
+        <Border Width="1"
+                Height="1"
+                Opacity="0"
+                IsHitTestVisible="False"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                ClipToBounds="True"
+                IsVisible="{Binding TaskDetailPreheatTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+            <views:RenderTaskView DataContext="{Binding TaskDetailPreheatTask}" />
+        </Border>
+
         <Grid Row="0" ColumnDefinitions="*,Auto,Auto,Auto">
             <suki:GlassCard Margin="8 4 4 4">
                 <Grid ColumnDefinitions="*,Auto">
@@ -117,9 +128,7 @@
                         <suki:GlassCard IsAnimated="False">
                             <Panel>
                                 <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                                    <Panel IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
-                                        <views:RenderTaskView DataContext="{Binding SelectedTask}" />
-                                    </Panel>
+                                    <views:RenderTaskView DataContext="{Binding SelectedTask}" />
                                 </ScrollViewer>
                             </Panel>
                         </suki:GlassCard>

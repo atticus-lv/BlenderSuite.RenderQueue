@@ -114,108 +114,107 @@
                             Name="TabControl"
                             SelectedIndex="{Binding SelectedDetailTabIndex}">
                     <TabItem Header="{i18n:Localize RenderTask_SceneInfo}">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8 4">
-                            <!-- 场景信息 -->
-                            <views:BlendScenePropertiesView DataContext="{Binding ScenePropertiesView}" />
-                        </ScrollViewer>
+                        <views:BlendScenePropertiesView DataContext="{Binding ScenePropertiesView}" />
                     </TabItem>
                     <TabItem Header="{i18n:Localize RenderTask_RenderSettings}">
-                        <!-- 渲染设置 -->
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0">
-                            <suki:BusyArea IsBusy="{Binding !CanModifyEnable}">
-                                <StackPanel Spacing="12" Margin="8 4">
-                                <!-- 动画渲染设置 -->
-                                <StackPanel Spacing="8">
-                                    <CheckBox Content="{i18n:Localize RenderTask_RenderAnimation}"
-                                              IsChecked="{Binding Animation}" />
-                                    <StackPanel IsVisible="{Binding Animation}" Spacing="8" Margin="16,0,0,0">
-                                        <CheckBox Content="{i18n:Localize RenderTask_OverrideFrameRange}"
-                                                  IsChecked="{Binding OverrideFrameRange}">
-                                            <CheckBox.IsEnabled>
-                                                <Binding Path="CanModifyOverride" />
-                                            </CheckBox.IsEnabled>
-                                        </CheckBox>
-                                        <StackPanel IsVisible="{Binding OverrideFrameRange}" Spacing="8"
-                                                    Margin="16,0,0,0">
-                                            <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto">
-                                                <TextBlock Grid.Row="0" Grid.Column="0"
-                                                           Text="{i18n:Localize RenderTask_StartFrame}"
-                                                           VerticalAlignment="Center" />
-                                                <NumericUpDown Grid.Row="0" Grid.Column="1"
-                                                               Value="{Binding StartFrame}"
-                                                               Minimum="1" Maximum="100000" Width="120">
-                                                    <NumericUpDown.IsEnabled>
-                                                        <Binding Path="CanModifyOverride" />
-                                                    </NumericUpDown.IsEnabled>
-                                                </NumericUpDown>
-                                                <TextBlock Grid.Row="0" Grid.Column="2"
-                                                           Text="{i18n:Localize RenderTask_EndFrame}"
-                                                           VerticalAlignment="Center" />
-                                                <NumericUpDown Grid.Row="0" Grid.Column="3" Value="{Binding EndFrame}"
-                                                               Minimum="1" Maximum="100000" Width="120">
-                                                    <NumericUpDown.IsEnabled>
+                        <ContentControl Content="{Binding RenderSettingsContent}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate x:DataType="vm:RenderTaskViewModel">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0">
+                                        <suki:BusyArea IsBusy="{Binding !CanModifyEnable}">
+                                            <StackPanel Spacing="12" Margin="8 4">
+                                            <StackPanel Spacing="8">
+                                                <CheckBox Content="{i18n:Localize RenderTask_RenderAnimation}"
+                                                          IsChecked="{Binding Animation}" />
+                                                <StackPanel IsVisible="{Binding Animation}" Spacing="8" Margin="16,0,0,0">
+                                                    <CheckBox Content="{i18n:Localize RenderTask_OverrideFrameRange}"
+                                                              IsChecked="{Binding OverrideFrameRange}">
+                                                        <CheckBox.IsEnabled>
+                                                            <Binding Path="CanModifyOverride" />
+                                                        </CheckBox.IsEnabled>
+                                                    </CheckBox>
+                                                    <StackPanel IsVisible="{Binding OverrideFrameRange}" Spacing="8"
+                                                                Margin="16,0,0,0">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto">
+                                                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                                                       Text="{i18n:Localize RenderTask_StartFrame}"
+                                                                       VerticalAlignment="Center" />
+                                                            <NumericUpDown Grid.Row="0" Grid.Column="1"
+                                                                           Value="{Binding StartFrame}"
+                                                                           Minimum="1" Maximum="100000" Width="120">
+                                                                <NumericUpDown.IsEnabled>
+                                                                    <Binding Path="CanModifyOverride" />
+                                                                </NumericUpDown.IsEnabled>
+                                                            </NumericUpDown>
+                                                            <TextBlock Grid.Row="0" Grid.Column="2"
+                                                                       Text="{i18n:Localize RenderTask_EndFrame}"
+                                                                       VerticalAlignment="Center" />
+                                                            <NumericUpDown Grid.Row="0" Grid.Column="3" Value="{Binding EndFrame}"
+                                                                           Minimum="1" Maximum="100000" Width="120">
+                                                                <NumericUpDown.IsEnabled>
+                                                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                                        <Binding Path="CanModifyOverride" />
+                                                                    </MultiBinding>
+                                                                </NumericUpDown.IsEnabled>
+                                                            </NumericUpDown>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="8">
+                                                <CheckBox Content="{i18n:Localize RenderTask_OverrideScene}"
+                                                          IsChecked="{Binding OverrideScene}">
+                                                    <CheckBox.IsEnabled>
                                                         <MultiBinding Converter="{x:Static BoolConverters.Or}">
                                                             <Binding Path="CanModifyOverride" />
                                                         </MultiBinding>
-                                                    </NumericUpDown.IsEnabled>
-                                                </NumericUpDown>
-                                            </Grid>
-                                        </StackPanel>
-                                    </StackPanel>
-                                </StackPanel>
+                                                    </CheckBox.IsEnabled>
+                                                </CheckBox>
+                                                <StackPanel IsVisible="{Binding OverrideScene}" Spacing="8" Margin="16,0,0,0">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                                   Text="{i18n:Localize RenderTask_Scene}"
+                                                                   VerticalAlignment="Center" />
+                                                        <ComboBox Grid.Row="0" Grid.Column="1"
+                                                                  ItemsSource="{Binding AvailableSceneNames}"
+                                                                  SelectedItem="{Binding SelectedSceneName}"
+                                                                  Width="200" HorizontalAlignment="Left">
+                                                            <ComboBox.IsEnabled>
+                                                                <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                                    <Binding Path="CanModifyOverride" />
+                                                                </MultiBinding>
+                                                            </ComboBox.IsEnabled>
+                                                        </ComboBox>
+                                                        <TextBlock Grid.Row="0" Grid.Column="2"
+                                                                   Text="{i18n:Localize RenderTask_SameAsDefaultScene}"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource SukiAccentColor}"
+                                                                   FontSize="12"
+                                                                   Margin="8,0,0,0"
+                                                                   IsVisible="{Binding IsOverrideSceneIsDefaultScene}" />
+                                                    </Grid>
 
-                                <!-- 场景覆写设置 -->
-                                <StackPanel Spacing="8">
-                                    <CheckBox Content="{i18n:Localize RenderTask_OverrideScene}"
-                                              IsChecked="{Binding OverrideScene}">
-                                        <CheckBox.IsEnabled>
-                                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                                <Binding Path="CanModifyOverride" />
-                                            </MultiBinding>
-                                        </CheckBox.IsEnabled>
-                                    </CheckBox>
-                                    <StackPanel IsVisible="{Binding OverrideScene}" Spacing="8" Margin="16,0,0,0">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
-                                            <TextBlock Grid.Row="0" Grid.Column="0"
-                                                       Text="{i18n:Localize RenderTask_Scene}"
-                                                       VerticalAlignment="Center" />
-                                            <ComboBox Grid.Row="0" Grid.Column="1"
-                                                      ItemsSource="{Binding AvailableSceneNames}"
-                                                      SelectedItem="{Binding SelectedSceneName}"
-                                                      Width="200" HorizontalAlignment="Left">
-                                                <ComboBox.IsEnabled>
-                                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                                        <Binding Path="CanModifyOverride" />
-                                                    </MultiBinding>
-                                                </ComboBox.IsEnabled>
-                                            </ComboBox>
-                                            <TextBlock Grid.Row="0" Grid.Column="2"
-                                                       Text="{i18n:Localize RenderTask_SameAsDefaultScene}"
-                                                       VerticalAlignment="Center"
-                                                       Foreground="{DynamicResource SukiAccentColor}"
-                                                       FontSize="12"
-                                                       Margin="8,0,0,0"
-                                                       IsVisible="{Binding IsOverrideSceneIsDefaultScene}" />
-                                        </Grid>
-
-                                        <!-- 场景选择警告 -->
-                                        <Border Grid.Row="1" Grid.ColumnSpan="3"
-                                                Background="#FFF3CD" BorderBrush="#FFEAA7" BorderThickness="1"
-                                                CornerRadius="4" Padding="8" Margin="0,4,0,0"
-                                                IsVisible="{Binding ShowSceneOverrideWarning}">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="⚠️" FontSize="16" VerticalAlignment="Center" />
-                                                <TextBlock Text="{i18n:Localize RenderTask_SceneOverrideWarning}"
-                                                           FontSize="12" VerticalAlignment="Center"
-                                                           Foreground="#856404" TextWrapping="Wrap" />
+                                                    <Border Grid.Row="1" Grid.ColumnSpan="3"
+                                                            Background="#FFF3CD" BorderBrush="#FFEAA7" BorderThickness="1"
+                                                            CornerRadius="4" Padding="8" Margin="0,4,0,0"
+                                                            IsVisible="{Binding ShowSceneOverrideWarning}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <TextBlock Text="⚠️" FontSize="16" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{i18n:Localize RenderTask_SceneOverrideWarning}"
+                                                                       FontSize="12" VerticalAlignment="Center"
+                                                                       Foreground="#856404" TextWrapping="Wrap" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </StackPanel>
                                             </StackPanel>
-                                        </Border>
-                                    </StackPanel>
-                                </StackPanel>
 
-                                </StackPanel>
-                            </suki:BusyArea>
-                        </ScrollViewer>
+                                            </StackPanel>
+                                        </suki:BusyArea>
+                                    </ScrollViewer>
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
 
                     </TabItem>
                     <TabItem Header="{i18n:Localize RenderTask_OutputPreview}">

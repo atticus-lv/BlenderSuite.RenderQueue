@@ -367,8 +367,12 @@ public partial class RenderTaskViewModel : ViewModelBase
     private bool _isLogTabRealized;
 
     [ObservableProperty]
+    private bool _isRenderSettingsTabRealized;
+
+    [ObservableProperty]
     private BlendScenePropertiesViewModel _scenePropertiesView = new();
 
+    public RenderTaskViewModel? RenderSettingsContent => IsRenderSettingsTabRealized ? this : null;
     public RenderTaskViewModel? OutputPreviewContent => IsOutputPreviewTabRealized ? this : null;
     public RenderTaskViewModel? LogContent => IsLogTabRealized ? this : null;
 
@@ -388,6 +392,13 @@ public partial class RenderTaskViewModel : ViewModelBase
             IsLogTabRealized = true;
             OnPropertyChanged(nameof(LogContent));
             SelectionPerfTrace.Mark(Id, BlendFileName, "RenderTaskView.LogRealized");
+        }
+
+        if (value == 1 && !IsRenderSettingsTabRealized)
+        {
+            IsRenderSettingsTabRealized = true;
+            OnPropertyChanged(nameof(RenderSettingsContent));
+            SelectionPerfTrace.Mark(Id, BlendFileName, "RenderTaskView.RenderSettingsRealized");
         }
     }
 
