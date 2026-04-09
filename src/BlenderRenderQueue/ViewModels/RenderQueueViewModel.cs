@@ -31,6 +31,20 @@ public partial class RenderQueueViewModel : ViewModelBase
     [ObservableProperty]
     private RenderTaskViewModel? _selectedTask;
 
+    partial void OnSelectedTaskChanged(RenderTaskViewModel? value)
+    {
+        if (value == null)
+        {
+            Console.WriteLine("[SelectionPerf] task=<null> stage=SelectedTaskChanged elapsed=0.0ms cleared selection");
+            return;
+        }
+
+        var details =
+            $"timeline={value.TimelineEntries.Count} debug={value.DebugEntries.Count} outputChars={value.OutputLog.Length} framePath={value.FramePathDirectory ?? "<null>"} hasRenderedImage={value.HasRenderedImage}";
+        SelectionPerfTrace.Begin(value.Id, value.BlendFileName, details);
+        SelectionPerfTrace.Mark(value.Id, value.BlendFileName, "SelectedTaskChanged");
+    }
+
     public RenderQueueViewModel(IRenderQueueApplicationService queueService)
     {
         _queueService = queueService;

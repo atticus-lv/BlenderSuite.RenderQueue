@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
@@ -218,6 +219,11 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         ErrorMessage = string.Empty;
 
         Console.WriteLine($"[ImageSequencePreviewControl] OnFolderPathChanged: '{newPath}'");
+        if (DataContext is RenderTaskViewModel task)
+        {
+            SelectionPerfTrace.Mark(task.Id, task.BlendFileName, "ImageSequencePreview.FolderPathChanged",
+                $"path={newPath ?? "<null>"}");
+        }
 
         // 停止之前的文件监控
         StopFileWatcher();
@@ -267,6 +273,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     {
         var requestVersion = Interlocked.Increment(ref _loadRequestVersion);
         var previousCurrentFrame = _currentFrame;
+        var loadStopwatch = Stopwatch.StartNew();
 
         await _sequenceLoadLock.WaitAsync();
         try
@@ -301,6 +308,12 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
             Console.WriteLine($"[ImageSequencePreviewControl] Found {files.Count} image files");
             await Dispatcher.UIThread.InvokeAsync(() => ApplyImageSequence(files, previousCurrentFrame));
+
+            if (DataContext is RenderTaskViewModel task)
+            {
+                SelectionPerfTrace.Mark(task.Id, task.BlendFileName, "ImageSequencePreview.SequenceLoaded",
+                    $"images={files.Count} loadElapsed={loadStopwatch.Elapsed.TotalMilliseconds:F1}ms");
+            }
         }
         catch (Exception ex)
         {
@@ -343,6 +356,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
         var filePath = _imageFiles[frameIndex];
         var imageLoadVersion = Interlocked.Increment(ref _imageLoadRequestVersion);
+        var loadStopwatch = Stopwatch.StartNew();
 
         Bitmap? bitmap = null;
         try
@@ -376,6 +390,12 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
                     CurrentImage = _imageCache[frameIndex];
                 }
             });
+
+            if (DataContext is RenderTaskViewModel task)
+            {
+                SelectionPerfTrace.Mark(task.Id, task.BlendFileName, "ImageSequencePreview.FrameLoaded",
+                    $"frameIndex={frameIndex} loadElapsed={loadStopwatch.Elapsed.TotalMilliseconds:F1}ms");
+            }
         }
         catch (Exception ex)
         {

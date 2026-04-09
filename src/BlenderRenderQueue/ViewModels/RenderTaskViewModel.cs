@@ -349,6 +349,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     private string _outputLog = string.Empty;
 
     [ObservableProperty]
+    private int _selectedDetailTabIndex;
+
+    [ObservableProperty]
     private ObservableCollection<TaskLogEntryViewModel> _timelineEntries = [];
 
     [ObservableProperty]
@@ -358,7 +361,35 @@ public partial class RenderTaskViewModel : ViewModelBase
     private string _debugLogText = string.Empty;
 
     [ObservableProperty]
+    private bool _isOutputPreviewTabRealized;
+
+    [ObservableProperty]
+    private bool _isLogTabRealized;
+
+    [ObservableProperty]
     private BlendScenePropertiesViewModel _scenePropertiesView = new();
+
+    public RenderTaskViewModel? OutputPreviewContent => IsOutputPreviewTabRealized ? this : null;
+    public RenderTaskViewModel? LogContent => IsLogTabRealized ? this : null;
+
+    partial void OnSelectedDetailTabIndexChanged(int value)
+    {
+        SelectionPerfTrace.Mark(Id, BlendFileName, "RenderTaskView.TabChanged", $"index={value}");
+
+        if (value == 2 && !IsOutputPreviewTabRealized)
+        {
+            IsOutputPreviewTabRealized = true;
+            OnPropertyChanged(nameof(OutputPreviewContent));
+            SelectionPerfTrace.Mark(Id, BlendFileName, "RenderTaskView.OutputPreviewRealized");
+        }
+
+        if (value == 3 && !IsLogTabRealized)
+        {
+            IsLogTabRealized = true;
+            OnPropertyChanged(nameof(LogContent));
+            SelectionPerfTrace.Mark(Id, BlendFileName, "RenderTaskView.LogRealized");
+        }
+    }
 
     partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel value)
     {

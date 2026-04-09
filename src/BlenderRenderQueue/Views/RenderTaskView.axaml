@@ -110,7 +110,9 @@
             </Grid>
 
             <suki:GlassCard Grid.Row="1" IsAnimated="False">
-                <TabControl IsVisible="{Binding IsValid}" Name="TabControl">
+                <TabControl IsVisible="{Binding IsValid}"
+                            Name="TabControl"
+                            SelectedIndex="{Binding SelectedDetailTabIndex}">
                     <TabItem Header="{i18n:Localize RenderTask_SceneInfo}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8 4">
                             <!-- 场景信息 -->
@@ -217,119 +219,164 @@
 
                     </TabItem>
                     <TabItem Header="{i18n:Localize RenderTask_OutputPreview}">
-                        <Grid RowDefinitions="Auto,*">
-                            <!-- 图片序列预览控件 -->
-                            <controls:ImageSequencePreviewControl Grid.Row="1"
-                                                                  FolderPath="{Binding FramePathDirectory}" />
-                        </Grid>
+                        <ContentControl Content="{Binding OutputPreviewContent}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate x:DataType="vm:RenderTaskViewModel">
+                                    <Grid RowDefinitions="Auto,*">
+                                        <controls:ImageSequencePreviewControl Grid.Row="1"
+                                                                              FolderPath="{Binding FramePathDirectory}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
                     </TabItem>
                     <TabItem Header="{i18n:Localize RenderTask_Log}">
-                        <Grid RowDefinitions="Auto,*" Margin="8 4">
-                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="8 0" HorizontalAlignment="Right"
-                                        VerticalAlignment="Center">
-                                <Button Content="{i18n:Localize RenderTask_ClearLog}"
-                                        Command="{Binding ClearLogCommand}"
-                                        Classes="Rounded" />
-                                <Button
-                                    Content="{Binding LogPauseButtonText, Converter={StaticResource LocalizeConverter}}"
-                                    Command="{Binding ToggleLogPauseCommand}"
-                                    Classes="Rounded" />
-                                <Button Content="{i18n:Localize RenderTask_CopyDiagnostics}"
-                                        Command="{Binding CopyDebugDiagnosticsCommand}"
-                                        Classes="Rounded"
-                                        IsVisible="{Binding HasDebugEntries}" />
-                            </StackPanel>
+                        <ContentControl Content="{Binding LogContent}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate x:DataType="vm:RenderTaskViewModel">
+                                    <Grid RowDefinitions="Auto,*" Margin="8 4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="8 0" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center">
+                                            <Button Content="{i18n:Localize RenderTask_ClearLog}"
+                                                    Command="{Binding ClearLogCommand}"
+                                                    Classes="Rounded" />
+                                            <Button
+                                                Content="{Binding LogPauseButtonText, Converter={StaticResource LocalizeConverter}}"
+                                                Command="{Binding ToggleLogPauseCommand}"
+                                                Classes="Rounded" />
+                                            <Button Content="{i18n:Localize RenderTask_CopyDiagnostics}"
+                                                    Command="{Binding CopyDebugDiagnosticsCommand}"
+                                                    Classes="Rounded"
+                                                    IsVisible="{Binding HasDebugEntries}" />
+                                        </StackPanel>
 
-                            <TabControl Grid.Row="1" Margin="4 10">
-                                <TabItem Header="{i18n:Localize RenderTask_LogTimeline}">
-                                    <Grid RowDefinitions="Auto,*">
-                                        <TextBlock Text="{i18n:Localize RenderTask_TimelineEmpty}"
-                                                   Margin="8"
-                                                   Opacity="0.65"
-                                                   IsVisible="{Binding !HasTimelineEntries}" />
+                                        <TabControl Grid.Row="1" Margin="4 10">
+                                            <TabItem Header="{i18n:Localize RenderTask_LogTimeline}">
+                                                <Grid RowDefinitions="Auto,*">
+                                                    <TextBlock Text="{i18n:Localize RenderTask_TimelineEmpty}"
+                                                               Margin="8"
+                                                               Opacity="0.65"
+                                                               IsVisible="{Binding !HasTimelineEntries}" />
 
-                                        <ScrollViewer Grid.Row="1"
-                                                      VerticalScrollBarVisibility="Auto"
-                                                      HorizontalScrollBarVisibility="Disabled">
-                                            <ItemsControl ItemsSource="{Binding TimelineEntries}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="logVm:TaskLogEntryViewModel">
-                                                        <suki:GlassCard Margin="0 0 0 4" IsAnimated="False" Padding="0">
-                                                            <StackPanel Spacing="3" Margin="6">
-                                                                <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="5">
-                                                                    <SelectableTextBlock Grid.Column="0"
-                                                                                         Text="{Binding TimeText}"
-                                                                                         FontWeight="SemiBold"
-                                                                                         FontSize="12" />
-                                                                    <Border Grid.Column="1" CornerRadius="8" Padding="5,1" Background="#223B82F6">
-                                                                        <TextBlock Text="{Binding ScopeText}" FontSize="10" />
-                                                                    </Border>
-                                                                    <Border Grid.Column="2" CornerRadius="8" Padding="5,1" Background="#2210B981">
-                                                                        <TextBlock Text="{Binding LevelText}" FontSize="10" />
-                                                                    </Border>
-                                                                </Grid>
-                                                                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="12" />
-                                                            </StackPanel>
-                                                        </suki:GlassCard>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
+                                                    <ListBox Grid.Row="1"
+                                                             IsVisible="{Binding HasTimelineEntries}"
+                                                             ItemsSource="{Binding TimelineEntries}"
+                                                             Background="Transparent"
+                                                             BorderThickness="0"
+                                                             Padding="0"
+                                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                                        <ListBox.Styles>
+                                                            <Style Selector="ListBoxItem">
+                                                                <Setter Property="Margin" Value="0 0 0 4" />
+                                                                <Setter Property="Padding" Value="0" />
+                                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                            </Style>
+                                                            <Style Selector="ListBoxItem:pointerover /template/ Border">
+                                                                <Setter Property="Background" Value="Transparent" />
+                                                                <Setter Property="BorderBrush" Value="Transparent" />
+                                                            </Style>
+                                                            <Style Selector="ListBoxItem:selected /template/ Border">
+                                                                <Setter Property="Background" Value="Transparent" />
+                                                                <Setter Property="BorderBrush" Value="Transparent" />
+                                                            </Style>
+                                                        </ListBox.Styles>
+                                                        <ListBox.ItemTemplate>
+                                                            <DataTemplate x:DataType="logVm:TaskLogEntryViewModel">
+                                                                <suki:GlassCard Margin="0 0 0 4" IsAnimated="False" Padding="0">
+                                                                    <StackPanel Spacing="3" Margin="6">
+                                                                        <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="5">
+                                                                            <SelectableTextBlock Grid.Column="0"
+                                                                                                 Text="{Binding TimeText}"
+                                                                                                 FontWeight="SemiBold"
+                                                                                                 FontSize="12" />
+                                                                            <Border Grid.Column="1" CornerRadius="8" Padding="5,1" Background="#223B82F6">
+                                                                                <TextBlock Text="{Binding ScopeText}" FontSize="10" />
+                                                                            </Border>
+                                                                            <Border Grid.Column="2" CornerRadius="8" Padding="5,1" Background="#2210B981">
+                                                                                <TextBlock Text="{Binding LevelText}" FontSize="10" />
+                                                                            </Border>
+                                                                        </Grid>
+                                                                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="12" />
+                                                                    </StackPanel>
+                                                                </suki:GlassCard>
+                                                            </DataTemplate>
+                                                        </ListBox.ItemTemplate>
+                                                    </ListBox>
+                                                </Grid>
+                                            </TabItem>
+
+                                            <TabItem Header="{i18n:Localize RenderTask_LogDebug}">
+                                                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+                                                    <TextBlock Text="{i18n:Localize RenderTask_DebugEmpty}"
+                                                               Margin="8"
+                                                               Opacity="0.65"
+                                                               IsVisible="{Binding !HasDebugEntries}" />
+
+                                                    <ListBox Grid.Row="1"
+                                                             IsVisible="{Binding HasDebugEntries}"
+                                                             ItemsSource="{Binding DebugEntries}"
+                                                             Background="Transparent"
+                                                             BorderThickness="0"
+                                                             Padding="0"
+                                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                                        <ListBox.Styles>
+                                                            <Style Selector="ListBoxItem">
+                                                                <Setter Property="Margin" Value="0 0 0 8" />
+                                                                <Setter Property="Padding" Value="0" />
+                                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                            </Style>
+                                                            <Style Selector="ListBoxItem:pointerover /template/ Border">
+                                                                <Setter Property="Background" Value="Transparent" />
+                                                                <Setter Property="BorderBrush" Value="Transparent" />
+                                                            </Style>
+                                                            <Style Selector="ListBoxItem:selected /template/ Border">
+                                                                <Setter Property="Background" Value="Transparent" />
+                                                                <Setter Property="BorderBrush" Value="Transparent" />
+                                                            </Style>
+                                                        </ListBox.Styles>
+                                                        <ListBox.ItemTemplate>
+                                                            <DataTemplate x:DataType="logVm:TaskLogEntryViewModel">
+                                                                <Border Margin="0 0 0 8"
+                                                                        Padding="8"
+                                                                        CornerRadius="6"
+                                                                        Background="#11000000">
+                                                                    <StackPanel Spacing="3">
+                                                                        <SelectableTextBlock Text="{Binding TimestampText}"
+                                                                                             FontWeight="SemiBold"
+                                                                                             FontSize="12" />
+                                                                        <SelectableTextBlock Text="{Binding Message}"
+                                                                                             TextWrapping="Wrap"
+                                                                                             FontSize="12" />
+                                                                        <SelectableTextBlock Text="{Binding MetadataText}"
+                                                                                             TextWrapping="Wrap"
+                                                                                             FontFamily="Consolas"
+                                                                                             FontSize="10"
+                                                                                             Opacity="0.7"
+                                                                                             IsVisible="{Binding HasMetadata}" />
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ListBox.ItemTemplate>
+                                                    </ListBox>
+
+                                                    <TextBox Grid.Row="2"
+                                                             Text="{Binding DebugLogText}"
+                                                             TextWrapping="Wrap"
+                                                             IsReadOnly="True"
+                                                             AcceptsReturn="True"
+                                                             MinHeight="96"
+                                                             BorderThickness="0"
+                                                             Background="Transparent"
+                                                             FontFamily="Consolas"
+                                                             FontSize="11"
+                                                             Padding="6" />
+                                                </Grid>
+                                            </TabItem>
+                                        </TabControl>
                                     </Grid>
-                                </TabItem>
-
-                                <TabItem Header="{i18n:Localize RenderTask_LogDebug}">
-                                    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                                        <TextBlock Text="{i18n:Localize RenderTask_DebugEmpty}"
-                                                   Margin="8"
-                                                   Opacity="0.65"
-                                                   IsVisible="{Binding !HasDebugEntries}" />
-
-                                        <ScrollViewer Grid.Row="1"
-                                                      VerticalScrollBarVisibility="Auto"
-                                                      HorizontalScrollBarVisibility="Disabled">
-                                            <ItemsControl ItemsSource="{Binding DebugEntries}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="logVm:TaskLogEntryViewModel">
-                                                        <Border Margin="0 0 0 8"
-                                                                Padding="8"
-                                                                CornerRadius="6"
-                                                                Background="#11000000">
-                                                            <StackPanel Spacing="3">
-                                                                <SelectableTextBlock Text="{Binding TimestampText}"
-                                                                                     FontWeight="SemiBold"
-                                                                                     FontSize="12" />
-                                                                <SelectableTextBlock Text="{Binding Message}"
-                                                                                     TextWrapping="Wrap"
-                                                                                     FontSize="12" />
-                                                                <SelectableTextBlock Text="{Binding MetadataText}"
-                                                                                     TextWrapping="Wrap"
-                                                                                     FontFamily="Consolas"
-                                                                                     FontSize="10"
-                                                                                     Opacity="0.7"
-                                                                                     IsVisible="{Binding HasMetadata}" />
-                                                            </StackPanel>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </ScrollViewer>
-
-                                        <TextBox Grid.Row="2"
-                                                 Text="{Binding DebugLogText}"
-                                                 TextWrapping="Wrap"
-                                                 IsReadOnly="True"
-                                                 AcceptsReturn="True"
-                                                 MinHeight="96"
-                                                 BorderThickness="0"
-                                                 Background="Transparent"
-                                                 FontFamily="Consolas"
-                                                 FontSize="11"
-                                                 Padding="6" />
-                                    </Grid>
-                                </TabItem>
-                            </TabControl>
-                        </Grid>
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
                     </TabItem>
                 </TabControl>
             </suki:GlassCard>

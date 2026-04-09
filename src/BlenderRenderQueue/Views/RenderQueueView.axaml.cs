@@ -1,10 +1,13 @@
 using System;
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using BlenderRenderQueue.ViewModels;
 using Avalonia;
 using Avalonia.VisualTree;
+using BlenderRenderQueue.Helpers;
 
 namespace BlenderRenderQueue.Views;
 
@@ -12,6 +15,7 @@ public partial class RenderQueueView : UserControl
 {
     private SplitView? _rightPanelBorder;
     private TopLevel? _topLevel;
+    private RenderQueueViewModel? _viewModel;
 
     public RenderQueueView()
     {
@@ -38,11 +42,14 @@ public partial class RenderQueueView : UserControl
             // 初始更新
             UpdateRightPanelWidth();
         }
-        
+
+        AttachViewModel(DataContext as RenderQueueViewModel);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
+        DetachViewModel();
+
         if (_topLevel != null)
         {
             _topLevel.PropertyChanged -= OnTopLevelPropertyChanged;
@@ -50,6 +57,12 @@ public partial class RenderQueueView : UserControl
         }
         
         base.OnDetachedFromVisualTree(e);
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        AttachViewModel(DataContext as RenderQueueViewModel);
     }
 
     private void OnTopLevelPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
@@ -82,5 +95,59 @@ public partial class RenderQueueView : UserControl
             splitView.IsPaneOpen = !splitView.IsPaneOpen;
         }
     }
-    
+
+    private void AttachViewModel(RenderQueueViewModel? next)
+    {
+        if (ReferenceEquals(_viewModel, next))
+        {
+            return;
+        }
+
+        DetachViewModel();
+        _viewModel = next;
+        if (_viewModel != null)
+        {
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        }
+    }
+
+    private void DetachViewModel()
+    {
+        if (_viewModel != null)
+        {
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel = null;
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (!string.Equals(e.PropertyName, nameof(RenderQueueViewModel.SelectedTask), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var task = _viewModel?.SelectedTask;
+        if (task == null)
+        {
+            return;
+        }
+
+        SelectionPerfTrace.Mark(task.Id, task.BlendFileName, "RenderQueueView.SelectedTaskObserved");
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            SelectionPerfTrace.Mark(task.Id, task.BlendFileName, "RenderQueueView.PostBackground");
+        }, DispatcherPriority.Background);
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            SelectionPerfTrace.Mark(task.Id, task.BlendFileName, "RenderQueueView.PostRender");
+        }, DispatcherPriority.Render);
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            SelectionPerfTrace.Mark(task.Id, task.BlendFileName, "RenderQueueView.PostLoaded");
+        }, DispatcherPriority.Loaded);
+    }
 }

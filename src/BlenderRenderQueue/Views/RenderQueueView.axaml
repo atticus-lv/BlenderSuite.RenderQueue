@@ -116,13 +116,11 @@
                     <Panel>
                         <suki:GlassCard IsAnimated="False">
                             <Panel>
-                                <ContentControl Content="{Binding SelectedTask}">
-                                    <ContentControl.ContentTemplate>
-                                        <DataTemplate x:DataType="vm:RenderTaskViewModel">
-                                            <views:RenderTaskView DataContext="{Binding}" />
-                                        </DataTemplate>
-                                    </ContentControl.ContentTemplate>
-                                </ContentControl>
+                                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                                    <Panel IsVisible="{Binding SelectedTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+                                        <views:RenderTaskView DataContext="{Binding SelectedTask}" />
+                                    </Panel>
+                                </ScrollViewer>
                             </Panel>
                         </suki:GlassCard>
                     </Panel>
