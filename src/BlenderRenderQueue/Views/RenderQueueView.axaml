@@ -127,9 +127,7 @@
                     <Panel>
                         <suki:GlassCard IsAnimated="False">
                             <Panel>
-                                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                                    <views:RenderTaskView DataContext="{Binding SelectedTask}" />
-                                </ScrollViewer>
+                                <views:RenderTaskView DataContext="{Binding SelectedTask}" />
                             </Panel>
                         </suki:GlassCard>
                     </Panel>

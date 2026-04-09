@@ -25,6 +25,9 @@ namespace BlenderRenderQueue.ViewModels;
 
 public partial class RenderTaskViewModel : ViewModelBase
 {
+    private static int s_sharedDetailTabIndex;
+    private static int s_sharedLogTabIndex;
+
     [ObservableProperty]
     private Guid _id = Guid.NewGuid();
 
@@ -352,6 +355,9 @@ public partial class RenderTaskViewModel : ViewModelBase
     private int _selectedDetailTabIndex;
 
     [ObservableProperty]
+    private int _selectedLogTabIndex;
+
+    [ObservableProperty]
     private ObservableCollection<TaskLogEntryViewModel> _timelineEntries = [];
 
     [ObservableProperty]
@@ -378,6 +384,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     partial void OnSelectedDetailTabIndexChanged(int value)
     {
+        s_sharedDetailTabIndex = value;
         SelectionPerfTrace.Mark(Id, BlendFileName, "RenderTaskView.TabChanged", $"index={value}");
 
         if (value == 2 && !IsOutputPreviewTabRealized)
@@ -400,6 +407,12 @@ public partial class RenderTaskViewModel : ViewModelBase
             OnPropertyChanged(nameof(RenderSettingsContent));
             SelectionPerfTrace.Mark(Id, BlendFileName, "RenderTaskView.RenderSettingsRealized");
         }
+    }
+
+    partial void OnSelectedLogTabIndexChanged(int value)
+    {
+        s_sharedLogTabIndex = value;
+        SelectionPerfTrace.Mark(Id, BlendFileName, "RenderTaskView.LogTabChanged", $"index={value}");
     }
 
     partial void OnScenePropertiesViewChanged(BlendScenePropertiesViewModel value)
@@ -663,8 +676,24 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public RenderTaskViewModel()
     {
+        _selectedDetailTabIndex = s_sharedDetailTabIndex;
+        _selectedLogTabIndex = s_sharedLogTabIndex;
+
         // 手动触发ScenePropertiesView的初始化
         OnScenePropertiesViewChanged(ScenePropertiesView);
+    }
+
+    internal void SyncSharedTabSelection()
+    {
+        if (SelectedDetailTabIndex != s_sharedDetailTabIndex)
+        {
+            SelectedDetailTabIndex = s_sharedDetailTabIndex;
+        }
+
+        if (SelectedLogTabIndex != s_sharedLogTabIndex)
+        {
+            SelectedLogTabIndex = s_sharedLogTabIndex;
+        }
     }
 
     public RenderTaskViewModel(string blendFilePath, int startFrame, int endFrame, bool animation = true,

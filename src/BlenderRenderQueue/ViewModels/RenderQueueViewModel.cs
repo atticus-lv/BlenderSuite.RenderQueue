@@ -46,6 +46,8 @@ public partial class RenderQueueViewModel : ViewModelBase
             OnPropertyChanged(nameof(TaskDetailPreheatTask));
         }
 
+        value.SyncSharedTabSelection();
+
         var details =
             $"timeline={value.TimelineEntries.Count} debug={value.DebugEntries.Count} outputChars={value.OutputLog.Length} framePath={value.FramePathDirectory ?? "<null>"} hasRenderedImage={value.HasRenderedImage}";
         SelectionPerfTrace.Begin(value.Id, value.BlendFileName, details);

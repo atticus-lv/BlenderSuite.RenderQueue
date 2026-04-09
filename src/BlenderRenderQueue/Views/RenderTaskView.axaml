@@ -249,7 +249,9 @@
                                                     IsVisible="{Binding HasDebugEntries}" />
                                         </StackPanel>
 
-                                        <TabControl Grid.Row="1" Margin="4 10">
+                                        <TabControl Grid.Row="1"
+                                                    Margin="4 10"
+                                                    SelectedIndex="{Binding SelectedLogTabIndex}">
                                             <TabItem Header="{i18n:Localize RenderTask_LogTimeline}">
                                                 <Grid RowDefinitions="Auto,*">
                                                     <TextBlock Text="{i18n:Localize RenderTask_TimelineEmpty}"
