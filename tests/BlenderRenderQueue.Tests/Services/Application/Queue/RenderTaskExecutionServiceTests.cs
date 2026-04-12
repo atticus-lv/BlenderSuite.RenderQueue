@@ -8,6 +8,7 @@ using Avalonia.Threading;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Application.Queue;
+using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.ViewModels;
 using Xunit;
@@ -16,14 +17,18 @@ namespace BlenderRenderQueue.Tests.Services.Application.Queue;
 
 public sealed class RenderTaskExecutionServiceTests
 {
+    private static IRenderTaskFactory CreateTaskFactory(IRenderLogService logService)
+    {
+        return new RenderTaskFactory(new FakeBlenderQueryService(), logService);
+    }
+
     [AvaloniaFact]
     public async Task StartAsync_CompletesTask_AndProjectsProgressFromWorkerOutput()
     {
         using var tempBlend = TemporaryFile.Create(".blend");
-        var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
         var workerHost = new FakeBlenderWorkerHost();
         var logService = TestLogServiceFactory.Create();
-        task.AttachLogService(logService);
+        var task = CreateTaskFactory(logService).Create(tempBlend.Path, 1, 1, animation: false);
         workerHost.RenderTaskHandler = async (request, cancellationToken) =>
         {
             workerHost.EmitOutput("Rendering single frame (frame 1)");
@@ -58,10 +63,16 @@ public sealed class RenderTaskExecutionServiceTests
     public async Task StartAsync_RecoversUnexpectedExit_AndRetriesWithinSameTask()
     {
         using var tempBlend = TemporaryFile.Create(".blend");
-        var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
-        task.SetGlobalMaxRetryAttempts(2);
         var logService = TestLogServiceFactory.Create();
-        task.AttachLogService(logService);
+        var task = CreateTaskFactory(logService).Create(
+            tempBlend.Path,
+            1,
+            1,
+            animation: false,
+            options: new RenderTaskFactoryOptions
+            {
+                GlobalMaxRetryAttempts = 2
+            });
 
         var firstCall = true;
         var workerHost = new FakeBlenderWorkerHost();
@@ -109,10 +120,16 @@ public sealed class RenderTaskExecutionServiceTests
     public async Task StartAsync_DoesNotRecover_ForFileErrors()
     {
         using var tempBlend = TemporaryFile.Create(".blend");
-        var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
-        task.SetGlobalMaxRetryAttempts(3);
         var logService = TestLogServiceFactory.Create();
-        task.AttachLogService(logService);
+        var task = CreateTaskFactory(logService).Create(
+            tempBlend.Path,
+            1,
+            1,
+            animation: false,
+            options: new RenderTaskFactoryOptions
+            {
+                GlobalMaxRetryAttempts = 3
+            });
 
         var workerHost = new FakeBlenderWorkerHost();
         workerHost.RenderTaskHandler = (request, cancellationToken) =>
@@ -138,9 +155,8 @@ public sealed class RenderTaskExecutionServiceTests
     public async Task PauseAsync_KeepsTaskInPausedState()
     {
         using var tempBlend = TemporaryFile.Create(".blend");
-        var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
         var logService = TestLogServiceFactory.Create();
-        task.AttachLogService(logService);
+        var task = CreateTaskFactory(logService).Create(tempBlend.Path, 1, 1, animation: false);
 
         var workerHost = new FakeBlenderWorkerHost();
         workerHost.RenderTaskHandler = async (request, cancellationToken) =>
@@ -176,10 +192,9 @@ public sealed class RenderTaskExecutionServiceTests
     public async Task StartAsync_RemovesExecutionContext_AfterCompletion()
     {
         using var tempBlend = TemporaryFile.Create(".blend");
-        var task = new RenderTaskViewModel(tempBlend.Path, 1, 1, animation: false);
         var workerHost = new FakeBlenderWorkerHost();
         var logService = TestLogServiceFactory.Create();
-        task.AttachLogService(logService);
+        var task = CreateTaskFactory(logService).Create(tempBlend.Path, 1, 1, animation: false);
 
         var sut = new RenderTaskExecutionService(logService);
 
@@ -202,9 +217,9 @@ public sealed class RenderTaskExecutionServiceTests
             return;
         }
 
-        var task = new RenderTaskViewModel(blendFilePath, 1, 1, animation: false);
         var logService = TestLogServiceFactory.Create();
-        task.AttachLogService(logService);
+        var task = new RenderTaskFactory(new BlenderQueryService(), logService)
+            .Create(blendFilePath, 1, 1, animation: false);
 
         await task.LoadFilePropertiesAsync(blenderPath);
         await task.RefreshFilePropertiesAsync(blenderPath);

@@ -5,7 +5,7 @@ namespace BlenderRenderQueue.ViewModels.DesignTime;
 
 public class DesignTimeRenderTaskProgressPreviewViewModel : RenderTaskViewModel
 {
-    public DesignTimeRenderTaskProgressPreviewViewModel()
+    public DesignTimeRenderTaskProgressPreviewViewModel() : base(new DesignTimeBlendScenePropertiesViewModel())
     {
         // 设置基本文件信息
         BlendFilePath = @"C:\Users\Design\Documents\MyProject\sample_scene.blend";

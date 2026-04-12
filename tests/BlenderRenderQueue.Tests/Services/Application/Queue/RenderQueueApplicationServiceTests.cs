@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Application.Queue;
+using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.Business.Persistence;
 using BlenderRenderQueue.Services.Business.Submission;
@@ -17,6 +19,11 @@ namespace BlenderRenderQueue.Tests.Services.Application.Queue;
 
 public sealed class RenderQueueApplicationServiceTests
 {
+    private static IRenderTaskFactory CreateTaskFactory(IRenderLogService logService)
+    {
+        return new RenderTaskFactory(new FakeBlenderQueryService(), logService);
+    }
+
     [AvaloniaFact]
     public async Task SubmitTaskAsync_AddsTaskAndPublishesSnapshotWithoutViewModelBridge()
     {
@@ -25,7 +32,7 @@ public sealed class RenderQueueApplicationServiceTests
         var executionService = new FakeRenderTaskExecutionService();
         var persistenceService = new FakeDataPersistenceService();
         var logService = TestLogServiceFactory.Create();
-        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
 
         var response = await sut.SubmitTaskAsync(new LocalSubmissionRequest
         {
@@ -60,7 +67,7 @@ public sealed class RenderQueueApplicationServiceTests
         var executionService = new FakeRenderTaskExecutionService();
         var persistenceService = new FakeDataPersistenceService();
         var logService = TestLogServiceFactory.Create();
-        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
         sut.SetBlenderPath(blenderExecutable.Path);
 
         await sut.SubmitTaskAsync(new LocalSubmissionRequest
@@ -96,7 +103,7 @@ public sealed class RenderQueueApplicationServiceTests
         var executionService = new FakeRenderTaskExecutionService();
         var persistenceService = new FakeDataPersistenceService();
         var logService = TestLogServiceFactory.Create();
-        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
         sut.SetBlenderPath(blenderExecutable.Path);
 
         sut.AddDroppedFiles([blendFile.Path, otherFile.Path, "/missing/file.blend"]);
@@ -115,7 +122,7 @@ public sealed class RenderQueueApplicationServiceTests
         var executionService = new FakeRenderTaskExecutionService();
         var persistenceService = new FakeDataPersistenceService();
         var logService = TestLogServiceFactory.Create();
-        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
 
         await sut.SubmitTaskAsync(new LocalSubmissionRequest
         {
@@ -149,7 +156,7 @@ public sealed class RenderQueueApplicationServiceTests
         var executionService = new FakeRenderTaskExecutionService();
         var persistenceService = new FakeDataPersistenceService();
         var logService = TestLogServiceFactory.Create();
-        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
 
         var submitResponse = await sut.SubmitTaskAsync(new LocalSubmissionRequest
         {
@@ -194,7 +201,7 @@ public sealed class RenderQueueApplicationServiceTests
         var executionService = new FakeRenderTaskExecutionService();
         var persistenceService = new FakeDataPersistenceService();
         var logService = TestLogServiceFactory.Create();
-        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService);
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
         sut.SetBlenderPath(blenderExecutable.Path);
         sut.AddDroppedFiles([blendFile.Path]);
 

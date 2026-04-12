@@ -16,6 +16,13 @@ namespace BlenderRenderQueue.ViewModels;
 /// </summary>
 public partial class BlendScenePropertiesViewModel : ViewModelBase
 {
+    private readonly IBlenderQueryService _queryService;
+
+    public BlendScenePropertiesViewModel(IBlenderQueryService queryService)
+    {
+        _queryService = queryService;
+    }
+
     [ObservableProperty] private BlendSceneProperties _sceneProperties = new();
 
     [ObservableProperty] private Dictionary<string, BlendSceneProperties> _allScenes = new();
@@ -114,13 +121,10 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
 
         try
         {
-            var queryService = new BlenderQueryService();
-
             // Query all file properties at once (using a temporary process)
             LoadingMessage = "SceneProperties_GettingFileProperties";
-            var (activeScene, sceneData) =
-                await queryService.GetAllFilePropertiesWithTempProcessAsync(blenderPath, blendFilePath,
-                    cancellationToken);
+            var (_, sceneData) =
+                await _queryService.GetAllFilePropertiesWithTempProcessAsync(blenderPath, blendFilePath, cancellationToken);
 
             AllScenes = sceneData;
 

@@ -4,7 +4,7 @@ namespace BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
 public interface IInfoParser
 {
-    new InfoType? TryParseInfoType(string line);
+    InfoType? TryParseInfoType(string line);
     object? ParseInfoObject(string line);
     IReadOnlyList<object> GenerateEventsObject(object info);
 }
@@ -18,7 +18,7 @@ public interface IInfoParser<T> : IInfoParser
     /// <summary>
     /// 解析信息类型
     /// </summary>
-    InfoType? TryParseInfoType(string line);
+    new InfoType? TryParseInfoType(string line);
     
     /// <summary>
     /// 解析具体信息

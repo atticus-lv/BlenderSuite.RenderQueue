@@ -87,46 +87,18 @@ public partial class FileDropView : UserControl
         }
     }
 
-    private async Task AddBlendFileToQueue(RenderQueueViewModel renderQueueViewModel, string filePath)
+    private Task AddBlendFileToQueue(RenderQueueViewModel renderQueueViewModel, string filePath)
     {
-        try
+        // 检查文件是否存在
+        if (!File.Exists(filePath))
         {
-            // 检查文件是否存在
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"文件不存在: {filePath}");
-                return;
-            }
-
-            // 创建新的渲染任务
-            var task = new RenderTaskViewModel(filePath, 1, 1, true, false);
-
-            // 如果 Blender 服务可用，加载文件属性
-            if (renderQueueViewModel.IsBlenderServiceReady())
-            {
-                // 使用反射调用私有方法
-                var method = typeof(RenderQueueViewModel).GetMethod("AddTaskToQueue", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (method != null)
-                {
-                    var result = method.Invoke(renderQueueViewModel, new object[] { filePath });
-                    if (result is Task taskResult)
-                    {
-                        await taskResult;
-                    }
-                    return;
-                }
-            }
-
-            // 如果无法使用私有方法，直接添加到队列
-            renderQueueViewModel.RenderTasks.Add(task);
-            Console.WriteLine($"已添加任务: {Path.GetFileName(filePath)}");
+            Console.WriteLine($"文件不存在: {filePath}");
+            return Task.CompletedTask;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"添加任务失败: {ex.Message}");
-            throw;
-        }
+
+        renderQueueViewModel.AddDroppedFiles([filePath]);
+        Console.WriteLine($"已添加任务: {Path.GetFileName(filePath)}");
+        return Task.CompletedTask;
     }
 
     private void ShowMessage(string message, string title)

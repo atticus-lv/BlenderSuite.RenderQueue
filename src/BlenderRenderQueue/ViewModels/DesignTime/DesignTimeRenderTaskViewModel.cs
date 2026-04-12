@@ -9,7 +9,7 @@ namespace BlenderRenderQueue.ViewModels.DesignTime;
 /// </summary>
 public class DesignTimeRenderTaskViewModel : RenderTaskViewModel
 {
-    public DesignTimeRenderTaskViewModel()
+    public DesignTimeRenderTaskViewModel() : base(new DesignTimeBlendScenePropertiesViewModel())
     {
         // 设置基本属性
         BlendFilePath = @"C:\Users\Design\Documents\Blender\MyAnimation.blend";

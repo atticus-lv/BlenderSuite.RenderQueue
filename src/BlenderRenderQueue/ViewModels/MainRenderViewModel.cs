@@ -67,6 +67,7 @@ public partial class MainRenderViewModel : ViewModelBase
     // 内部状态
     private BlenderProcessService? _blenderProcessService;
     private readonly IRenderLogService _logService;
+    private readonly IBlenderCliInfoService _blenderCliInfoService;
     private CancellationTokenSource? _versionCts;
     private int _validationRequestVersion;
     public Task InitialLoadTask { get; }
@@ -76,9 +77,11 @@ public partial class MainRenderViewModel : ViewModelBase
         SettingsViewModel settingsViewModel,
         RenderQueueViewModel renderQueue,
         GlobalLogViewModel globalLog,
-        IRenderLogService logService)
+        IRenderLogService logService,
+        IBlenderCliInfoService blenderCliInfoService)
     {
         _logService = logService;
+        _blenderCliInfoService = blenderCliInfoService;
         RenderQueue = renderQueue;
         GlobalLog = globalLog;
         GlobalLog.TaskNavigationRequested += OnGlobalLogTaskNavigationRequested;
@@ -166,8 +169,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
             _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"开始验证 Blender: {blenderExecutable.Path}", source: nameof(MainRenderViewModel));
 
-            var svc = new BlenderCliInfoService();
-            var info = await svc.GetVersionInfoAsync(blenderExecutable.Path, cancellationToken);
+            var info = await _blenderCliInfoService.GetVersionInfoAsync(blenderExecutable.Path, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested || !IsValidationRequestCurrent(blenderExecutable, requestVersion)) return;
 

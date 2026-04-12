@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using BlenderRenderQueue.ViewModels;
-using BlenderRenderQueue.ViewModels.Test;
 using BlenderRenderQueue.Views;
-using BlenderRenderQueue.Views.Test;
 
 namespace BlenderRenderQueue;
 
@@ -23,8 +21,6 @@ public class ViewLocator : IDataTemplate
         { typeof(ImagePreviewWindowViewModel), () => new ImagePreviewWindow() },
         { typeof(SettingsViewModel), () => new SettingsView() },
         { typeof(HardwareChartViewModel), () => new HardwareChartView() },
-        // 测试视图
-        { typeof(TestRenderViewModel), () => new TestRenderView() },
     };
 
     public Control? Build(object? data)

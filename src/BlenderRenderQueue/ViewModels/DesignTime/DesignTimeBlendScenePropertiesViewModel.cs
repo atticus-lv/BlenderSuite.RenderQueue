@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Business.Blender;
 
 namespace BlenderRenderQueue.ViewModels.DesignTime;
 
@@ -8,7 +9,7 @@ namespace BlenderRenderQueue.ViewModels.DesignTime;
 /// </summary>
 public class DesignTimeBlendScenePropertiesViewModel : BlendScenePropertiesViewModel
 {
-    public DesignTimeBlendScenePropertiesViewModel()
+    public DesignTimeBlendScenePropertiesViewModel() : base(new NullBlenderQueryService())
     {
         // 模拟场景数据
         var scene1 = new BlendSceneProperties

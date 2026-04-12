@@ -66,7 +66,7 @@ public partial class TestRenderViewModel : ViewModelBase
 	private BlenderProcessService? _processService;
 
 	[ObservableProperty]
-	private BlendScenePropertiesViewModel _scenePropertiesViewModel = new();
+	private BlendScenePropertiesViewModel _scenePropertiesViewModel = new(new BlenderQueryService());
 
 	// 日志批量刷新
 	private readonly ConcurrentQueue<string> _logQueue = new();

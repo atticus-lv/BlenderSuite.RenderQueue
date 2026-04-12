@@ -125,6 +125,7 @@ public partial class SettingsViewModel : ViewModelBase
     private int _validationRequestVersion;
     private readonly ISettingsPersistenceService _settingsPersistenceService;
     private readonly IBlenderExtensionManager _blenderExtensionManager;
+    private readonly IBlenderCliInfoService _blenderCliInfoService;
     private bool _isLoadingSettings;
 
     // 事件：当设置发生变化时通知
@@ -138,11 +139,13 @@ public partial class SettingsViewModel : ViewModelBase
 
     public SettingsViewModel(
         ISettingsPersistenceService settingsPersistenceService,
-        IBlenderExtensionManager blenderExtensionManager)
+        IBlenderExtensionManager blenderExtensionManager,
+        IBlenderCliInfoService blenderCliInfoService)
     {
         // 构造函数中不进行自动检测，等待StartInitialization调用
         _settingsPersistenceService = settingsPersistenceService;
         _blenderExtensionManager = blenderExtensionManager;
+        _blenderCliInfoService = blenderCliInfoService;
         _theme = new SukiTheme();
 
         // 订阅主题变化事件
@@ -248,8 +251,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
-            var svc = new BlenderCliInfoService();
-            var info = await svc.GetVersionInfoAsync(blender.Path, CancellationToken.None);
+            var info = await _blenderCliInfoService.GetVersionInfoAsync(blender.Path, CancellationToken.None);
 
             // 更新UI线程上的属性
             Dispatcher.UIThread.Post(() =>
@@ -301,8 +303,7 @@ public partial class SettingsViewModel : ViewModelBase
                 return;
             }
 
-            var svc = new BlenderCliInfoService();
-            var info = await svc.GetVersionInfoAsync(blender.Path, cancellationToken);
+            var info = await _blenderCliInfoService.GetVersionInfoAsync(blender.Path, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested || !IsValidationRequestCurrent(blender, requestVersion)) return;
 

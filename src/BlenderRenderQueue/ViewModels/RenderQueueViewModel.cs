@@ -220,7 +220,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     private Task AddMultipleTasks() => _queueService.AddMultipleTasksAsync();
 
     [RelayCommand]
-    private void AddDroppedFiles(IEnumerable<string> filePaths) => _queueService.AddDroppedFiles(filePaths);
+    public void AddDroppedFiles(IEnumerable<string> filePaths) => _queueService.AddDroppedFiles(filePaths);
 
     [RelayCommand]
     private void RemoveSelectedTask() => _queueService.RemoveSelectedTask(SelectedTask, task => SelectedTask = task);

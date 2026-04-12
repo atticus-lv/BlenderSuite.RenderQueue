@@ -21,12 +21,13 @@ using BlenderRenderQueue.ViewModels;
 
 namespace BlenderRenderQueue.Services.Application.Queue;
 
-public sealed class RenderQueueApplicationService : IRenderQueueApplicationService
+public sealed partial class RenderQueueApplicationService : IRenderQueueApplicationService
 {
     private readonly IBlenderWorkerHost _workerHost;
     private readonly IRenderTaskExecutionService _executionService;
     private readonly IDataPersistenceService _dataPersistenceService;
     private readonly IRenderLogService _logService;
+    private readonly IRenderTaskFactory _taskFactory;
     private readonly SemaphoreSlim _taskPropertiesLoadLimiter = new(1, 1);
     private readonly SemaphoreSlim _schedulerLock = new(1, 1);
     private readonly List<Task> _runningTasks = [];
@@ -60,12 +61,17 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
         IBlenderWorkerHost workerHost,
         IRenderTaskExecutionService executionService,
         IDataPersistenceService dataPersistenceService,
-        IRenderLogService logService)
+        IRenderLogService logService,
+        IRenderTaskFactory taskFactory)
     {
         _workerHost = workerHost;
         _executionService = executionService;
         _dataPersistenceService = dataPersistenceService;
         _logService = logService;
+        _taskFactory = taskFactory;
+        _scheduler = new RenderQueueScheduler(this);
+        _persistenceCoordinator = new RenderQueuePersistenceCoordinator(this);
+        _snapshotFactory = new RenderQueueSnapshotFactory(this);
 
         RenderTasks = [];
         _remainingTimeTimer = new System.Timers.Timer(1000);
@@ -511,23 +517,20 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
         try
         {
-            var newTask = new RenderTaskViewModel(
+            var newTask = _taskFactory.Create(
                 taskToCopy.BlendFilePath,
                 taskToCopy.StartFrame,
                 taskToCopy.EndFrame,
                 taskToCopy.AutoStart,
-                taskToCopy.OverrideFrameRange)
-            {
-                Enable = taskToCopy.Enable
-            };
+                taskToCopy.OverrideFrameRange,
+                CreateTaskFactoryOptions());
+            newTask.Enable = taskToCopy.Enable;
 
             var savedOverrideScene = taskToCopy.OverrideScene;
             var savedSelectedSceneName = taskToCopy.SelectedSceneName;
 
-            PrepareTask(newTask);
             RenderTasks.Add(newTask);
             SubscribeToTaskEvents(newTask);
-            newTask.SetQueueRunningState(_queueState == QueueState.Running);
             setSelectedTask(newTask);
             WriteTaskEvent(newTask, RenderLogScope.Task, $"任务已复制入队: {Path.GetFileName(newTask.BlendFilePath)}");
 
@@ -606,11 +609,9 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                     }
                 };
 
-                var task = new RenderTaskViewModel(taskInfo);
-                PrepareTask(task);
+                var task = _taskFactory.Create(taskInfo, CreateTaskFactoryOptions());
                 RenderTasks.Add(task);
                 SubscribeToTaskEvents(task);
-                task.SetQueueRunningState(_queueState == QueueState.Running);
                 WriteTaskEvent(task, RenderLogScope.Submission, $"submission 已接收并入队: {Path.GetFileName(task.BlendFilePath)}");
                 _logService.Write(
                     RenderLogLevel.Info,
@@ -697,11 +698,9 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
                     continue;
                 }
 
-                var task = new RenderTaskViewModel(persistedTask);
-                PrepareTask(task);
+                var task = _taskFactory.Create(persistedTask, CreateTaskFactoryOptions());
                 RenderTasks.Add(task);
                 SubscribeToTaskEvents(task);
-                task.SetQueueRunningState(_queueState == QueueState.Running);
                 WriteTaskEvent(task, RenderLogScope.Recovery, "已从持久化数据恢复任务。");
                 existingTaskIds.Add(task.Id);
 
@@ -745,11 +744,9 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
     {
         try
         {
-            var task = new RenderTaskViewModel(blendFilePath, 1, 1);
-            PrepareTask(task);
+            var task = _taskFactory.Create(blendFilePath, 1, 1, options: CreateTaskFactoryOptions());
             RenderTasks.Add(task);
             SubscribeToTaskEvents(task);
-            task.SetQueueRunningState(_queueState == QueueState.Running);
             WriteTaskEvent(task, RenderLogScope.Task, $"任务已入队: {Path.GetFileName(blendFilePath)}");
 
             StatusMessageChanged?.Invoke(this,
@@ -771,103 +768,7 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
     private async Task StartNextAvailableTasksAsync()
     {
-        await _schedulerLock.WaitAsync();
-        try
-        {
-            if (_queueState != QueueState.Running)
-            {
-                return;
-            }
-
-            lock (_queueLock)
-            {
-                if (_scheduledTaskIds.Count > 0 || RenderTasks.Any(t => t.Status == RenderTaskStatus.Running))
-                {
-                    return;
-                }
-            }
-
-            RenderTaskViewModel? taskToStart;
-            if (_pausedTask is { Enable: true, IsValid: true } && RenderTasks.Contains(_pausedTask))
-            {
-                taskToStart = _pausedTask;
-            }
-            else
-            {
-                if (_pausedTask != null && !RenderTasks.Contains(_pausedTask))
-                {
-                    _pausedTask = null;
-                    _pausedFrame = 0;
-                }
-
-                taskToStart = RenderTasks.FirstOrDefault(t =>
-                    t.Status == RenderTaskStatus.Pending &&
-                    t.Enable &&
-                    t.IsValid &&
-                    !_scheduledTaskIds.Contains(t.Id));
-            }
-
-            if (taskToStart == null)
-            {
-                CurrentRenderingTask = null;
-                PublishSnapshot();
-                return;
-            }
-
-            CurrentRenderingTask = taskToStart;
-            WriteTaskEvent(taskToStart, RenderLogScope.Queue, _pausedTask == taskToStart ? "从暂停点继续当前任务。" : "队列开始调度任务。");
-            PublishSnapshot();
-
-            var taskCopy = taskToStart;
-            var runningTaskRef = new Task[1];
-            lock (_queueLock)
-            {
-                _scheduledTaskIds.Add(taskCopy.Id);
-                runningTaskRef[0] = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await _workerHost.EnsureReadyAsync(_blenderPath!, CancellationToken.None);
-                        WriteTaskEvent(taskCopy, RenderLogScope.Worker, "Blender worker 已就绪。");
-
-                        if (_pausedTask == taskCopy && _pausedFrame > 0)
-                        {
-                            await _executionService.ResumeAsync(taskCopy, _workerHost, _pausedFrame);
-                            _pausedTask = null;
-                            _pausedFrame = 0;
-                        }
-                        else
-                        {
-                            await _executionService.StartAsync(taskCopy, _workerHost);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[RenderQueueApplicationService] Failed while starting queued task {Path.GetFileName(taskCopy.BlendFilePath)}: {ex}");
-                        WriteTaskEvent(taskCopy, RenderLogScope.Queue, $"启动任务失败: {ex.Message}", RenderLogLevel.Error);
-                    }
-                    finally
-                    {
-                        lock (_queueLock)
-                        {
-                            _runningTasks.RemoveAll(t => t == runningTaskRef[0]);
-                            _scheduledTaskIds.Remove(taskCopy.Id);
-                        }
-
-                        if (AutoStartNext && _queueState == QueueState.Running)
-                        {
-                            await StartNextAvailableTasksAsync();
-                        }
-                    }
-                });
-
-                _runningTasks.Add(runningTaskRef[0]);
-            }
-        }
-        finally
-        {
-            _schedulerLock.Release();
-        }
+        await _scheduler.StartNextAvailableTasksAsync();
     }
 
     private void SubscribeToTaskEvents(RenderTaskViewModel task)
@@ -951,14 +852,17 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
         PublishSnapshot();
     }
 
-    private void PrepareTask(RenderTaskViewModel task)
+    private RenderTaskFactoryOptions CreateTaskFactoryOptions()
     {
-        task.SetGlobalRenderTimeout(_globalRenderTimeoutSeconds);
-        task.SetGlobalMaxRetryAttempts(_globalMaxRetryAttempts);
-        task.SetVideoCodec(_videoCodec);
-        task.SetVideoQuality(_videoQuality);
-        task.SetProcessService(_processService);
-        task.AttachLogService(_logService);
+        return new RenderTaskFactoryOptions
+        {
+            GlobalRenderTimeoutSeconds = _globalRenderTimeoutSeconds,
+            GlobalMaxRetryAttempts = _globalMaxRetryAttempts,
+            VideoCodec = _videoCodec,
+            VideoQuality = _videoQuality,
+            ProcessService = _processService,
+            IsQueueRunning = _queueState == QueueState.Running
+        };
     }
 
     private void RemoveTaskCore(RenderTaskViewModel taskToRemove, RenderTaskViewModel? selectedTask,
@@ -1092,65 +996,17 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
     private void AutoSaveQueueData()
     {
-        lock (_saveStateLock)
-        {
-            _savePending = true;
-            if (_saveWorkerRunning)
-            {
-                return;
-            }
-
-            _saveWorkerRunning = true;
-        }
-
-        _ = RunAutoSaveLoopAsync();
+        _persistenceCoordinator.AutoSaveQueueData();
     }
 
     private async Task RunAutoSaveLoopAsync()
     {
-        try
-        {
-            while (true)
-            {
-                lock (_saveStateLock)
-                {
-                    if (!_savePending)
-                    {
-                        _saveWorkerRunning = false;
-                        return;
-                    }
-
-                    _savePending = false;
-                }
-
-                var appData = await Dispatcher.UIThread.InvokeAsync(BuildAppDataSnapshot).GetTask();
-                var saved = await _dataPersistenceService.SaveDataAsync(appData);
-                if (!saved)
-                {
-                    Console.WriteLine("[RenderQueueApplicationService] Auto-save request completed with persistence failure.");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            lock (_saveStateLock)
-            {
-                _saveWorkerRunning = false;
-            }
-
-            Console.WriteLine($"[RenderQueueApplicationService] Error in auto-save: {ex.Message}");
-        }
+        await _persistenceCoordinator.RunAutoSaveLoopAsync();
     }
 
     private AppData BuildAppDataSnapshot()
     {
-        return new AppData
-        {
-            RenderQueue = RenderTasks.Select(task => new RenderTaskData
-            {
-                RenderTask = CreateRenderTaskInfo(task)
-            }).ToList()
-        };
+        return _persistenceCoordinator.BuildAppDataSnapshot();
     }
 
     private static bool ShouldBackfillTaskProperties(RenderTaskViewModel task)
@@ -1308,73 +1164,12 @@ public sealed class RenderQueueApplicationService : IRenderQueueApplicationServi
 
     private RenderQueueSnapshot BuildSnapshot()
     {
-        var totalFrames = RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t => t.RealTotalFrames);
-        var completedFrameProgress = RenderTasks.Where(t => t.Enable && t.IsValid).Sum(t => t.RealTotalFrames * t.OverallProgress01);
-        var overallProgress = totalFrames > 0 ? completedFrameProgress / totalFrames : 0.0;
-
-        return new RenderQueueSnapshot
-        {
-            State = _queueState switch
-            {
-                QueueState.Running => QueueExecutionState.Running,
-                QueueState.Paused => QueueExecutionState.Paused,
-                QueueState.Completed => QueueExecutionState.Completed,
-                QueueState.Error => QueueExecutionState.Error,
-                _ => QueueExecutionState.Idle
-            },
-            CurrentTaskId = CurrentRenderingTask?.Id,
-            ActiveTaskCount = _activeTaskCount,
-            CompletedTaskCount = _completedTaskCount,
-            FailedTaskCount = _failedTaskCount,
-            TotalFrames = totalFrames,
-            CompletedFrameProgress = completedFrameProgress,
-            OverallProgress01 = overallProgress,
-            QueueStatusText = _queueStatusText,
-            RemainingTimeText = _remainingTimeText,
-            AutoStartNext = AutoStartNext,
-            PostRenderBehavior = PostRenderBehavior,
-            CanStartQueue = RenderTasks.Count > 0 && (_queueState is QueueState.Idle or QueueState.Completed) && RenderTasks.Any(t => t is { Enable: true, IsValid: true }),
-            CanStopQueue = _queueState == QueueState.Running,
-            CanPauseQueue = _queueState == QueueState.Running && _activeTaskCount > 0,
-            CanResumeQueue = _queueState == QueueState.Paused,
-            CanClearTasks = _queueState is QueueState.Completed or QueueState.Idle,
-            Tasks = RenderTasks.Select(BuildTaskSnapshot).ToList()
-        };
+        return _snapshotFactory.BuildSnapshot();
     }
 
     private static RenderTaskSnapshot BuildTaskSnapshot(RenderTaskViewModel task)
     {
-        return new RenderTaskSnapshot
-        {
-            TaskId = task.Id,
-            BlendFilePath = task.BlendFilePath,
-            BlendFileName = task.BlendFileName,
-            Enabled = task.Enable,
-            IsValid = task.IsValid,
-            State = task.Status switch
-            {
-                RenderTaskStatus.Running => RenderTaskExecutionState.Running,
-                RenderTaskStatus.Paused => RenderTaskExecutionState.Paused,
-                RenderTaskStatus.Completed => RenderTaskExecutionState.Completed,
-                RenderTaskStatus.Failed => RenderTaskExecutionState.Failed,
-                RenderTaskStatus.Cancelled => RenderTaskExecutionState.Cancelled,
-                _ => RenderTaskExecutionState.Pending
-            },
-            CurrentFrame = task.CurrentFrame,
-            CompletedFrames = task.CompletedFrames,
-            TotalFrames = task.RealTotalFrames,
-            CurrentFrameProgress01 = task.Progress01,
-            OverallProgress01 = task.OverallProgress01,
-            SampleText = task.SampleText,
-            StatusDetailText = task.StatusDetailText,
-            OutputPath = task.SavedPath,
-            PreviewPath = task.RenderedImagePath,
-            OverrideSceneName = task.SelectedSceneName,
-            OverrideFrameRange = task.OverrideFrameRange,
-            RealStartFrame = task.RealStartFrame,
-            RealEndFrame = task.RealEndFrame,
-            Duration = task.Duration
-        };
+        return RenderQueueSnapshotFactory.BuildTaskSnapshot(task);
     }
 
     private async Task HandlePostRenderBehaviorAsync()

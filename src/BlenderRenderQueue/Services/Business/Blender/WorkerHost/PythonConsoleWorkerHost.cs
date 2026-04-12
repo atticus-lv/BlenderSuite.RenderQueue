@@ -15,7 +15,7 @@ using BlenderRenderQueue.Services.Business.Blender.Extensions;
 
 namespace BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 
-public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
+public sealed partial class PythonConsoleWorkerHost : IBlenderWorkerHost
 {
     private static readonly TimeSpan ConsoleReadyTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan WorkerReadyTimeout = TimeSpan.FromSeconds(15);
@@ -302,151 +302,22 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
     private async Task StartWorkerProcessCoreAsync(string blenderExecutablePath, CancellationToken cancellationToken)
     {
-        await TerminateProcessCoreAsync();
-        await CleanupStaleWorkerProcessAsync(blenderExecutablePath);
-
-        _connectionInfo = BlenderWorkerConnectionInfo.CreateLocal();
-        _appInstanceId = Guid.NewGuid().ToString("N");
-        State.ProcessGeneration = Interlocked.Increment(ref _processGeneration);
-        State.Status = "starting";
-        State.IsProcessRunning = false;
-        State.IsRendering = false;
-        State.LastError = string.Empty;
-        State.LastErrorCategory = string.Empty;
-        State.RenderStartedAt = null;
-        State.CurrentFile = string.Empty;
-        State.ActiveScene = string.Empty;
-        _sawBlenderQuitLine = false;
-        _processStartedAtUtc = DateTimeOffset.UtcNow;
-        ClearRecentOutputLines();
-
-        var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = blenderExecutablePath,
-                Arguments = "--background --log-level info --python-console",
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8,
-                StandardInputEncoding = new UTF8Encoding(false)
-            },
-            EnableRaisingEvents = true
-        };
-        process.StartInfo.Environment["BRQ_WORKER"] = "1";
-        process.StartInfo.Environment["BRQ_APP_INSTANCE_ID"] = _appInstanceId;
-
-        process.Exited += (_, _) =>
-        {
-            State.IsProcessRunning = false;
-            var exitCode = process.HasExited ? process.ExitCode : -1;
-            DeleteWorkerProcessInfo();
-            if (!ReferenceEquals(process, _process))
-            {
-                return;
-            }
-
-            if (ReferenceEquals(process, _terminatingProcess))
-            {
-                return;
-            }
-
-            var diagnostic = BuildUnexpectedExitDiagnostic(exitCode);
-            State.LastError = diagnostic;
-            State.LastErrorCategory = ClassifyProcessExit(exitCode);
-            OnErrorReceived?.Invoke(diagnostic);
-            OnProcessExited?.Invoke(exitCode);
-        };
-
-        if (!process.Start())
-        {
-            throw new InvalidOperationException("Failed to start Blender python-console worker process.");
-        }
-
-        _process = process;
-        State.IsProcessRunning = true;
-        PersistWorkerProcessInfo(process.Id, blenderExecutablePath);
-        _stdoutTask = Task.Run(() => ReadOutputLoopAsync(process.StandardOutput, false, _disposeCts.Token));
-        _stderrTask = Task.Run(() => ReadOutputLoopAsync(process.StandardError, true, _disposeCts.Token));
-
-        await ProbeConsoleReadyAsync(cancellationToken);
-        await InjectBootstrapScriptAsync(cancellationToken);
-        await WaitForWorkerReadyAsync(cancellationToken);
-
-        StartHeartbeatLoop();
+        await _processController.StartWorkerProcessCoreAsync(blenderExecutablePath, cancellationToken);
     }
 
     private async Task ProbeConsoleReadyAsync(CancellationToken cancellationToken)
     {
-        var sentinel = $"__BRQ_CONSOLE_READY__{Guid.NewGuid():N}";
-        await SendConsoleCommandAsync($"print('{sentinel}')", cancellationToken);
-        await WaitForOutputAsync(line => line.Contains(sentinel, StringComparison.Ordinal), ConsoleReadyTimeout, cancellationToken);
+        await _transportClient.ProbeConsoleReadyAsync(cancellationToken);
     }
 
     private async Task InjectBootstrapScriptAsync(CancellationToken cancellationToken)
     {
-        var bootstrapPath = Path.Combine(AppContext.BaseDirectory, "Resources", "Python", "python_console_worker.py");
-        if (!File.Exists(bootstrapPath))
-        {
-            throw new FileNotFoundException("Python console worker bootstrap script was not found.", bootstrapPath);
-        }
-
-        var bootstrapText = await File.ReadAllTextAsync(bootstrapPath, cancellationToken);
-        var bootstrapBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(bootstrapText));
-        var configJson = JsonSerializer.Serialize(
-            new WorkerBootstrapConfig
-            {
-                Host = _connectionInfo!.Host,
-                Port = _connectionInfo.Port,
-                Token = _connectionInfo.Token,
-                AppInstanceId = _appInstanceId,
-                LogPath = GetWorkerLogPath()
-            },
-            WorkerHostJsonContext.Default.WorkerBootstrapConfig);
-
-        await SendConsoleCommandAsync("import base64, json", cancellationToken);
-        await SendConsoleCommandAsync($"__brq_script = base64.b64decode('{bootstrapBase64}').decode('utf-8')", cancellationToken);
-        await SendConsoleCommandAsync("exec(compile(__brq_script, '<brq_console_worker>', 'exec'), globals(), globals())", cancellationToken);
-        await SendConsoleCommandAsync($"run_brq_worker_forever(json.loads(r'''{configJson}'''))", cancellationToken);
+        await _transportClient.InjectBootstrapScriptAsync(cancellationToken);
     }
 
     private async Task WaitForWorkerReadyAsync(CancellationToken cancellationToken)
     {
-        await WaitForOutputAsync(
-            line => line.Contains("__BRQ_WORKER_READY__", StringComparison.Ordinal),
-            WorkerReadyTimeout,
-            cancellationToken);
-
-        var pingDeadline = DateTimeOffset.UtcNow + WorkerReadyTimeout;
-        Exception? lastError = null;
-        while (DateTimeOffset.UtcNow < pingDeadline)
-        {
-            try
-            {
-                var response = await SendRequestAsync(
-                    "ping",
-                    WorkerRequestPayload.Empty,
-                    RequestTimeout,
-                    cancellationToken);
-
-                if (response.Ok)
-                {
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                lastError = ex;
-            }
-
-            await Task.Delay(250, cancellationToken);
-        }
-
-        throw new TimeoutException($"Worker did not reach the ready state. Last error: {lastError?.Message}");
+        await _transportClient.WaitForWorkerReadyAsync(cancellationToken);
     }
 
     private async Task<BlenderWorkerResponse> SendRequestAsync(
@@ -455,210 +326,37 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
         TimeSpan timeout,
         CancellationToken cancellationToken)
     {
-        ThrowIfDisposed();
-
-        if (_process is null || _process.HasExited || _connectionInfo is null)
-        {
-            throw new InvalidOperationException("The Blender worker process is not running.");
-        }
-
-        try
-        {
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposeCts.Token);
-            linkedCts.CancelAfter(timeout);
-
-            using var client = new TcpClient();
-            await client.ConnectAsync(_connectionInfo.Host, _connectionInfo.Port, linkedCts.Token);
-            SetActiveRequestClient(client);
-
-            await using var stream = client.GetStream();
-            using var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true) { AutoFlush = true };
-            using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
-
-            var request = new WorkerWireRequest
-            {
-                RequestId = $"brq-{Interlocked.Increment(ref _requestSequence):D8}",
-                Command = command,
-                Token = _connectionInfo.Token,
-                Payload = payload
-            };
-
-            var json = JsonSerializer.Serialize(request, WorkerHostJsonContext.Default.WorkerWireRequest);
-            await writer.WriteLineAsync(json);
-
-            var responseLine = await reader.ReadLineAsync(linkedCts.Token);
-            if (string.IsNullOrWhiteSpace(responseLine))
-            {
-                if (_process is null || _process.HasExited)
-                {
-                    throw new InvalidOperationException(BuildUnexpectedExitDiagnostic(_process?.HasExited == true ? _process.ExitCode : -1));
-                }
-
-                throw new InvalidOperationException($"Worker returned an empty response for command '{command}'.");
-            }
-
-            var response = ParseResponse(responseLine);
-            ApplyResponseState(response);
-
-            if (!response.Ok)
-            {
-                throw new InvalidOperationException(string.IsNullOrWhiteSpace(response.Error)
-                    ? $"Worker command '{command}' failed."
-                    : response.Error);
-            }
-
-            return response;
-        }
-        finally
-        {
-            ClearActiveRequestClient();
-        }
+        return await _transportClient.SendRequestAsync(command, payload, timeout, cancellationToken);
     }
 
     private BlenderWorkerResponse ParseResponse(string responseLine)
     {
-        var response = JsonSerializer.Deserialize(responseLine, WorkerHostJsonContext.Default.WorkerWireResponse)
-            ?? throw new InvalidOperationException("Worker returned an unreadable JSON response.");
-        var payload = response.Payload;
-
-        return new BlenderWorkerResponse
-        {
-            RequestId = response.RequestId ?? string.Empty,
-            Ok = response.Ok,
-            WorkerState = response.WorkerState ?? string.Empty,
-            Error = response.Error ?? string.Empty,
-            ErrorCategory = response.ErrorCategory ?? string.Empty,
-            CurrentFile = payload?.CurrentFile ?? string.Empty,
-            ActiveScene = payload?.ActiveScene ?? string.Empty,
-            Scenes = payload?.Scenes ?? [],
-            Camera = payload?.Camera ?? string.Empty,
-            FrameStart = payload?.FrameStart ?? 0,
-            FrameEnd = payload?.FrameEnd ?? 0,
-            OutputPath = payload?.OutputPath ?? string.Empty,
-            IsSaved = payload?.IsSaved ?? false,
-            OutputVerified = payload?.OutputVerified ?? false,
-            RenderStartedAt = payload?.RenderStartedAt ?? string.Empty,
-            LastHeartbeatAt = payload?.LastHeartbeatAt ?? string.Empty
-        };
+        return _transportClient.ParseResponse(responseLine);
     }
 
     private void ApplyResponseState(BlenderWorkerResponse response)
     {
-        State.Status = response.WorkerState;
-        State.CurrentFile = response.CurrentFile;
-        State.ActiveScene = response.ActiveScene;
-        State.LastError = response.Error;
-        State.LastErrorCategory = !string.IsNullOrWhiteSpace(response.ErrorCategory)
-            ? response.ErrorCategory
-            : ClassifyErrorText(response.Error);
-        State.LastHeartbeatAt = ParseDateTime(response.LastHeartbeatAt);
-        State.RenderStartedAt = ParseDateTime(response.RenderStartedAt);
-        State.IsRendering = string.Equals(response.WorkerState, "rendering", StringComparison.Ordinal);
-        State.IsProcessRunning = _process is { HasExited: false };
-
-        if (!string.IsNullOrWhiteSpace(response.CurrentFile))
-        {
-            _lastLoadedBlendFilePath = response.CurrentFile;
-        }
+        _transportClient.ApplyResponseState(response);
     }
 
     private async Task ReadOutputLoopAsync(StreamReader reader, bool isError, CancellationToken cancellationToken)
     {
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var line = await reader.ReadLineAsync(cancellationToken);
-                if (line is null)
-                {
-                    break;
-                }
-
-                if (isError)
-                {
-                    HandleErrorLine(line);
-                }
-                else
-                {
-                    HandleOutputLine(line);
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // ignored
-        }
-        catch (Exception ex)
-        {
-            HandleErrorLine($"Worker output loop failed: {ex.Message}");
-        }
+        await _transportClient.ReadOutputLoopAsync(reader, isError, cancellationToken);
     }
 
     private void HandleOutputLine(string line)
     {
-        if (string.IsNullOrWhiteSpace(line))
-        {
-            return;
-        }
-
-        State.LastOutputAt = DateTimeOffset.UtcNow;
-        RecordRecentOutputLine("[stdout] " + line);
-        if (line.Contains("Blender quit", StringComparison.OrdinalIgnoreCase))
-        {
-            _sawBlenderQuitLine = true;
-        }
-
-        lock (_waitersLock)
-        {
-            foreach (var waiter in _outputWaiters.ToList())
-            {
-                if (!waiter.Predicate(line))
-                {
-                    continue;
-                }
-
-                waiter.CompletionSource.TrySetResult(line);
-                _outputWaiters.Remove(waiter);
-            }
-        }
-
-        OnOutputReceived?.Invoke(line);
+        _transportClient.HandleOutputLine(line);
     }
 
     private void HandleErrorLine(string line)
     {
-        if (string.IsNullOrWhiteSpace(line))
-        {
-            return;
-        }
-
-        if (IsIgnorableConsoleNoise(line))
-        {
-            return;
-        }
-
-        State.LastOutputAt = DateTimeOffset.UtcNow;
-        RecordRecentOutputLine("[stderr] " + line);
-        if (line.Contains("Blender quit", StringComparison.OrdinalIgnoreCase))
-        {
-            _sawBlenderQuitLine = true;
-        }
-
-        State.LastError = line;
-        var category = ClassifyErrorText(line);
-        if (!string.IsNullOrWhiteSpace(category))
-        {
-            State.LastErrorCategory = category;
-        }
-        OnErrorReceived?.Invoke(line);
+        _transportClient.HandleErrorLine(line);
     }
 
     private static bool IsIgnorableConsoleNoise(string line)
     {
-        var trimmed = line.Trim();
-        return trimmed is "(InteractiveConsole)" or "now exiting InteractiveConsole..."
-            || trimmed.StartsWith("Python ", StringComparison.Ordinal)
-            || trimmed.StartsWith("Type \"help\"", StringComparison.Ordinal);
+        return WorkerTransportClient.IsIgnorableConsoleNoise(line);
     }
 
     private async Task<string> WaitForOutputAsync(
@@ -666,283 +364,52 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
         TimeSpan timeout,
         CancellationToken cancellationToken)
     {
-        var waiter = new OutputWaiter(predicate);
-        lock (_waitersLock)
-        {
-            _outputWaiters.Add(waiter);
-        }
-
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _disposeCts.Token);
-        linkedCts.CancelAfter(timeout);
-        using var registration = linkedCts.Token.Register(() =>
-        {
-            waiter.CompletionSource.TrySetCanceled(linkedCts.Token);
-            lock (_waitersLock)
-            {
-                _outputWaiters.Remove(waiter);
-            }
-        });
-
-        return await waiter.CompletionSource.Task.WaitAsync(linkedCts.Token);
+        return await _transportClient.WaitForOutputAsync(predicate, timeout, cancellationToken);
     }
 
     private async Task SendConsoleCommandAsync(string command, CancellationToken cancellationToken)
     {
-        if (_process is null || _process.HasExited)
-        {
-            throw new InvalidOperationException("The Blender console worker is not running.");
-        }
-
-        await _stdinLock.WaitAsync(cancellationToken);
-        try
-        {
-            await _process.StandardInput.WriteLineAsync(command);
-            await _process.StandardInput.FlushAsync(cancellationToken);
-        }
-        finally
-        {
-            _stdinLock.Release();
-        }
+        await _transportClient.SendConsoleCommandAsync(command, cancellationToken);
     }
 
     private void StartHeartbeatLoop()
     {
-        _heartbeatCts?.Cancel();
-        _heartbeatCts?.Dispose();
-        _heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
-
-        _ = Task.Run(async () =>
-        {
-            while (!_heartbeatCts.IsCancellationRequested)
-            {
-                try
-                {
-                    await Task.Delay(HeartbeatInterval, _heartbeatCts.Token);
-
-                    if (_heartbeatCts.IsCancellationRequested || _disposed)
-                    {
-                        break;
-                    }
-
-                    // Let the active render pipeline own crash recovery while a render is in flight.
-                    if (State.IsRendering)
-                    {
-                        continue;
-                    }
-
-                    if (_process is null || _process.HasExited)
-                    {
-                        State.ConsecutiveHeartbeatFailures++;
-                        if (State.ConsecutiveHeartbeatFailures >= HeartbeatFailureThreshold)
-                        {
-                            await RecoverAsync(_heartbeatCts.Token);
-                            State.ConsecutiveHeartbeatFailures = 0;
-                        }
-
-                        continue;
-                    }
-
-                    try
-                    {
-                        await PingAsync(_heartbeatCts.Token);
-                    }
-                    catch
-                    {
-                        State.ConsecutiveHeartbeatFailures++;
-                        if (State.ConsecutiveHeartbeatFailures >= HeartbeatFailureThreshold)
-                        {
-                            await RecoverAsync(_heartbeatCts.Token);
-                            State.ConsecutiveHeartbeatFailures = 0;
-                        }
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-            }
-        }, _heartbeatCts.Token);
+        _transportClient.StartHeartbeatLoop();
     }
 
     private async Task TerminateProcessCoreAsync()
     {
-        _heartbeatCts?.Cancel();
-        _heartbeatCts?.Dispose();
-        _heartbeatCts = null;
-        AbortActiveRequestClient();
-
-        if (_process is null)
-        {
-            return;
-        }
-
-        var process = _process;
-        _terminatingProcess = process;
-        try
-        {
-            if (!process.HasExited)
-            {
-                process.Kill(true);
-                await process.WaitForExitAsync(_disposeCts.Token);
-            }
-        }
-        catch
-        {
-            // ignored
-        }
-        finally
-        {
-            process.Dispose();
-            if (ReferenceEquals(_process, process))
-            {
-                _process = null;
-            }
-
-            if (ReferenceEquals(_terminatingProcess, process))
-            {
-                _terminatingProcess = null;
-            }
-
-            State.IsProcessRunning = false;
-            DeleteWorkerProcessInfo();
-        }
+        await _processController.TerminateProcessCoreAsync();
     }
 
     private async Task CleanupStaleWorkerProcessAsync(string blenderExecutablePath)
     {
-        var metadataPath = GetWorkerProcessInfoPath();
-        if (!File.Exists(metadataPath))
-        {
-            return;
-        }
-
-        try
-        {
-            var json = await File.ReadAllTextAsync(metadataPath);
-            var metadata = JsonSerializer.Deserialize(json, WorkerHostJsonContext.Default.WorkerProcessMetadata);
-            if (metadata is null || metadata.ProcessId <= 0)
-            {
-                DeleteWorkerProcessInfo();
-                return;
-            }
-
-            try
-            {
-                var process = Process.GetProcessById(metadata.ProcessId);
-                if (process.HasExited)
-                {
-                    DeleteWorkerProcessInfo();
-                    return;
-                }
-
-                if (!IsLikelyBlenderProcess(process, blenderExecutablePath))
-                {
-                    DeleteWorkerProcessInfo();
-                    return;
-                }
-
-                process.Kill(true);
-                await process.WaitForExitAsync(_disposeCts.Token);
-            }
-            catch (ArgumentException)
-            {
-                // The process no longer exists.
-            }
-            catch (InvalidOperationException)
-            {
-                // The process has already exited.
-            }
-        }
-        catch
-        {
-            // If the metadata is unreadable, remove it and continue.
-        }
-        finally
-        {
-            DeleteWorkerProcessInfo();
-        }
+        await _processController.CleanupStaleWorkerProcessAsync(blenderExecutablePath);
     }
 
     private string GetWorkerLogPath()
     {
-        var directory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "BlenderRenderQueue",
-            "Logs");
-        Directory.CreateDirectory(directory);
-        return Path.Combine(directory, $"worker-{_appInstanceId}.log");
+        return _processController.GetWorkerLogPath();
     }
 
     private string GetWorkerProcessInfoPath()
     {
-        var directory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "BlenderRenderQueue");
-        Directory.CreateDirectory(directory);
-        return Path.Combine(directory, "python-console-worker.json");
+        return _processController.GetWorkerProcessInfoPath();
     }
 
     private void PersistWorkerProcessInfo(int processId, string blenderExecutablePath)
     {
-        var metadata = new WorkerProcessMetadata
-        {
-            ProcessId = processId,
-            BlenderExecutablePath = blenderExecutablePath,
-            AppInstanceId = _appInstanceId
-        };
-
-        File.WriteAllText(
-            GetWorkerProcessInfoPath(),
-            JsonSerializer.Serialize(metadata, WorkerHostJsonContext.Default.WorkerProcessMetadata));
+        _processController.PersistWorkerProcessInfo(processId, blenderExecutablePath);
     }
 
     private void DeleteWorkerProcessInfo()
     {
-        try
-        {
-            var path = GetWorkerProcessInfoPath();
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-            }
-        }
-        catch
-        {
-            // ignored
-        }
+        _processController.DeleteWorkerProcessInfo();
     }
 
     private static bool IsLikelyBlenderProcess(Process process, string blenderExecutablePath)
     {
-        try
-        {
-            if (!process.ProcessName.Contains("blender", StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            try
-            {
-                var mainModulePath = process.MainModule?.FileName;
-                if (!string.IsNullOrWhiteSpace(mainModulePath))
-                {
-                    return string.Equals(
-                        Path.GetFullPath(mainModulePath),
-                        Path.GetFullPath(blenderExecutablePath),
-                        StringComparison.OrdinalIgnoreCase);
-                }
-            }
-            catch
-            {
-                // Accessing MainModule can fail on some platforms. Fall back to process name only.
-            }
-
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        return WorkerProcessController.IsLikelyBlenderProcess(process, blenderExecutablePath);
     }
 
     private bool VerifyRenderOutput(BlenderWorkerRequest request, BlenderWorkerResponse response)
@@ -993,202 +460,42 @@ public sealed class PythonConsoleWorkerHost : IBlenderWorkerHost
 
     private void RecordRecentOutputLine(string line)
     {
-        lock (_recentOutputLock)
-        {
-            _recentOutputLines.Enqueue($"{DateTimeOffset.UtcNow:O} {line}");
-            while (_recentOutputLines.Count > MaxRecentOutputLines)
-            {
-                _recentOutputLines.Dequeue();
-            }
-        }
+        _diagnosticsService.RecordRecentOutputLine(line);
     }
 
     private void ClearRecentOutputLines()
     {
-        lock (_recentOutputLock)
-        {
-            _recentOutputLines.Clear();
-        }
+        _diagnosticsService.ClearRecentOutputLines();
     }
 
     private string BuildUnexpectedExitDiagnostic(int exitCode)
     {
-        var parts = new List<string>();
-        var category = ClassifyProcessExit(exitCode);
-        if (!string.IsNullOrWhiteSpace(category))
-        {
-            parts.Add($"Failure category: {category}");
-        }
-
-        if (exitCode == 0 || _sawBlenderQuitLine)
-        {
-            parts.Add("Blender worker exited normally.");
-            if (_sawBlenderQuitLine)
-            {
-                parts.Add("Observed 'Blender quit' in the process output.");
-            }
-        }
-        else
-        {
-            parts.Add($"Blender worker exited unexpectedly with code {exitCode}.");
-        }
-
-        var crashReportPath = FindCrashReportPath();
-        if (!string.IsNullOrWhiteSpace(crashReportPath))
-        {
-            parts.Add($"Crash report: {crashReportPath}");
-        }
-
-        var recentTail = GetRecentOutputTail(12);
-        if (!string.IsNullOrWhiteSpace(recentTail))
-        {
-            parts.Add("Recent Blender output:");
-            parts.Add(recentTail);
-        }
-
-        return string.Join(Environment.NewLine, parts);
+        return _diagnosticsService.BuildUnexpectedExitDiagnostic(exitCode);
     }
 
     private string ClassifyProcessExit(int exitCode)
     {
-        var recentTail = GetRecentOutputTail(20);
-        var classifiedFromOutput = ClassifyErrorText(recentTail);
-        if (!string.IsNullOrWhiteSpace(classifiedFromOutput))
-        {
-            return classifiedFromOutput;
-        }
-
-        return exitCode == 0 || _sawBlenderQuitLine
-            ? "normal_quit"
-            : "unexpected_exit";
+        return _diagnosticsService.ClassifyProcessExit(exitCode);
     }
 
     private static string ClassifyErrorText(string? text)
     {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return string.Empty;
-        }
-
-        var normalized = text.ToLowerInvariant();
-        if (normalized.Contains("file format is not supported") ||
-            normalized.Contains("unable to open blend file") ||
-            normalized.Contains("cannot read file as a blender file") ||
-            normalized.Contains("not a blend file"))
-        {
-            return "file_error";
-        }
-
-        if (normalized.Contains("traceback") ||
-            normalized.Contains("runtimeerror:") ||
-            normalized.Contains("syntaxerror:") ||
-            normalized.Contains("nameerror:") ||
-            normalized.Contains("valueerror:") ||
-            normalized.Contains("unknown worker command"))
-        {
-            return "script_error";
-        }
-
-        if (normalized.Contains("blender quit"))
-        {
-            return "normal_quit";
-        }
-
-        return string.Empty;
+        return WorkerDiagnosticsService.ClassifyErrorText(text);
     }
 
     private string GetRecentOutputTail(int maxLines)
     {
-        lock (_recentOutputLock)
-        {
-            if (_recentOutputLines.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            return string.Join(
-                Environment.NewLine,
-                _recentOutputLines.Skip(Math.Max(0, _recentOutputLines.Count - maxLines)));
-        }
+        return _diagnosticsService.GetRecentOutputTail(maxLines);
     }
 
     private string FindCrashReportPath()
     {
-        try
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                var diagnosticReports = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    "Library",
-                    "Logs",
-                    "DiagnosticReports");
-
-                return FindNewestCrashFile(
-                    diagnosticReports,
-                    new[] { "Blender*.crash", "Blender*.ips" },
-                    _processStartedAtUtc);
-            }
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                var candidates = new List<string>();
-                if (!string.IsNullOrWhiteSpace(_lastLoadedBlendFilePath))
-                {
-                    var blendDirectory = Path.GetDirectoryName(_lastLoadedBlendFilePath);
-                    var blendName = Path.GetFileNameWithoutExtension(_lastLoadedBlendFilePath);
-                    if (!string.IsNullOrWhiteSpace(blendDirectory) && !string.IsNullOrWhiteSpace(blendName))
-                    {
-                        candidates.Add(Path.Combine(blendDirectory, blendName + ".crash.txt"));
-                    }
-                }
-
-                candidates.Add("/tmp/blender.crash.txt");
-                foreach (var candidate in candidates.Distinct())
-                {
-                    if (File.Exists(candidate))
-                    {
-                        return candidate;
-                    }
-                }
-
-                return FindNewestCrashFile("/tmp", new[] { "*.crash.txt" }, _processStartedAtUtc);
-            }
-        }
-        catch
-        {
-            // Best-effort diagnostic only.
-        }
-
-        return string.Empty;
+        return _diagnosticsService.FindCrashReportPath();
     }
 
     private static string FindNewestCrashFile(string directory, IReadOnlyList<string> patterns, DateTimeOffset processStartedAtUtc)
     {
-        if (!Directory.Exists(directory))
-        {
-            return string.Empty;
-        }
-
-        var minTimestamp = processStartedAtUtc.AddMinutes(-1);
-        var newest = patterns
-            .SelectMany(pattern =>
-            {
-                try
-                {
-                    return Directory.EnumerateFiles(directory, pattern, SearchOption.TopDirectoryOnly);
-                }
-                catch
-                {
-                    return Enumerable.Empty<string>();
-                }
-            })
-            .Select(path => new FileInfo(path))
-            .Where(info => info.Exists && info.LastWriteTimeUtc >= minTimestamp.UtcDateTime)
-            .OrderByDescending(info => info.LastWriteTimeUtc)
-            .FirstOrDefault();
-
-        return newest?.FullName ?? string.Empty;
+        return WorkerDiagnosticsService.FindNewestCrashFile(directory, patterns, processStartedAtUtc);
     }
 
     private void ThrowIfDisposed()

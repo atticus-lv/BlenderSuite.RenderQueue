@@ -376,7 +376,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     private bool _isRenderSettingsTabRealized;
 
     [ObservableProperty]
-    private BlendScenePropertiesViewModel _scenePropertiesView = new();
+    private BlendScenePropertiesViewModel _scenePropertiesView = null!;
 
     public RenderTaskViewModel? RenderSettingsContent => IsRenderSettingsTabRealized ? this : null;
     public RenderTaskViewModel? OutputPreviewContent => IsOutputPreviewTabRealized ? this : null;
@@ -504,75 +504,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     public async Task RefreshFilePropertiesAsync(string blenderPath)
     {
-        if (string.IsNullOrWhiteSpace(BlendFilePath) || !System.IO.File.Exists(BlendFilePath))
-        {
-            EnqueueLog("文件路径无效或文件不存在，无法刷新");
-            return;
-        }
-
-        try
-        {
-            EnqueueLog("[REFRESH] 开始刷新文件属性...");
-            _logService?.Write(
-                RenderLogLevel.Info,
-                RenderLogScope.Task,
-                $"开始刷新文件属性，Blender={blenderPath}, 文件={BlendFilePath}, IsLoading={ScenePropertiesView.IsLoading}, IsLoaded={ScenePropertiesView.SelectedSceneProperties.IsLoaded}",
-                Id,
-                BlendFilePath,
-                nameof(RenderTaskViewModel));
-
-            var currentOverrideFrameRange = OverrideFrameRange;
-            var currentStartFrame = StartFrame;
-            var currentEndFrame = EndFrame;
-            var currentOverrideScene = OverrideScene;
-            var currentSelectedSceneName = SelectedSceneName;
-            var currentEnable = Enable;
-
-            Console.WriteLine(
-                $"[RenderTaskViewModel] Refreshing file properties - preserving overrides: FrameRange={currentOverrideFrameRange} ({currentStartFrame}-{currentEndFrame}), Scene={currentOverrideScene} ({currentSelectedSceneName}), Enable={currentEnable}");
-
-            await ScenePropertiesView.LoadPropertiesAsync(blenderPath, BlendFilePath);
-
-            OverrideFrameRange = currentOverrideFrameRange;
-            StartFrame = currentStartFrame;
-            EndFrame = currentEndFrame;
-            OverrideScene = currentOverrideScene;
-            SelectedSceneName = currentSelectedSceneName;
-            Enable = currentEnable;
-
-            AvailableSceneNames = ScenePropertiesView.SceneNames.ToList();
-
-            if (!OverrideScene && string.IsNullOrEmpty(SelectedSceneName))
-            {
-                SelectedSceneName = ScenePropertiesView.SelectedSceneName ?? string.Empty;
-            }
-
-            OnPropertyChanged(nameof(DisplayStartFrame));
-            OnPropertyChanged(nameof(DisplayEndFrame));
-            OnPropertyChanged(nameof(DisplayTotalFrames));
-            OnPropertyChanged(nameof(RealStartFrame));
-            OnPropertyChanged(nameof(RealEndFrame));
-            OnPropertyChanged(nameof(RealTotalFrames));
-            OnPropertyChanged(nameof(AvailableSceneNames));
-            OnPropertyChanged(nameof(HasValidSceneSelection));
-            OnPropertyChanged(nameof(ShowSceneOverrideWarning));
-            OnPropertyChanged(nameof(IsOverrideSceneIsDefaultScene));
-            OnPropertyChanged(nameof(FinalSceneProperties));
-            OnPropertyChanged(nameof(FramePathDirectory));
-
-            // 重新加载文件信息
-            LoadFileInfo();
-
-            EnqueueLog("[REFRESH] 文件属性刷新完成");
-            _logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, "文件属性刷新完成。", Id, BlendFilePath, nameof(RenderTaskViewModel));
-            Console.WriteLine($"[RenderTaskViewModel] ✅ File properties refreshed successfully - overrides preserved");
-        }
-        catch (Exception ex)
-        {
-            EnqueueLog($"[REFRESH] 刷新文件属性失败: {ex.Message}");
-            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Task, $"刷新文件属性失败: {ex}", Id, BlendFilePath, nameof(RenderTaskViewModel));
-            Console.WriteLine($"[RenderTaskViewModel] ❌ Failed to refresh file properties: {ex.Message}");
-        }
+        await _filePropertiesCoordinator.RefreshAsync(blenderPath);
     }
 
 
@@ -639,10 +571,6 @@ public partial class RenderTaskViewModel : ViewModelBase
     [ObservableProperty]
     private TimeSpan? _duration;
 
-    [ObservableProperty]
-    private BlendScenePropertiesViewModel _scenePropertiesViewModel = new();
-
-
     public BlendSceneProperties FinalSceneProperties
     {
         get
@@ -669,13 +597,22 @@ public partial class RenderTaskViewModel : ViewModelBase
     // 内部状态
     private IRenderLogService? _logService;
     private DateTimeOffset? _logClearCutoff;
+    private readonly RenderTaskFilePropertiesCoordinator _filePropertiesCoordinator;
+    private readonly RenderTaskPreviewService _previewService;
+    private readonly RenderTaskLogProjection _logProjection;
+    private readonly RenderTaskVideoGenerationCoordinator _videoGenerationCoordinator;
 
     // 事件
     public event EventHandler<RenderTaskStatusChangedEventArgs>? StatusChanged;
     public event EventHandler<RenderTaskProgressEventArgs>? ProgressChanged;
 
-    public RenderTaskViewModel()
+    public RenderTaskViewModel(BlendScenePropertiesViewModel scenePropertiesView)
     {
+        ScenePropertiesView = scenePropertiesView;
+        _filePropertiesCoordinator = new RenderTaskFilePropertiesCoordinator(this);
+        _previewService = new RenderTaskPreviewService(this);
+        _logProjection = new RenderTaskLogProjection(this);
+        _videoGenerationCoordinator = new RenderTaskVideoGenerationCoordinator(this);
         _selectedDetailTabIndex = s_sharedDetailTabIndex;
         _selectedLogTabIndex = s_sharedLogTabIndex;
 
@@ -696,8 +633,13 @@ public partial class RenderTaskViewModel : ViewModelBase
         }
     }
 
-    public RenderTaskViewModel(string blendFilePath, int startFrame, int endFrame, bool animation = true,
-        bool overrideFrameRange = false) : this()
+    public RenderTaskViewModel(
+        BlendScenePropertiesViewModel scenePropertiesView,
+        string blendFilePath,
+        int startFrame,
+        int endFrame,
+        bool animation = true,
+        bool overrideFrameRange = false) : this(scenePropertiesView)
     {
         BlendFilePath = blendFilePath;
         StartFrame = startFrame;
@@ -721,7 +663,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// 从 RenderTaskInfo 数据创建 RenderTaskViewModel 实例
     /// 如果 RenderTaskInfo 中有 UUID 则使用，否则生成新的
     /// </summary>
-    public RenderTaskViewModel(RenderTaskInfo taskInfo) : this()
+    public RenderTaskViewModel(BlendScenePropertiesViewModel scenePropertiesView, RenderTaskInfo taskInfo) : this(scenePropertiesView)
     {
         // 使用保存的 UUID，如果为空则生成新的
         Id = taskInfo.Id == Guid.Empty ? Guid.NewGuid() : taskInfo.Id;
@@ -774,81 +716,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// </summary>
     private async Task LoadRenderedImageAsync(string imagePath)
     {
-        try
-        {
-            // Console.WriteLine($"[RenderTaskViewModel] Loading rendered image: {imagePath}");
-
-            if (!File.Exists(imagePath))
-            {
-                // Console.WriteLine($"[RenderTaskViewModel] Rendered image file does not exist: {imagePath}");
-                return;
-            }
-
-            // 在后台线程加载图片
-            var bitmap = await Task.Run(() =>
-            {
-                try
-                {
-                    // 使用文件流加载图片，更安全
-                    using var fileStream = File.OpenRead(imagePath);
-                    return new Bitmap(fileStream);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[RenderTaskViewModel] Error loading image: {ex.Message}");
-                    Console.WriteLine($"[RenderTaskViewModel] Stack trace: {ex.StackTrace}");
-                    return null;
-                }
-            });
-
-            if (bitmap != null)
-            {
-                // Console.WriteLine(
-                //     $"[RenderTaskViewModel] Original image size: {bitmap.PixelSize.Width}x{bitmap.PixelSize.Height}");
-
-                bitmap.Dispose();
-
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        var optimizedBitmap = await LoadAndOptimizeImageAsync(imagePath, 120, 90);
-
-                        // 在UI线程更新为优化后的图片
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                        {
-                            try
-                            {
-                                if (optimizedBitmap != null)
-                                {
-                                    RenderedImage?.Dispose();
-                                    RenderedImage = optimizedBitmap;
-                                    RenderedImagePath = imagePath;
-                                    HasRenderedImage = true;
-                                }
-                                else
-                                {
-                                    HasRenderedImage = false;
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"[RenderTaskViewModel] Error setting optimized image: {ex.Message}");
-                                HasRenderedImage = false;
-                            }
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[RenderTaskViewModel] Error loading optimized image: {ex.Message}");
-                    }
-                });
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[RenderTaskViewModel] Error in LoadRenderedImageAsync: {ex.Message}");
-        }
+        await _previewService.LoadRenderedImageAsync(imagePath);
     }
 
     /// <summary>
@@ -856,103 +724,12 @@ public partial class RenderTaskViewModel : ViewModelBase
     /// </summary>
     private async Task<Bitmap?> LoadAndOptimizeImageAsync(string imagePath, int maxWidth, int maxHeight)
     {
-        return await Task.Run(() =>
-        {
-            try
-            {
-                // 重新从文件加载图片
-                using var fileStream = File.OpenRead(imagePath);
-                var originalBitmap = new Bitmap(fileStream);
-                var originalSize = originalBitmap.PixelSize;
-
-                // 如果图片已经小于目标尺寸，直接返回
-                if (originalSize.Width <= maxWidth && originalSize.Height <= maxHeight)
-                {
-                    return originalBitmap;
-                }
-
-                // 计算缩放比例
-                var scaleX = (double)maxWidth / originalSize.Width;
-                var scaleY = (double)maxHeight / originalSize.Height;
-                var scale = Math.Min(scaleX, scaleY);
-
-                var newWidth = (int)(originalSize.Width * scale);
-                var newHeight = (int)(originalSize.Height * scale);
-
-
-                // 使用RenderTargetBitmap进行缩放
-                var renderTarget = new RenderTargetBitmap(new Avalonia.PixelSize(newWidth, newHeight));
-                using (var drawingContext = renderTarget.CreateDrawingContext())
-                {
-                    var sourceRect = new Avalonia.Rect(0, 0, originalSize.Width, originalSize.Height);
-                    var destRect = new Avalonia.Rect(0, 0, newWidth, newHeight);
-
-                    drawingContext.DrawImage(originalBitmap, sourceRect, destRect);
-                }
-
-                // 释放原始位图
-                originalBitmap.Dispose();
-
-                return renderTarget;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[RenderTaskViewModel] Error loading and optimizing image: {ex.Message}");
-                Console.WriteLine($"[RenderTaskViewModel] Stack trace: {ex.StackTrace}");
-                return null;
-            }
-        });
+        return await _previewService.LoadAndOptimizeImageAsync(imagePath, maxWidth, maxHeight);
     }
 
     public async Task LoadFilePropertiesAsync(string blenderPath)
     {
-        if (string.IsNullOrWhiteSpace(BlendFilePath) || !File.Exists(BlendFilePath))
-        {
-            EnqueueLog("文件路径无效或文件不存在");
-            return;
-        }
-
-        try
-        {
-            EnqueueLog("[QUERY] 开始加载文件属性...");
-            await ScenePropertiesView.LoadPropertiesAsync(blenderPath, BlendFilePath);
-
-            // 只有在覆写模式下才设置帧范围，否则使用场景默认值
-            // 如果当前是覆写模式，保持现有的 StartFrame 和 EndFrame 值
-            EnqueueLog(OverrideFrameRange
-                ? $"[QUERY] 文件属性加载完成: 使用覆写帧范围 {StartFrame}..{EndFrame}"
-                // 非覆写模式，使用场景默认帧范围
-                : $"[QUERY] 文件属性加载完成: 使用场景默认帧范围 {ScenePropertiesView.SceneProperties.FrameStart}..{ScenePropertiesView.SceneProperties.FrameEnd}");
-
-            // 更新场景名称列表, 排除默认场景
-            AvailableSceneNames = ScenePropertiesView.SceneNames.ToList();
-
-            // 如果没有覆写场景，设置默认场景名称
-            if (!OverrideScene && string.IsNullOrEmpty(SelectedSceneName))
-            {
-                SelectedSceneName = ScenePropertiesView.SelectedSceneName ?? string.Empty;
-            }
-
-            // 触发显示属性更新
-            OnPropertyChanged(nameof(DisplayStartFrame));
-            OnPropertyChanged(nameof(DisplayEndFrame));
-            OnPropertyChanged(nameof(DisplayTotalFrames));
-            OnPropertyChanged(nameof(RealStartFrame));
-            OnPropertyChanged(nameof(RealEndFrame));
-            OnPropertyChanged(nameof(RealTotalFrames));
-            OnPropertyChanged(nameof(AvailableSceneNames));
-            OnPropertyChanged(nameof(HasValidSceneSelection));
-            OnPropertyChanged(nameof(ShowSceneOverrideWarning));
-            OnPropertyChanged(nameof(IsOverrideSceneIsDefaultScene));
-
-            // 触发最终场景相关属性更新
-            OnPropertyChanged(nameof(FinalSceneProperties));
-            OnPropertyChanged(nameof(FramePathDirectory));
-        }
-        catch (Exception ex)
-        {
-            EnqueueLog($"[QUERY] 加载文件属性失败: {ex.Message}");
-        }
+        await _filePropertiesCoordinator.LoadAsync(blenderPath);
     }
 
     internal void NotifyMissingBlendFile()
@@ -1082,13 +859,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     [RelayCommand]
     private void ClearLog()
     {
-        _logClearCutoff = DateTimeOffset.UtcNow;
-        TimelineEntries.Clear();
-        DebugEntries.Clear();
-        DebugLogText = string.Empty;
-        OutputLog = string.Empty;
-        OnPropertyChanged(nameof(HasTimelineEntries));
-        OnPropertyChanged(nameof(HasDebugEntries));
+        _logProjection.Clear();
     }
 
     [RelayCommand]
@@ -1171,187 +942,7 @@ public partial class RenderTaskViewModel : ViewModelBase
     [RelayCommand]
     private async Task GenerateVideo()
     {
-        try
-        {
-            // 检查 Blender 是否可用
-            if (_processService == null)
-            {
-                EnqueueLog("[ERROR] " + Localizer.Localizer.Instance["VideoGeneration_ServiceUnavailable"]);
-                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
-                    Localizer.Localizer.Instance["VideoGeneration_ServiceUnavailable"]);
-                return;
-            }
-
-            // 获取帧路径目录
-            var framePath = FinalSceneProperties.FramePath;
-            if (string.IsNullOrEmpty(framePath))
-            {
-                EnqueueLog("[ERROR] " + Localizer.Localizer.Instance["VideoGeneration_NoFramePath"]);
-                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
-                    Localizer.Localizer.Instance["VideoGeneration_NoFramePath"]);
-                return;
-            }
-
-            var frameDirectory = Path.GetDirectoryName(framePath);
-            if (string.IsNullOrEmpty(frameDirectory) || !Directory.Exists(frameDirectory))
-            {
-                EnqueueLog("[ERROR] " +
-                           string.Format(Localizer.Localizer.Instance["VideoGeneration_FramePathNotExists"],
-                               frameDirectory));
-                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
-                    string.Format(Localizer.Localizer.Instance["VideoGeneration_FramePathNotExists"], frameDirectory));
-                return;
-            }
-
-            // 检查目录中是否有图片文件
-            var supportedExtensions = new[] { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff", "*.tga" };
-            var hasImages = supportedExtensions.Any(ext =>
-                Directory.GetFiles(frameDirectory, ext, SearchOption.TopDirectoryOnly).Length > 0);
-
-            if (!hasImages)
-            {
-                EnqueueLog("[ERROR] " +
-                           string.Format(Localizer.Localizer.Instance["VideoGeneration_NoImagesInFramePath"],
-                               frameDirectory));
-                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
-                    string.Format(Localizer.Localizer.Instance["VideoGeneration_NoImagesInFramePath"], frameDirectory));
-                return;
-            }
-
-            // 获取帧率
-            var fps = FinalSceneProperties.Fps ?? 24.0; // 默认 24fps
-
-            // 生成输出视频路径：与输入目录同名，放在同一层级
-            var inputDirectoryName = Path.GetFileName(frameDirectory);
-            var parentDirectory = Path.GetDirectoryName(frameDirectory);
-            var outputVideoPath = Path.Combine(parentDirectory ?? "", $"{inputDirectoryName}.mp4");
-
-            // 开始生成视频
-            IsGeneratingVideo = true;
-            VideoGenerationProgress = 0.0;
-            VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Starting"];
-            EnqueueLog(string.Format(Localizer.Localizer.Instance["VideoGeneration_LogStarting"], outputVideoPath));
-
-            // 显示进度 Toast
-            var progressBar = new ProgressBar
-            {
-                Value = 0,
-                ShowProgressText = true,
-                Minimum = 0,
-                Maximum = 100
-            };
-            var fileName = Path.GetFileName(BlendFilePath);
-            var titleName = fileName.EndsWith(".blend", StringComparison.OrdinalIgnoreCase)
-                ? fileName.Substring(0, fileName.Length - 6)
-                : fileName;
-            var progressToast =
-                this.ShowProgressToast(
-                    string.Format(Localizer.Localizer.Instance["VideoGeneration_ToastTitle"],
-                        titleName), progressBar);
-
-            // 使用进程管理服务创建视频生成进程
-            var videoProcess = await _processService.CreateVideoProcessAsync();
-            var success = false;
-
-            try
-            {
-                // 创建视频服务
-                var tempVideoService = new BlenderVideoService(videoProcess);
-
-                // 使用Blender生成视频
-                success = await tempVideoService.GenerateVideoFromImagesAsync(
-                    frameDirectory,
-                    outputVideoPath,
-                    fps,
-                    _videoCodec,
-                    _videoQuality,
-                    progress =>
-                    {
-                        // 更新进度
-                        VideoGenerationProgress = progress;
-                        VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Generating"];
-
-                        // 更新进度 Toast
-                        progressToast?.UpdateProgressToast(progress);
-                    });
-            }
-            finally
-            {
-                // 视频生成完成后停止并释放进程
-                await videoProcess.StopAsync();
-                _processService.UnregisterProcess(videoProcess.ProcessId);
-                videoProcess.Dispose();
-            }
-
-            if (success)
-            {
-                VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Completed"];
-                EnqueueLog(string.Format(Localizer.Localizer.Instance["VideoGeneration_LogSuccess"], outputVideoPath));
-
-                // 在UI线程上处理Toast显示
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                {
-                    // 关闭进度 Toast
-                    this.DismissToast(progressToast);
-
-                    // 显示成功 Toast
-                    this.ShowSuccessToast(Localizer.Localizer.Instance["VideoGeneration_SuccessTitle"],
-                        string.Format(Localizer.Localizer.Instance["VideoGeneration_SuccessMessage"],
-                            Path.GetFileName(BlendFilePath)));
-                });
-
-                // 自动打开视频所在位置
-                if (!string.IsNullOrEmpty(outputVideoPath) && File.Exists(outputVideoPath))
-                {
-                    // 延迟一点时间再打开，让用户看到toast通知
-                    _ = Task.Delay(1000).ContinueWith(_ =>
-                    {
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                        {
-                            var success = FileSystemHelper.OpenFileDirectory(outputVideoPath);
-                            if (!success)
-                            {
-                                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_OpenFailed"],
-                                    Localizer.Localizer.Instance["VideoGeneration_CannotOpenLocation"]);
-                            }
-                        });
-                    });
-                }
-            }
-            else
-            {
-                VideoGenerationStatus = Localizer.Localizer.Instance["VideoGeneration_Failed"];
-                EnqueueLog(Localizer.Localizer.Instance["VideoGeneration_LogFailed"]);
-
-                // 在UI线程上处理Toast显示
-                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                {
-                    // 关闭进度 Toast
-                    this.DismissToast(progressToast);
-
-                    // 显示失败 Toast
-                    this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
-                        Localizer.Localizer.Instance["VideoGeneration_ErrorMessage"]);
-                });
-            }
-        }
-        catch (Exception ex)
-        {
-            VideoGenerationStatus = string.Format(Localizer.Localizer.Instance["VideoGeneration_Error"], ex.Message);
-            EnqueueLog(string.Format(Localizer.Localizer.Instance["VideoGeneration_LogError"], ex.Message));
-
-            // 在UI线程上处理Toast显示
-            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-            {
-                this.ShowErrorToast(Localizer.Localizer.Instance["VideoGeneration_FailedTitle"],
-                    string.Format(Localizer.Localizer.Instance["VideoGeneration_ErrorMessageWithDetails"],
-                        ex.Message));
-            });
-        }
-        finally
-        {
-            IsGeneratingVideo = false;
-        }
+        await _videoGenerationCoordinator.GenerateVideoAsync();
     }
 
     internal void HandleRawOutputLine(string line, IRenderOutputParser parser)
@@ -1508,37 +1099,7 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     private void EnqueueLog(string line)
     {
-        if (IsLogPaused || string.IsNullOrWhiteSpace(line))
-        {
-            return;
-        }
-
-        var (level, scope, message, audience, kind) = ClassifyLogLine(line);
-        if (_logService != null)
-        {
-            _logService.Write(
-                level,
-                scope,
-                message,
-                Id,
-                BlendFilePath,
-                nameof(RenderTaskViewModel),
-                new Dictionary<string, string>
-                {
-                    ["audience"] = audience,
-                    ["kind"] = kind
-                });
-            return;
-        }
-
-        var fallbackLine = $"[{DateTime.Now:HH:mm:ss}] {message}";
-        if (string.Equals(audience, "debug", StringComparison.Ordinal))
-        {
-            DebugLogText = string.IsNullOrWhiteSpace(DebugLogText)
-                ? fallbackLine
-                : $"{DebugLogText}{Environment.NewLine}{fallbackLine}";
-            OutputLog = DebugLogText;
-        }
+        _logProjection.Enqueue(line);
     }
 
     public void ResetProgress()
@@ -1571,187 +1132,22 @@ public partial class RenderTaskViewModel : ViewModelBase
 
     internal void AttachLogService(IRenderLogService logService)
     {
-        if (ReferenceEquals(_logService, logService))
-        {
-            return;
-        }
-
-        DetachLogService();
-        _logService = logService;
-        _logService.LogAppended += OnLogAppended;
-        RebuildLogProjection();
+        _logProjection.Attach(logService);
     }
 
     internal void DetachLogService()
     {
-        if (_logService == null)
-        {
-            return;
-        }
-
-        _logService.LogAppended -= OnLogAppended;
-        _logService = null;
+        _logProjection.Detach();
     }
 
     private void OnLogAppended(object? sender, RenderLogEvent logEvent)
     {
-        if (!ShouldIncludeForTask(logEvent))
-        {
-            return;
-        }
-
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-        {
-            if (!ShouldIncludeForTask(logEvent))
-            {
-                return;
-            }
-
-            if (ShouldIncludeInTimeline(logEvent))
-            {
-                TimelineEntries.Insert(0, new TaskLogEntryViewModel(logEvent));
-            }
-
-            if (ShouldIncludeInDebug(logEvent))
-            {
-                var debugEntry = new TaskLogEntryViewModel(logEvent);
-                DebugEntries.Insert(0, debugEntry);
-                AppendDebugText(debugEntry);
-            }
-
-            OnPropertyChanged(nameof(HasTimelineEntries));
-            OnPropertyChanged(nameof(HasDebugEntries));
-        });
+        _logProjection.OnLogAppended(logEvent);
     }
 
     private void RebuildLogProjection()
     {
-        TimelineEntries.Clear();
-        DebugEntries.Clear();
-        DebugLogText = string.Empty;
-        OutputLog = string.Empty;
-
-        if (_logService == null)
-        {
-            return;
-        }
-
-        var events = _logService.GetEvents(new RenderLogProjection
-        {
-            TaskId = Id,
-            IncludeDebug = true,
-            IncludeRaw = true
-        });
-
-        foreach (var logEvent in events.Reverse())
-        {
-            if (!ShouldIncludeForTask(logEvent))
-            {
-                continue;
-            }
-
-            if (ShouldIncludeInTimeline(logEvent))
-            {
-                TimelineEntries.Insert(0, new TaskLogEntryViewModel(logEvent));
-            }
-
-            if (ShouldIncludeInDebug(logEvent))
-            {
-                DebugEntries.Insert(0, new TaskLogEntryViewModel(logEvent));
-            }
-        }
-
-        RefreshDebugText();
-        OnPropertyChanged(nameof(HasTimelineEntries));
-        OnPropertyChanged(nameof(HasDebugEntries));
-    }
-
-    private bool ShouldIncludeForTask(RenderLogEvent logEvent)
-    {
-        if (logEvent.TaskId != Id)
-        {
-            return false;
-        }
-
-        return !_logClearCutoff.HasValue || logEvent.Timestamp >= _logClearCutoff.Value;
-    }
-
-    private static bool ShouldIncludeInTimeline(RenderLogEvent logEvent)
-    {
-        if (logEvent.Level == RenderLogLevel.Debug)
-        {
-            return false;
-        }
-
-        return !logEvent.Metadata.TryGetValue("audience", out var audience) ||
-               !string.Equals(audience, "debug", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool ShouldIncludeInDebug(RenderLogEvent logEvent)
-    {
-        if (logEvent.Level == RenderLogLevel.Debug)
-        {
-            return true;
-        }
-
-        return logEvent.Metadata.TryGetValue("audience", out var audience) &&
-               string.Equals(audience, "debug", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private void RefreshDebugText()
-    {
-        DebugLogText = string.Join(
-            Environment.NewLine,
-            DebugEntries
-                .OrderBy(entry => entry.Event.Timestamp)
-                .Select(FormatDebugLine));
-        OutputLog = DebugLogText;
-    }
-
-    private void AppendDebugText(TaskLogEntryViewModel entry)
-    {
-        var line = FormatDebugLine(entry);
-        DebugLogText = string.IsNullOrEmpty(DebugLogText)
-            ? line
-            : string.Concat(DebugLogText, Environment.NewLine, line);
-        OutputLog = DebugLogText;
-    }
-
-    private static string FormatDebugLine(TaskLogEntryViewModel entry)
-    {
-        return $"[{entry.Event.Timestamp.ToLocalTime():HH:mm:ss}] [{entry.LevelText}] {entry.Message}";
-    }
-
-    private static (RenderLogLevel Level, RenderLogScope Scope, string Message, string Audience, string Kind)
-        ClassifyLogLine(string line)
-    {
-        var trimmed = line.Trim();
-        if (trimmed.StartsWith("[ERROR]", StringComparison.OrdinalIgnoreCase))
-        {
-            return (RenderLogLevel.Error, RenderLogScope.System, trimmed[7..].Trim(), "timeline", "message");
-        }
-
-        if (trimmed.StartsWith("[WARN]", StringComparison.OrdinalIgnoreCase))
-        {
-            return (RenderLogLevel.Warning, RenderLogScope.System, trimmed[6..].Trim(), "debug", "message");
-        }
-
-        if (trimmed.StartsWith("[QUERY]", StringComparison.OrdinalIgnoreCase))
-        {
-            return (RenderLogLevel.Info, RenderLogScope.Task, trimmed[7..].Trim(), "timeline", "message");
-        }
-
-        if (trimmed.StartsWith("[REFRESH]", StringComparison.OrdinalIgnoreCase))
-        {
-            return (RenderLogLevel.Info, RenderLogScope.Task, trimmed[9..].Trim(), "timeline", "message");
-        }
-
-        if (trimmed.StartsWith("[INFO]", StringComparison.OrdinalIgnoreCase))
-        {
-            return (RenderLogLevel.Info, RenderLogScope.System, trimmed[6..].Trim(), "timeline", "message");
-        }
-
-        return (RenderLogLevel.Info, RenderLogScope.Task, trimmed, "timeline", "message");
+        _logProjection.Rebuild();
     }
 }
 
