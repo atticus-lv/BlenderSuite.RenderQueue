@@ -31,9 +31,17 @@ Blender Render Queue 是一个面向 Blender 工作流的队列渲染工具。�
 ## 本地开发
 
 ```bash
-git clone <repository-url>
+git clone --recurse-submodules <repository-url>
 cd BlenderSuite.RenderQueue
 ```
+
+如果你已经完成普通克隆，记得初始化子模块：
+
+```bash
+git submodule update --init --recursive
+```
+
+当前仓库依赖 `external/SukiUI` 子模块，未初始化时可能会出现样式或项目引用缺失。
 
 调试构建：
 
