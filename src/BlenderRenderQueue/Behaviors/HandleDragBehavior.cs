@@ -26,6 +26,7 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
     private ItemsControl? _itemsControl;
     private Control? _draggedContainer;
     private bool _captured;
+    private IPointer? _capturedPointer;
     private Control? _dragHandle;
 
     /// <summary>
@@ -139,9 +140,14 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
     private void PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var properties = e.GetCurrentPoint(AssociatedObject).Properties;
-        if (properties.IsLeftButtonPressed 
-            && AssociatedObject?.Parent is ItemsControl itemsControl)
+        if (properties.IsLeftButtonPressed && AssociatedObject is not null)
         {
+            var itemsControl = ItemsControl.ItemsControlFromItemContainer(AssociatedObject);
+            if (itemsControl is null)
+            {
+                return;
+            }
+
             // Check if the click is on the drag handle
             if (!IsClickOnDragHandle(e))
             {
@@ -163,28 +169,80 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
 
             AddTransforms(_itemsControl);
 
+            _capturedPointer = e.Pointer;
+            _capturedPointer.Capture(AssociatedObject);
             _captured = true;
         }
     }
 
     private bool IsClickOnDragHandle(PointerEventArgs e)
     {
-        if (AssociatedObject is null) return false;
-        
+        if (AssociatedObject is null)
+        {
+            return false;
+        }
+
+        if (TryFindDragHandle(e.Source as Visual))
+        {
+            return true;
+        }
+
         var point = e.GetPosition(AssociatedObject);
         var visuals = AssociatedObject.GetVisualsAt(point).ToList();
 
-        // Check if click is on an element with the drag handle tag
         foreach (var visual in visuals)
         {
-            if (visual is Control control && control.Tag?.ToString() == DragHandleTag)
+            if (TryFindDragHandle(visual))
             {
-                _dragHandle = control;
                 return true;
             }
         }
 
         return false;
+    }
+
+    private bool TryFindDragHandle(Visual? visual)
+    {
+        if (visual is null)
+        {
+            return false;
+        }
+
+        if (visual is Control control && IsDragHandle(control))
+        {
+            return true;
+        }
+
+        foreach (var ancestor in visual.GetVisualAncestors())
+        {
+            if (ancestor is not Control ancestorControl)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(ancestorControl, AssociatedObject))
+            {
+                break;
+            }
+
+            if (IsDragHandle(ancestorControl))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsDragHandle(Control control)
+    {
+        if (!string.Equals(control.Tag?.ToString(), DragHandleTag, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        _dragHandle = control;
+        return true;
     }
 
     private void PointerReleased(object? sender, PointerReleasedEventArgs e)
@@ -195,62 +253,67 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
             {
                 Released();
             }
-
-            _captured = false;
         }
     }
 
     private void PointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
     {
         Released();
-        _captured = false;
     }
 
     private void Released()
     {
-        if (!_enableDrag)
+        if (!_enableDrag && !_captured)
         {
+            ReleasePointerCapture();
             return;
         }
 
-        RemoveTransforms(_itemsControl);
-
-        if (_itemsControl is not null)
+        try
         {
-            foreach (var control in _itemsControl.GetRealizedContainers())
+            RemoveTransforms(_itemsControl);
+
+            if (_itemsControl is not null)
             {
-                SetDraggingPseudoClasses(control, true);
+                foreach (var control in _itemsControl.GetRealizedContainers())
+                {
+                    SetDraggingPseudoClasses(control, true);
+                }
+            }
+
+            if (_dragStarted)
+            {
+                if (_draggedIndex >= 0 && _targetIndex >= 0 && _draggedIndex != _targetIndex)
+                {
+                    MoveDraggedItem(_itemsControl, _draggedIndex, _targetIndex);
+                }
+            }
+
+            if (_itemsControl is not null)
+            {
+                foreach (var control in _itemsControl.GetRealizedContainers())
+                {
+                    SetDraggingPseudoClasses(control, false);
+                }
+            }
+
+            if (_draggedContainer is not null)
+            {
+                SetDraggingPseudoClasses(_draggedContainer, false);
             }
         }
-
-        if (_dragStarted)
+        finally
         {
-            if (_draggedIndex >= 0 && _targetIndex >= 0 && _draggedIndex != _targetIndex)
-            {
-                MoveDraggedItem(_itemsControl, _draggedIndex, _targetIndex);
-            }
+            ReleasePointerCapture();
+            _draggedIndex = -1;
+            _targetIndex = -1;
+            _enableDrag = false;
+            _dragStarted = false;
+            _itemsControl = null;
+            _draggedContainer = null;
+            _dragHandle = null;
+            _captured = false;
         }
-
-        if (_itemsControl is not null)
-        {
-            foreach (var control in _itemsControl.GetRealizedContainers())
-            {
-                SetDraggingPseudoClasses(control, false);
-            }
-        }
-
-        if (_draggedContainer is not null)
-        {
-            SetDraggingPseudoClasses(_draggedContainer, false);
-        }
-
-        _draggedIndex = -1;
-        _targetIndex = -1;
-        _enableDrag = false;
-        _dragStarted = false;
-        _itemsControl = null;
-        _draggedContainer = null;
-        _dragHandle = null;
     }
 
     private void AddTransforms(ItemsControl? itemsControl)
@@ -327,8 +390,13 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
     private void PointerMoved(object? sender, PointerEventArgs e)
     {
         var properties = e.GetCurrentPoint(AssociatedObject).Properties;
-        if (_captured
-            && properties.IsLeftButtonPressed)
+        if (_captured && !properties.IsLeftButtonPressed)
+        {
+            Released();
+            return;
+        }
+
+        if (_captured && properties.IsLeftButtonPressed)
         {
             if (_itemsControl?.Items is null || _draggedContainer?.RenderTransform is null || !_enableDrag)
             {
@@ -476,5 +544,16 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
         var transformBuilder = new TransformOperations.Builder(1);
         transformBuilder.AppendTranslate(x, y);
         control.RenderTransform = transformBuilder.Build();
+    }
+
+    private void ReleasePointerCapture()
+    {
+        var capturedPointer = _capturedPointer;
+        if (capturedPointer is not null && capturedPointer.Captured == AssociatedObject)
+        {
+            capturedPointer.Capture(null);
+        }
+
+        _capturedPointer = null;
     }
 }
