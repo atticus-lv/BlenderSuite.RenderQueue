@@ -31,6 +31,8 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+!src/BlenderRenderQueue/ViewModels/Logs/
+!src/BlenderRenderQueue/ViewModels/Logs/**
 
 # Keep checked-in release helper scripts.
 !scripts/release/
