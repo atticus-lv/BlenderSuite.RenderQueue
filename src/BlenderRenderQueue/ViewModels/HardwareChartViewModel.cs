@@ -1,77 +1,58 @@
 using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using BlenderRenderQueue.Services.Business.Monitoring;
 using CommunityToolkit.Mvvm.ComponentModel;
-using LiveChartsCore.Defaults;
 
 namespace BlenderRenderQueue.ViewModels;
 
 public partial class HardwareChartViewModel : ViewModelBase
 {
-    private HardwareMonitorService? _monitorService;
-    private bool _isReading = false;
-    private bool _isInitialized = false;
-    private readonly object _sync = new();
-
-    // 数据点数量限制 - 1分钟，每秒1个数据点
     private const int MaxDataPoints = 60;
 
-    // 图表数据集合
-    public ObservableCollection<ObservableValue> CpuLoadValues { get; set; } = [];
-    public ObservableCollection<ObservableValue> GpuLoadValues { get; set; } = [];
+    private HardwareMonitorService? _monitorService;
+    private bool _isReading;
+    private bool _isInitialized;
+    private readonly Queue<double> _cpuHistory = new();
+    private readonly Queue<double> _gpuHistory = new();
 
-    // 同步上下文
-    public object Sync => _sync;
+    [ObservableProperty]
+    private IReadOnlyList<double> _cpuLoadValues = Array.Empty<double>();
 
-    // 加载状态属性
+    [ObservableProperty]
+    private IReadOnlyList<double> _gpuLoadValues = Array.Empty<double>();
+
     [ObservableProperty]
     private bool _isLoading = true;
-    
-    // 图表背景颜色属性
-    [ObservableProperty]
-    private string _chartBackgroundColor = "#00000000"; // 默认透明
-
 
     public HardwareChartViewModel()
     {
-        // 延迟初始化，不立即启动监控
         _ = InitializeAsync();
     }
 
-    /// <summary>
-    /// 异步初始化硬件监控服务
-    /// </summary>
     private async Task InitializeAsync()
     {
         try
         {
-            // 延迟2秒，让主界面先完成加载
             await Task.Delay(2000);
+            await Task.Run(() => _monitorService = new HardwareMonitorService());
 
-
-            // 在后台线程初始化服务
-            await Task.Run(() => { _monitorService = new HardwareMonitorService(); });
-
-
-            // 启动数据读取
             _isReading = true;
             _isInitialized = true;
-            IsLoading = false;
+            await Dispatcher.UIThread.InvokeAsync(() => IsLoading = false);
 
-            // 开始数据读取循环
-            _ = ReadData();
+            _ = ReadDataAsync();
         }
         catch (Exception ex)
         {
-            IsLoading = false;
+            await Dispatcher.UIThread.InvokeAsync(() => IsLoading = false);
             System.Diagnostics.Debug.WriteLine($"硬件监控初始化错误: {ex.Message}");
         }
     }
 
-    private async Task ReadData()
+    private async Task ReadDataAsync()
     {
-        // 等待初始化完成
         while (!_isInitialized && _isReading)
         {
             await Task.Delay(100);
@@ -81,33 +62,32 @@ public partial class HardwareChartViewModel : ViewModelBase
         {
             try
             {
-                await Task.Delay(1000); // 每秒更新一次
-
+                await Task.Delay(1000);
                 var info = _monitorService.GetHardwareInfo();
-
-                // 使用锁来确保线程安全
-                lock (_sync)
-                {
-                    // 更新CPU使用率数据
-                    CpuLoadValues.Add(new ObservableValue(info.CpuLoad));
-                    if (CpuLoadValues.Count > MaxDataPoints)
-                    {
-                        CpuLoadValues.RemoveAt(0); // 移除最旧的数据点
-                    }
-
-                    // 更新GPU使用率数据
-                    GpuLoadValues.Add(new ObservableValue(info.GpuLoad));
-                    if (GpuLoadValues.Count > MaxDataPoints)
-                    {
-                        GpuLoadValues.RemoveAt(0); // 移除最旧的数据点
-                    }
-                }
+                await Dispatcher.UIThread.InvokeAsync(() => AppendSample(info));
             }
             catch (Exception ex)
             {
-                // 记录错误但不中断循环
                 System.Diagnostics.Debug.WriteLine($"硬件监控更新错误: {ex.Message}");
             }
+        }
+    }
+
+    private void AppendSample(HardwareMonitorService.HardwareInfo info)
+    {
+        AppendValue(_cpuHistory, info.CpuLoad);
+        AppendValue(_gpuHistory, info.GpuLoad);
+
+        CpuLoadValues = _cpuHistory.ToArray();
+        GpuLoadValues = _gpuHistory.ToArray();
+    }
+
+    private static void AppendValue(Queue<double> history, float value)
+    {
+        history.Enqueue(Math.Clamp((double)value, 0d, 100d));
+        while (history.Count > MaxDataPoints)
+        {
+            history.Dequeue();
         }
     }
 

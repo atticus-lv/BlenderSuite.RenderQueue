@@ -2,9 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
              xmlns:vm="using:BlenderRenderQueue.ViewModels"
-             xmlns:skiaSharpView="clr-namespace:LiveChartsCore.SkiaSharpView;assembly=LiveChartsCore.SkiaSharpView"
+             xmlns:controls="using:BlenderRenderQueue.Controls"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              mc:Ignorable="d" d:DesignWidth="250" d:DesignHeight="150"
@@ -36,31 +35,14 @@
                     IsHitTestVisible="False"
                     ClipToBounds="True"
                     IsVisible="{Binding !IsLoading}">
-                <lvc:CartesianChart SyncContext="{Binding Sync}" Padding="-10 0" Height="60"
-                                    Background="{Binding ChartBackgroundColor}"
-                                    AnimationsSpeed="0:0:0.1">
-                    <lvc:CartesianChart.Series>
-                        <lvc:XamlLineSeries Values="{Binding CpuLoadValues}"
-                                            Fill="#80808080"
-                                            GeometryFill="{x:Null}"
-                                            GeometryStroke="{x:Null}"
-                                            Stroke="#808080" />
-                    </lvc:CartesianChart.Series>
-
-                    <lvc:CartesianChart.XAxes>
-                        <skiaSharpView:Axis
-                            TextSize="0"
-                            IsVisible="False"
-                            SeparatorsPaint="{x:Null}" />
-                    </lvc:CartesianChart.XAxes>
-
-                    <lvc:CartesianChart.YAxes>
-                        <skiaSharpView:Axis MinLimit="0" MaxLimit="100"
-                                            IsVisible="False"
-                                            TextSize="0"
-                                            SeparatorsPaint="{x:Null}" />
-                    </lvc:CartesianChart.YAxes>
-                </lvc:CartesianChart>
+                <controls:MiniUsageChartControl Height="60"
+                                                Margin="4 2"
+                                                Values="{Binding CpuLoadValues}"
+                                                MinValue="0"
+                                                MaxValue="100"
+                                                Fill="#80808080"
+                                                Stroke="#A0A0A0"
+                                                StrokeThickness="1.5" />
             </Border>
             <StackPanel Grid.Row="2" Grid.Column="0"
                         Orientation="Vertical"
@@ -81,31 +63,14 @@
                     IsHitTestVisible="False"
                     ClipToBounds="True"
                     IsVisible="{Binding !IsLoading}">
-                <lvc:CartesianChart SyncContext="{Binding Sync}" Padding="-10 0" Height="60"
-                                    Background="{Binding ChartBackgroundColor}"
-                                    AnimationsSpeed="0:0:0.1">
-                    <lvc:CartesianChart.Series>
-                        <lvc:XamlLineSeries Values="{Binding GpuLoadValues}"
-                                            Fill="#80808080"
-                                            GeometryFill="{x:Null}"
-                                            GeometryStroke="{x:Null}"
-                                            Stroke="#808080" />
-                    </lvc:CartesianChart.Series>
-
-                    <lvc:CartesianChart.XAxes>
-                        <skiaSharpView:Axis
-                            TextSize="0"
-                            IsVisible="False"
-                            SeparatorsPaint="{x:Null}" />
-                    </lvc:CartesianChart.XAxes>
-
-                    <lvc:CartesianChart.YAxes>
-                        <skiaSharpView:Axis MinLimit="0" MaxLimit="100"
-                                            TextSize="0"
-                                            IsVisible="False"
-                                            SeparatorsPaint="{x:Null}" />
-                    </lvc:CartesianChart.YAxes>
-                </lvc:CartesianChart>
+                <controls:MiniUsageChartControl Height="60"
+                                                Margin="4 2"
+                                                Values="{Binding GpuLoadValues}"
+                                                MinValue="0"
+                                                MaxValue="100"
+                                                Fill="#80808080"
+                                                Stroke="#A0A0A0"
+                                                StrokeThickness="1.5" />
             </Border>
         </Grid>
     </suki:BusyArea>

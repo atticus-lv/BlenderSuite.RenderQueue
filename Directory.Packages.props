@@ -24,7 +24,6 @@
     <PackageVersion Include="Material.Icons.Avalonia" Version="2.4.1" />
     <PackageVersion Include="Xaml.Behaviors.Interactions.Draggable" Version="11.3.9.5" />
     <PackageVersion Include="Xaml.Behaviors.Interactivity" Version="11.3.9.5" />
-    <PackageVersion Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0" />
     <PackageVersion Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.0.1.15" />
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.13" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
