@@ -34,11 +34,27 @@
                      Margin="4"
                      Name="TaskListBox">
                     <ListBox.Styles>
+                        <Style Selector="ListBoxItem /template/ Border">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="CornerRadius" Value="6" />
+                            <Setter Property="Transitions">
+                                <Transitions>
+                                    <BrushTransition Property="Background" Duration="0:0:0.12" />
+                                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                                </Transitions>
+                            </Setter>
+                        </Style>
                         <Style Selector="ListBoxItem:pointerover /template/ Border">
                             <Setter Property="Background"
                                     Value="{DynamicResource SukiPrimaryColor10}" />
                         </Style>
                         <Style Selector="ListBoxItem:selected /template/ Border">
+                            <Setter Property="Background"
+                                    Value="{DynamicResource SukiPrimaryColor25}" />
+                        </Style>
+                        <Style Selector="ListBoxItem:selected:pointerover /template/ Border">
                             <Setter Property="Background"
                                     Value="{DynamicResource SukiPrimaryColor25}" />
                         </Style>
@@ -147,7 +163,7 @@
                     </ListBox.Styles>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="{Binding $parent[ListBox].Background}"
+                            <Border Background="Transparent"
                                     CornerRadius="4">
                                 <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
 
