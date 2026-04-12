@@ -1,0 +1,3 @@
+[submodule "external/SukiUI"]
+	path = external/SukiUI
+	url = https://github.com/atticus-lv/SukiUI.git
