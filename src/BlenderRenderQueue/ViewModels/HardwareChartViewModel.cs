@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using BlenderRenderQueue.Services.Business.Monitoring;
@@ -14,8 +15,12 @@ public partial class HardwareChartViewModel : ViewModelBase
     private HardwareMonitorService? _monitorService;
     private bool _isReading;
     private bool _isInitialized;
+    private readonly object _pendingInfoGate = new();
     private readonly Queue<double> _cpuHistory = new();
     private readonly Queue<double> _gpuHistory = new();
+    private CancellationTokenSource? _readLoopCts = new();
+    private HardwareMonitorService.HardwareInfo? _pendingInfo;
+    private bool _uiUpdateQueued;
 
     [ObservableProperty]
     private IReadOnlyList<double> _cpuLoadValues = Array.Empty<double>();
@@ -40,35 +45,86 @@ public partial class HardwareChartViewModel : ViewModelBase
 
             _isReading = true;
             _isInitialized = true;
-            await Dispatcher.UIThread.InvokeAsync(() => IsLoading = false);
+            Dispatcher.UIThread.Post(() => IsLoading = false, DispatcherPriority.Background);
 
-            _ = ReadDataAsync();
+            _ = Task.Run(() => ReadDataLoopAsync(_readLoopCts?.Token ?? CancellationToken.None));
         }
         catch (Exception ex)
         {
-            await Dispatcher.UIThread.InvokeAsync(() => IsLoading = false);
+            Dispatcher.UIThread.Post(() => IsLoading = false, DispatcherPriority.Background);
             System.Diagnostics.Debug.WriteLine($"硬件监控初始化错误: {ex.Message}");
         }
     }
 
-    private async Task ReadDataAsync()
+    private async Task ReadDataLoopAsync(CancellationToken cancellationToken)
     {
-        while (!_isInitialized && _isReading)
+        try
         {
-            await Task.Delay(100);
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+
+            while (!cancellationToken.IsCancellationRequested &&
+                   await timer.WaitForNextTickAsync(cancellationToken) &&
+                   _isReading &&
+                   _monitorService != null)
+            {
+                try
+                {
+                    var info = _monitorService.GetHardwareInfo();
+                    QueueUiUpdate(info);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"硬件监控更新错误: {ex.Message}");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore cancellation during shutdown.
+        }
+    }
+
+    private void QueueUiUpdate(HardwareMonitorService.HardwareInfo info)
+    {
+        var shouldPost = false;
+
+        lock (_pendingInfoGate)
+        {
+            _pendingInfo = info;
+
+            if (!_uiUpdateQueued)
+            {
+                _uiUpdateQueued = true;
+                shouldPost = true;
+            }
         }
 
-        while (_isReading && _monitorService != null)
+        if (shouldPost)
         {
-            try
+            Dispatcher.UIThread.Post(ApplyPendingSample, DispatcherPriority.Background);
+        }
+    }
+
+    private void ApplyPendingSample()
+    {
+        while (true)
+        {
+            HardwareMonitorService.HardwareInfo? info;
+            lock (_pendingInfoGate)
             {
-                await Task.Delay(1000);
-                var info = _monitorService.GetHardwareInfo();
-                await Dispatcher.UIThread.InvokeAsync(() => AppendSample(info));
+                info = _pendingInfo;
+                _pendingInfo = null;
+
+                if (info == null)
+                {
+                    _uiUpdateQueued = false;
+                    return;
+                }
             }
-            catch (Exception ex)
+
+            if (_isReading && _isInitialized)
             {
-                System.Diagnostics.Debug.WriteLine($"硬件监控更新错误: {ex.Message}");
+                AppendSample(info);
             }
         }
     }
@@ -95,6 +151,15 @@ public partial class HardwareChartViewModel : ViewModelBase
     {
         _isReading = false;
         _isInitialized = false;
+        lock (_pendingInfoGate)
+        {
+            _pendingInfo = null;
+            _uiUpdateQueued = false;
+        }
+
+        _readLoopCts?.Cancel();
+        _readLoopCts?.Dispose();
+        _readLoopCts = null;
         _monitorService?.Dispose();
         _monitorService = null;
     }

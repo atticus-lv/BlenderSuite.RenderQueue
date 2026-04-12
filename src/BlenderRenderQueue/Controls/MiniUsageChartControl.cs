@@ -8,8 +8,11 @@ namespace BlenderRenderQueue.Controls;
 
 public sealed class MiniUsageChartControl : Control
 {
-    public static readonly StyledProperty<IReadOnlyList<double>?> ValuesProperty =
-        AvaloniaProperty.Register<MiniUsageChartControl, IReadOnlyList<double>?>(nameof(Values));
+    public static readonly DirectProperty<MiniUsageChartControl, IReadOnlyList<double>?> ValuesProperty =
+        AvaloniaProperty.RegisterDirect<MiniUsageChartControl, IReadOnlyList<double>?>(
+            nameof(Values),
+            o => o.Values,
+            (o, v) => o.Values = v);
 
     public static readonly StyledProperty<IBrush?> StrokeProperty =
         AvaloniaProperty.Register<MiniUsageChartControl, IBrush?>(nameof(Stroke));
@@ -26,10 +29,37 @@ public sealed class MiniUsageChartControl : Control
     public static readonly StyledProperty<double> MaxValueProperty =
         AvaloniaProperty.Register<MiniUsageChartControl, double>(nameof(MaxValue), 100d);
 
+    private IReadOnlyList<double>? _values;
+    private bool _geometryDirty = true;
+    private Rect _cachedBounds;
+    private Point[] _pointBuffer = Array.Empty<Point>();
+    private StreamGeometry? _cachedFillGeometry;
+    private StreamGeometry? _cachedStrokeGeometry;
+    private Pen? _cachedPen;
+
+    static MiniUsageChartControl()
+    {
+        AffectsRender<MiniUsageChartControl>(
+            StrokeProperty,
+            FillProperty,
+            StrokeThicknessProperty,
+            MinValueProperty,
+            MaxValueProperty);
+    }
+
     public IReadOnlyList<double>? Values
     {
-        get => GetValue(ValuesProperty);
-        set => SetValue(ValuesProperty, value);
+        get => _values;
+        set
+        {
+            if (ReferenceEquals(_values, value))
+            {
+                return;
+            }
+
+            SetAndRaise(ValuesProperty, ref _values, value);
+            InvalidateChart();
+        }
     }
 
     public IBrush? Stroke
@@ -74,6 +104,7 @@ public sealed class MiniUsageChartControl : Control
             change.Property == MaxValueProperty ||
             change.Property == BoundsProperty)
         {
+            _geometryDirty = true;
             InvalidateVisual();
         }
     }
@@ -81,6 +112,42 @@ public sealed class MiniUsageChartControl : Control
     public override void Render(DrawingContext context)
     {
         base.Render(context);
+        EnsureGeometry();
+
+        if (Fill != null && _cachedFillGeometry != null)
+        {
+            context.DrawGeometry(Fill, null, _cachedFillGeometry);
+        }
+
+        if (Stroke != null && _cachedStrokeGeometry != null && _cachedPen != null)
+        {
+            context.DrawGeometry(null, _cachedPen, _cachedStrokeGeometry);
+        }
+    }
+
+    private void InvalidateChart()
+    {
+        _geometryDirty = true;
+        InvalidateVisual();
+    }
+
+    private void EnsureGeometry()
+    {
+        if (!_geometryDirty && _cachedBounds == Bounds)
+        {
+            return;
+        }
+
+        _cachedBounds = Bounds;
+        _geometryDirty = false;
+        RebuildGeometry();
+    }
+
+    private void RebuildGeometry()
+    {
+        _cachedFillGeometry = null;
+        _cachedStrokeGeometry = null;
+        _cachedPen = null;
 
         var values = Values;
         if (values == null || values.Count == 0)
@@ -88,14 +155,18 @@ public sealed class MiniUsageChartControl : Control
             return;
         }
 
-        var plotArea = Bounds.Deflate(2);
+        var plotArea = Bounds.Deflate(Math.Max(2d, StrokeThickness));
         if (plotArea.Width <= 1 || plotArea.Height <= 1)
         {
             return;
         }
 
+        if (_pointBuffer.Length < values.Count)
+        {
+            Array.Resize(ref _pointBuffer, values.Count);
+        }
+
         var range = Math.Max(0.0001d, MaxValue - MinValue);
-        var points = new Point[values.Count];
         var stepX = values.Count == 1 ? 0d : plotArea.Width / (values.Count - 1);
 
         for (var i = 0; i < values.Count; i++)
@@ -111,7 +182,7 @@ public sealed class MiniUsageChartControl : Control
                 ? plotArea.Left + plotArea.Width / 2d
                 : plotArea.Left + i * stepX;
             var y = plotArea.Bottom - normalized * plotArea.Height;
-            points[i] = new Point(x, y);
+            _pointBuffer[i] = new Point(x, y);
         }
 
         if (Fill != null)
@@ -119,38 +190,40 @@ public sealed class MiniUsageChartControl : Control
             var fillGeometry = new StreamGeometry();
             using (var geometry = fillGeometry.Open())
             {
-                geometry.BeginFigure(new Point(points[0].X, plotArea.Bottom), true);
-                geometry.LineTo(points[0]);
+                geometry.BeginFigure(new Point(_pointBuffer[0].X, plotArea.Bottom), true);
+                geometry.LineTo(_pointBuffer[0]);
 
-                for (var i = 1; i < points.Length; i++)
+                for (var i = 1; i < values.Count; i++)
                 {
-                    geometry.LineTo(points[i]);
+                    geometry.LineTo(_pointBuffer[i]);
                 }
 
-                geometry.LineTo(new Point(points[^1].X, plotArea.Bottom));
+                geometry.LineTo(new Point(_pointBuffer[values.Count - 1].X, plotArea.Bottom));
                 geometry.EndFigure(true);
             }
 
-            context.DrawGeometry(Fill, null, fillGeometry);
+            _cachedFillGeometry = fillGeometry;
         }
 
-        if (Stroke != null)
+        if (Stroke == null)
         {
-            var strokeGeometry = new StreamGeometry();
-            using (var geometry = strokeGeometry.Open())
+            return;
+        }
+
+        var strokeGeometry = new StreamGeometry();
+        using (var geometry = strokeGeometry.Open())
+        {
+            geometry.BeginFigure(_pointBuffer[0], false);
+
+            for (var i = 1; i < values.Count; i++)
             {
-                geometry.BeginFigure(points[0], false);
-
-                for (var i = 1; i < points.Length; i++)
-                {
-                    geometry.LineTo(points[i]);
-                }
-
-                geometry.EndFigure(false);
+                geometry.LineTo(_pointBuffer[i]);
             }
 
-            var pen = new Pen(Stroke, StrokeThickness, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round);
-            context.DrawGeometry(null, pen, strokeGeometry);
+            geometry.EndFigure(false);
         }
+
+        _cachedStrokeGeometry = strokeGeometry;
+        _cachedPen = new Pen(Stroke, StrokeThickness, lineCap: PenLineCap.Round, lineJoin: PenLineJoin.Round);
     }
 }
