@@ -10,7 +10,6 @@
              xmlns:views="clr-namespace:BlenderRenderQueue.Views"
              xmlns:viewModels="clr-namespace:BlenderRenderQueue.ViewModels"
              xmlns:services="clr-namespace:BlenderRenderQueue.Services"
-             xmlns:animations="clr-namespace:SukiUI.Animations;assembly=SukiUI"
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              xmlns:ui="clr-namespace:BlenderRenderQueue.Services.UI"
              mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
@@ -104,10 +103,7 @@
                 </Viewbox>
             </suki:GlassCard>
             <!-- 队列按钮部分 -->
-            <suki:GlassCard Grid.Column="3" Margin="4 4 8 4"
-                            animations:SquishyOverExtensions.Enable="True"
-                            animations:SquishyOverExtensions.Intensity="0.2"
-                            animations:SquishyOverExtensions.SquishDepth="0.1">
+            <suki:GlassCard Grid.Column="3" Margin="4 4 8 4">
                 <views:RenderQueueButtonsView DataContext="{Binding}" />
             </suki:GlassCard>
         </Grid>

@@ -7,7 +7,6 @@
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:viewModels="clr-namespace:BlenderRenderQueue.ViewModels"
-             xmlns:animations="clr-namespace:SukiUI.Animations;assembly=SukiUI"
              xmlns:i18n="clr-namespace:BlenderRenderQueue.Localizer"
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
              x:Class="BlenderRenderQueue.Views.RenderQueueButtonsView"
