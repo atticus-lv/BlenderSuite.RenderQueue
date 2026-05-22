@@ -29,7 +29,7 @@
         </i:Interaction.Behaviors>
         <Panel>
             <ListBox ItemsSource="{Binding RenderTasks}"
-                     Classes="WithoutCheck"
+                     Classes="WithoutCheck Void"
                      SelectedItem="{Binding SelectedTask}"
                      Margin="4"
                      Name="TaskListBox">
@@ -39,11 +39,9 @@
                                                       Orientation="Vertical" />
                     </i:Interaction.Behaviors>
                     <ListBox.Styles>
-                        <Style Selector="ListBoxItem /template/ suki|GlassCard#BorderBasicStyle">
+                        <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
                             <Setter Property="Background" Value="Transparent" />
                             <Setter Property="BorderBrush" Value="Transparent" />
-                            <Setter Property="BorderThickness" Value="0" />
-                            <Setter Property="CornerRadius" Value="6" />
                             <Setter Property="Transitions">
                                 <Transitions>
                                     <BrushTransition Property="Background" Duration="0:0:0.12" />
@@ -51,24 +49,27 @@
                                 </Transitions>
                             </Setter>
                         </Style>
-                        <Style Selector="ListBoxItem:pointerover /template/ suki|GlassCard#BorderBasicStyle">
+                        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
                             <Setter Property="Background"
                                     Value="{DynamicResource SukiPrimaryColor10}" />
                         </Style>
-                        <Style Selector="ListBoxItem:selected /template/ suki|GlassCard#BorderBasicStyle">
+                        <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
                             <Setter Property="Background"
                                     Value="{DynamicResource SukiPrimaryColor25}" />
                         </Style>
-                        <Style Selector="ListBoxItem:selected:pointerover /template/ suki|GlassCard#BorderBasicStyle">
+                        <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
                             <Setter Property="Background"
                                     Value="{DynamicResource SukiPrimaryColor25}" />
                         </Style>
-                        <Style Selector="ListBoxItem:dragging /template/ suki|GlassCard#BorderBasicStyle">
+                        <Style Selector="ListBoxItem:dragging /template/ ContentPresenter#PART_ContentPresenter">
                             <Setter Property="BorderBrush"
                                     Value="{DynamicResource SukiPrimaryColor}" />
-                            <Setter Property="BorderThickness" Value="1" />
                         </Style>
                         <Style Selector="ListBoxItem">
+                            <Setter Property="Padding" Value="12,6" />
+                            <Setter Property="BorderThickness" Value="1" />
+                            <Setter Property="CornerRadius" Value="6" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                             <Setter Property="ContextMenu">
                                 <ContextMenu>
 

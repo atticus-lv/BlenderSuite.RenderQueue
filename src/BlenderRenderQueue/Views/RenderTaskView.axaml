@@ -262,6 +262,7 @@
                                                     <ListBox Grid.Row="1"
                                                              IsVisible="{Binding HasTimelineEntries}"
                                                              ItemsSource="{Binding TimelineEntries}"
+                                                             Classes="Void"
                                                              Background="Transparent"
                                                              BorderThickness="0"
                                                              Padding="0"
@@ -272,11 +273,11 @@
                                                                 <Setter Property="Padding" Value="0" />
                                                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                                             </Style>
-                                                            <Style Selector="ListBoxItem:pointerover /template/ suki|GlassCard#BorderBasicStyle">
+                                                            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
                                                                 <Setter Property="Background" Value="Transparent" />
                                                                 <Setter Property="BorderBrush" Value="Transparent" />
                                                             </Style>
-                                                            <Style Selector="ListBoxItem:selected /template/ suki|GlassCard#BorderBasicStyle">
+                                                            <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
                                                                 <Setter Property="Background" Value="Transparent" />
                                                                 <Setter Property="BorderBrush" Value="Transparent" />
                                                             </Style>
@@ -316,6 +317,7 @@
                                                     <ListBox Grid.Row="1"
                                                              IsVisible="{Binding HasDebugEntries}"
                                                              ItemsSource="{Binding DebugEntries}"
+                                                             Classes="Void"
                                                              Background="Transparent"
                                                              BorderThickness="0"
                                                              Padding="0"
@@ -326,11 +328,11 @@
                                                                 <Setter Property="Padding" Value="0" />
                                                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                                             </Style>
-                                                            <Style Selector="ListBoxItem:pointerover /template/ suki|GlassCard#BorderBasicStyle">
+                                                            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
                                                                 <Setter Property="Background" Value="Transparent" />
                                                                 <Setter Property="BorderBrush" Value="Transparent" />
                                                             </Style>
-                                                            <Style Selector="ListBoxItem:selected /template/ suki|GlassCard#BorderBasicStyle">
+                                                            <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
                                                                 <Setter Property="Background" Value="Transparent" />
                                                                 <Setter Property="BorderBrush" Value="Transparent" />
                                                             </Style>
