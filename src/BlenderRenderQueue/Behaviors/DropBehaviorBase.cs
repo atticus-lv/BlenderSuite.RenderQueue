@@ -110,10 +110,7 @@ public abstract class DropBehaviorBase : Behavior<Control>
 
         if (Handler.Validate(AssociatedObject, e, sourceContext, targetContext, state))
         {
-            if (Handler.Execute(AssociatedObject, e, sourceContext, targetContext, state))
-            {
-                ExecuteCommand(e);
-            }
+            Handler.Execute(AssociatedObject, e, sourceContext, targetContext, state);
         }
 
         Handler.Leave(AssociatedObject, e, sourceContext, targetContext);

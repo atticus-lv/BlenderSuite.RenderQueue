@@ -41,9 +41,7 @@ public static class DialogHelper
                 });
             return storageFiles.Count == 0
                 ? null
-                :
-                // convert the StorageFile to a string without file:/// prefix
-                storageFiles.Select(s => s.Path.ToString().Remove(0, 8));
+                : storageFiles.Select(s => s.Path.LocalPath);
         }
         else
         {
@@ -54,7 +52,7 @@ public static class DialogHelper
                     Title = title ?? "Select a folder"
                 });
             if (storageFiles.Count == 0) return null;
-            return storageFiles.Select(s => s.Path.ToString().Remove(0, 8));
+            return storageFiles.Select(s => s.Path.LocalPath);
         }
     }
 
