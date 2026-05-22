@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
-using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
@@ -16,7 +15,6 @@ using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.Business.Persistence;
 using BlenderRenderQueue.Services.Business.Submission;
-using BlenderRenderQueue.Services.UI;
 using BlenderRenderQueue.ViewModels;
 
 namespace BlenderRenderQueue.Services.Application.Queue;
@@ -188,39 +186,17 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         return !string.IsNullOrWhiteSpace(_blenderPath) && File.Exists(_blenderPath);
     }
 
-    public async Task AddTaskAsync()
+    public void AddBlendFiles(IEnumerable<string> filePaths)
     {
-        if (!IsBlenderServiceReady())
-        {
-            StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPathRequired"]);
-            return;
-        }
-
-        var blendFile = await SelectBlendFileAsync();
-        if (string.IsNullOrWhiteSpace(blendFile))
-        {
-            return;
-        }
-
-        AddTaskToQueue(blendFile);
-    }
-
-    public async Task AddMultipleTasksAsync()
-    {
-        if (!IsBlenderServiceReady())
-        {
-            StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPathRequired"]);
-            return;
-        }
-
-        var blendFiles = await SelectMultipleBlendFilesAsync();
-        foreach (var blendFile in blendFiles)
-        {
-            AddTaskToQueue(blendFile);
-        }
+        AddBlendFilesCore(filePaths, showNoFilesMessage: false, showSummaryMessage: false);
     }
 
     public void AddDroppedFiles(IEnumerable<string> filePaths)
+    {
+        AddBlendFilesCore(filePaths, showNoFilesMessage: true, showSummaryMessage: true);
+    }
+
+    private void AddBlendFilesCore(IEnumerable<string> filePaths, bool showNoFilesMessage, bool showSummaryMessage)
     {
         if (!IsBlenderServiceReady())
         {
@@ -237,7 +213,11 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
 
         if (blendFiles.Count == 0)
         {
-            StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_DragBlendFiles"]);
+            if (showNoFilesMessage)
+            {
+                StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_DragBlendFiles"]);
+            }
+
             return;
         }
 
@@ -246,8 +226,11 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
             AddTaskToQueue(filePath);
         }
 
-        StatusMessageChanged?.Invoke(this,
-            string.Format(Localizer.Localizer.Instance["Toast_TasksAddedSuccessfully"], blendFiles.Count));
+        if (showSummaryMessage)
+        {
+            StatusMessageChanged?.Invoke(this,
+                string.Format(Localizer.Localizer.Instance["Toast_TasksAddedSuccessfully"], blendFiles.Count));
+        }
     }
 
     public void RemoveSelectedTask(RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask)
@@ -971,27 +954,6 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         var formattedTime = $"{(int)TimeSpan.FromSeconds(estimatedRemainingSeconds).TotalHours:D2}:{TimeSpan.FromSeconds(estimatedRemainingSeconds).Minutes:D2}:{TimeSpan.FromSeconds(estimatedRemainingSeconds).Seconds:D2}";
         _remainingTimeText = $"Queue_RemainingTimeFormat:{formattedTime}";
         PublishSnapshot();
-    }
-
-    private Task<string> SelectBlendFileAsync()
-    {
-        var fileTypes = new[]
-        {
-            new FilePickerFileType("Blend Files") { Patterns = new[] { "*.blend" } }
-        };
-
-        return this.SelectFile("选择 Blend 文件", fileTypes).ContinueWith(t => t.Result ?? string.Empty);
-    }
-
-    private Task<IEnumerable<string>> SelectMultipleBlendFilesAsync()
-    {
-        var fileTypes = new[]
-        {
-            new FilePickerFileType("Blend Files") { Patterns = new[] { "*.blend" } }
-        };
-
-        return this.SelectFiles("选择多个 Blend 文件", fileTypes)
-            .ContinueWith(t => t.Result ?? Enumerable.Empty<string>());
     }
 
     private void AutoSaveQueueData()

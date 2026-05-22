@@ -28,8 +28,7 @@ public interface IRenderQueueApplicationService : IDisposable
     void SetBlenderPath(string blenderPath);
     bool IsBlenderServiceReady();
 
-    Task AddTaskAsync();
-    Task AddMultipleTasksAsync();
+    void AddBlendFiles(IEnumerable<string> filePaths);
     void AddDroppedFiles(IEnumerable<string> filePaths);
     void RemoveSelectedTask(RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask);
     void RemoveTask(RenderTaskViewModel? taskToRemove, RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask);

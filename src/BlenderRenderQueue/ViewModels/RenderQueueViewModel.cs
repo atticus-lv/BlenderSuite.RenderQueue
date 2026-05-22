@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Platform.Storage;
 using Avalonia.Media;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
@@ -214,13 +215,46 @@ public partial class RenderQueueViewModel : ViewModelBase
     public Task LoadQueueDataAsync() => _queueService.LoadQueueDataAsync();
 
     [RelayCommand]
-    private Task AddTask() => _queueService.AddTaskAsync();
+    private async Task AddTask()
+    {
+        var blendFile = await SelectBlendFileAsync();
+        if (string.IsNullOrWhiteSpace(blendFile))
+        {
+            return;
+        }
+
+        _queueService.AddBlendFiles([blendFile]);
+    }
 
     [RelayCommand]
-    private Task AddMultipleTasks() => _queueService.AddMultipleTasksAsync();
+    private async Task AddMultipleTasks()
+    {
+        var blendFiles = await SelectMultipleBlendFilesAsync();
+        _queueService.AddBlendFiles(blendFiles);
+    }
 
     [RelayCommand]
     public void AddDroppedFiles(IEnumerable<string> filePaths) => _queueService.AddDroppedFiles(filePaths);
+
+    private Task<string> SelectBlendFileAsync()
+    {
+        var fileTypes = CreateBlendFileTypes();
+        return this.SelectFile("选择 Blend 文件", fileTypes);
+    }
+
+    private async Task<IReadOnlyList<string>> SelectMultipleBlendFilesAsync()
+    {
+        var fileTypes = CreateBlendFileTypes();
+        return await this.SelectFiles("选择多个 Blend 文件", fileTypes);
+    }
+
+    private static FilePickerFileType[] CreateBlendFileTypes()
+    {
+        return
+        [
+            new FilePickerFileType("Blend Files") { Patterns = ["*.blend"] }
+        ];
+    }
 
     [RelayCommand]
     private void RemoveSelectedTask() => _queueService.RemoveSelectedTask(SelectedTask, task => SelectedTask = task);

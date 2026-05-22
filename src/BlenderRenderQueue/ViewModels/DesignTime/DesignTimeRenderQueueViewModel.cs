@@ -139,8 +139,7 @@ internal sealed class DesignTimeQueueApplicationService : IRenderQueueApplicatio
     public void SetVideoQuality(string quality) { }
     public void SetBlenderPath(string blenderPath) { }
     public bool IsBlenderServiceReady() => true;
-    public Task AddTaskAsync() => Task.CompletedTask;
-    public Task AddMultipleTasksAsync() => Task.CompletedTask;
+    public void AddBlendFiles(IEnumerable<string> filePaths) { }
     public void AddDroppedFiles(IEnumerable<string> filePaths) { }
     public void RemoveSelectedTask(RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask) { }
     public void RemoveTask(RenderTaskViewModel? taskToRemove, RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask) { }
