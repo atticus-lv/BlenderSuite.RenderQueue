@@ -63,11 +63,11 @@
                             <!--         </Setter.Value> -->
                             <!--     </Setter> -->
                             <!-- </Style> -->
-                            <Style Selector="ListBoxItem:pointerover /template/ Border">
+                            <Style Selector="ListBoxItem:pointerover /template/ suki|GlassCard#BorderBasicStyle">
                                 <Setter Property="Background"
                                         Value="{DynamicResource SukiPrimaryColor10}" />
                             </Style>
-                            <Style Selector="ListBoxItem:selected /template/ Border">
+                            <Style Selector="ListBoxItem:selected /template/ suki|GlassCard#BorderBasicStyle">
                                 <Setter Property="Background"
                                         Value="{DynamicResource SukiPrimaryColor25}" />
                             </Style>
