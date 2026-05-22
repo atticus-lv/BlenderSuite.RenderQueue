@@ -33,6 +33,11 @@
                      SelectedItem="{Binding SelectedTask}"
                      Margin="4"
                      Name="TaskListBox">
+                    <i:Interaction.Behaviors>
+                        <behaviors:HandleDragBehavior HorizontalDragThreshold="3"
+                                                      VerticalDragThreshold="3"
+                                                      Orientation="Vertical" />
+                    </i:Interaction.Behaviors>
                     <ListBox.Styles>
                         <Style Selector="ListBoxItem /template/ suki|GlassCard#BorderBasicStyle">
                             <Setter Property="Background" Value="Transparent" />
@@ -64,15 +69,6 @@
                             <Setter Property="BorderThickness" Value="1" />
                         </Style>
                         <Style Selector="ListBoxItem">
-                            <Setter Property="(Interaction.Behaviors)">
-                                <BehaviorCollectionTemplate>
-                                    <BehaviorCollection>
-                                        <behaviors:HandleDragBehavior HorizontalDragThreshold="3"
-                                                                      VerticalDragThreshold="3"
-                                                                      Orientation="Vertical" />
-                                    </BehaviorCollection>
-                                </BehaviorCollectionTemplate>
-                            </Setter>
                             <Setter Property="ContextMenu">
                                 <ContextMenu>
 

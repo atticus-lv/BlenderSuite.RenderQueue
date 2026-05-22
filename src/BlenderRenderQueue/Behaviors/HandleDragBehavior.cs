@@ -8,6 +8,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media.Transformation;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 
@@ -25,7 +26,9 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
     private int _targetIndex;
     private ItemsControl? _itemsControl;
     private Control? _draggedContainer;
+    private Control? _captureTarget;
     private bool _captured;
+    private bool _isReleasing;
     private IPointer? _capturedPointer;
     private Control? _dragHandle;
 
@@ -118,11 +121,11 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
         {
             // 先移除可能存在的处理器，避免重复添加
             DetachEventHandlers();
-            
-            AssociatedObject.AddHandler(InputElement.PointerReleasedEvent, PointerReleased, RoutingStrategies.Tunnel);
-            AssociatedObject.AddHandler(InputElement.PointerPressedEvent, PointerPressed, RoutingStrategies.Tunnel);
-            AssociatedObject.AddHandler(InputElement.PointerMovedEvent, PointerMoved, RoutingStrategies.Tunnel);
-            AssociatedObject.AddHandler(InputElement.PointerCaptureLostEvent, PointerCaptureLost, RoutingStrategies.Tunnel);
+
+            AssociatedObject.AddHandler(InputElement.PointerReleasedEvent, PointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
+            AssociatedObject.AddHandler(InputElement.PointerPressedEvent, PointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+            AssociatedObject.AddHandler(InputElement.PointerMovedEvent, PointerMoved, RoutingStrategies.Tunnel, handledEventsToo: true);
+            AssociatedObject.AddHandler(InputElement.PointerCaptureLostEvent, PointerCaptureLost, RoutingStrategies.Tunnel, handledEventsToo: true);
         }
     }
 
@@ -142,14 +145,27 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
         var properties = e.GetCurrentPoint(AssociatedObject).Properties;
         if (properties.IsLeftButtonPressed && AssociatedObject is not null)
         {
-            var itemsControl = ItemsControl.ItemsControlFromItemContainer(AssociatedObject);
+            if (_captured || _enableDrag)
+            {
+                Released();
+            }
+
+            var itemsControl = AssociatedObject as ItemsControl ?? ItemsControl.ItemsControlFromItemContainer(AssociatedObject);
             if (itemsControl is null)
             {
                 return;
             }
 
+            var draggedContainer = AssociatedObject is ItemsControl
+                ? FindItemContainer(e.Source as Visual, itemsControl)
+                : AssociatedObject;
+            if (draggedContainer is null)
+            {
+                return;
+            }
+
             // Check if the click is on the drag handle
-            if (!IsClickOnDragHandle(e))
+            if (!IsClickOnDragHandle(e, draggedContainer))
             {
                 return;
             }
@@ -157,42 +173,87 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
             _enableDrag = true;
             _dragStarted = false;
             _start = e.GetPosition(itemsControl);
-            _draggedIndex = -1;
-            _targetIndex = -1;
             _itemsControl = itemsControl;
-            _draggedContainer = AssociatedObject;
+            _draggedContainer = draggedContainer;
+            _draggedIndex = itemsControl.IndexFromContainer(_draggedContainer);
+            _targetIndex = _draggedIndex;
 
-            if (_draggedContainer is not null)
+            if (_draggedIndex < 0)
             {
-                SetDraggingPseudoClasses(_draggedContainer, true);
+                ResetDragState();
+                return;
             }
 
+            ClearDraggingPseudoClasses(_itemsControl);
             AddTransforms(_itemsControl);
 
             _capturedPointer = e.Pointer;
-            _capturedPointer.Capture(AssociatedObject);
+            _captureTarget = AssociatedObject;
+            _capturedPointer.Capture(_captureTarget);
+            if (_capturedPointer.Captured != _captureTarget)
+            {
+                RemoveTransforms(_itemsControl);
+                ResetDragState();
+                return;
+            }
+
             _captured = true;
+            e.Handled = true;
         }
     }
 
-    private bool IsClickOnDragHandle(PointerEventArgs e)
+    private static Control? FindItemContainer(Visual? visual, ItemsControl itemsControl)
+    {
+        if (visual is null)
+        {
+            return null;
+        }
+
+        if (visual is Control control && itemsControl.IndexFromContainer(control) >= 0)
+        {
+            return control;
+        }
+
+        foreach (var ancestor in visual.GetVisualAncestors())
+        {
+            if (ancestor is Control ancestorControl && itemsControl.IndexFromContainer(ancestorControl) >= 0)
+            {
+                return ancestorControl;
+            }
+        }
+
+        return null;
+    }
+
+    private bool IsClickOnDragHandle(PointerEventArgs e, Control itemContainer)
     {
         if (AssociatedObject is null)
         {
             return false;
         }
 
-        if (TryFindDragHandle(e.Source as Visual))
+        _dragHandle = null;
+
+        if (TryFindDragHandle(e.Source as Visual, itemContainer))
         {
             return true;
         }
 
-        var point = e.GetPosition(AssociatedObject);
-        var visuals = AssociatedObject.GetVisualsAt(point).ToList();
+        var point = e.GetPosition(itemContainer);
+
+        foreach (var control in itemContainer.GetVisualDescendants().OfType<Control>())
+        {
+            if (IsDragHandle(control) && IsPointInsideControl(control, itemContainer, point))
+            {
+                return true;
+            }
+        }
+
+        var visuals = itemContainer.GetVisualsAt(point).ToList();
 
         foreach (var visual in visuals)
         {
-            if (TryFindDragHandle(visual))
+            if (TryFindDragHandle(visual, itemContainer))
             {
                 return true;
             }
@@ -201,7 +262,18 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
         return false;
     }
 
-    private bool TryFindDragHandle(Visual? visual)
+    private static bool IsPointInsideControl(Control control, Control itemContainer, Point pointRelativeToItemContainer)
+    {
+        var topLeft = control.TranslatePoint(default, itemContainer);
+        if (topLeft is null)
+        {
+            return false;
+        }
+
+        return new Rect(topLeft.Value, control.Bounds.Size).Contains(pointRelativeToItemContainer);
+    }
+
+    private bool TryFindDragHandle(Visual? visual, Control itemContainer)
     {
         if (visual is null)
         {
@@ -220,7 +292,7 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
                 continue;
             }
 
-            if (ReferenceEquals(ancestorControl, AssociatedObject))
+            if (ReferenceEquals(ancestorControl, itemContainer))
             {
                 break;
             }
@@ -247,72 +319,80 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
 
     private void PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (_captured)
+        if (_captured && ReferenceEquals(e.Pointer, _capturedPointer))
         {
-            if (e.InitialPressMouseButton == MouseButton.Left)
-            {
-                Released();
-            }
+            Released();
+            e.Handled = true;
         }
     }
 
     private void PointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
     {
-        Released();
+        if (ReferenceEquals(e.Pointer, _capturedPointer))
+        {
+            Released();
+            e.Handled = true;
+        }
     }
 
     private void Released()
     {
+        if (_isReleasing)
+        {
+            return;
+        }
+
         if (!_enableDrag && !_captured)
         {
             ReleasePointerCapture();
             return;
         }
 
+        _isReleasing = true;
+        var shouldMove = false;
+        ItemsControl? moveItemsControl = null;
+        var moveDraggedIndex = -1;
+        var moveTargetIndex = -1;
+
         try
         {
-            RemoveTransforms(_itemsControl);
+            var itemsControl = _itemsControl;
+            var draggedIndex = _draggedIndex;
+            var targetIndex = _targetIndex;
+            shouldMove = _dragStarted && IsValidMove(itemsControl, draggedIndex, targetIndex);
 
-            if (_itemsControl is not null)
+            try
             {
-                foreach (var control in _itemsControl.GetRealizedContainers())
+                RemoveTransforms(itemsControl);
+                ClearDraggingPseudoClasses(itemsControl);
+
+                if (shouldMove)
                 {
-                    SetDraggingPseudoClasses(control, true);
+                    moveItemsControl = itemsControl;
+                    moveDraggedIndex = draggedIndex;
+                    moveTargetIndex = targetIndex;
                 }
             }
-
-            if (_dragStarted)
+            finally
             {
-                if (_draggedIndex >= 0 && _targetIndex >= 0 && _draggedIndex != _targetIndex)
-                {
-                    MoveDraggedItem(_itemsControl, _draggedIndex, _targetIndex);
-                }
-            }
-
-            if (_itemsControl is not null)
-            {
-                foreach (var control in _itemsControl.GetRealizedContainers())
-                {
-                    SetDraggingPseudoClasses(control, false);
-                }
-            }
-
-            if (_draggedContainer is not null)
-            {
-                SetDraggingPseudoClasses(_draggedContainer, false);
+                ReleasePointerCapture();
             }
         }
         finally
         {
-            ReleasePointerCapture();
-            _draggedIndex = -1;
-            _targetIndex = -1;
-            _enableDrag = false;
-            _dragStarted = false;
-            _itemsControl = null;
-            _draggedContainer = null;
-            _dragHandle = null;
-            _captured = false;
+            ClearDraggingPseudoClasses(_itemsControl);
+            ResetDragState();
+            _isReleasing = false;
+        }
+
+        if (shouldMove)
+        {
+            Dispatcher.UIThread.Post(
+                () =>
+                {
+                    MoveDraggedItem(moveItemsControl, moveDraggedIndex, moveTargetIndex);
+                },
+                DispatcherPriority.Background);
         }
     }
 
@@ -332,9 +412,9 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
             {
                 SetTranslateTransform(container, 0, 0);
             }
-  
+
             i++;
-        }  
+        }
     }
 
     private void RemoveTransforms(ItemsControl? itemsControl)
@@ -353,18 +433,26 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
             {
                 SetTranslateTransform(container, 0, 0);
             }
-  
+
             i++;
-        }  
+        }
     }
 
     private void MoveDraggedItem(ItemsControl? itemsControl, int draggedIndex, int targetIndex)
     {
+        if (!IsValidMove(itemsControl, draggedIndex, targetIndex))
+        {
+            return;
+        }
+
         if (itemsControl?.ItemsSource is IList itemsSource)
         {
-            var draggedItem = itemsSource[draggedIndex];
-            itemsSource.RemoveAt(draggedIndex);
-            itemsSource.Insert(targetIndex, draggedItem);
+            if (!TryMoveItemsSource(itemsSource, draggedIndex, targetIndex))
+            {
+                var draggedItem = itemsSource[draggedIndex];
+                itemsSource.RemoveAt(draggedIndex);
+                itemsSource.Insert(targetIndex, draggedItem);
+            }
 
             if (itemsControl is SelectingItemsControl selectingItemsControl)
             {
@@ -382,23 +470,49 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
                 if (itemsControl is SelectingItemsControl selectingItemsControl)
                 {
                     selectingItemsControl.SelectedIndex = targetIndex;
-                } 
+                }
             }
         }
     }
 
+    private static bool TryMoveItemsSource(IList itemsSource, int draggedIndex, int targetIndex)
+    {
+        var moveMethod = itemsSource.GetType().GetMethod("Move", [typeof(int), typeof(int)]);
+        if (moveMethod is null)
+        {
+            return false;
+        }
+
+        moveMethod.Invoke(itemsSource, [draggedIndex, targetIndex]);
+        return true;
+    }
+
+    private static bool IsValidMove(ItemsControl? itemsControl, int draggedIndex, int targetIndex)
+    {
+        var itemCount = GetItemCount(itemsControl);
+        return itemCount > 0 &&
+               draggedIndex >= 0 &&
+               targetIndex >= 0 &&
+               draggedIndex < itemCount &&
+               targetIndex < itemCount &&
+               draggedIndex != targetIndex;
+    }
+
     private void PointerMoved(object? sender, PointerEventArgs e)
     {
-        var properties = e.GetCurrentPoint(AssociatedObject).Properties;
-        if (_captured && !properties.IsLeftButtonPressed)
+        if (AssociatedObject is null)
         {
-            Released();
             return;
         }
 
-        if (_captured && properties.IsLeftButtonPressed)
+        if (_captured && !ReferenceEquals(e.Pointer, _capturedPointer))
         {
-            if (_itemsControl?.Items is null || _draggedContainer?.RenderTransform is null || !_enableDrag)
+            return;
+        }
+
+        if (_captured)
+        {
+            if (_itemsControl?.Items is null || _draggedContainer is null || !_enableDrag)
             {
                 return;
             }
@@ -418,6 +532,7 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
                     if (Math.Abs(diff.X) > horizontalDragThreshold)
                     {
                         _dragStarted = true;
+                        SetDraggingPseudoClasses(_draggedContainer, true);
                     }
                     else
                     {
@@ -429,12 +544,24 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
                     if (Math.Abs(diff.Y) > verticalDragThreshold)
                     {
                         _dragStarted = true;
+                        SetDraggingPseudoClasses(_draggedContainer, true);
                     }
                     else
                     {
                         return;
                     }
                 }
+            }
+
+            if (_draggedIndex < 0)
+            {
+                _draggedIndex = _itemsControl.IndexFromContainer(_draggedContainer);
+                _targetIndex = _draggedIndex;
+            }
+
+            if (_draggedIndex < 0)
+            {
+                return;
             }
 
             if (orientation == Orientation.Horizontal)
@@ -446,83 +573,81 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
                 SetTranslateTransform(_draggedContainer, 0, delta);
             }
 
-            _draggedIndex = _itemsControl.IndexFromContainer(_draggedContainer);
-            _targetIndex = -1;
+            _targetIndex = CalculateTargetIndex(_itemsControl, _draggedContainer, position, orientation);
+            ApplySiblingTransforms(_itemsControl, _draggedContainer, _draggedIndex, _targetIndex, orientation);
+            e.Handled = true;
+        }
+    }
 
-            var draggedBounds = _draggedContainer.Bounds;
+    private static int CalculateTargetIndex(
+        ItemsControl itemsControl,
+        Control draggedContainer,
+        Point pointerPosition,
+        Orientation orientation)
+    {
+        var insertionIndex = GetItemCount(itemsControl);
+        var draggedIndex = itemsControl.IndexFromContainer(draggedContainer);
+        var pointerAxis = orientation == Orientation.Horizontal ? pointerPosition.X : pointerPosition.Y;
 
-            var draggedStart = orientation == Orientation.Horizontal ? draggedBounds.X : draggedBounds.Y;
-
-            var draggedDeltaStart = orientation == Orientation.Horizontal
-                ? draggedBounds.X + delta
-                : draggedBounds.Y + delta;
-
-            var draggedDeltaEnd = orientation == Orientation.Horizontal
-                ? draggedBounds.X + delta + draggedBounds.Width
-                : draggedBounds.Y + delta + draggedBounds.Height;
-
-            var i = 0;
-
-            foreach (var _ in _itemsControl.Items)
+        for (var i = 0; i < GetItemCount(itemsControl); i++)
+        {
+            var targetContainer = itemsControl.ContainerFromIndex(i);
+            if (targetContainer is null || ReferenceEquals(targetContainer, draggedContainer))
             {
-                var targetContainer = _itemsControl.ContainerFromIndex(i);
-                if (targetContainer?.RenderTransform is null || ReferenceEquals(targetContainer, _draggedContainer))
-                {
-                    i++;
-                    continue;
-                }
+                continue;
+            }
 
-                var targetBounds = targetContainer.Bounds;
+            var bounds = targetContainer.Bounds;
+            var midpoint = orientation == Orientation.Horizontal
+                ? bounds.X + bounds.Width / 2
+                : bounds.Y + bounds.Height / 2;
 
-                var targetStart = orientation == Orientation.Horizontal ? targetBounds.X : targetBounds.Y;
+            if (pointerAxis < midpoint)
+            {
+                insertionIndex = i;
+                break;
+            }
+        }
 
-                var targetMid = orientation == Orientation.Horizontal
-                    ? targetBounds.X + targetBounds.Width / 2
-                    : targetBounds.Y + targetBounds.Height / 2;
+        var targetIndex = insertionIndex > draggedIndex ? insertionIndex - 1 : insertionIndex;
+        return Math.Clamp(targetIndex, 0, Math.Max(0, GetItemCount(itemsControl) - 1));
+    }
 
-                var targetIndex = _itemsControl.IndexFromContainer(targetContainer);
+    private void ApplySiblingTransforms(
+        ItemsControl itemsControl,
+        Control draggedContainer,
+        int draggedIndex,
+        int targetIndex,
+        Orientation orientation)
+    {
+        var draggedBounds = draggedContainer.Bounds;
+        var offset = orientation == Orientation.Horizontal ? draggedBounds.Width : draggedBounds.Height;
 
-                if (targetStart > draggedStart && draggedDeltaEnd >= targetMid)
-                {
-                    if (orientation == Orientation.Horizontal)
-                    {
-                        SetTranslateTransform(targetContainer, -draggedBounds.Width, 0);
-                    }
-                    else
-                    {
-                        SetTranslateTransform(targetContainer, 0, -draggedBounds.Height);
-                    }
+        for (var i = 0; i < GetItemCount(itemsControl); i++)
+        {
+            var targetContainer = itemsControl.ContainerFromIndex(i);
+            if (targetContainer is null || ReferenceEquals(targetContainer, draggedContainer))
+            {
+                continue;
+            }
 
-                    _targetIndex = _targetIndex == -1 ? targetIndex :
-                        targetIndex > _targetIndex ? targetIndex : _targetIndex;
-                }
-                else if (targetStart < draggedStart && draggedDeltaStart <= targetMid)
-                {
-                    if (orientation == Orientation.Horizontal)
-                    {
-                        SetTranslateTransform(targetContainer, draggedBounds.Width, 0);
-                    }
-                    else
-                    {
-                        SetTranslateTransform(targetContainer, 0, draggedBounds.Height);
-                    }
+            var shift = 0.0;
+            if (targetIndex > draggedIndex && i > draggedIndex && i <= targetIndex)
+            {
+                shift = -offset;
+            }
+            else if (targetIndex < draggedIndex && i >= targetIndex && i < draggedIndex)
+            {
+                shift = offset;
+            }
 
-                    _targetIndex = _targetIndex == -1 ? targetIndex :
-                        targetIndex < _targetIndex ? targetIndex : _targetIndex;
-                }
-                else
-                {
-                    if (orientation == Orientation.Horizontal)
-                    {
-                        SetTranslateTransform(targetContainer, 0, 0);
-                    }
-                    else
-                    {
-                        SetTranslateTransform(targetContainer, 0, 0);
-                    }
-                }
-
-                i++;
+            if (orientation == Orientation.Horizontal)
+            {
+                SetTranslateTransform(targetContainer, shift, 0);
+            }
+            else
+            {
+                SetTranslateTransform(targetContainer, 0, shift);
             }
         }
     }
@@ -539,6 +664,19 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
         }
     }
 
+    private void ClearDraggingPseudoClasses(ItemsControl? itemsControl)
+    {
+        if (itemsControl is null)
+        {
+            return;
+        }
+
+        foreach (var control in itemsControl.GetRealizedContainers())
+        {
+            SetDraggingPseudoClasses(control, false);
+        }
+    }
+
     private void SetTranslateTransform(Control control, double x, double y)
     {
         var transformBuilder = new TransformOperations.Builder(1);
@@ -549,11 +687,30 @@ public class HandleDragBehavior : StyledElementBehavior<Control>
     private void ReleasePointerCapture()
     {
         var capturedPointer = _capturedPointer;
-        if (capturedPointer is not null && capturedPointer.Captured == AssociatedObject)
+        if (capturedPointer is not null && capturedPointer.Captured == _captureTarget)
         {
             capturedPointer.Capture(null);
         }
 
         _capturedPointer = null;
+        _captureTarget = null;
+    }
+
+    private void ResetDragState()
+    {
+        _draggedIndex = -1;
+        _targetIndex = -1;
+        _enableDrag = false;
+        _dragStarted = false;
+        _itemsControl = null;
+        _draggedContainer = null;
+        _captureTarget = null;
+        _dragHandle = null;
+        _captured = false;
+    }
+
+    private static int GetItemCount(ItemsControl? itemsControl)
+    {
+        return itemsControl?.Items?.Count ?? 0;
     }
 }
