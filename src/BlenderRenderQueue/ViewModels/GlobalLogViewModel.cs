@@ -41,7 +41,6 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
             "RenderLog_Scope_Queue",
             "RenderLog_Scope_Worker",
             "RenderLog_Scope_Recovery",
-            "RenderLog_Scope_Submission",
             "RenderLog_Scope_System",
             "RenderLog_Scope_Video"
         });

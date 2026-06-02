@@ -28,9 +28,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="Resources\BlenderExtensions\*.zip">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
         <Content Include="Resources\Python\*.py">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
@@ -45,10 +42,10 @@
         <PackageReference Include="CommunityToolkit.Mvvm" />
         <PackageReference Include="LibreHardwareMonitorLib" />
         <PackageReference Include="Material.Icons.Avalonia" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
         <PackageReference Include="SukiUI" />
         <PackageReference Include="Xaml.Behaviors.Interactions.Draggable" />
         <PackageReference Include="Xaml.Behaviors.Interactivity" />
-        <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
     <ItemGroup>

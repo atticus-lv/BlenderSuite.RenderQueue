@@ -7,7 +7,6 @@ using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Application.Queue;
 using BlenderRenderQueue.Services.Business.Blender;
-using BlenderRenderQueue.Services.Business.Blender.Extensions;
 using BlenderRenderQueue.Services.Business.Persistence;
 using BlenderRenderQueue.ViewModels;
 using Xunit;
@@ -24,7 +23,6 @@ public sealed class MainRenderViewModelTests
         var renderQueue = new RenderQueueViewModel(queueService, logService);
         var settings = new SettingsViewModel(
             new FakeSettingsPersistenceService(new SettingsData()),
-            new FakeBlenderExtensionManager(),
             new BlenderValidationService(new FakeBlenderCliInfoService()),
             logService);
         var globalLog = new GlobalLogViewModel(logService);
@@ -90,21 +88,6 @@ public sealed class MainRenderViewModelTests
         public Task<SettingsData> LoadSettingsAsync()
         {
             return Task.FromResult(loadedSettings);
-        }
-    }
-
-    private sealed class FakeBlenderExtensionManager : IBlenderExtensionManager
-    {
-        public Task<BlenderExtensionInstallResult> EnsureInstalledAsync(
-            string blenderExecutablePath,
-            CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(new BlenderExtensionInstallResult
-            {
-                Outcome = BlenderExtensionInstallOutcome.Skipped,
-                BlenderExecutablePath = blenderExecutablePath,
-                Message = "Skipped"
-            });
         }
     }
 

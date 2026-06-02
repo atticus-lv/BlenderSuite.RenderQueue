@@ -11,7 +11,6 @@ using BlenderRenderQueue.Services.Application.Queue;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.Business.Persistence;
-using BlenderRenderQueue.Services.Business.Submission;
 using BlenderRenderQueue.ViewModels;
 using Xunit;
 
@@ -22,74 +21,6 @@ public sealed class RenderQueueApplicationServiceTests
     private static IRenderTaskFactory CreateTaskFactory(IRenderLogService logService)
     {
         return new RenderTaskFactory(new FakeBlenderQueryService(), logService);
-    }
-
-    [AvaloniaFact]
-    public async Task SubmitTaskAsync_AddsTaskAndPublishesSnapshotWithoutViewModelBridge()
-    {
-        using var blendFile = TemporaryFile.Create(".blend");
-        var workerHost = new FakeBlenderWorkerHost();
-        var executionService = new FakeRenderTaskExecutionService();
-        var persistenceService = new FakeDataPersistenceService();
-        var logService = TestLogServiceFactory.Create();
-        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
-
-        var response = await sut.SubmitTaskAsync(new LocalSubmissionRequest
-        {
-            Filepath = blendFile.Path,
-            Filename = Path.GetFileName(blendFile.Path),
-            SceneName = "SceneA",
-            OverrideFrameRange = true,
-            FrameStart = 3,
-            FrameEnd = 5
-        });
-        await DrainUiAsync();
-
-        Assert.True(response.Ok);
-        Assert.Single(sut.RenderTasks);
-        var task = sut.RenderTasks.Single();
-        Assert.Equal("SceneA", task.SelectedSceneName);
-        Assert.True(task.OverrideFrameRange);
-        Assert.Equal(3, task.StartFrame);
-        Assert.Equal(5, task.EndFrame);
-        Assert.Single(sut.Snapshot.Tasks);
-        Assert.Equal(task.Id, sut.Snapshot.Tasks[0].TaskId);
-        Assert.Equal(QueueExecutionState.Idle, sut.Snapshot.State);
-    }
-
-    [AvaloniaFact]
-    public async Task StartQueueFromSubmissionAsync_StartsExecutionThroughApplicationService()
-    {
-        using var blendFile = TemporaryFile.Create(".blend");
-        using var blenderExecutable = TemporaryFile.Create(".exe");
-
-        var workerHost = new FakeBlenderWorkerHost();
-        var executionService = new FakeRenderTaskExecutionService();
-        var persistenceService = new FakeDataPersistenceService();
-        var logService = TestLogServiceFactory.Create();
-        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
-        sut.SetBlenderPath(blenderExecutable.Path);
-
-        await sut.SubmitTaskAsync(new LocalSubmissionRequest
-        {
-            Filepath = blendFile.Path,
-            Filename = Path.GetFileName(blendFile.Path),
-            SceneName = string.Empty,
-            OverrideFrameRange = false,
-            FrameStart = 1,
-            FrameEnd = 1
-        });
-
-        var response = await sut.StartQueueFromSubmissionAsync();
-        await WaitUntilAsync(() => executionService.StartCalls == 1);
-        await WaitUntilAsync(() => sut.Snapshot.State == QueueExecutionState.Completed);
-        await DrainUiAsync();
-
-        Assert.True(response.Ok);
-        Assert.Equal(1, workerHost.EnsureReadyCalls);
-        Assert.Equal(1, executionService.StartCalls);
-        Assert.Equal(QueueExecutionState.Completed, sut.Snapshot.State);
-        Assert.Equal(1.0, sut.Snapshot.OverallProgress01, 3);
     }
 
     [AvaloniaFact]
@@ -124,11 +55,25 @@ public sealed class RenderQueueApplicationServiceTests
         var logService = TestLogServiceFactory.Create();
         using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
 
-        await sut.SubmitTaskAsync(new LocalSubmissionRequest
+        persistenceService.LoadedData = new AppData
         {
-            Filepath = blendFile.Path,
-            Filename = Path.GetFileName(blendFile.Path)
-        });
+            RenderQueue =
+            [
+                new RenderTaskData
+                {
+                    RenderTask = new RenderTaskInfo
+                    {
+                        Id = Guid.NewGuid(),
+                        Filename = Path.GetFileName(blendFile.Path),
+                        Filepath = blendFile.Path,
+                        StartFrame = 1,
+                        EndFrame = 1,
+                        Enable = true
+                    }
+                }
+            ]
+        };
+        await sut.LoadQueueDataAsync();
         var task = sut.RenderTasks.Single();
         task.ScenePropertiesView.SelectedScene = new BlendSceneProperties
         {
@@ -151,6 +96,7 @@ public sealed class RenderQueueApplicationServiceTests
     public async Task LoadQueueDataAsync_DoesNotDuplicate_TaskAlreadySubmittedDuringStartup()
     {
         using var blendFile = TemporaryFile.Create(".blend");
+        using var blenderExecutable = TemporaryFile.Create(".exe");
 
         var workerHost = new FakeBlenderWorkerHost();
         var executionService = new FakeRenderTaskExecutionService();
@@ -158,13 +104,9 @@ public sealed class RenderQueueApplicationServiceTests
         var logService = TestLogServiceFactory.Create();
         using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
 
-        var submitResponse = await sut.SubmitTaskAsync(new LocalSubmissionRequest
-        {
-            Filepath = blendFile.Path,
-            Filename = Path.GetFileName(blendFile.Path)
-        });
-
-        var taskId = Guid.Parse(submitResponse.TaskId);
+        sut.SetBlenderPath(blenderExecutable.Path);
+        sut.AddBlendFiles([blendFile.Path]);
+        var taskId = sut.RenderTasks.Single().Id;
         persistenceService.LoadedData = new AppData
         {
             RenderQueue =

@@ -15,7 +15,6 @@ using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.Business.Persistence;
-using BlenderRenderQueue.Services.Business.Submission;
 using BlenderRenderQueue.ViewModels;
 
 namespace BlenderRenderQueue.Services.Application.Queue;
@@ -564,125 +563,6 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         }
     }
 
-    public Task<LocalSubmissionResponse> SubmitTaskAsync(LocalSubmissionRequest request, CancellationToken cancellationToken = default)
-    {
-        return Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            try
-            {
-                _logService.Write(
-                    RenderLogLevel.Info,
-                    RenderLogScope.Submission,
-                    $"收到 submission 请求: {request.Filepath}, 场景={request.SceneName}, 覆写帧范围={request.OverrideFrameRange}, 帧={request.FrameStart}..{request.FrameEnd}",
-                    source: nameof(RenderQueueApplicationService));
-
-                if (string.IsNullOrWhiteSpace(request.Filepath))
-                {
-                    return BuildSubmissionResponse(false, "Submission filepath is required.");
-                }
-
-                if (!File.Exists(request.Filepath))
-                {
-                    return BuildSubmissionResponse(false, $"Blend file does not exist: {request.Filepath}");
-                }
-
-                var taskInfo = new RenderTaskInfo
-                {
-                    Id = Guid.NewGuid(),
-                    Filename = string.IsNullOrWhiteSpace(request.Filename)
-                        ? Path.GetFileName(request.Filepath)
-                        : request.Filename,
-                    Filepath = request.Filepath,
-                    StartFrame = request.FrameStart,
-                    EndFrame = request.FrameEnd,
-                    LastRenderedFrame = 0,
-                    Enable = true,
-                    Override = new OverrideData
-                    {
-                        OverrideFrameRange = request.OverrideFrameRange
-                            ? new OverrideFrameRangeData
-                            {
-                                StartFrame = request.FrameStart,
-                                EndFrame = request.FrameEnd
-                            }
-                            : null,
-                        OverrideScene = string.IsNullOrWhiteSpace(request.SceneName)
-                            ? null
-                            : new OverrideSceneData
-                            {
-                                SceneName = request.SceneName
-                            }
-                    }
-                };
-
-                var task = _taskFactory.Create(taskInfo, CreateTaskFactoryOptions());
-                RenderTasks.Add(task);
-                SubscribeToTaskEvents(task);
-                WriteTaskEvent(task, RenderLogScope.Submission, $"submission 已接收并入队: {Path.GetFileName(task.BlendFilePath)}");
-                _logService.Write(
-                    RenderLogLevel.Info,
-                    RenderLogScope.Submission,
-                    $"submission 任务已加入队列，当前任务总数: {RenderTasks.Count}",
-                    task.Id,
-                    task.BlendFilePath,
-                    nameof(RenderQueueApplicationService));
-
-                if (IsBlenderServiceReady())
-                {
-                    LoadTaskPropertiesWithLimitAsync(
-                        task,
-                        onError: ex => _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to load submitted task properties: {ex.Message}", source: "RenderQueueApplicationService"),
-                        cancellationToken: cancellationToken)
-                        .FireAndForget(
-                            _logService,
-                            nameof(RenderQueueApplicationService),
-                            RenderLogScope.Submission,
-                            "后台加载 submission 任务属性失败。");
-                }
-
-                StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPluginDetected"]);
-                return new LocalSubmissionResponse
-                {
-                    Ok = true,
-                    TaskId = task.Id.ToString("D"),
-                    Message = $"Queued {Path.GetFileName(task.BlendFilePath)} successfully.",
-                    QueueState = _queueState.ToString()
-                };
-            }
-            catch (Exception ex)
-            {
-                _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to submit task locally: {ex.Message}", source: "RenderQueueApplicationService");
-                _logService.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"本地 submission 入队失败: {ex.Message}", source: nameof(RenderQueueApplicationService));
-                return BuildSubmissionResponse(false, ex.Message);
-            }
-        }).GetTask();
-    }
-
-    public Task<LocalSubmissionResponse> StartQueueFromSubmissionAsync(CancellationToken cancellationToken = default)
-    {
-        return Dispatcher.UIThread.InvokeAsync(async () =>
-        {
-            if (_queueState == QueueState.Running)
-            {
-                return BuildSubmissionResponse(true, "Queue is already running.");
-            }
-
-            if (!Snapshot.CanStartQueue)
-            {
-                return BuildSubmissionResponse(false, "Queue cannot be started in its current state.");
-            }
-
-            if (!IsBlenderServiceReady())
-            {
-                return BuildSubmissionResponse(false, "Blender is not configured or not ready.");
-            }
-
-            await StartQueueAsync();
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.Submission, "submission 触发队列启动成功。", source: nameof(RenderQueueApplicationService));
-            return BuildSubmissionResponse(true, "Queue started successfully.");
-        });
-    }
-
     public async Task LoadQueueDataAsync()
     {
         var operation = _logService.BeginOperation(
@@ -1106,16 +986,6 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                     }
                     : null
             }
-        };
-    }
-
-    private LocalSubmissionResponse BuildSubmissionResponse(bool ok, string message)
-    {
-        return new LocalSubmissionResponse
-        {
-            Ok = ok,
-            Message = message,
-            QueueState = _queueState.ToString()
         };
     }
 

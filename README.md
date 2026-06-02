@@ -54,7 +54,6 @@ dotnet test BlenderSuite.RenderQueue.sln
 - `scripts/`：构建与发布脚本
 - `docs/`：项目文档
 - `install/`：安装包与打包相关资源
-- `experimental/`：历史实验代码与原型验证项目
 
 ## 统一发布脚本
 
@@ -159,14 +158,6 @@ dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r os
 - Windows：完整支持，包含 Inno Setup 安装程序
 - macOS：完整支持 `.dmg` 打包，签名与公证待补充
 - Linux：待支持
-
-## 归档实验
-
-`experimental/Client/` 下保留了一组历史远程监控客户端实验代码，包括 Desktop、Browser、Android 三个目标。它们当前不属于主线产品范围，后续远程查看能力会优先迁移到统一的 Web Dashboard/官网体系。
-
-如需继续研究这部分代码，请先阅读：
-
-- [QueueClient 归档说明](docs/queue-client-archive.md)
 
 ## 许可证
 

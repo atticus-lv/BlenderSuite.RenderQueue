@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 
-namespace BlenderRenderQueue.Services.Business.Blender.Extensions;
+namespace BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 
 public sealed class BlenderWorkerConnectionInfo
 {

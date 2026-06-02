@@ -11,7 +11,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Extensions;
-using BlenderRenderQueue.Services.Business.Blender.Extensions;
 
 namespace BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 

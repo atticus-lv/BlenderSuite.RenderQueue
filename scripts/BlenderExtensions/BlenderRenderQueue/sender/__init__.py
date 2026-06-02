@@ -1,1 +1,0 @@
-# BlenderRenderQueue sender package

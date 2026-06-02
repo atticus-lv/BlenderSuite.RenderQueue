@@ -1,12 +1,11 @@
 using System;
 using System.IO;
 
-namespace BlenderRenderQueue.Services.Business.Submission;
+namespace BlenderRenderQueue.Services.Application;
 
-internal static class SubmissionPaths
+internal static class ApplicationPaths
 {
     private const string AppDataOverrideEnv = "BRQ_APP_DATA_DIR";
-    private const string EndpointFileName = "submission_endpoint.json";
 
     public static string GetAppDataDirectory()
     {
@@ -19,12 +18,5 @@ internal static class SubmissionPaths
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "BlenderRenderQueue");
-    }
-
-    public static string GetEndpointFilePath()
-    {
-        var appDataDirectory = GetAppDataDirectory();
-        Directory.CreateDirectory(appDataDirectory);
-        return Path.Combine(appDataDirectory, EndpointFileName);
     }
 }

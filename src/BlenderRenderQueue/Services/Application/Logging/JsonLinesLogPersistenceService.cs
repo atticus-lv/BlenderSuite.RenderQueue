@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using BlenderRenderQueue.Services.Business.Submission;
+using BlenderRenderQueue.Services.Application;
 
 namespace BlenderRenderQueue.Services.Application.Logging;
 
@@ -32,7 +32,7 @@ public sealed class JsonLinesLogPersistenceService : ILogPersistenceService
     public JsonLinesLogPersistenceService()
     {
         CurrentSessionId = Guid.NewGuid().ToString("N");
-        _sessionsDirectory = Path.Combine(SubmissionPaths.GetAppDataDirectory(), "Logs", "Sessions");
+        _sessionsDirectory = Path.Combine(ApplicationPaths.GetAppDataDirectory(), "Logs", "Sessions");
         Directory.CreateDirectory(_sessionsDirectory);
         CleanupRetention();
         _sessionFilePath = Path.Combine(_sessionsDirectory,

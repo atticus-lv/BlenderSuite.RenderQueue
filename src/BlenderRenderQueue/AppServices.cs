@@ -2,10 +2,8 @@ using System;
 using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Application.Queue;
 using BlenderRenderQueue.Services.Business.Blender;
-using BlenderRenderQueue.Services.Business.Blender.Extensions;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderRenderQueue.Services.Business.Persistence;
-using BlenderRenderQueue.Services.Business.Submission;
 using BlenderRenderQueue.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -29,13 +27,11 @@ public static class AppServices
         services.AddSingleton<IBlenderCliInfoService, BlenderCliInfoService>();
         services.AddSingleton<IBlenderValidationService, BlenderValidationService>();
         services.AddSingleton<IBlenderQueryService, BlenderQueryService>();
-        services.AddSingleton<IBlenderExtensionManager, BlenderExtensionManager>();
         services.AddSingleton<IBlenderWorkerHost, PythonConsoleWorkerHost>();
         services.AddSingleton<IRenderTaskFactory, RenderTaskFactory>();
         services.AddSingleton<IRenderTaskExecutionService, RenderTaskExecutionService>();
         services.AddSingleton<IRenderQueueApplicationService, RenderQueueApplicationService>();
         services.AddSingleton<RenderQueueViewModel>();
-        services.AddSingleton<ILocalSubmissionHost, LocalSubmissionHost>();
         services.AddSingleton<GlobalLogViewModel>();
 
         services.AddSingleton<SettingsViewModel>();

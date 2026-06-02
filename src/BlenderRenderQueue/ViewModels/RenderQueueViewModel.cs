@@ -11,7 +11,6 @@ using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Application.Queue;
-using BlenderRenderQueue.Services.Business.Submission;
 using BlenderRenderQueue.Services.UI;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -308,13 +307,6 @@ public partial class RenderQueueViewModel : ViewModelBase
 
     [RelayCommand]
     private void CopyTask(RenderTaskViewModel? taskToCopy) => _queueService.CopyTask(taskToCopy, task => SelectedTask = task);
-
-    public Task<LocalSubmissionResponse> SubmitTaskAsync(LocalSubmissionRequest request,
-        System.Threading.CancellationToken cancellationToken = default)
-        => _queueService.SubmitTaskAsync(request, cancellationToken);
-
-    public Task<LocalSubmissionResponse> StartQueueFromSubmissionAsync(System.Threading.CancellationToken cancellationToken = default)
-        => _queueService.StartQueueFromSubmissionAsync(cancellationToken);
 
     public bool SelectTask(Guid taskId)
     {

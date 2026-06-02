@@ -7,7 +7,6 @@ using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Application.Queue;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
-using BlenderRenderQueue.Services.Business.Submission;
 
 namespace BlenderRenderQueue.ViewModels.DesignTime;
 
@@ -177,8 +176,6 @@ internal sealed class DesignTimeQueueApplicationService : IRenderQueueApplicatio
     public void MoveTaskToBottom(RenderTaskViewModel? selectedTask) { }
     public void CopyTask(RenderTaskViewModel? taskToCopy, Action<RenderTaskViewModel?> setSelectedTask) { }
     public void RequestRemoveAllTasksConfirmation() { }
-    public Task<LocalSubmissionResponse> SubmitTaskAsync(LocalSubmissionRequest request, CancellationToken cancellationToken = default) => Task.FromResult(new LocalSubmissionResponse());
-    public Task<LocalSubmissionResponse> StartQueueFromSubmissionAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LocalSubmissionResponse());
     public Task LoadQueueDataAsync() => Task.CompletedTask;
     public void Dispose() { }
 }
