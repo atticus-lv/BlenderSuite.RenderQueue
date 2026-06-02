@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -23,6 +22,8 @@ namespace BlenderRenderQueue.ViewModels;
 
 public partial class SettingsViewModel : ViewModelBase
 {
+    private const string BlenderValidationChannel = nameof(SettingsViewModel);
+
     [ObservableProperty]
     private ObservableCollection<BlenderExecutable> _blenderExecutables = new();
 
@@ -84,7 +85,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         // 只有在队列空闲或完成时才允许切换Blender
         CanSwitchBlender = queueState == QueueState.Idle || queueState == QueueState.Completed;
-        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"更新队列状态 - QueueState: {queueState}, CanSwitchBlender: {CanSwitchBlender}", source: "SettingsViewModel");
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"更新队列状态 - QueueState: {queueState}, CanSwitchBlender: {CanSwitchBlender}", source: "SettingsViewModel", metadata: RenderLogMetadata.Diagnostic());
     }
 
     partial void OnLanguageChanged(LanguageOption value)
@@ -102,7 +103,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedBlenderExecutableChanged(BlenderExecutable? value)
     {
-        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"SelectedBlenderExecutable changed: {value?.Path ?? "NULL"}", source: "SettingsViewModel");
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"SelectedBlenderExecutable changed: {value?.Path ?? "NULL"}", source: "SettingsViewModel", metadata: RenderLogMetadata.Diagnostic());
 
         if (value != null)
         {
@@ -122,11 +123,9 @@ public partial class SettingsViewModel : ViewModelBase
     }
 
     // 内部状态
-    private CancellationTokenSource? _versionCts;
-    private int _validationRequestVersion;
     private readonly ISettingsPersistenceService _settingsPersistenceService;
     private readonly IBlenderExtensionManager _blenderExtensionManager;
-    private readonly IBlenderCliInfoService _blenderCliInfoService;
+    private readonly IBlenderValidationService _blenderValidationService;
     private readonly IRenderLogService _logService;
     private bool _isLoadingSettings;
 
@@ -142,13 +141,13 @@ public partial class SettingsViewModel : ViewModelBase
     public SettingsViewModel(
         ISettingsPersistenceService settingsPersistenceService,
         IBlenderExtensionManager blenderExtensionManager,
-        IBlenderCliInfoService blenderCliInfoService,
+        IBlenderValidationService blenderValidationService,
         IRenderLogService logService)
     {
         // 构造函数中不进行自动检测，等待StartInitialization调用
         _settingsPersistenceService = settingsPersistenceService;
         _blenderExtensionManager = blenderExtensionManager;
-        _blenderCliInfoService = blenderCliInfoService;
+        _blenderValidationService = blenderValidationService;
         _logService = logService;
         _theme = new SukiTheme();
 
@@ -160,7 +159,7 @@ public partial class SettingsViewModel : ViewModelBase
             if (themeOption != null) BaseTheme = themeOption;
 
             // 可以在这里添加Toast通知
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Theme changed to: {variant}", source: "SettingsViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Theme changed to: {variant}", source: "SettingsViewModel", metadata: RenderLogMetadata.Diagnostic());
         };
 
         // 初始化当前主题
@@ -220,33 +219,29 @@ public partial class SettingsViewModel : ViewModelBase
 
     private void ValidateSelectedBlender(BlenderExecutable blender)
     {
-        _versionCts?.Cancel();
-        _versionCts = new CancellationTokenSource();
-        var ct = _versionCts.Token;
-        var requestVersion = Interlocked.Increment(ref _validationRequestVersion);
+        var request = _blenderValidationService.BeginValidation(blender.Path, BlenderValidationChannel);
 
         // 重置验证状态
         HasBlenderValidationError = false;
         BlenderValidationMessage = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(blender.Path))
+        var preconditionResult = _blenderValidationService.ValidatePreconditions(request);
+        if (preconditionResult != null)
         {
             HasBlenderValidationError = true;
-            BlenderValidationMessage = "Blender路径为空";
-            NotifyBlenderValidationChanged();
-            return;
-        }
-
-        if (!File.Exists(blender.Path))
-        {
-            HasBlenderValidationError = true;
-            BlenderValidationMessage = "指定的文件不存在";
+            BlenderValidationMessage = preconditionResult.Status switch
+            {
+                BlenderValidationStatus.EmptyPath => "Blender路径为空",
+                BlenderValidationStatus.FileNotFound => "指定的文件不存在",
+                _ => preconditionResult.Message
+            };
             NotifyBlenderValidationChanged();
             return;
         }
 
         // 异步获取Blender版本信息
-        LoadBlenderInfoAsync(blender, ct, requestVersion).FireAndForget(
+        LoadBlenderInfoAsync(blender, request).FireAndForget(
+            _logService,
             source: nameof(SettingsViewModel),
             message: "设置页后台加载 Blender 信息失败。");
     }
@@ -257,73 +252,70 @@ public partial class SettingsViewModel : ViewModelBase
     /// </summary>
     private async Task ValidateBlenderAsync(BlenderExecutable blender)
     {
-        try
-        {
-            var info = await _blenderCliInfoService.GetVersionInfoAsync(blender.Path, CancellationToken.None);
+        var result = await _blenderValidationService.ValidatePathAsync(blender.Path);
 
-            // 更新UI线程上的属性
-            Dispatcher.UIThread.Post(() =>
+        // 更新UI线程上的属性
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (result.Status == BlenderValidationStatus.Success && result.VersionInfo != null)
             {
-                // 更新Blender信息
-                blender.UpdateFromVersionInfo(info);
+                blender.UpdateFromVersionInfo(result.VersionInfo);
                 blender.UpdateValidationStatus(true, DateTime.UtcNow);
 
                 // 触发集合更改通知，让UI更新
-                var index = BlenderExecutables.IndexOf(blender);
-                if (index >= 0) BlenderExecutables[index] = blender;
+                var successIndex = BlenderExecutables.IndexOf(blender);
+                if (successIndex >= 0) BlenderExecutables[successIndex] = blender;
 
-                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"✅ Auto-validated Blender: {blender.Path} - {blender.Version}", source: "SettingsViewModel");
-            });
-        }
-        catch (Exception ex)
-        {
-            // 验证失败，更新状态
-            Dispatcher.UIThread.Post(() =>
-            {
-                blender.UpdateValidationStatus(false, DateTime.UtcNow);
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"✅ Auto-validated Blender: {blender.Path} - {blender.Version}", source: "SettingsViewModel", metadata: RenderLogMetadata.Diagnostic());
+                return;
+            }
 
-                // 触发集合更改通知，让UI更新
-                var index = BlenderExecutables.IndexOf(blender);
-                if (index >= 0) BlenderExecutables[index] = blender;
+            blender.UpdateValidationStatus(false, DateTime.UtcNow);
 
-                _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Auto-validation failed for Blender: {blender.Path} - {ex.Message}", source: "SettingsViewModel");
-            });
-        }
+            // 触发集合更改通知，让UI更新
+            var index = BlenderExecutables.IndexOf(blender);
+            if (index >= 0) BlenderExecutables[index] = blender;
+
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Auto-validation failed for Blender: {blender.Path} - {result.Message}", source: "SettingsViewModel", metadata: RenderLogMetadata.Diagnostic());
+        });
     }
 
-    private async Task LoadBlenderInfoAsync(BlenderExecutable blender, CancellationToken cancellationToken, int requestVersion)
+    private async Task LoadBlenderInfoAsync(BlenderExecutable blender, BlenderValidationRequest request)
     {
-        try
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                if (!IsValidationRequestCurrent(blender, requestVersion))
-                {
-                    return;
-                }
-
-                IsLoadingBlenderInfo = true;
-            });
-
-            if (!IsValidationRequestCurrent(blender, requestVersion))
+            if (!IsValidationRequestCurrent(blender, request))
             {
                 return;
             }
 
-            var info = await _blenderCliInfoService.GetVersionInfoAsync(blender.Path, cancellationToken);
+            IsLoadingBlenderInfo = true;
+        });
 
-            if (cancellationToken.IsCancellationRequested || !IsValidationRequestCurrent(blender, requestVersion)) return;
+        if (!IsValidationRequestCurrent(blender, request))
+        {
+            return;
+        }
 
-            // 更新UI线程上的属性
-            Dispatcher.UIThread.Post(() =>
+        var result = await _blenderValidationService.ValidateAsync(request);
+
+        if (!IsValidationRequestCurrent(blender, request) || result.IsCanceled || result.Status == BlenderValidationStatus.Stale)
+        {
+            return;
+        }
+
+        // 更新UI线程上的属性
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!IsValidationRequestCurrent(blender, request))
             {
-                if (!IsValidationRequestCurrent(blender, requestVersion))
-                {
-                    return;
-                }
+                return;
+            }
 
+            if (result.Status == BlenderValidationStatus.Success && result.VersionInfo != null)
+            {
                 // 更新Blender信息
-                blender.UpdateFromVersionInfo(info);
+                blender.UpdateFromVersionInfo(result.VersionInfo);
                 blender.UpdateValidationStatus(true, DateTime.UtcNow);
 
                 // 触发集合更改通知，让UI更新
@@ -334,30 +326,25 @@ public partial class SettingsViewModel : ViewModelBase
                 HasBlenderValidationError = false;
                 BlenderValidationMessage = string.Empty;
                 NotifyBlenderValidationChanged();
-            });
-        }
-        catch (Exception ex)
-        {
-            if (!cancellationToken.IsCancellationRequested)
-                Dispatcher.UIThread.Post(() =>
-                {
-                    if (!IsValidationRequestCurrent(blender, requestVersion))
-                    {
-                        return;
-                    }
+                return;
+            }
 
-                    IsLoadingBlenderInfo = false;
-                    blender.UpdateValidationStatus(false, DateTime.UtcNow);
-                    HasBlenderValidationError = true;
-                    BlenderValidationMessage = $"Blender验证失败: {ex.Message}";
-                    NotifyBlenderValidationChanged();
-                });
-        }
+            IsLoadingBlenderInfo = false;
+            blender.UpdateValidationStatus(false, DateTime.UtcNow);
+            HasBlenderValidationError = true;
+            BlenderValidationMessage = result.Status switch
+            {
+                BlenderValidationStatus.EmptyPath => "Blender路径为空",
+                BlenderValidationStatus.FileNotFound => "指定的文件不存在",
+                _ => $"Blender验证失败: {result.Message}"
+            };
+            NotifyBlenderValidationChanged();
+        });
     }
 
-    private bool IsValidationRequestCurrent(BlenderExecutable blender, int requestVersion)
+    private bool IsValidationRequestCurrent(BlenderExecutable blender, BlenderValidationRequest request)
     {
-        return requestVersion == _validationRequestVersion &&
+        return _blenderValidationService.IsCurrent(request) &&
                SelectedBlenderExecutable != null &&
                string.Equals(SelectedBlenderExecutable.Path, blender.Path, StringComparison.Ordinal);
     }
@@ -471,9 +458,11 @@ public partial class SettingsViewModel : ViewModelBase
                 source: nameof(SettingsViewModel),
                 message: "重启前后台保存设置任务失败。");
             var success = FileSystemHelper.RestartApplication();
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, success
-                ? "[SettingsViewModel] ✅ Application restart initiated"
-                : "[SettingsViewModel] ❌ Failed to restart application", source: "SettingsViewModel");
+            _logService.Write(
+                success ? RenderLogLevel.Info : RenderLogLevel.Error,
+                RenderLogScope.System,
+                success ? "应用重启已发起。" : "应用重启失败。",
+                source: "SettingsViewModel");
         }
         catch (Exception ex)
         {
@@ -541,7 +530,7 @@ public partial class SettingsViewModel : ViewModelBase
                     break;
             }
 
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Applied theme: {themeValue}, Current: {_theme.ActiveBaseTheme}", source: "SettingsViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Applied theme: {themeValue}, Current: {_theme.ActiveBaseTheme}", source: "SettingsViewModel", metadata: RenderLogMetadata.Diagnostic());
         }
         catch (Exception ex)
         {
@@ -585,9 +574,13 @@ public partial class SettingsViewModel : ViewModelBase
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, success
-                    ? $"[SettingsViewModel] ✅ Settings saved successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}"
-                    : "[SettingsViewModel] ❌ Failed to save settings", source: "SettingsViewModel");
+            _logService.Write(
+                success ? RenderLogLevel.Info : RenderLogLevel.Error,
+                RenderLogScope.System,
+                success
+                    ? $"设置保存完成，默认超时: {DefaultRenderTimeoutSeconds}s，最大重试: {MaxRetryAttempts}"
+                    : "设置保存失败。",
+                source: "SettingsViewModel");
         }
         catch (Exception ex)
         {
@@ -614,14 +607,14 @@ public partial class SettingsViewModel : ViewModelBase
 
                 foreach (var blender in uniqueBlenders) BlenderExecutables.Add(blender);
 
-                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Loaded {BlenderExecutables.Count} unique Blender executables", source: "SettingsViewModel");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Loaded {BlenderExecutables.Count} unique Blender executables", source: "SettingsViewModel", metadata: RenderLogMetadata.Diagnostic());
 
                 if (!string.IsNullOrEmpty(settings.SelectedBlenderPath))
                 {
                     SelectedBlenderExecutable =
                         BlenderExecutables.FirstOrDefault(b => b.Path == settings.SelectedBlenderPath);
 
-                    _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, $"Selected Blender: {SelectedBlenderExecutable?.Path ?? "NOT FOUND"}", source: "SettingsViewModel");
+                    _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, $"Selected Blender: {SelectedBlenderExecutable?.Path ?? "NOT FOUND"}", source: "SettingsViewModel", metadata: RenderLogMetadata.Diagnostic());
                 }
             }
 
@@ -684,7 +677,7 @@ public partial class SettingsViewModel : ViewModelBase
 
             HardwareAcceleration = settings.UseGpu;
 
-            _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, $"✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}", source: "SettingsViewModel");
+            _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, $"✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}", source: "SettingsViewModel", metadata: RenderLogMetadata.Diagnostic());
         }
         catch (Exception ex)
         {
@@ -711,7 +704,7 @@ public partial class SettingsViewModel : ViewModelBase
             var result = await _blenderExtensionManager.EnsureInstalledAsync(blenderExecutable.Path);
             BlenderExtensionStatusMessage = result.Message;
 
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Blender extension check: {result.Outcome} - {result.Message}", source: "SettingsViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Blender extension check: {result.Outcome} - {result.Message}", source: "SettingsViewModel", metadata: RenderLogMetadata.Diagnostic());
 
             if (!showToasts)
             {
@@ -770,8 +763,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     public void Dispose()
     {
-        _versionCts?.Cancel();
-        _versionCts?.Dispose();
+        _blenderValidationService.CancelCurrent(BlenderValidationChannel);
     }
 }
 

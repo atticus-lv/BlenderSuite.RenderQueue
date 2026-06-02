@@ -12,6 +12,8 @@ public sealed class RenderLogProjection
     public bool HistoricalOnly { get; init; }
     public bool IncludeDebug { get; init; } = true;
     public bool IncludeRaw { get; init; } = true;
+    public bool IncludeDiagnostics { get; init; } = true;
+    public bool DiagnosticsOnly { get; init; }
     public IReadOnlyCollection<RenderLogLevel>? Levels { get; init; }
     public IReadOnlyCollection<RenderLogScope>? Scopes { get; init; }
     public string SearchText { get; init; } = string.Empty;
@@ -56,9 +58,20 @@ public sealed class RenderLogProjection
             return false;
         }
 
-        var isRaw = logEvent.Metadata.TryGetValue("kind", out var kind) &&
-                    string.Equals(kind, "raw", StringComparison.OrdinalIgnoreCase);
+        var isRaw = logEvent.Metadata.TryGetValue(RenderLogMetadata.KindKey, out var kind) &&
+                    string.Equals(kind, RenderLogMetadata.KindRaw, StringComparison.OrdinalIgnoreCase);
         if (!IncludeRaw && isRaw)
+        {
+            return false;
+        }
+
+        var isDiagnostic = RenderLogMetadata.IsDiagnostic(logEvent);
+        if (DiagnosticsOnly && !isDiagnostic)
+        {
+            return false;
+        }
+
+        if (!IncludeDiagnostics && isDiagnostic)
         {
             return false;
         }

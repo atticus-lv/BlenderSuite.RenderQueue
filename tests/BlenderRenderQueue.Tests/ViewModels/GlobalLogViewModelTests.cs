@@ -45,6 +45,116 @@ public sealed class GlobalLogViewModelTests
     }
 
     [AvaloniaFact]
+    public async Task DefaultView_HidesDiagnosticEntries()
+    {
+        var logService = TestLogServiceFactory.Create();
+        logService.Write(RenderLogLevel.Info, RenderLogScope.System, "User event");
+        logService.Write(
+            RenderLogLevel.Info,
+            RenderLogScope.System,
+            "Diagnostic event",
+            metadata: RenderLogMetadata.Diagnostic());
+
+        using var sut = new GlobalLogViewModel(logService);
+        await DrainUiAsync();
+
+        Assert.Single(sut.Entries);
+        Assert.Equal("User event", sut.Entries[0].Message);
+    }
+
+    [AvaloniaFact]
+    public async Task DiagnosticView_ShowsDiagnosticEntries()
+    {
+        var logService = TestLogServiceFactory.Create();
+        logService.Write(
+            RenderLogLevel.Info,
+            RenderLogScope.System,
+            "Diagnostic event",
+            metadata: RenderLogMetadata.Diagnostic());
+
+        using var sut = new GlobalLogViewModel(logService);
+
+        sut.SelectedAudience = "GlobalLog_Filter_DiagnosticLogs";
+        await WaitForDebounceAsync();
+
+        Assert.Single(sut.Entries);
+        Assert.Equal("Diagnostic event", sut.Entries[0].Message);
+    }
+
+    [AvaloniaFact]
+    public async Task DebugOnlyLevel_DoesNotMixInfoEntries()
+    {
+        var logService = TestLogServiceFactory.Create();
+        logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Info event");
+        logService.Write(RenderLogLevel.Debug, RenderLogScope.System, "Debug event");
+
+        using var sut = new GlobalLogViewModel(logService);
+
+        sut.SelectedAudience = "GlobalLog_Filter_DiagnosticLogs";
+        sut.SelectedLevel = "GlobalLog_Filter_DebugOnly";
+        await WaitForDebounceAsync();
+
+        Assert.Single(sut.Entries);
+        Assert.Equal("Debug event", sut.Entries[0].Message);
+    }
+
+    [AvaloniaFact]
+    public async Task OperationEntries_AreGroupedWithDetails()
+    {
+        var logService = TestLogServiceFactory.Create();
+        var operation = logService.BeginOperation(
+            RenderLogScope.Recovery,
+            "LoadSettings",
+            "Test",
+            "Start loading settings");
+        operation.Detail("Loading settings from /tmp/settings.json");
+        operation.Complete("Settings loaded");
+
+        using var sut = new GlobalLogViewModel(logService);
+
+        Assert.Single(sut.Entries);
+        Assert.Equal("Settings loaded", sut.Entries[0].Message);
+        Assert.Empty(sut.Entries[0].Details);
+
+        sut.SelectedAudience = "GlobalLog_Filter_AllAudiences";
+        await WaitForDebounceAsync();
+
+        Assert.Single(sut.Entries);
+        Assert.Equal("Settings loaded", sut.Entries[0].Message);
+        Assert.Equal(2, sut.Entries[0].Details.Count);
+    }
+
+    [AvaloniaFact]
+    public void HistoricalSessionEntries_AreCollapsedInAllSessionsView()
+    {
+        var logService = TestLogServiceFactory.Create();
+        logService.Write(new RenderLogEvent
+        {
+            SessionId = "older-session",
+            Level = RenderLogLevel.Info,
+            Scope = RenderLogScope.Queue,
+            Message = "Old event 1"
+        });
+        logService.Write(new RenderLogEvent
+        {
+            SessionId = "older-session",
+            Level = RenderLogLevel.Warning,
+            Scope = RenderLogScope.Queue,
+            Message = "Old event 2"
+        });
+        logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "Current event");
+
+        using var sut = new GlobalLogViewModel(logService);
+
+        Assert.Equal(2, sut.Entries.Count);
+        var historyEntry = sut.Entries.Single(entry => entry.ShowSessionBadge);
+        Assert.Contains("2", historyEntry.Message, StringComparison.Ordinal);
+        Assert.Equal(2, historyEntry.Details.Count);
+        Assert.Contains(historyEntry.Details, detail => detail.Message == "Old event 1");
+        Assert.Contains(historyEntry.Details, detail => detail.Message == "Old event 2");
+    }
+
+    [AvaloniaFact]
     public void ClearHistory_IsDisabledWhenOnlyCurrentSessionEntriesExist()
     {
         var logService = TestLogServiceFactory.Create();

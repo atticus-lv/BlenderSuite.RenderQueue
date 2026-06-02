@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -56,17 +57,28 @@ public class DataPersistenceService : IDataPersistenceService
     public async Task<bool> SaveDataAsync(AppData data)
     {
         string? tempFilePath = null;
+        var operation = _logService.BeginOperation(
+            RenderLogScope.Recovery,
+            "SaveQueueData",
+            nameof(DataPersistenceService),
+            "开始保存队列数据。",
+            metadata: new Dictionary<string, string>
+            {
+                ["path"] = _dataFilePath,
+                ["task_count"] = data.RenderQueue.Count.ToString()
+            });
         try
         {
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"Saving data to: {_dataFilePath}", source: "DataPersistenceService");
-
             var json = JsonSerializer.Serialize(data, AppDataJsonContext.Default.AppData);
             tempFilePath = $"{_dataFilePath}.{Guid.NewGuid():N}.tmp";
+            operation.Detail($"写入临时数据文件: {tempFilePath}");
 
             await File.WriteAllTextAsync(tempFilePath, json);
             File.Move(tempFilePath, _dataFilePath, overwrite: true);
 
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"✅ Data saved successfully", source: "DataPersistenceService");
+            operation.Complete(
+                $"队列数据保存完成，任务数: {data.RenderQueue.Count}",
+                audience: RenderLogMetadata.AudienceDiagnostic);
             return true;
         }
         catch (Exception ex)
@@ -83,22 +95,34 @@ public class DataPersistenceService : IDataPersistenceService
                 }
             }
 
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Error saving data: {ex.Message}", source: "DataPersistenceService");
+            operation.Fail($"队列数据保存失败: {ex.Message}");
             return false;
         }
     }
 
     public async Task<AppData> LoadDataAsync()
     {
+        var operation = _logService.BeginOperation(
+            RenderLogScope.Recovery,
+            "LoadQueueDataFile",
+            nameof(DataPersistenceService),
+            "开始读取队列数据文件。",
+            metadata: new Dictionary<string, string>
+            {
+                ["path"] = _dataFilePath
+            });
         try
         {
             if (!DataFileExists())
             {
-                _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"Data file does not exist, returning default data", source: "DataPersistenceService");
+                operation.Complete(
+                    "未找到队列数据文件，使用默认空队列。",
+                    RenderLogLevel.Warning,
+                    audience: RenderLogMetadata.AudienceDiagnostic);
                 return new AppData();
             }
 
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"Loading data from: {_dataFilePath}", source: "DataPersistenceService");
+            operation.Detail($"读取队列数据文件: {_dataFilePath}");
 
             // 异步读取文件
             var json = await File.ReadAllTextAsync(_dataFilePath);
@@ -108,16 +132,18 @@ public class DataPersistenceService : IDataPersistenceService
 
             if (data == null)
             {
-                _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Failed to deserialize data, returning default", source: "DataPersistenceService");
+                operation.Fail("队列数据反序列化失败，使用默认空队列。");
                 return new AppData();
             }
 
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"✅ Data loaded successfully - Tasks: {data.RenderQueue.Count}", source: "DataPersistenceService");
+            operation.Complete(
+                $"队列数据文件读取完成，任务数: {data.RenderQueue.Count}",
+                audience: RenderLogMetadata.AudienceDiagnostic);
             return data;
         }
         catch (Exception ex)
         {
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Error loading data: {ex.Message}", source: "DataPersistenceService");
+            operation.Fail($"队列数据读取失败: {ex.Message}");
             return new AppData();
         }
     }

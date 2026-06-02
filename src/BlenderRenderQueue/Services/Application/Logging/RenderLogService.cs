@@ -32,6 +32,7 @@ public sealed class RenderLogService : IRenderLogService
 
     public void Write(RenderLogEvent logEvent)
     {
+        var metadata = NormalizeMetadata(logEvent);
         var normalized = new RenderLogEvent
         {
             EventId = logEvent.EventId == Guid.Empty ? Guid.NewGuid() : logEvent.EventId,
@@ -43,7 +44,7 @@ public sealed class RenderLogService : IRenderLogService
             BlendFilePath = logEvent.BlendFilePath ?? string.Empty,
             SessionId = string.IsNullOrWhiteSpace(logEvent.SessionId) ? CurrentSessionId : logEvent.SessionId,
             Source = logEvent.Source ?? string.Empty,
-            Metadata = logEvent.Metadata ?? new Dictionary<string, string>()
+            Metadata = metadata
         };
 
         _store.Append(normalized);
@@ -70,6 +71,25 @@ public sealed class RenderLogService : IRenderLogService
             Source = source ?? string.Empty,
             Metadata = metadata ?? new Dictionary<string, string>()
         });
+    }
+
+    private static IReadOnlyDictionary<string, string> NormalizeMetadata(RenderLogEvent logEvent)
+    {
+        var metadata = logEvent.Metadata == null
+            ? new Dictionary<string, string>()
+            : new Dictionary<string, string>(logEvent.Metadata);
+        if (metadata.ContainsKey(RenderLogMetadata.AudienceKey))
+        {
+            return metadata;
+        }
+
+        var isRaw = metadata.TryGetValue(RenderLogMetadata.KindKey, out var kind) &&
+                    string.Equals(kind, RenderLogMetadata.KindRaw, StringComparison.OrdinalIgnoreCase);
+        metadata[RenderLogMetadata.AudienceKey] =
+            logEvent.Level == RenderLogLevel.Debug || isRaw
+                ? RenderLogMetadata.AudienceDiagnostic
+                : RenderLogMetadata.AudienceUser;
+        return metadata;
     }
 
     public void ClearHistory()

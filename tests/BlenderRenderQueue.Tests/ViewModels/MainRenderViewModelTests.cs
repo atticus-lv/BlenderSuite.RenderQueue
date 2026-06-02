@@ -25,10 +25,10 @@ public sealed class MainRenderViewModelTests
         var settings = new SettingsViewModel(
             new FakeSettingsPersistenceService(new SettingsData()),
             new FakeBlenderExtensionManager(),
-            new FakeBlenderCliInfoService(),
+            new BlenderValidationService(new FakeBlenderCliInfoService()),
             logService);
         var globalLog = new GlobalLogViewModel(logService);
-        var sut = new MainRenderViewModel(settings, renderQueue, globalLog, logService, new FakeBlenderCliInfoService());
+        var sut = new MainRenderViewModel(settings, renderQueue, globalLog, logService, new BlenderValidationService(new FakeBlenderCliInfoService()));
 
         try
         {

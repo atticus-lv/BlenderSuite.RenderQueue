@@ -36,12 +36,22 @@
         </Grid>
 
         <Grid Grid.Row="1"
-              ColumnDefinitions="2*,*,*,*,*"
+              ColumnDefinitions="2*,*,*,*,*,*"
               ColumnSpacing="8">
             <TextBox PlaceholderText="{i18n:Localize GlobalLog_Search}"
                      Text="{Binding SearchText}"
                      MinWidth="260" />
             <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding AudienceOptions}"
+                      SelectedItem="{Binding SelectedAudience}"
+                      MinWidth="150">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <TextBlock Text="{Binding ., Converter={StaticResource LocalizeConverter}}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <ComboBox Grid.Column="2"
                       ItemsSource="{Binding LevelOptions}"
                       SelectedItem="{Binding SelectedLevel}"
                       MinWidth="170">
@@ -51,7 +61,7 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-            <ComboBox Grid.Column="2"
+            <ComboBox Grid.Column="3"
                       ItemsSource="{Binding ScopeOptions}"
                       SelectedItem="{Binding SelectedScope}"
                       MinWidth="150">
@@ -61,7 +71,7 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-            <ComboBox Grid.Column="3"
+            <ComboBox Grid.Column="4"
                       ItemsSource="{Binding SessionOptions}"
                       SelectedItem="{Binding SelectedSession}"
                       MinWidth="150">
@@ -71,7 +81,7 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-            <ComboBox Grid.Column="4"
+            <ComboBox Grid.Column="5"
                       ItemsSource="{Binding TaskOptions}"
                       SelectedItem="{Binding SelectedTask}"
                       MinWidth="180">
@@ -108,15 +118,45 @@
                         <Style Selector="ListBoxItem">
                             <Setter Property="Margin" Value="0 0 0 4" />
                             <Setter Property="Padding" Value="0" />
-                            <Setter Property="BorderThickness" Value="1" />
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="0" />
                             <Setter Property="CornerRadius" Value="6" />
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                        <Style Selector="Border.LogEntrySurface">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                            <Setter Property="BorderThickness" Value="1" />
+                            <Setter Property="Transitions">
+                                <Transitions>
+                                    <BrushTransition Property="Background" Duration="0:0:0.12" />
+                                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+                                </Transitions>
+                            </Setter>
+                        </Style>
+                        <Style Selector="Border.LogEntrySurface:pointerover">
+                            <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
+                        </Style>
+                        <Style Selector="ListBoxItem:pointerover Border.LogEntrySurface">
+                            <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
+                        </Style>
+                        <Style Selector="ListBoxItem:selected Border.LogEntrySurface">
+                            <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}" />
+                        </Style>
+                        <Style Selector="ListBoxItem:selected:pointerover Border.LogEntrySurface">
+                            <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}" />
                         </Style>
                     </ListBox.Styles>
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="logVm:GlobalLogEntryViewModel">
                             <Border Padding="12,9"
-                                    Background="Transparent">
+                                    CornerRadius="6"
+                                    ClipToBounds="True"
+                                    BorderThickness="1"
+                                    Classes="LogEntrySurface">
                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                     <SelectableTextBlock Grid.Column="0"
                                                          Text="{Binding TimeText}"
@@ -136,6 +176,12 @@
                                             </Border>
                                             <Border CornerRadius="7"
                                                     Padding="6,2"
+                                                    Background="#3A2934"
+                                                    IsVisible="{Binding ShowAudienceBadge}">
+                                                <TextBlock Text="{Binding AudienceText}" FontSize="10" />
+                                            </Border>
+                                            <Border CornerRadius="7"
+                                                    Padding="6,2"
                                                     Background="#29313A"
                                                     IsVisible="{Binding ShowSessionBadge}">
                                                 <TextBlock Text="{Binding SessionText}" FontSize="10" />
@@ -150,6 +196,36 @@
                                         <TextBlock Text="{Binding Message}"
                                                    TextWrapping="Wrap"
                                                    FontSize="12.5" />
+
+                                        <Expander Header="{Binding DetailsHeader}"
+                                                  IsVisible="{Binding HasDetails}">
+                                            <ItemsControl ItemsSource="{Binding Details}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="logVm:GlobalLogDetailEntryViewModel">
+                                                        <Grid ColumnDefinitions="Auto,Auto,Auto,*"
+                                                              ColumnSpacing="8"
+                                                              Margin="0 4 0 0">
+                                                            <TextBlock Text="{Binding TimeText}"
+                                                                       FontSize="11"
+                                                                       Opacity="0.66" />
+                                                            <TextBlock Grid.Column="1"
+                                                                       Text="{Binding LevelText}"
+                                                                       FontSize="11"
+                                                                       Opacity="0.66" />
+                                                            <TextBlock Grid.Column="2"
+                                                                       Text="{Binding PhaseText}"
+                                                                       FontSize="11"
+                                                                       Opacity="0.66" />
+                                                            <TextBlock Grid.Column="3"
+                                                                       Text="{Binding Message}"
+                                                                       TextWrapping="Wrap"
+                                                                       FontSize="11.5"
+                                                                       Opacity="0.82" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Expander>
                                     </StackPanel>
 
                                     <Button Grid.Column="2"

@@ -48,6 +48,15 @@ public class SettingsPersistenceService : ISettingsPersistenceService
 
     public async Task<bool> SaveSettingsAsync(SettingsData settings)
     {
+        var operation = _logService.BeginOperation(
+            RenderLogScope.Recovery,
+            "SaveSettings",
+            nameof(SettingsPersistenceService),
+            "开始保存设置。",
+            metadata: new Dictionary<string, string>
+            {
+                ["path"] = SettingsFilePath
+            });
         try
         {
             // 确保目录存在
@@ -61,64 +70,103 @@ public class SettingsPersistenceService : ISettingsPersistenceService
             settings.Software = "BlenderRenderQueue";
             settings.Version = "0.0.1";
 
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"Saving settings to: {SettingsFilePath}", source: "SettingsPersistenceService");
+            operation.Detail($"保存设置到: {SettingsFilePath}");
 
             // 序列化并保存到文件
             var json = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.SettingsData);
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"Serialized JSON: {json}", source: "SettingsPersistenceService");
+            operation.Detail(
+                $"Serialized JSON: {json}",
+                RenderLogLevel.Debug,
+                new Dictionary<string, string>
+                {
+                    ["bytes"] = json.Length.ToString()
+                });
             await File.WriteAllTextAsync(SettingsFilePath, json);
 
-            _logService.Write(RenderLogLevel.Warning, RenderLogScope.Recovery, $"✅ Settings saved successfully - Selected Blender: {settings.SelectedBlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s", source: "SettingsPersistenceService");
+            operation.Complete(
+                $"设置保存完成，默认超时: {settings.DefaultRenderTimeoutSeconds}s",
+                audience: RenderLogMetadata.AudienceDiagnostic,
+                metadata: new Dictionary<string, string>
+                {
+                    ["selected_blender"] = settings.SelectedBlenderPath,
+                    ["timeout_seconds"] = settings.DefaultRenderTimeoutSeconds.ToString()
+                });
             return true;
         }
         catch (Exception ex)
         {
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Failed to save settings: {ex.Message}", source: "SettingsPersistenceService");
+            operation.Fail($"设置保存失败: {ex.Message}");
             return false;
         }
     }
 
     public async Task<SettingsData> LoadSettingsAsync()
     {
+        var operation = _logService.BeginOperation(
+            RenderLogScope.Recovery,
+            "LoadSettings",
+            nameof(SettingsPersistenceService),
+            "开始读取设置。",
+            metadata: new Dictionary<string, string>
+            {
+                ["path"] = SettingsFilePath
+            });
         try
         {
             if (!File.Exists(SettingsFilePath))
             {
-                _logService.Write(RenderLogLevel.Warning, RenderLogScope.Recovery, $"Settings file not found, using defaults: {SettingsFilePath}", source: "SettingsPersistenceService");
+                operation.Complete(
+                    "未找到设置文件，使用默认设置。",
+                    RenderLogLevel.Warning,
+                    audience: RenderLogMetadata.AudienceDiagnostic);
                 return new SettingsData();
             }
 
             var json = await File.ReadAllTextAsync(SettingsFilePath);
-            _logService.Write(RenderLogLevel.Debug, RenderLogScope.Recovery, $"Raw JSON content: {json}", source: "SettingsPersistenceService");
+            operation.Detail(
+                $"Raw JSON content: {json}",
+                RenderLogLevel.Debug,
+                new Dictionary<string, string>
+                {
+                    ["bytes"] = json.Length.ToString()
+                });
             
             var settings = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.SettingsData);
 
             if (settings == null)
             {
-                _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"Failed to deserialize settings, using defaults", source: "SettingsPersistenceService");
+                operation.Fail("设置反序列化失败，使用默认设置。");
                 return new SettingsData();
             }
 
             // 版本兼容性检查
             if (string.IsNullOrEmpty(settings.Software) || settings.Software != "BlenderRenderQueue")
             {
-                _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"⚠️ Invalid software identifier, using defaults", source: "SettingsPersistenceService");
+                operation.Fail("设置文件软件标识无效，使用默认设置。");
                 return new SettingsData();
             }
 
             // 版本检查（如果需要，可以在这里添加版本迁移逻辑）
             if (string.IsNullOrEmpty(settings.Version))
             {
-                _logService.Write(RenderLogLevel.Warning, RenderLogScope.Recovery, $"⚠️ No version found, assuming legacy format", source: "SettingsPersistenceService");
+                operation.Detail("设置文件没有版本号，按旧格式处理。", RenderLogLevel.Warning);
                 settings.Version = "0.0.1"; // 设置默认版本
             }
 
-            _logService.Write(RenderLogLevel.Warning, RenderLogScope.Recovery, $"✅ Settings loaded successfully - Version: {settings.Version}, Selected Blender: {settings.SelectedBlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s", source: "SettingsPersistenceService");
+            operation.Complete(
+                $"设置读取完成，默认超时: {settings.DefaultRenderTimeoutSeconds}s",
+                audience: RenderLogMetadata.AudienceDiagnostic,
+                metadata: new Dictionary<string, string>
+                {
+                    ["version"] = settings.Version,
+                    ["selected_blender"] = settings.SelectedBlenderPath,
+                    ["timeout_seconds"] = settings.DefaultRenderTimeoutSeconds.ToString()
+                });
             return settings;
         }
         catch (Exception ex)
         {
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Failed to load settings: {ex.Message}", source: "SettingsPersistenceService");
+            operation.Fail($"设置读取失败: {ex.Message}");
             return new SettingsData();
         }
     }

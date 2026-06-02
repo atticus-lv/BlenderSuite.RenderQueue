@@ -24,7 +24,7 @@ internal static class ApplicationLogWriter
                 taskId,
                 blendFilePath,
                 source,
-                metadata);
+                RenderLogMetadata.Diagnostic(metadata));
         }
         catch (Exception ex)
         {

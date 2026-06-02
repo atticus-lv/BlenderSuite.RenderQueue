@@ -16,8 +16,12 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
     private const string AllScopes = "GlobalLog_Filter_AllScopes";
     private const string DefaultLevels = "GlobalLog_Filter_DefaultLevels";
     private const string AllLevels = "GlobalLog_Filter_AllLevels";
+    private const string DebugOnly = "GlobalLog_Filter_DebugOnly";
     private const string ErrorsOnly = "GlobalLog_Filter_ErrorsOnly";
     private const string WarningsAndErrors = "GlobalLog_Filter_WarningsAndErrors";
+    private const string UserLogs = "GlobalLog_Filter_UserLogs";
+    private const string DiagnosticLogs = "GlobalLog_Filter_DiagnosticLogs";
+    private const string AllAudiences = "GlobalLog_Filter_AllAudiences";
     private const string CurrentSession = "GlobalLog_Filter_CurrentSession";
     private const string HistoryOnly = "GlobalLog_Filter_HistoryOnly";
     private const string AllSessions = "GlobalLog_Filter_AllSessions";
@@ -46,8 +50,16 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         {
             DefaultLevels,
             AllLevels,
+            DebugOnly,
             ErrorsOnly,
             WarningsAndErrors
+        });
+    private ObservableCollection<string> _audienceOptions = new(
+        new[]
+        {
+            UserLogs,
+            DiagnosticLogs,
+            AllAudiences
         });
     private ObservableCollection<string> _sessionOptions = new(
         new[]
@@ -59,6 +71,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
     private ObservableCollection<TaskFilterOption> _taskOptions = new(new[] { TaskFilterOption.All });
     private string _selectedScope = AllScopes;
     private string _selectedLevel = DefaultLevels;
+    private string _selectedAudience = UserLogs;
     private string _selectedSession = AllSessions;
     private TaskFilterOption _selectedTask = TaskFilterOption.All;
     private string _searchText = string.Empty;
@@ -113,6 +126,16 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         }
     }
 
+    public ObservableCollection<string> AudienceOptions
+    {
+        get => _audienceOptions;
+        private set
+        {
+            _audienceOptions = value;
+            OnPropertyChanged();
+        }
+    }
+
     public ObservableCollection<string> SessionOptions
     {
         get => _sessionOptions;
@@ -152,6 +175,19 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         set
         {
             if (SetProperty(ref _selectedLevel, value) && !_isRefreshing)
+            {
+                OnPropertyChanged(nameof(FilterSummaryText));
+                RequestRefresh();
+            }
+        }
+    }
+
+    public string SelectedAudience
+    {
+        get => _selectedAudience;
+        set
+        {
+            if (SetProperty(ref _selectedAudience, value) && !_isRefreshing)
             {
                 OnPropertyChanged(nameof(FilterSummaryText));
                 RequestRefresh();
@@ -209,6 +245,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
                 AppLocalizer.Instance["GlobalLog_FilterSummary"],
                 countText,
                 LocalizeFilterLabel(SelectedSession),
+                LocalizeFilterLabel(SelectedAudience),
                 LocalizeFilterLabel(SelectedLevel),
                 _selectedTask.DisplayLabel);
         }
@@ -301,6 +338,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
     {
         IReadOnlyCollection<RenderLogLevel>? levels = SelectedLevel switch
         {
+            DebugOnly => new RenderLogLevel[] { RenderLogLevel.Debug },
             ErrorsOnly => new RenderLogLevel[] { RenderLogLevel.Error },
             WarningsAndErrors => new RenderLogLevel[] { RenderLogLevel.Warning, RenderLogLevel.Error },
             DefaultLevels => new RenderLogLevel[] { RenderLogLevel.Info, RenderLogLevel.Warning, RenderLogLevel.Error },
@@ -319,8 +357,11 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
             TaskId = _selectedTask?.TaskId,
             CurrentSessionOnly = string.Equals(SelectedSession, CurrentSession, StringComparison.Ordinal),
             HistoricalOnly = string.Equals(SelectedSession, HistoryOnly, StringComparison.Ordinal),
-            IncludeDebug = string.Equals(SelectedLevel, AllLevels, StringComparison.Ordinal),
-            IncludeRaw = false,
+            IncludeDebug = string.Equals(SelectedLevel, AllLevels, StringComparison.Ordinal) ||
+                           string.Equals(SelectedLevel, DebugOnly, StringComparison.Ordinal),
+            IncludeRaw = !string.Equals(SelectedAudience, UserLogs, StringComparison.Ordinal),
+            IncludeDiagnostics = !string.Equals(SelectedAudience, UserLogs, StringComparison.Ordinal),
+            DiagnosticsOnly = string.Equals(SelectedAudience, DiagnosticLogs, StringComparison.Ordinal),
             Levels = levels,
             Scopes = scopes,
             SearchText = SearchText
@@ -395,6 +436,19 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
     private bool TryAppendEntry(RenderLogEvent logEvent)
     {
+        if (ShouldCollapseHistoricalSessions() &&
+            !string.Equals(logEvent.SessionId, _logService.CurrentSessionId, StringComparison.Ordinal))
+        {
+            RequestRefresh();
+            return true;
+        }
+
+        if (RenderLogMetadata.TryGetOperationId(logEvent, out _))
+        {
+            RequestRefresh();
+            return true;
+        }
+
         if (_entryEventIds.Contains(logEvent.EventId))
         {
             return true;
@@ -440,17 +494,146 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
     {
         Entries.Clear();
         _entryEventIds.Clear();
-        foreach (var logEvent in events)
+        foreach (var entry in BuildEntries(events))
         {
-            if (!_entryEventIds.Add(logEvent.EventId))
+            if (!_entryEventIds.Add(entry.Event.EventId))
             {
                 continue;
             }
 
-            Entries.Add(new GlobalLogEntryViewModel(logEvent, _logService.CurrentSessionId, NavigateToTask));
+            foreach (var detail in entry.Details)
+            {
+                _entryEventIds.Add(detail.EventId);
+            }
+
+            Entries.Add(entry);
         }
 
         OnPropertyChanged(nameof(HasEntries));
+    }
+
+    private IReadOnlyList<GlobalLogEntryViewModel> BuildEntries(IEnumerable<RenderLogEvent> events)
+    {
+        var singles = new List<GlobalLogEntryViewModel>();
+        var operationGroups = new Dictionary<string, List<RenderLogEvent>>(StringComparer.Ordinal);
+        var historyGroups = new Dictionary<string, List<RenderLogEvent>>(StringComparer.Ordinal);
+        foreach (var logEvent in events)
+        {
+            if (ShouldCollapseHistoricalSessions() &&
+                !string.Equals(logEvent.SessionId, _logService.CurrentSessionId, StringComparison.Ordinal))
+            {
+                if (!historyGroups.TryGetValue(logEvent.SessionId, out var historyGroup))
+                {
+                    historyGroup = [];
+                    historyGroups[logEvent.SessionId] = historyGroup;
+                }
+
+                historyGroup.Add(logEvent);
+                continue;
+            }
+
+            if (RenderLogMetadata.TryGetOperationId(logEvent, out var operationId))
+            {
+                if (!operationGroups.TryGetValue(operationId, out var group))
+                {
+                    group = [];
+                    operationGroups[operationId] = group;
+                }
+
+                group.Add(logEvent);
+                continue;
+            }
+
+            singles.Add(new GlobalLogEntryViewModel(logEvent, _logService.CurrentSessionId, NavigateToTask));
+        }
+
+        foreach (var group in operationGroups.Values)
+        {
+            var summary = PickOperationSummary(group);
+            var details = group
+                .Where(logEvent => logEvent.EventId != summary.EventId)
+                .ToList();
+            singles.Add(new GlobalLogEntryViewModel(summary, _logService.CurrentSessionId, NavigateToTask, details));
+        }
+
+        foreach (var group in historyGroups.Values)
+        {
+            singles.Add(CreateHistorySessionEntry(group));
+        }
+
+        return singles
+            .OrderByDescending(entry => entry.Event.Timestamp)
+            .ToList();
+    }
+
+    private bool ShouldCollapseHistoricalSessions()
+    {
+        return string.Equals(SelectedSession, AllSessions, StringComparison.Ordinal) ||
+               string.Equals(SelectedSession, HistoryOnly, StringComparison.Ordinal);
+    }
+
+    private GlobalLogEntryViewModel CreateHistorySessionEntry(IReadOnlyList<RenderLogEvent> events)
+    {
+        var ordered = events
+            .OrderBy(logEvent => logEvent.Timestamp)
+            .ToList();
+        var first = ordered[0];
+        var latest = ordered[^1];
+        var summary = new RenderLogEvent
+        {
+            Timestamp = latest.Timestamp,
+            Level = PickHighestLevel(events),
+            Scope = RenderLogScope.System,
+            Message = string.Format(
+                AppLocalizer.Instance["GlobalLog_HistorySessionSummary"],
+                events.Count,
+                first.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm")),
+            SessionId = first.SessionId,
+            Source = nameof(GlobalLogViewModel),
+            Metadata = RenderLogMetadata.WithAudience(null, RenderLogMetadata.AudienceUser)
+        };
+
+        return new GlobalLogEntryViewModel(summary, _logService.CurrentSessionId, NavigateToTask, ordered);
+    }
+
+    private static RenderLogLevel PickHighestLevel(IEnumerable<RenderLogEvent> events)
+    {
+        return events
+            .Select(logEvent => logEvent.Level)
+            .OrderByDescending(GetLevelPriority)
+            .First();
+    }
+
+    private static int GetLevelPriority(RenderLogLevel level)
+    {
+        return level switch
+        {
+            RenderLogLevel.Error => 4,
+            RenderLogLevel.Warning => 3,
+            RenderLogLevel.Info => 2,
+            RenderLogLevel.Debug => 1,
+            _ => 0
+        };
+    }
+
+    private static RenderLogEvent PickOperationSummary(IReadOnlyList<RenderLogEvent> events)
+    {
+        return events
+            .OrderByDescending(GetOperationSummaryPriority)
+            .ThenByDescending(logEvent => logEvent.Timestamp)
+            .First();
+    }
+
+    private static int GetOperationSummaryPriority(RenderLogEvent logEvent)
+    {
+        return RenderLogMetadata.GetPhase(logEvent) switch
+        {
+            RenderLogMetadata.PhaseError => 4,
+            RenderLogMetadata.PhaseSuccess => 3,
+            RenderLogMetadata.PhaseDetail => 2,
+            RenderLogMetadata.PhaseStart => 1,
+            _ => 0
+        };
     }
 
     private void ReplaceTaskOptions(IEnumerable<TaskFilterOption> options)

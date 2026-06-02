@@ -27,6 +27,7 @@ public static class AppServices
         services.AddSingleton<ILogPersistenceService, JsonLinesLogPersistenceService>();
         services.AddSingleton<IRenderLogService, RenderLogService>();
         services.AddSingleton<IBlenderCliInfoService, BlenderCliInfoService>();
+        services.AddSingleton<IBlenderValidationService, BlenderValidationService>();
         services.AddSingleton<IBlenderQueryService, BlenderQueryService>();
         services.AddSingleton<IBlenderExtensionManager, BlenderExtensionManager>();
         services.AddSingleton<IBlenderWorkerHost, PythonConsoleWorkerHost>();

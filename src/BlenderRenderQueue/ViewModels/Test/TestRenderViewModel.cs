@@ -7,17 +7,19 @@ using System.Collections.Concurrent;
 using Avalonia.Platform.Storage;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 using BlenderRenderQueue.Services.UI;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BlenderRenderQueue.ViewModels.Test;
 
 public partial class TestRenderViewModel : ViewModelBase
 {
+	private const string BlenderValidationChannel = nameof(TestRenderViewModel);
+
 	[ObservableProperty]
 	private string _blenderPath = string.Empty;
 
@@ -82,10 +84,13 @@ public partial class TestRenderViewModel : ViewModelBase
 	private const int MinFlushIntervalMs = 50; // 最小刷新间隔50ms
 	private const int MaxBatchSize = 100; // 单次处理最大日志条数
 
-	private CancellationTokenSource? _versionCts;
+	private readonly IBlenderValidationService _blenderValidationService;
 
 	public TestRenderViewModel()
 	{
+		_blenderValidationService = AppServices.Instance.GetService<IBlenderValidationService>()
+			?? new BlenderValidationService(new BlenderCliInfoService());
+
 		// 降低刷新频率，提高批量处理效率
 		_logTimer = new System.Timers.Timer(200); // 从100ms改为200ms
 		_logTimer.Elapsed += (_, __) => FlushLogQueue();
@@ -127,34 +132,44 @@ public partial class TestRenderViewModel : ViewModelBase
 
 	partial void OnBlenderPathChanged(string value)
 	{
-		_versionCts?.Cancel();
-		_versionCts = new CancellationTokenSource();
-		var ct = _versionCts.Token;
-
-		if (string.IsNullOrWhiteSpace(value) || !File.Exists(value)) return;
-
-		Task.Run(async () =>
+		var request = _blenderValidationService.BeginValidation(value, BlenderValidationChannel);
+		if (_blenderValidationService.ValidatePreconditions(request) != null)
 		{
-			try
-			{
-				var svc = new BlenderCliInfoService();
-				var info = await svc.GetVersionInfoAsync(value, ct);
-				if (ct.IsCancellationRequested) return;
-				Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-				{
-					EnqueueLog($"Blender 版本: {info.Version} | 平台: {info.Platform} | 分支: {info.Branch} | Hash: {info.Hash}");
-				});
-			}
-			catch (Exception ex)
-			{
-				if (!ct.IsCancellationRequested)
-				{
-					Avalonia.Threading.Dispatcher.UIThread.Post(() => EnqueueLog($"查询版本失败: {ex.Message}"));
-				}
-			}
-		}).FireAndForget(
+			return;
+		}
+
+		LoadBlenderInfoAsync(value, request).FireAndForget(
 			source: nameof(TestRenderViewModel),
 			message: "测试渲染页后台查询 Blender 版本失败。");
+	}
+
+	private async Task LoadBlenderInfoAsync(string path, BlenderValidationRequest request)
+	{
+		var result = await _blenderValidationService.ValidateAsync(request);
+		if (!_blenderValidationService.IsCurrent(request) ||
+		    result.IsCanceled ||
+		    result.Status == BlenderValidationStatus.Stale)
+		{
+			return;
+		}
+
+		Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+		{
+			if (!_blenderValidationService.IsCurrent(request) ||
+			    !string.Equals(BlenderPath, path, StringComparison.Ordinal))
+			{
+				return;
+			}
+
+			if (result.Status == BlenderValidationStatus.Success && result.VersionInfo != null)
+			{
+				var info = result.VersionInfo;
+				EnqueueLog($"Blender 版本: {info.Version} | 平台: {info.Platform} | 分支: {info.Branch} | Hash: {info.Hash}");
+				return;
+			}
+
+			EnqueueLog($"查询版本失败: {result.Message}");
+		});
 	}
 
 	[RelayCommand]

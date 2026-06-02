@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
@@ -21,6 +20,8 @@ namespace BlenderRenderQueue.ViewModels;
 
 public partial class MainRenderViewModel : ViewModelBase
 {
+    private const string BlenderValidationChannel = nameof(MainRenderViewModel);
+
     [ObservableProperty]
     private string _blenderPath = string.Empty;
 
@@ -68,9 +69,7 @@ public partial class MainRenderViewModel : ViewModelBase
     // 内部状态
     private BlenderProcessService? _blenderProcessService;
     private readonly IRenderLogService _logService;
-    private readonly IBlenderCliInfoService _blenderCliInfoService;
-    private CancellationTokenSource? _versionCts;
-    private int _validationRequestVersion;
+    private readonly IBlenderValidationService _blenderValidationService;
     public Task InitialLoadTask { get; }
 
 
@@ -79,10 +78,10 @@ public partial class MainRenderViewModel : ViewModelBase
         RenderQueueViewModel renderQueue,
         GlobalLogViewModel globalLog,
         IRenderLogService logService,
-        IBlenderCliInfoService blenderCliInfoService)
+        IBlenderValidationService blenderValidationService)
     {
         _logService = logService;
-        _blenderCliInfoService = blenderCliInfoService;
+        _blenderValidationService = blenderValidationService;
         RenderQueue = renderQueue;
         GlobalLog = globalLog;
         GlobalLog.TaskNavigationRequested += OnGlobalLogTaskNavigationRequested;
@@ -114,11 +113,6 @@ public partial class MainRenderViewModel : ViewModelBase
             return;
         }
 
-        _versionCts?.Cancel();
-        _versionCts = new CancellationTokenSource();
-        var ct = _versionCts.Token;
-        var requestVersion = Interlocked.Increment(ref _validationRequestVersion);
-
         // 重置验证状态
         HasBlenderValidationError = false;
         BlenderValidationMessage = string.Empty;
@@ -126,6 +120,7 @@ public partial class MainRenderViewModel : ViewModelBase
         var selectedBlender = settings.SelectedBlenderExecutable;
         if (selectedBlender == null)
         {
+            _blenderValidationService.CancelCurrent(BlenderValidationChannel);
             IsBlenderPathValid = false;
             HasBlenderValidationError = true;
             BlenderValidationMessage = "Blender_SelectExecutable";
@@ -136,20 +131,33 @@ public partial class MainRenderViewModel : ViewModelBase
             return;
         }
 
-        if (!File.Exists(selectedBlender.Path))
+        var request = _blenderValidationService.BeginValidation(selectedBlender.Path, BlenderValidationChannel);
+        var preconditionResult = _blenderValidationService.ValidatePreconditions(request);
+        if (preconditionResult != null)
         {
             IsBlenderPathValid = false;
             HasBlenderValidationError = true;
-            BlenderValidationMessage = "指定的文件不存在";
+            BlenderValidationMessage = preconditionResult.Status switch
+            {
+                BlenderValidationStatus.EmptyPath => "Blender_SelectExecutable",
+                BlenderValidationStatus.FileNotFound => "指定的文件不存在",
+                _ => preconditionResult.Message
+            };
             ClearBlenderInfo();
             CleanupBlenderService();
             StatusMessage = "Blender_PathInvalid";
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Blender 路径不存在: {selectedBlender.Path}", source: nameof(MainRenderViewModel));
+            _logService.Write(
+                preconditionResult.Status == BlenderValidationStatus.FileNotFound ? RenderLogLevel.Error : RenderLogLevel.Warning,
+                RenderLogScope.System,
+                preconditionResult.Status == BlenderValidationStatus.FileNotFound
+                    ? $"Blender 路径不存在: {selectedBlender.Path}"
+                    : "未选择 Blender 可执行文件。",
+                source: nameof(MainRenderViewModel));
             return;
         }
 
         // 异步获取Blender版本信息
-        LoadBlenderInfoAsync(selectedBlender, ct, requestVersion).FireAndForget(
+        LoadBlenderInfoAsync(selectedBlender, request).FireAndForget(
             _logService,
             nameof(MainRenderViewModel),
             RenderLogScope.System,
@@ -157,75 +165,109 @@ public partial class MainRenderViewModel : ViewModelBase
     }
 
 
-    private async Task LoadBlenderInfoAsync(BlenderExecutable blenderExecutable, CancellationToken cancellationToken, int requestVersion)
+    private async Task LoadBlenderInfoAsync(BlenderExecutable blenderExecutable, BlenderValidationRequest request)
     {
-        try
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                if (!IsValidationRequestCurrent(blenderExecutable, requestVersion))
-                {
-                    return;
-                }
-
-                IsLoadingBlenderInfo = true;
-                StatusMessage = "正在加载Blender信息...";
-            });
-
-            if (!IsValidationRequestCurrent(blenderExecutable, requestVersion))
+            if (!IsValidationRequestCurrent(blenderExecutable, request))
             {
                 return;
             }
 
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"开始验证 Blender: {blenderExecutable.Path}", source: nameof(MainRenderViewModel));
+            IsLoadingBlenderInfo = true;
+            StatusMessage = "正在加载Blender信息...";
+        });
 
-            var info = await _blenderCliInfoService.GetVersionInfoAsync(blenderExecutable.Path, cancellationToken);
+        if (!IsValidationRequestCurrent(blenderExecutable, request))
+        {
+            return;
+        }
 
-            if (cancellationToken.IsCancellationRequested || !IsValidationRequestCurrent(blenderExecutable, requestVersion)) return;
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"开始验证 Blender: {blenderExecutable.Path}", source: nameof(MainRenderViewModel), metadata: RenderLogMetadata.Diagnostic());
 
-            // 更新UI线程上的属性
-            Dispatcher.UIThread.Post(() =>
+        var result = await _blenderValidationService.ValidateAsync(request);
+
+        if (!IsValidationRequestCurrent(blenderExecutable, request) || result.IsCanceled || result.Status == BlenderValidationStatus.Stale)
+        {
+            return;
+        }
+
+        // 更新UI线程上的属性
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!IsValidationRequestCurrent(blenderExecutable, request))
             {
-                if (!IsValidationRequestCurrent(blenderExecutable, requestVersion))
-                {
-                    return;
-                }
+                return;
+            }
 
-                BlenderVersion = info.Version ?? string.Empty;
-                BlenderPlatform = info.Platform ?? string.Empty;
-                BlenderBranch = info.Branch ?? string.Empty;
-                BlenderHash = info.Hash ?? string.Empty;
+            if (result.Status != BlenderValidationStatus.Success || result.VersionInfo == null)
+            {
                 IsLoadingBlenderInfo = false;
-                IsBlenderPathValid = true;
-                HasBlenderValidationError = false;
-                BlenderValidationMessage = string.Empty;
-                StatusMessage = $"Blender {info.Version} 已就绪";
-
-                // 先释放旧的Blender进程服务（如果存在）
-                if (_blenderProcessService != null)
+                IsBlenderPathValid = false;
+                HasBlenderValidationError = true;
+                BlenderValidationMessage = result.Status switch
                 {
-                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Disposing old Blender process service", source: "MainRenderViewModel");
-                    _blenderProcessService.Dispose();
-                }
-
-                // 设置Blender路径到渲染队列（不创建长期运行的服务）
-                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Setting Blender path: {blenderExecutable.Path}", source: "MainRenderViewModel");
-                RenderQueue.SetBlenderPath(blenderExecutable.Path);
-
-                // 只有在验证成功时才创建临时服务用于视频生成
-                try
+                    BlenderValidationStatus.FileNotFound => "指定的文件不存在",
+                    BlenderValidationStatus.EmptyPath => "Blender_SelectExecutable",
+                    _ => $"Blender验证失败: {result.Message}"
+                };
+                StatusMessage = result.Status switch
                 {
-                    _blenderProcessService = new BlenderProcessService(blenderExecutable.Path, _logService);
-                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Temporary Blender process service created for video generation", source: "MainRenderViewModel");
-                }
-                catch (Exception ex)
-                {
-                    _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to create Blender process service: {ex.Message}", source: "MainRenderViewModel");
-                    // 即使服务创建失败，我们仍然认为Blender路径是有效的，因为版本信息获取成功了
-                    _blenderProcessService = null;
-                }
-            });
+                    BlenderValidationStatus.FileNotFound or BlenderValidationStatus.EmptyPath => "Blender_PathInvalid",
+                    _ => $"加载Blender信息失败: {result.Message}"
+                };
+                ClearBlenderInfo();
+                CleanupBlenderService();
 
+                _logService.Write(
+                    RenderLogLevel.Error,
+                    RenderLogScope.System,
+                    result.Status == BlenderValidationStatus.FileNotFound
+                        ? $"Blender 路径不存在: {blenderExecutable.Path}"
+                        : $"Blender 验证失败: {result.Message}",
+                    source: nameof(MainRenderViewModel));
+                return;
+            }
+
+            var info = result.VersionInfo;
+            BlenderVersion = info.Version ?? string.Empty;
+            BlenderPlatform = info.Platform ?? string.Empty;
+            BlenderBranch = info.Branch ?? string.Empty;
+            BlenderHash = info.Hash ?? string.Empty;
+            IsLoadingBlenderInfo = false;
+            IsBlenderPathValid = true;
+            HasBlenderValidationError = false;
+            BlenderValidationMessage = string.Empty;
+            StatusMessage = $"Blender {info.Version} 已就绪";
+
+            // 先释放旧的Blender进程服务（如果存在）
+            if (_blenderProcessService != null)
+            {
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Disposing old Blender process service", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
+                _blenderProcessService.Dispose();
+            }
+
+            // 设置Blender路径到渲染队列（不创建长期运行的服务）
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Setting Blender path: {blenderExecutable.Path}", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
+            RenderQueue.SetBlenderPath(blenderExecutable.Path);
+
+            // 只有在验证成功时才创建临时服务用于视频生成
+            try
+            {
+                _blenderProcessService = new BlenderProcessService(blenderExecutable.Path, _logService);
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Temporary Blender process service created for video generation", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
+            }
+            catch (Exception ex)
+            {
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to create Blender process service: {ex.Message}", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
+                // 即使服务创建失败，我们仍然认为Blender路径是有效的，因为版本信息获取成功了
+                _blenderProcessService = null;
+            }
+        });
+
+        if (result.Status == BlenderValidationStatus.Success && result.VersionInfo != null)
+        {
+            var info = result.VersionInfo;
             _logService.Write(
                 RenderLogLevel.Info,
                 RenderLogScope.System,
@@ -238,34 +280,12 @@ public partial class MainRenderViewModel : ViewModelBase
                     ["branch"] = info.Branch ?? string.Empty
                 });
         }
-        catch (Exception ex)
-        {
-            if (!cancellationToken.IsCancellationRequested)
-            {
-                _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Blender 验证失败: {ex.Message}", source: nameof(MainRenderViewModel));
-                Dispatcher.UIThread.Post(() =>
-                {
-                    if (!IsValidationRequestCurrent(blenderExecutable, requestVersion))
-                    {
-                        return;
-                    }
-
-                    IsLoadingBlenderInfo = false;
-                    IsBlenderPathValid = false;
-                    HasBlenderValidationError = true;
-                    BlenderValidationMessage = $"Blender验证失败: {ex.Message}";
-                    StatusMessage = $"加载Blender信息失败: {ex.Message}";
-                    ClearBlenderInfo();
-                    CleanupBlenderService();
-                });
-            }
-        }
     }
 
-    private bool IsValidationRequestCurrent(BlenderExecutable blenderExecutable, int requestVersion)
+    private bool IsValidationRequestCurrent(BlenderExecutable blenderExecutable, BlenderValidationRequest request)
     {
         var currentSelection = SettingsViewModel?.SelectedBlenderExecutable;
-        return requestVersion == _validationRequestVersion &&
+        return _blenderValidationService.IsCurrent(request) &&
                currentSelection != null &&
                string.Equals(currentSelection.Path, blenderExecutable.Path, StringComparison.Ordinal);
     }
@@ -284,7 +304,7 @@ public partial class MainRenderViewModel : ViewModelBase
         // 正确释放旧的Blender进程服务
         if (_blenderProcessService != null)
         {
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Disposing Blender process service due to invalid path", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Disposing Blender process service due to invalid path", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
             _blenderProcessService.Dispose();
         }
 
@@ -372,8 +392,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void ApplyMissingBlenderSelectionState()
     {
-        _versionCts?.Cancel();
-        Interlocked.Increment(ref _validationRequestVersion);
+        _blenderValidationService.CancelCurrent(BlenderValidationChannel);
 
         IsLoadingBlenderInfo = false;
         IsBlenderPathValid = false;
@@ -390,7 +409,7 @@ public partial class MainRenderViewModel : ViewModelBase
         HasBlenderValidationError = !e.IsValid;
         BlenderValidationMessage = e.Message;
         
-        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"OnBlenderValidationChanged - IsValid: {e.IsValid}, Message: {e.Message}", source: "MainRenderViewModel");
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"OnBlenderValidationChanged - IsValid: {e.IsValid}, Message: {e.Message}", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
         
         if (e.IsValid)
         {
@@ -399,18 +418,18 @@ public partial class MainRenderViewModel : ViewModelBase
             var activeTaskCount = RenderQueue.ActiveTaskCount;
             var queueState = RenderQueue.QueueState;
             
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"检查运行任务 - HasRunningTasks: {hasRunningTasks}, ActiveTaskCount: {activeTaskCount}, QueueState: {queueState}", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"检查运行任务 - HasRunningTasks: {hasRunningTasks}, ActiveTaskCount: {activeTaskCount}, QueueState: {queueState}", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
             
             if (hasRunningTasks)
             {
                 // 如果有正在运行的任务，显示警告并询问用户
-                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "检测到运行任务，显示警告弹窗", source: "MainRenderViewModel");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "检测到运行任务，显示警告弹窗", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
                 ShowBlenderSwitchWarning();
             }
             else
             {
                 // 如果没有正在运行的任务，安全地切换Blender服务
-                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "没有运行任务，直接切换Blender", source: "MainRenderViewModel");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "没有运行任务，直接切换Blender", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
                 var selectedBlender = SettingsViewModel?.SelectedBlenderExecutable;
                 if (selectedBlender != null)
                 {
@@ -428,46 +447,46 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void ShowBlenderSwitchWarning()
     {
-        _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, "ShowBlenderSwitchWarning 被调用", source: "MainRenderViewModel");
+        _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, "ShowBlenderSwitchWarning 被调用", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
         
         var selectedBlender = SettingsViewModel?.SelectedBlenderExecutable;
         if (selectedBlender == null) 
         {
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "selectedBlender 为 null，退出", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "selectedBlender 为 null，退出", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
             return;
         }
 
         var blenderName = selectedBlender.VersionBranchDisplay;
-        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"准备显示警告弹窗，Blender: {blenderName}", source: "MainRenderViewModel");
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"准备显示警告弹窗，Blender: {blenderName}", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
         
         // 确保在UI线程上执行
         Dispatcher.UIThread.Post(() =>
         {
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "在UI线程上执行警告弹窗", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "在UI线程上执行警告弹窗", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
             
             var dialogManager = GetDialogManager();
             if (dialogManager == null)
             {
-                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "无法获取DialogManager，跳过警告弹窗", source: "MainRenderViewModel");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "无法获取DialogManager，跳过警告弹窗", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
                 // 如果无法获取DialogManager，直接执行切换
                 ValidateSelectedBlender();
                 return;
             }
             
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "创建并显示警告弹窗", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "创建并显示警告弹窗", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
             dialogManager.CreateDialog()
                 .WithTitle("⚠️ 切换Blender警告")
                 .WithContent($"检测到有正在运行的渲染任务。\n\n切换到 {blenderName} 将会中断当前正在进行的任务。\n\n是否确定要切换？")
                 .WithActionButton("取消", _ => 
                 {
                     // 取消切换，恢复之前的选择
-                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "用户取消了Blender切换", source: "MainRenderViewModel");
+                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "用户取消了Blender切换", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
                     StatusMessage = "Blender切换已取消";
                 }, true)
                 .WithActionButton("确定切换", _ => 
                 {
                     // 用户确认切换，执行切换
-                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"用户确认切换Blender到: {selectedBlender.Path}", source: "MainRenderViewModel");
+                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"用户确认切换Blender到: {selectedBlender.Path}", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
                     ValidateSelectedBlender();
                 })
                 .Dismiss().ByClickingBackground()
@@ -510,7 +529,7 @@ public partial class MainRenderViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error getting DialogManager: {ex.Message}", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error getting DialogManager: {ex.Message}", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
             return null;
         }
     }
@@ -538,7 +557,7 @@ public partial class MainRenderViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error getting ToastManager: {ex.Message}", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error getting ToastManager: {ex.Message}", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
             return null;
         }
     }
@@ -566,7 +585,7 @@ public partial class MainRenderViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error showing toast: {ex.Message}", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error showing toast: {ex.Message}", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
         }
     }
 
@@ -579,7 +598,7 @@ public partial class MainRenderViewModel : ViewModelBase
         if (e.PropertyName == nameof(RenderQueue.QueueState))
         {
             var queueState = RenderQueue.QueueState;
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"队列状态变化 - QueueState: {queueState}", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"队列状态变化 - QueueState: {queueState}", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
             
             // 通知SettingsViewModel更新CanSwitchBlender状态
             SettingsViewModel?.UpdateQueueState(queueState);
@@ -628,13 +647,13 @@ public partial class MainRenderViewModel : ViewModelBase
     {
         try
         {
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Starting to load saved data...", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Starting to load saved data...", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
 
             // 等待设置初始化完成
             await Task.Delay(1000);
 
             // 等待BlenderService初始化完成后再加载队列数据
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Waiting for Blender initialization...", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Waiting for Blender initialization...", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
 
             // 等待BlenderService初始化（最多等待10秒）
             var maxWaitTime = TimeSpan.FromSeconds(10);
@@ -645,7 +664,7 @@ public partial class MainRenderViewModel : ViewModelBase
                 // 检查BlenderService是否已初始化
                 if (RenderQueue.IsBlenderServiceReady())
                 {
-                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Blender is ready, loading queue data...", source: "MainRenderViewModel");
+                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Blender is ready, loading queue data...", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
                     await RenderQueue.LoadQueueDataAsync();
                     break;
                 }
@@ -656,11 +675,11 @@ public partial class MainRenderViewModel : ViewModelBase
             // 如果超时，仍然尝试加载队列数据（但可能没有BlenderService）
             if (DateTime.UtcNow - startTime >= maxWaitTime)
             {
-                _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, "⚠️ Blender initialization timeout, loading queue data anyway...", source: "MainRenderViewModel");
+                _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, "⚠️ Blender initialization timeout, loading queue data anyway...", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
                 await RenderQueue.LoadQueueDataAsync();
             }
 
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "✅ Saved data loaded successfully", source: "MainRenderViewModel");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "✅ Saved data loaded successfully", source: "MainRenderViewModel", metadata: RenderLogMetadata.Diagnostic());
         }
         catch (Exception ex)
         {
@@ -739,8 +758,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
     public void Dispose()
     {
-        _versionCts?.Cancel();
-        _versionCts?.Dispose();
+        _blenderValidationService.CancelCurrent(BlenderValidationChannel);
 
         RenderQueue.QueueStatusChanged -= OnQueueStatusChanged;
         RenderQueue.TaskCompleted -= OnTaskCompleted;

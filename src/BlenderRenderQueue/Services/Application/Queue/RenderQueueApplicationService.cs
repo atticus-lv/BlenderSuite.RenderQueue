@@ -140,7 +140,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         if (!string.IsNullOrWhiteSpace(blenderPath))
         {
             _processService = new BlenderProcessService(blenderPath, _logService);
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, $"Blender path set: {blenderPath}", source: "RenderQueueApplicationService");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, $"Blender path set: {blenderPath}", source: "RenderQueueApplicationService", metadata: RenderLogMetadata.Diagnostic());
         }
 
         foreach (var task in RenderTasks)
@@ -154,7 +154,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
             {
                 LoadTaskPropertiesWithLimitAsync(
                     task,
-                    onError: ex => _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to backfill task properties: {ex.Message}", source: "RenderQueueApplicationService"))
+                    onError: ex => _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to backfill task properties: {ex.Message}", source: "RenderQueueApplicationService", metadata: RenderLogMetadata.Diagnostic()))
                     .FireAndForget(
                         _logService,
                         nameof(RenderQueueApplicationService),
@@ -180,7 +180,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                 }
                 catch (Exception ex)
                 {
-                    _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to shutdown worker on path change: {ex.Message}", source: "RenderQueueApplicationService");
+                    _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to shutdown worker on path change: {ex.Message}", source: "RenderQueueApplicationService", metadata: RenderLogMetadata.Diagnostic());
                     _logService.Write(RenderLogLevel.Warning, RenderLogScope.Worker, $"切换 Blender 路径时关闭 worker 失败: {ex.Message}", source: nameof(RenderQueueApplicationService));
                 }
             }).FireAndForget(
@@ -685,27 +685,36 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
 
     public async Task LoadQueueDataAsync()
     {
+        var operation = _logService.BeginOperation(
+            RenderLogScope.Recovery,
+            "RestoreQueueData",
+            nameof(RenderQueueApplicationService),
+            "开始加载持久化队列数据。");
         try
         {
             var appData = await _dataPersistenceService.LoadDataAsync();
-            _logService.Write(
-                RenderLogLevel.Info,
-                RenderLogScope.Recovery,
-                $"开始加载持久化队列数据，任务数: {appData.RenderQueue.Count}",
-                source: nameof(RenderQueueApplicationService));
+            operation.Detail(
+                $"读取到持久化任务数: {appData.RenderQueue.Count}",
+                metadata: new Dictionary<string, string>
+                {
+                    ["persisted_task_count"] = appData.RenderQueue.Count.ToString()
+                });
             var existingTaskIds = RenderTasks.Select(t => t.Id).ToHashSet();
+            var restoredCount = 0;
+            var skippedCount = 0;
             foreach (var taskData in appData.RenderQueue)
             {
                 var persistedTask = taskData.RenderTask;
                 if (persistedTask.Id != Guid.Empty && existingTaskIds.Contains(persistedTask.Id))
                 {
-                    _logService.Write(
-                        RenderLogLevel.Info,
-                        RenderLogScope.Recovery,
+                    skippedCount++;
+                    operation.Detail(
                         $"跳过已存在的持久化任务: {Path.GetFileName(persistedTask.Filepath)}",
-                        persistedTask.Id,
-                        persistedTask.Filepath,
-                        nameof(RenderQueueApplicationService));
+                        metadata: new Dictionary<string, string>
+                        {
+                            ["task_id"] = persistedTask.Id.ToString("D"),
+                            ["blend_file"] = persistedTask.Filepath
+                        });
                     continue;
                 }
 
@@ -714,6 +723,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                 SubscribeToTaskEvents(task);
                 WriteTaskEvent(task, RenderLogScope.Recovery, "已从持久化数据恢复任务。");
                 existingTaskIds.Add(task.Id);
+                restoredCount++;
 
                 var savedOverrideScene = taskData.RenderTask.Override?.OverrideScene;
                 if (IsBlenderServiceReady())
@@ -747,12 +757,19 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
             }
 
             PublishSnapshot();
-            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"持久化队列数据加载完成，当前任务总数: {RenderTasks.Count}", source: nameof(RenderQueueApplicationService));
+            operation.Complete(
+                $"持久化队列数据加载完成，恢复 {restoredCount} 个任务，当前任务总数: {RenderTasks.Count}",
+                metadata: new Dictionary<string, string>
+                {
+                    ["restored_task_count"] = restoredCount.ToString(),
+                    ["skipped_task_count"] = skippedCount.ToString(),
+                    ["total_task_count"] = RenderTasks.Count.ToString()
+                });
         }
         catch (Exception ex)
         {
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Error loading queue data: {ex.Message}", source: "RenderQueueApplicationService");
-            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"加载持久化队列数据失败: {ex}", source: nameof(RenderQueueApplicationService));
+            operation.Detail($"Error loading queue data: {ex.Message}", RenderLogLevel.Error);
+            operation.Fail($"加载持久化队列数据失败: {ex.Message}");
         }
     }
 
@@ -772,7 +789,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
             {
                 LoadTaskPropertiesWithLimitAsync(
                     task,
-                    onError: ex => _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to load task properties: {ex.Message}", source: "RenderQueueApplicationService"))
+                    onError: ex => _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to load task properties: {ex.Message}", source: "RenderQueueApplicationService", metadata: RenderLogMetadata.Diagnostic()))
                     .FireAndForget(
                         _logService,
                         nameof(RenderQueueApplicationService),
