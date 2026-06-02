@@ -10,6 +10,7 @@ using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Controls.ApplicationLifetimes;
 using BlenderRenderQueue.Services.UI;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Helpers;
 
@@ -113,14 +114,14 @@ public static class ClipboardHelper
         IntPtr hMem = GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)size);
         if (hMem == IntPtr.Zero)
         {
-            Console.WriteLine("Failed to allocate global memory.");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "Failed to allocate global memory.", "ClipboardHelper");
             return false;
         }
 
         IntPtr lpMem = GlobalLock(hMem);
         if (lpMem == IntPtr.Zero)
         {
-            Console.WriteLine("Failed to lock global memory.");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "Failed to lock global memory.", "ClipboardHelper");
             return false;
         }
 
@@ -135,7 +136,7 @@ public static class ClipboardHelper
 
         if (!OpenClipboard(IntPtr.Zero))
         {
-            Console.WriteLine("Failed to open clipboard.");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "Failed to open clipboard.", "ClipboardHelper");
             return false;
         }
 
@@ -163,14 +164,14 @@ public static class ClipboardHelper
         IntPtr hMem = GlobalAlloc(GMEM_MOVEABLE, (UIntPtr)size);
         if (hMem == IntPtr.Zero)
         {
-            Console.WriteLine("Failed to allocate global memory.");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "Failed to allocate global memory.", "ClipboardHelper");
             return false;
         }
 
         IntPtr lpMem = GlobalLock(hMem);
         if (lpMem == IntPtr.Zero)
         {
-            Console.WriteLine("Failed to lock global memory.");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "Failed to lock global memory.", "ClipboardHelper");
             return false;
         }
 
@@ -191,7 +192,7 @@ public static class ClipboardHelper
 
         if (!OpenClipboard(IntPtr.Zero))
         {
-            Console.WriteLine("Failed to open clipboard.");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "Failed to open clipboard.", "ClipboardHelper");
             return false;
         }
 

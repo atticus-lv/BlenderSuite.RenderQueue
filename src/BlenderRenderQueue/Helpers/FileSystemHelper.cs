@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Extensions;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Helpers;
 
@@ -23,7 +24,7 @@ public static class FileSystemHelper
         {
             if (string.IsNullOrEmpty(filePath))
             {
-                Console.WriteLine("[FileSystemHelper] ❌ File path is null or empty");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "❌ File path is null or empty", "FileSystemHelper");
                 return false;
             }
 
@@ -33,27 +34,27 @@ public static class FileSystemHelper
 
             if (!isDirectory && !isFile)
             {
-                Console.WriteLine($"[FileSystemHelper] ❌ Path does not exist: {filePath}");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Path does not exist: {filePath}", "FileSystemHelper");
                 return false;
             }
 
             if (isFile)
             {
                 var startInfo = CreateFileRevealStartInfo(normalizedPath);
-                Console.WriteLine($"[FileSystemHelper] ✅ Opening directory and selecting file: {normalizedPath}");
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"✅ Opening directory and selecting file: {normalizedPath}", "FileSystemHelper");
                 Process.Start(startInfo);
             }
             else
             {
                 var startInfo = CreateDirectoryOpenStartInfo(normalizedPath);
-                Console.WriteLine($"[FileSystemHelper] ✅ Opened directory in explorer: {normalizedPath}");
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"✅ Opened directory in explorer: {normalizedPath}", "FileSystemHelper");
                 Process.Start(startInfo);
             }
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[FileSystemHelper] ❌ Error opening directory: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error opening directory: {ex.Message}", "FileSystemHelper");
             return false;
         }
     }
@@ -83,13 +84,13 @@ public static class FileSystemHelper
         {
             if (string.IsNullOrEmpty(videoPath))
             {
-                Console.WriteLine("[FileSystemHelper] ❌ Video path is null or empty");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "❌ Video path is null or empty", "FileSystemHelper");
                 return false;
             }
 
             if (!File.Exists(videoPath))
             {
-                Console.WriteLine($"[FileSystemHelper] ❌ Video file does not exist: {videoPath}");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Video file does not exist: {videoPath}", "FileSystemHelper");
                 return false;
             }
 
@@ -101,12 +102,12 @@ public static class FileSystemHelper
             };
 
             Process.Start(startInfo);
-            Console.WriteLine($"[FileSystemHelper] ✅ Playing video: {videoPath}");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"✅ Playing video: {videoPath}", "FileSystemHelper");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[FileSystemHelper] ❌ Error playing video: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error playing video: {ex.Message}", "FileSystemHelper");
             return false;
         }
     }
@@ -124,13 +125,13 @@ public static class FileSystemHelper
 
             if (string.IsNullOrEmpty(currentExecutable))
             {
-                Console.WriteLine("[FileSystemHelper] ❌ Cannot get current executable path");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "❌ Cannot get current executable path", "FileSystemHelper");
                 return false;
             }
 
             if (!File.Exists(currentExecutable))
             {
-                Console.WriteLine($"[FileSystemHelper] ❌ Current executable does not exist: {currentExecutable}");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Current executable does not exist: {currentExecutable}", "FileSystemHelper");
                 return false;
             }
 
@@ -142,7 +143,7 @@ public static class FileSystemHelper
             };
 
             Process.Start(startInfo);
-            Console.WriteLine($"[FileSystemHelper] ✅ Restarting application: {currentExecutable}");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"✅ Restarting application: {currentExecutable}", "FileSystemHelper");
 
             // 延迟退出，让UI有时间处理命令
             Task.Run(async () =>
@@ -157,7 +158,7 @@ public static class FileSystemHelper
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[FileSystemHelper] ❌ Error restarting application: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error restarting application: {ex.Message}", "FileSystemHelper");
             return false;
         }
     }

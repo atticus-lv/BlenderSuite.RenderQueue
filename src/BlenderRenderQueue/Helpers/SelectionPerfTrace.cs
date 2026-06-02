@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Helpers;
 
@@ -44,7 +45,7 @@ internal static class SelectionPerfTrace
         var message =
             $"[SelectionPerf] task={taskName} id={taskId:D} stage={stage} elapsed={elapsedMs:F1}ms {details}".TrimEnd();
         Debug.WriteLine(message);
-        Console.WriteLine(message);
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, message, "SelectionPerfTrace");
     }
 
     private sealed record SelectionTraceState(Guid TaskId, string TaskName, long StartTimestamp);

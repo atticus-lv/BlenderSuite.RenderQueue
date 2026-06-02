@@ -10,6 +10,7 @@ using Avalonia.Threading;
 using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.Extensions;
 using BlenderRenderQueue.Services.Business.Persistence;
@@ -83,8 +84,7 @@ public partial class SettingsViewModel : ViewModelBase
     {
         // 只有在队列空闲或完成时才允许切换Blender
         CanSwitchBlender = queueState == QueueState.Idle || queueState == QueueState.Completed;
-        Console.WriteLine(
-            $"[SettingsViewModel] 更新队列状态 - QueueState: {queueState}, CanSwitchBlender: {CanSwitchBlender}");
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"更新队列状态 - QueueState: {queueState}, CanSwitchBlender: {CanSwitchBlender}", source: "SettingsViewModel");
     }
 
     partial void OnLanguageChanged(LanguageOption value)
@@ -102,7 +102,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     partial void OnSelectedBlenderExecutableChanged(BlenderExecutable? value)
     {
-        Console.WriteLine($"[SettingsViewModel] SelectedBlenderExecutable changed: {value?.Path ?? "NULL"}");
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"SelectedBlenderExecutable changed: {value?.Path ?? "NULL"}", source: "SettingsViewModel");
 
         if (value != null)
         {
@@ -127,6 +127,7 @@ public partial class SettingsViewModel : ViewModelBase
     private readonly ISettingsPersistenceService _settingsPersistenceService;
     private readonly IBlenderExtensionManager _blenderExtensionManager;
     private readonly IBlenderCliInfoService _blenderCliInfoService;
+    private readonly IRenderLogService _logService;
     private bool _isLoadingSettings;
 
     // 事件：当设置发生变化时通知
@@ -141,12 +142,14 @@ public partial class SettingsViewModel : ViewModelBase
     public SettingsViewModel(
         ISettingsPersistenceService settingsPersistenceService,
         IBlenderExtensionManager blenderExtensionManager,
-        IBlenderCliInfoService blenderCliInfoService)
+        IBlenderCliInfoService blenderCliInfoService,
+        IRenderLogService logService)
     {
         // 构造函数中不进行自动检测，等待StartInitialization调用
         _settingsPersistenceService = settingsPersistenceService;
         _blenderExtensionManager = blenderExtensionManager;
         _blenderCliInfoService = blenderCliInfoService;
+        _logService = logService;
         _theme = new SukiTheme();
 
         // 订阅主题变化事件
@@ -157,7 +160,7 @@ public partial class SettingsViewModel : ViewModelBase
             if (themeOption != null) BaseTheme = themeOption;
 
             // 可以在这里添加Toast通知
-            Console.WriteLine($"[SettingsViewModel] Theme changed to: {variant}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Theme changed to: {variant}", source: "SettingsViewModel");
         };
 
         // 初始化当前主题
@@ -205,7 +208,7 @@ public partial class SettingsViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SettingsViewModel] ❌ Error during initialization: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error during initialization: {ex.Message}", source: "SettingsViewModel");
         }
 
         // 通知初始化完成
@@ -269,7 +272,7 @@ public partial class SettingsViewModel : ViewModelBase
                 var index = BlenderExecutables.IndexOf(blender);
                 if (index >= 0) BlenderExecutables[index] = blender;
 
-                Console.WriteLine($"[SettingsViewModel] ✅ Auto-validated Blender: {blender.Path} - {blender.Version}");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"✅ Auto-validated Blender: {blender.Path} - {blender.Version}", source: "SettingsViewModel");
             });
         }
         catch (Exception ex)
@@ -283,8 +286,7 @@ public partial class SettingsViewModel : ViewModelBase
                 var index = BlenderExecutables.IndexOf(blender);
                 if (index >= 0) BlenderExecutables[index] = blender;
 
-                Console.WriteLine(
-                    $"[SettingsViewModel] ❌ Auto-validation failed for Blender: {blender.Path} - {ex.Message}");
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Auto-validation failed for Blender: {blender.Path} - {ex.Message}", source: "SettingsViewModel");
             });
         }
     }
@@ -469,13 +471,13 @@ public partial class SettingsViewModel : ViewModelBase
                 source: nameof(SettingsViewModel),
                 message: "重启前后台保存设置任务失败。");
             var success = FileSystemHelper.RestartApplication();
-            Console.WriteLine(success
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, success
                 ? "[SettingsViewModel] ✅ Application restart initiated"
-                : "[SettingsViewModel] ❌ Failed to restart application");
+                : "[SettingsViewModel] ❌ Failed to restart application", source: "SettingsViewModel");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SettingsViewModel] ❌ Error restarting application: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error restarting application: {ex.Message}", source: "SettingsViewModel");
         }
     }
 
@@ -539,11 +541,11 @@ public partial class SettingsViewModel : ViewModelBase
                     break;
             }
 
-            Console.WriteLine($"[SettingsViewModel] Applied theme: {themeValue}, Current: {_theme.ActiveBaseTheme}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Applied theme: {themeValue}, Current: {_theme.ActiveBaseTheme}", source: "SettingsViewModel");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SettingsViewModel] Error applying theme: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error applying theme: {ex.Message}", source: "SettingsViewModel");
         }
     }
 
@@ -583,14 +585,13 @@ public partial class SettingsViewModel : ViewModelBase
             };
 
             var success = await _settingsPersistenceService.SaveSettingsAsync(settings);
-            Console.WriteLine(
-                success
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, success
                     ? $"[SettingsViewModel] ✅ Settings saved successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}"
-                    : "[SettingsViewModel] ❌ Failed to save settings");
+                    : "[SettingsViewModel] ❌ Failed to save settings", source: "SettingsViewModel");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SettingsViewModel] ❌ Error saving settings: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error saving settings: {ex.Message}", source: "SettingsViewModel");
         }
     }
 
@@ -613,15 +614,14 @@ public partial class SettingsViewModel : ViewModelBase
 
                 foreach (var blender in uniqueBlenders) BlenderExecutables.Add(blender);
 
-                Console.WriteLine($"[SettingsViewModel] Loaded {BlenderExecutables.Count} unique Blender executables");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Loaded {BlenderExecutables.Count} unique Blender executables", source: "SettingsViewModel");
 
                 if (!string.IsNullOrEmpty(settings.SelectedBlenderPath))
                 {
                     SelectedBlenderExecutable =
                         BlenderExecutables.FirstOrDefault(b => b.Path == settings.SelectedBlenderPath);
 
-                    Console.WriteLine(
-                        $"[SettingsViewModel] Selected Blender: {SelectedBlenderExecutable?.Path ?? "NOT FOUND"}");
+                    _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, $"Selected Blender: {SelectedBlenderExecutable?.Path ?? "NOT FOUND"}", source: "SettingsViewModel");
                 }
             }
 
@@ -684,12 +684,11 @@ public partial class SettingsViewModel : ViewModelBase
 
             HardwareAcceleration = settings.UseGpu;
 
-            Console.WriteLine(
-                $"[SettingsViewModel] ✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}");
+            _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, $"✅ Settings loaded successfully - Selected Blender: {SelectedBlenderExecutable?.Path}, Timeout: {DefaultRenderTimeoutSeconds}s, MaxRetry: {MaxRetryAttempts}", source: "SettingsViewModel");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SettingsViewModel] ❌ Error loading settings: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error loading settings: {ex.Message}", source: "SettingsViewModel");
         }
         finally
         {
@@ -712,7 +711,7 @@ public partial class SettingsViewModel : ViewModelBase
             var result = await _blenderExtensionManager.EnsureInstalledAsync(blenderExecutable.Path);
             BlenderExtensionStatusMessage = result.Message;
 
-            Console.WriteLine($"[SettingsViewModel] Blender extension check: {result.Outcome} - {result.Message}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Blender extension check: {result.Outcome} - {result.Message}", source: "SettingsViewModel");
 
             if (!showToasts)
             {
@@ -733,7 +732,7 @@ public partial class SettingsViewModel : ViewModelBase
         catch (Exception ex)
         {
             BlenderExtensionStatusMessage = ex.Message;
-            Console.WriteLine($"[SettingsViewModel] ❌ Blender extension install failed: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Blender extension install failed: {ex.Message}", source: "SettingsViewModel");
 
             if (showToasts)
             {

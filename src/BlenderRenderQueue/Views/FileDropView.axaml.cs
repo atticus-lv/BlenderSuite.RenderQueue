@@ -98,18 +98,18 @@ public partial class FileDropView : UserControl
         // 检查文件是否存在
         if (!File.Exists(filePath))
         {
-            Console.WriteLine($"文件不存在: {filePath}");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"文件不存在: {filePath}", "FileDropView");
             return Task.CompletedTask;
         }
 
         renderQueueViewModel.AddDroppedFiles([filePath]);
-        Console.WriteLine($"已添加任务: {Path.GetFileName(filePath)}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"已添加任务: {Path.GetFileName(filePath)}", "FileDropView");
         return Task.CompletedTask;
     }
 
     private void ShowMessage(string message, string title)
     {
-        Console.WriteLine($"{title}: {message}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"{title}: {message}", "FileDropView");
         
         // 可以在这里添加实际的 UI 提示逻辑
         // 比如触发主窗口的 Toast 事件
@@ -119,7 +119,7 @@ public partial class FileDropView : UserControl
             // 触发 Toast 事件 - 使用公共方法
             // mainViewModel.ShowToastMessage?.Invoke(title, message);
             // 暂时只输出到控制台
-            Console.WriteLine($"Toast: {title} - {message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Toast: {title} - {message}", "FileDropView");
         }
     }
 }

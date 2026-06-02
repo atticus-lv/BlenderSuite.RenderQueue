@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Services.Business.Persistence;
 
@@ -24,9 +25,11 @@ public class DataPersistenceService : IDataPersistenceService
 {
     private readonly string _dataFilePath;
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly IRenderLogService _logService;
 
-    public DataPersistenceService()
+    public DataPersistenceService(IRenderLogService logService)
     {
+        _logService = logService;
         // 数据文件路径：运行目录下的 data.json
         // _dataFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data.json");
         _dataFilePath = Path.Combine(
@@ -55,7 +58,7 @@ public class DataPersistenceService : IDataPersistenceService
         string? tempFilePath = null;
         try
         {
-            Console.WriteLine($"[DataPersistenceService] Saving data to: {_dataFilePath}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"Saving data to: {_dataFilePath}", source: "DataPersistenceService");
 
             var json = JsonSerializer.Serialize(data, AppDataJsonContext.Default.AppData);
             tempFilePath = $"{_dataFilePath}.{Guid.NewGuid():N}.tmp";
@@ -63,7 +66,7 @@ public class DataPersistenceService : IDataPersistenceService
             await File.WriteAllTextAsync(tempFilePath, json);
             File.Move(tempFilePath, _dataFilePath, overwrite: true);
 
-            Console.WriteLine($"[DataPersistenceService] ✅ Data saved successfully");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"✅ Data saved successfully", source: "DataPersistenceService");
             return true;
         }
         catch (Exception ex)
@@ -80,7 +83,7 @@ public class DataPersistenceService : IDataPersistenceService
                 }
             }
 
-            Console.WriteLine($"[DataPersistenceService] ❌ Error saving data: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Error saving data: {ex.Message}", source: "DataPersistenceService");
             return false;
         }
     }
@@ -91,11 +94,11 @@ public class DataPersistenceService : IDataPersistenceService
         {
             if (!DataFileExists())
             {
-                Console.WriteLine($"[DataPersistenceService] Data file does not exist, returning default data");
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"Data file does not exist, returning default data", source: "DataPersistenceService");
                 return new AppData();
             }
 
-            Console.WriteLine($"[DataPersistenceService] Loading data from: {_dataFilePath}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"Loading data from: {_dataFilePath}", source: "DataPersistenceService");
 
             // 异步读取文件
             var json = await File.ReadAllTextAsync(_dataFilePath);
@@ -105,17 +108,16 @@ public class DataPersistenceService : IDataPersistenceService
 
             if (data == null)
             {
-                Console.WriteLine($"[DataPersistenceService] ❌ Failed to deserialize data, returning default");
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Failed to deserialize data, returning default", source: "DataPersistenceService");
                 return new AppData();
             }
 
-            Console.WriteLine(
-                $"[DataPersistenceService] ✅ Data loaded successfully - Tasks: {data.RenderQueue.Count}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"✅ Data loaded successfully - Tasks: {data.RenderQueue.Count}", source: "DataPersistenceService");
             return data;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[DataPersistenceService] ❌ Error loading data: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Error loading data: {ex.Message}", source: "DataPersistenceService");
             return new AppData();
         }
     }
@@ -132,7 +134,7 @@ public class DataPersistenceService : IDataPersistenceService
             if (DataFileExists())
             {
                 File.Delete(_dataFilePath);
-                Console.WriteLine($"[DataPersistenceService] ✅ Data file deleted: {_dataFilePath}");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"✅ Data file deleted: {_dataFilePath}", source: "DataPersistenceService");
                 return true;
             }
 
@@ -140,7 +142,7 @@ public class DataPersistenceService : IDataPersistenceService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[DataPersistenceService] ❌ Error deleting data file: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Error deleting data file: {ex.Message}", source: "DataPersistenceService");
             return false;
         }
     }

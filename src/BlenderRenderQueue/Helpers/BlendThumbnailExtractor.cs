@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Avalonia.Media.Imaging;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Helpers;
 
@@ -28,22 +29,22 @@ public static class BlendThumbnailExtractor
     public static unsafe Bitmap? ExtractThumbnail(string blendFilePath)
     {
         var result = ExtractThumbnailWithStatus(blendFilePath, out var status);
-        Console.WriteLine($"[BlendThumbnailExtractor] Extraction status: {status}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Extraction status: {status}", "BlendThumbnailExtractor");
         return result;
     }
 
     public static unsafe Bitmap? ExtractThumbnailWithStatus(string blendFilePath, out ThumbnailExtractionStatus status)
     {
         status = ThumbnailExtractionStatus.Error;
-        
+
         try
         {
-            Console.WriteLine($"[BlendThumbnailExtractor] Starting extraction from: {blendFilePath}");
-            
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Starting extraction from: {blendFilePath}", "BlendThumbnailExtractor");
+
             byte[] fileContent = File.ReadAllBytes(blendFilePath);
             if (fileContent.Length < 12)
             {
-                Console.WriteLine("[BlendThumbnailExtractor] File too small to be a valid Blender file");
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, "File too small to be a valid Blender file", "BlendThumbnailExtractor");
                 status = ThumbnailExtractionStatus.InvalidFile;
                 return null;
             }
@@ -52,7 +53,7 @@ public static class BlendThumbnailExtractor
             if (!StartsWith(fileContent, BLENDER_SIGNATURE))
             {
                 var signature = Encoding.ASCII.GetString(fileContent, 0, 7);
-                Console.WriteLine($"[BlendThumbnailExtractor] Invalid file signature: {signature} (expected: BLENDER)");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.Task, $"Invalid file signature: {signature} (expected: BLENDER)", "BlendThumbnailExtractor");
                 status = ThumbnailExtractionStatus.InvalidFile;
                 return null;
             }
@@ -61,11 +62,11 @@ public static class BlendThumbnailExtractor
             var is64Bit = fileContent[7] == '-';
             var isBigEndian = fileContent[8] == 'V';
             var sizeofBhead = is64Bit ? 24 : 20;
-            
+
             // 检查字节序 - 只支持小端序
             if (isBigEndian)
             {
-                Console.WriteLine("[BlendThumbnailExtractor] Big-endian files are not supported");
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, "Big-endian files are not supported", "BlendThumbnailExtractor");
                 status = ThumbnailExtractionStatus.InvalidFile;
                 return null;
             }
@@ -74,14 +75,14 @@ public static class BlendThumbnailExtractor
             var majorVersion = (char)fileContent[9];
             var minorVersion = (char)fileContent[10];
             var versionString = $"{majorVersion}.{minorVersion}";
-            
-            Console.WriteLine($"[BlendThumbnailExtractor] Blender Version: {versionString}");
-            Console.WriteLine($"[BlendThumbnailExtractor] File Format: {(is64Bit ? "64-bit" : "32-bit")}, Little Endian");
+
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Blender Version: {versionString}", "BlendThumbnailExtractor");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"File Format: {(is64Bit ? "64-bit" : "32-bit")}, Little Endian", "BlendThumbnailExtractor");
 
             // 检查版本是否足够新（2.50+）
             if (majorVersion < '2' || (majorVersion == '2' && minorVersion < '5'))
             {
-                Console.WriteLine($"[BlendThumbnailExtractor] Version {versionString} is too old, thumbnails require 2.50+");
+                ApplicationLogWriter.Write(RenderLogLevel.Warning, RenderLogScope.Task, $"Version {versionString} is too old, thumbnails require 2.50+", "BlendThumbnailExtractor");
                 status = ThumbnailExtractionStatus.EarlyVersion;
                 return null;
             }
@@ -89,7 +90,7 @@ public static class BlendThumbnailExtractor
             // 查找缩略图数据
             int position = 12;
             bool foundTestOrRend = false;
-            
+
             while (position + sizeofBhead <= fileContent.Length)
             {
                 var code = new byte[4];
@@ -98,7 +99,7 @@ public static class BlendThumbnailExtractor
 
                 if (length < 0)
                 {
-                    Console.WriteLine("[BlendThumbnailExtractor] Invalid block length");
+                    ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.Task, "Invalid block length", "BlendThumbnailExtractor");
                     status = ThumbnailExtractionStatus.InvalidThumbnail;
                     return null;
                 }
@@ -113,12 +114,12 @@ public static class BlendThumbnailExtractor
                     var height = ReadInt32(fileContent, position + 4, isBigEndian);
                     position += 8;
 
-                    Console.WriteLine($"[BlendThumbnailExtractor] Found TEST block with image dimensions: {width}x{height}");
+                    ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Found TEST block with image dimensions: {width}x{height}", "BlendThumbnailExtractor");
 
                     // 验证尺寸
                     if (width <= 0 || height <= 0)
                     {
-                        Console.WriteLine("[BlendThumbnailExtractor] Invalid image dimensions");
+                        ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.Task, "Invalid image dimensions", "BlendThumbnailExtractor");
                         status = ThumbnailExtractionStatus.InvalidThumbnail;
                         return null;
                     }
@@ -126,7 +127,7 @@ public static class BlendThumbnailExtractor
                     var imageDataLength = width * height * 4;
                     if (position + imageDataLength > fileContent.Length)
                     {
-                        Console.WriteLine("[BlendThumbnailExtractor] Image data extends beyond file");
+                        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, "Image data extends beyond file", "BlendThumbnailExtractor");
                         status = ThumbnailExtractionStatus.InvalidThumbnail;
                         return null;
                     }
@@ -158,14 +159,14 @@ public static class BlendThumbnailExtractor
                     // 垂直翻转图像
                     FlipImageVertical(bitmap);
 
-                    Console.WriteLine($"[BlendThumbnailExtractor] Successfully created thumbnail: {width}x{height}");
+                    ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Successfully created thumbnail: {width}x{height}", "BlendThumbnailExtractor");
                     status = ThumbnailExtractionStatus.Success;
                     return bitmap;
                 }
                 else if (SequenceEqual(code, REND_SIGNATURE))
                 {
                     foundTestOrRend = true;
-                    Console.WriteLine("[BlendThumbnailExtractor] Found REND block, skipping");
+                    ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, "Found REND block, skipping", "BlendThumbnailExtractor");
                     position += sizeofBhead + length;
                 }
                 else
@@ -178,21 +179,21 @@ public static class BlendThumbnailExtractor
                     else
                     {
                         // 如果还没找到TEST或REND块，且当前块也不是，则提前退出
-                        Console.WriteLine("[BlendThumbnailExtractor] No TEST or REND blocks found, early exit");
+                        ApplicationLogWriter.Write(RenderLogLevel.Warning, RenderLogScope.Task, "No TEST or REND blocks found, early exit", "BlendThumbnailExtractor");
                         status = ThumbnailExtractionStatus.InvalidThumbnail;
                         return null;
                     }
                 }
             }
 
-            Console.WriteLine("[BlendThumbnailExtractor] No thumbnail data found");
+            ApplicationLogWriter.Write(RenderLogLevel.Warning, RenderLogScope.Task, "No thumbnail data found", "BlendThumbnailExtractor");
             status = ThumbnailExtractionStatus.InvalidThumbnail;
             return null;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[BlendThumbnailExtractor] Error extracting thumbnail: {ex.Message}");
-            Console.WriteLine(ex.StackTrace);
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.Task, $"Error extracting thumbnail: {ex.Message}", "BlendThumbnailExtractor");
+            ApplicationLogWriter.Write(RenderLogLevel.Debug, RenderLogScope.Task, ex.StackTrace ?? string.Empty, "BlendThumbnailExtractor");
             status = ThumbnailExtractionStatus.Error;
             return null;
         }
@@ -250,4 +251,4 @@ public static class BlendThumbnailExtractor
         if (array1.Length != array2.Length) return false;
         return !array1.Where((t, i) => t != array2[i]).Any();
     }
-} 
+}

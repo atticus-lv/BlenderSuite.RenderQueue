@@ -17,6 +17,7 @@ using BlenderRenderQueue.ViewModels;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Services;
 using BlenderRenderQueue.Services.UI;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Controls;
 
@@ -221,7 +222,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         HasError = false;
         ErrorMessage = string.Empty;
 
-        Console.WriteLine($"[ImageSequencePreviewControl] OnFolderPathChanged: '{newPath}'");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"OnFolderPathChanged: '{newPath}'", "ImageSequencePreviewControl");
         if (DataContext is RenderTaskViewModel task)
         {
             SelectionPerfTrace.Mark(task.Id, task.BlendFileName, "ImageSequencePreview.FolderPathChanged",
@@ -234,7 +235,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
         if (string.IsNullOrEmpty(newPath))
         {
-            Console.WriteLine("[ImageSequencePreviewControl] Path is null or empty, clearing images");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, "Path is null or empty, clearing images", "ImageSequencePreviewControl");
             ClearImages();
             return;
         }
@@ -244,28 +245,28 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         if (File.Exists(newPath))
         {
             directoryPath = Path.GetDirectoryName(newPath) ?? string.Empty;
-            Console.WriteLine($"[ImageSequencePreviewControl] Path is file, directory: '{directoryPath}'");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Path is file, directory: '{directoryPath}'", "ImageSequencePreviewControl");
         }
         else if (Directory.Exists(newPath))
         {
             directoryPath = newPath;
-            Console.WriteLine($"[ImageSequencePreviewControl] Path is directory: '{directoryPath}'");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Path is directory: '{directoryPath}'", "ImageSequencePreviewControl");
         }
         else
         {
-            Console.WriteLine($"[ImageSequencePreviewControl] Path does not exist: '{newPath}'");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Path does not exist: '{newPath}'", "ImageSequencePreviewControl");
             SetError($"ImageSequence_PathNotExists:{newPath}");
             return;
         }
 
         if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath))
         {
-            Console.WriteLine($"[ImageSequencePreviewControl] Directory does not exist: '{directoryPath}'");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Directory does not exist: '{directoryPath}'", "ImageSequencePreviewControl");
             SetError($"ImageSequence_PathNotExists:{directoryPath}");
             return;
         }
 
-        Console.WriteLine($"[ImageSequencePreviewControl] Loading image sequence from: '{directoryPath}'");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Loading image sequence from: '{directoryPath}'", "ImageSequencePreviewControl");
         LoadImageSequenceAsync(directoryPath).FireAndForget(
             source: nameof(ImageSequencePreviewControl),
             message: "图片序列后台加载失败。");
@@ -293,12 +294,12 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
                 IsLoading = true;
                 HasImages = false;
             });
-            Console.WriteLine($"[ImageSequencePreviewControl] LoadImageSequence: '{folderPath}'");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"LoadImageSequence: '{folderPath}'", "ImageSequencePreviewControl");
 
             var files = await Task.Run(() =>
             {
                 var allFiles = Directory.GetFiles(folderPath);
-                Console.WriteLine($"[ImageSequencePreviewControl] Found {allFiles.Length} total files in directory");
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Found {allFiles.Length} total files in directory", "ImageSequencePreviewControl");
 
                 return allFiles
                     .Where(file => ImageExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
@@ -311,7 +312,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
                 return;
             }
 
-            Console.WriteLine($"[ImageSequencePreviewControl] Found {files.Count} image files");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Found {files.Count} image files", "ImageSequencePreviewControl");
             await Dispatcher.UIThread.InvokeAsync(() => ApplyImageSequence(files, previousCurrentFrame));
 
             if (DataContext is RenderTaskViewModel task)
@@ -322,7 +323,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"加载图片序列失败: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"加载图片序列失败: {ex.Message}", "ImageSequencePreviewControl");
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 SetError($"ImageSequence_LoadFailed:{ex.Message}");
@@ -405,7 +406,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         catch (Exception ex)
         {
             bitmap?.Dispose();
-            Console.WriteLine($"加载图片失败 {filePath}: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"加载图片失败 {filePath}: {ex.Message}", "ImageSequencePreviewControl");
         }
     }
 
@@ -468,11 +469,11 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             _fileWatcher.Changed += OnFileChanged;
             _fileWatcher.Error += OnFileWatcherError;
 
-            Console.WriteLine($"[ImageSequencePreviewControl] File watcher started for: '{directoryPath}'");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"File watcher started for: '{directoryPath}'", "ImageSequencePreviewControl");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ImageSequencePreviewControl] Failed to start file watcher: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to start file watcher: {ex.Message}", "ImageSequencePreviewControl");
         }
     }
 
@@ -489,11 +490,11 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             _fileWatcher.Error -= OnFileWatcherError;
             _fileWatcher.Dispose();
             _fileWatcher = null;
-            Console.WriteLine("[ImageSequencePreviewControl] File watcher stopped");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, "File watcher stopped", "ImageSequencePreviewControl");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ImageSequencePreviewControl] Error stopping file watcher: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error stopping file watcher: {ex.Message}", "ImageSequencePreviewControl");
         }
     }
 
@@ -504,7 +505,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         if (!ImageExtensions.Contains(extension))
             return;
 
-        Console.WriteLine($"[ImageSequencePreviewControl] File {e.ChangeType}: {e.FullPath}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"File {e.ChangeType}: {e.FullPath}", "ImageSequencePreviewControl");
         ScheduleRefresh();
     }
 
@@ -516,13 +517,13 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         if (!ImageExtensions.Contains(oldExtension) && !ImageExtensions.Contains(newExtension))
             return;
 
-        Console.WriteLine($"[ImageSequencePreviewControl] File renamed: {e.OldFullPath} -> {e.FullPath}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"File renamed: {e.OldFullPath} -> {e.FullPath}", "ImageSequencePreviewControl");
         ScheduleRefresh();
     }
 
     private void OnFileWatcherError(object sender, ErrorEventArgs e)
     {
-        Console.WriteLine($"[ImageSequencePreviewControl] File watcher error: {e.GetException().Message}");
+        ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"File watcher error: {e.GetException().Message}", "ImageSequencePreviewControl");
         // 可以在这里添加错误处理逻辑，比如重新启动监控器
     }
 
@@ -533,7 +534,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
         try
         {
-            Console.WriteLine("[ImageSequencePreviewControl] Refreshing image sequence due to file changes");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, "Refreshing image sequence due to file changes", "ImageSequencePreviewControl");
 
             // 重新加载图片序列
             var directoryPath = File.Exists(_folderPath) ? Path.GetDirectoryName(_folderPath) : _folderPath;
@@ -544,7 +545,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ImageSequencePreviewControl] Error refreshing image sequence: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error refreshing image sequence: {ex.Message}", "ImageSequencePreviewControl");
         }
     }
 
@@ -566,32 +567,32 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         try
         {
             var currentImagePath = _imageFiles[_currentFrame];
-            Console.WriteLine($"[ImageSequencePreviewControl] Opening image preview for: {currentImagePath}");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Opening image preview for: {currentImagePath}", "ImageSequencePreviewControl");
 
             // 先创建ViewModel
             var viewModel = new ImagePreviewWindowViewModel(currentImagePath, _currentFrame + 1);
-            Console.WriteLine($"[ImageSequencePreviewControl] ViewModel created, ImagePath: '{viewModel.ImagePath}'");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"ViewModel created, ImagePath: '{viewModel.ImagePath}'", "ImageSequencePreviewControl");
 
             // 使用接受ViewModel的构造函数创建窗口
             var previewWindow = new ImagePreviewWindow(viewModel);
-            Console.WriteLine($"[ImageSequencePreviewControl] Window created with ViewModel");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Window created with ViewModel", "ImageSequencePreviewControl");
 
             // 使用 ToplevelService 获取父窗口
             var parentTopLevel = ToplevelService.GetTopLevelForContext(this);
             if (parentTopLevel is Window parentWindow)
             {
-                Console.WriteLine($"[ImageSequencePreviewControl] Showing as dialog");
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Showing as dialog", "ImageSequencePreviewControl");
                 previewWindow.ShowDialog(parentWindow);
             }
             else
             {
-                Console.WriteLine($"[ImageSequencePreviewControl] Showing as window");
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Showing as window", "ImageSequencePreviewControl");
                 previewWindow.Show();
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ImageSequencePreviewControl] Error opening image preview: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error opening image preview: {ex.Message}", "ImageSequencePreviewControl");
         }
     }
 
@@ -655,7 +656,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
         if (_imageFiles.Count == 0)
         {
-            Console.WriteLine("[ImageSequencePreviewControl] No image files found");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, "No image files found", "ImageSequencePreviewControl");
             HasImages = false;
             MaxFrame = 0;
             CurrentFrame = 0;
@@ -674,7 +675,6 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         CurrentFrame = targetFrame;
         UpdateFrameTexts();
 
-        Console.WriteLine(
-            $"[ImageSequencePreviewControl] Successfully loaded {_imageFiles.Count} images, restored to frame {targetFrame}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Successfully loaded {_imageFiles.Count} images, restored to frame {targetFrame}", "ImageSequencePreviewControl");
     }
 }

@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
+using BlenderRenderQueue.Services.Application.Logging;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 
@@ -10,6 +11,7 @@ namespace BlenderRenderQueue.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {	
+	private readonly IRenderLogService _logService;
 	
 	[ObservableProperty]
 	private string _appVersion = "Unknown";
@@ -17,8 +19,9 @@ public partial class MainWindowViewModel : ViewModelBase
 	public ISukiDialogManager DialogManager { get; } = new SukiDialogManager();
 	public ISukiToastManager ToastManager { get; } = new SukiToastManager();
 
-	public MainWindowViewModel(MainRenderViewModel mainRenderViewModel)
+	public MainWindowViewModel(MainRenderViewModel mainRenderViewModel, IRenderLogService logService)
 	{
+		_logService = logService;
 		Content = mainRenderViewModel;
 		GetFileVersion();
 	}
@@ -30,10 +33,10 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             var exeDir = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
             var exePath = exeDir != null ? Directory.GetFiles(exeDir, "*.exe").FirstOrDefault() : null;
-            Console.WriteLine($"Executable Path: {exePath}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Executable Path: {exePath}", source: "MainWindowViewModel");
             if (exePath == null) return;
             var version = FileVersionInfo.GetVersionInfo(exePath).FileVersion;
-            Console.WriteLine($"Version: {version}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Version: {version}", source: "MainWindowViewModel");
             if (version == null) return;
             AppVersion = version;
             return;

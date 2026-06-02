@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 
 namespace BlenderRenderQueue.Services.Business.Blender;
@@ -12,6 +13,12 @@ namespace BlenderRenderQueue.Services.Business.Blender;
 public sealed class BlenderQueryService : IBlenderQueryService
 {
     private const string Prefix = "[BRQ] ";
+    private readonly IRenderLogService? _logService;
+
+    public BlenderQueryService(IRenderLogService? logService = null)
+    {
+        _logService = logService;
+    }
 
     /// <summary>
     /// 使用新的进程管理服务查询文件属性
@@ -21,7 +28,7 @@ public sealed class BlenderQueryService : IBlenderQueryService
         string blendFilePath,
         CancellationToken cancellationToken = default)
     {
-        using var processService = new BlenderProcessService(blenderPath);
+        using var processService = new BlenderProcessService(blenderPath, _logService);
         
         return await processService.ExecuteQueryAsync(
             GetFilePropertiesScript(blendFilePath),
@@ -129,9 +136,9 @@ except Exception as e:
     /// <summary>
     /// 解析文件属性查询结果
     /// </summary>
-    private static (string ActiveScene, Dictionary<string, BlendSceneProperties> SceneData) ParseFilePropertiesResult(string result, string blendFilePath)
+    private (string ActiveScene, Dictionary<string, BlendSceneProperties> SceneData) ParseFilePropertiesResult(string result, string blendFilePath)
     {
-        Console.WriteLine($"[BlenderQueryService] Raw result received: {result}");
+        _logService?.Write(RenderLogLevel.Debug, RenderLogScope.Worker, $"Raw result received: {result}", source: "BlenderQueryService");
         
         // 查找包含 [BRQ] 前缀的行
         var lines = result.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
@@ -149,18 +156,18 @@ except Exception as e:
         
         if (string.IsNullOrEmpty(jsonLine))
         {
-            Console.WriteLine($"[BlenderQueryService] No JSON result found in output");
+            _logService?.Write(RenderLogLevel.Warning, RenderLogScope.Worker, $"No JSON result found in output", source: "BlenderQueryService");
             throw new InvalidOperationException("未找到有效的JSON结果");
         }
         
-        Console.WriteLine($"[BlenderQueryService] JSON line: {jsonLine}");
+        _logService?.Write(RenderLogLevel.Debug, RenderLogScope.Worker, $"JSON line: {jsonLine}", source: "BlenderQueryService");
         
         var root = JsonDocument.Parse(jsonLine).RootElement;
         
         if (!root.TryGetProperty("ok", out var okProp) || !okProp.GetBoolean())
         {
             var error = root.TryGetProperty("err", out var errProp) ? errProp.GetString() : "未知错误";
-            Console.WriteLine($"[BlenderQueryService] Query failed: {error}");
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Query failed: {error}", source: "BlenderQueryService");
             throw new InvalidOperationException($"查询失败: {error}");
         }
         
@@ -206,7 +213,7 @@ except Exception as e:
             };
         }
         
-        Console.WriteLine($"[BlenderQueryService] Successfully parsed {sceneData.Count} scenes");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Successfully parsed {sceneData.Count} scenes", source: "BlenderQueryService");
         return (activeScene, sceneData);
     }
 

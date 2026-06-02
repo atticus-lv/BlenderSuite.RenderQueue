@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using BlenderRenderQueue.Extensions;
 using CommunityToolkit.Mvvm.ComponentModel;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.ViewModels;
 
@@ -14,7 +15,7 @@ public partial class ImagePreviewWindowViewModel : ViewModelBase
 
     partial void OnImageChanged(Bitmap? value)
     {
-        Console.WriteLine($"[ImagePreviewWindowViewModel] Image property changed: {(value != null ? "Image set" : "Image cleared")}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Image property changed: {(value != null ? "Image set" : "Image cleared")}", "ImagePreviewWindowViewModel");
     }
 
     [ObservableProperty]
@@ -38,10 +39,10 @@ public partial class ImagePreviewWindowViewModel : ViewModelBase
 
     public ImagePreviewWindowViewModel(string imagePath, int frameNumber = 0)
     {
-        Console.WriteLine($"[ImagePreviewWindowViewModel] Constructor called with path: '{imagePath}', frame: {frameNumber}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Constructor called with path: '{imagePath}', frame: {frameNumber}", "ImagePreviewWindowViewModel");
         ImagePath = imagePath;
         FrameInfo = frameNumber > 0 ? $"帧 {frameNumber}" : "单帧";
-        Console.WriteLine($"[ImagePreviewWindowViewModel] ImagePath set to: '{ImagePath}'");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"ImagePath set to: '{ImagePath}'", "ImagePreviewWindowViewModel");
         LoadImageAsync().FireAndForget(
             source: nameof(ImagePreviewWindowViewModel),
             message: "图片预览窗口后台加载图片失败。");
@@ -49,15 +50,15 @@ public partial class ImagePreviewWindowViewModel : ViewModelBase
 
     private async Task LoadImageAsync()
     {
-        Console.WriteLine($"[ImagePreviewWindowViewModel] LoadImageAsync called with path: '{ImagePath}'");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"LoadImageAsync called with path: '{ImagePath}'", "ImagePreviewWindowViewModel");
         
         if (string.IsNullOrEmpty(ImagePath) || !File.Exists(ImagePath))
         {
-            Console.WriteLine($"[ImagePreviewWindowViewModel] Image path is invalid or file doesn't exist: '{ImagePath}'");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Image path is invalid or file doesn't exist: '{ImagePath}'", "ImagePreviewWindowViewModel");
             return;
         }
 
-        Console.WriteLine($"[ImagePreviewWindowViewModel] Starting to load image: '{ImagePath}'");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Starting to load image: '{ImagePath}'", "ImagePreviewWindowViewModel");
         IsLoading = true;
         
         try
@@ -74,7 +75,7 @@ public partial class ImagePreviewWindowViewModel : ViewModelBase
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[ImagePreviewWindowViewModel] Error loading image: {ex.Message}");
+                    ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error loading image: {ex.Message}", "ImagePreviewWindowViewModel");
                     return null;
                 }
             });
@@ -92,8 +93,8 @@ public partial class ImagePreviewWindowViewModel : ViewModelBase
                     FileInfo = $"{fileInfo.Length / 1024.0 / 1024.0:F1} MB • {fileInfo.LastWriteTime:yyyy-MM-dd HH:mm:ss}";
                     
                     IsLoading = false;
-                    Console.WriteLine($"[ImagePreviewWindowViewModel] ✅ Image loaded successfully: {ImagePath}");
-                    Console.WriteLine($"[ImagePreviewWindowViewModel] Image size: {ImageSize}, File info: {FileInfo}");
+                    ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"✅ Image loaded successfully: {ImagePath}", "ImagePreviewWindowViewModel");
+                    ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Image size: {ImageSize}, File info: {FileInfo}", "ImagePreviewWindowViewModel");
                 });
             }
             else
@@ -106,7 +107,7 @@ public partial class ImagePreviewWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ImagePreviewWindowViewModel] Error in LoadImageAsync: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error in LoadImageAsync: {ex.Message}", "ImagePreviewWindowViewModel");
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 IsLoading = false;

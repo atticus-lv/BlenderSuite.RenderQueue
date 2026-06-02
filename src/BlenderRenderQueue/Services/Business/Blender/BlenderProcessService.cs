@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 
 namespace BlenderRenderQueue.Services.Business.Blender;
@@ -12,18 +13,20 @@ public class BlenderProcessService : IDisposable
 {
     private readonly BlenderProcessManager _processManager;
     private readonly string _blenderPath;
+    private readonly IRenderLogService? _logService;
     private bool _disposed;
 
-    public BlenderProcessService(string blenderPath)
+    public BlenderProcessService(string blenderPath, IRenderLogService? logService = null)
     {
         _blenderPath = blenderPath;
-        _processManager = new BlenderProcessManager();
+        _logService = logService;
+        _processManager = new BlenderProcessManager(logService);
         
         // 订阅进程事件
         _processManager.ProcessCreated += OnProcessCreated;
         _processManager.ProcessDestroyed += OnProcessDestroyed;
         
-        Console.WriteLine($"[BlenderProcessService] Service created for path: {_blenderPath}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Service created for path: {_blenderPath}", source: "BlenderProcessService");
     }
 
     /// <summary>
@@ -35,7 +38,7 @@ public class BlenderProcessService : IDisposable
         Func<string, T> resultParser,
         CancellationToken cancellationToken = default)
     {
-        Console.WriteLine($"[BlenderProcessService] Executing query: {operationName}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Executing query: {operationName}", source: "BlenderProcessService");
         
         var process = await _processManager.CreateQueryProcessAsync(_blenderPath, cancellationToken);
         
@@ -49,7 +52,7 @@ public class BlenderProcessService : IDisposable
             await process.StopAsync();
             _processManager.UnregisterProcess(process.ProcessId);
             process.Dispose();
-            Console.WriteLine($"[BlenderProcessService] Query completed: {operationName}");
+            _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Query completed: {operationName}", source: "BlenderProcessService");
         }
     }
 
@@ -58,7 +61,7 @@ public class BlenderProcessService : IDisposable
     /// </summary>
     public async Task<IBlenderProcess> CreateRenderProcessAsync(CancellationToken cancellationToken = default)
     {
-        Console.WriteLine($"[BlenderProcessService] Creating render process");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Creating render process", source: "BlenderProcessService");
         return await _processManager.CreateRenderProcessAsync(_blenderPath, cancellationToken);
     }
 
@@ -67,7 +70,7 @@ public class BlenderProcessService : IDisposable
     /// </summary>
     public async Task<IBlenderProcess> CreateVideoProcessAsync(CancellationToken cancellationToken = default)
     {
-        Console.WriteLine($"[BlenderProcessService] Creating video process");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Creating video process", source: "BlenderProcessService");
         return await _processManager.CreateVideoProcessAsync(_blenderPath, cancellationToken);
     }
 
@@ -76,7 +79,7 @@ public class BlenderProcessService : IDisposable
     /// </summary>
     public async Task StopAllProcessesAsync()
     {
-        Console.WriteLine($"[BlenderProcessService] Stopping all processes");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Stopping all processes", source: "BlenderProcessService");
         await _processManager.StopAllProcessesAsync();
     }
 
@@ -85,7 +88,7 @@ public class BlenderProcessService : IDisposable
     /// </summary>
     public async Task StopProcessesByTypeAsync(BlenderProcessType processType)
     {
-        Console.WriteLine($"[BlenderProcessService] Stopping processes of type: {processType}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Stopping processes of type: {processType}", source: "BlenderProcessService");
         await _processManager.StopProcessesByTypeAsync(processType);
     }
 
@@ -115,19 +118,19 @@ public class BlenderProcessService : IDisposable
 
     private void OnProcessCreated(IBlenderProcess process)
     {
-        Console.WriteLine($"[BlenderProcessService] Process created - ID: {process.ProcessId}, Type: {process.ProcessType}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Process created - ID: {process.ProcessId}, Type: {process.ProcessType}", source: "BlenderProcessService");
     }
 
     private void OnProcessDestroyed(IBlenderProcess process)
     {
-        Console.WriteLine($"[BlenderProcessService] Process destroyed - ID: {process.ProcessId}, Type: {process.ProcessType}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Process destroyed - ID: {process.ProcessId}, Type: {process.ProcessType}", source: "BlenderProcessService");
     }
 
     public void Dispose()
     {
         if (_disposed) return;
 
-        Console.WriteLine($"[BlenderProcessService] Disposing service");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Disposing service", source: "BlenderProcessService");
 
         try
         {
@@ -135,12 +138,12 @@ public class BlenderProcessService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[BlenderProcessService] Error disposing service: {ex.Message}");
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Error disposing service: {ex.Message}", source: "BlenderProcessService");
         }
         finally
         {
             _disposed = true;
-            Console.WriteLine($"[BlenderProcessService] Service disposed");
+            _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Service disposed", source: "BlenderProcessService");
         }
     }
 }

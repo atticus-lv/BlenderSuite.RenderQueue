@@ -21,11 +21,12 @@ public sealed class MainRenderViewModelTests
     {
         var logService = TestLogServiceFactory.Create();
         var queueService = CreateQueueService(logService);
-        var renderQueue = new RenderQueueViewModel(queueService);
+        var renderQueue = new RenderQueueViewModel(queueService, logService);
         var settings = new SettingsViewModel(
             new FakeSettingsPersistenceService(new SettingsData()),
             new FakeBlenderExtensionManager(),
-            new FakeBlenderCliInfoService());
+            new FakeBlenderCliInfoService(),
+            logService);
         var globalLog = new GlobalLogViewModel(logService);
         var sut = new MainRenderViewModel(settings, renderQueue, globalLog, logService, new FakeBlenderCliInfoService());
 

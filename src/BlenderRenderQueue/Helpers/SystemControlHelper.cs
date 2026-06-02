@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using BlenderRenderQueue.Localizer;
 using BlenderRenderQueue.Views;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Helpers;
 
@@ -28,7 +29,7 @@ public static class SystemControlHelper
             using var process = Process.Start(processStartInfo);
             if (process == null)
             {
-                Console.WriteLine("[SystemControlHelper] ❌ Failed to start shutdown process");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "❌ Failed to start shutdown process", "SystemControlHelper");
                 return false;
             }
 
@@ -36,18 +37,18 @@ public static class SystemControlHelper
             
             if (process.ExitCode == 0)
             {
-                Console.WriteLine($"[SystemControlHelper] ✅ Shutdown scheduled successfully in {delaySeconds} seconds");
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"✅ Shutdown scheduled successfully in {delaySeconds} seconds", "SystemControlHelper");
                 return true;
             }
             else
             {
-                Console.WriteLine($"[SystemControlHelper] ❌ Shutdown command failed with exit code: {process.ExitCode}");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Shutdown command failed with exit code: {process.ExitCode}", "SystemControlHelper");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SystemControlHelper] ❌ Error executing shutdown: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error executing shutdown: {ex.Message}", "SystemControlHelper");
             return false;
         }
     }
@@ -67,7 +68,7 @@ public static class SystemControlHelper
             using var process = Process.Start(processStartInfo);
             if (process == null)
             {
-                Console.WriteLine("[SystemControlHelper] ❌ Failed to start restart process");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "❌ Failed to start restart process", "SystemControlHelper");
                 return false;
             }
 
@@ -75,18 +76,18 @@ public static class SystemControlHelper
             
             if (process.ExitCode == 0)
             {
-                Console.WriteLine($"[SystemControlHelper] ✅ Restart scheduled successfully in {delaySeconds} seconds");
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"✅ Restart scheduled successfully in {delaySeconds} seconds", "SystemControlHelper");
                 return true;
             }
             else
             {
-                Console.WriteLine($"[SystemControlHelper] ❌ Restart command failed with exit code: {process.ExitCode}");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Restart command failed with exit code: {process.ExitCode}", "SystemControlHelper");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SystemControlHelper] ❌ Error executing restart: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error executing restart: {ex.Message}", "SystemControlHelper");
             return false;
         }
     }
@@ -104,7 +105,7 @@ public static class SystemControlHelper
             using var process = Process.Start(processStartInfo);
             if (process == null)
             {
-                Console.WriteLine("[SystemControlHelper] ❌ Failed to start cancel shutdown process");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, "❌ Failed to start cancel shutdown process", "SystemControlHelper");
                 return false;
             }
 
@@ -112,18 +113,18 @@ public static class SystemControlHelper
             
             if (process.ExitCode == 0)
             {
-                Console.WriteLine("[SystemControlHelper] ✅ Shutdown/restart cancelled successfully");
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, "✅ Shutdown/restart cancelled successfully", "SystemControlHelper");
                 return true;
             }
             else
             {
-                Console.WriteLine($"[SystemControlHelper] ❌ Cancel shutdown command failed with exit code: {process.ExitCode}");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Cancel shutdown command failed with exit code: {process.ExitCode}", "SystemControlHelper");
                 return false;
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SystemControlHelper] ❌ Error cancelling shutdown: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error cancelling shutdown: {ex.Message}", "SystemControlHelper");
             return false;
         }
     }

@@ -97,7 +97,7 @@ public sealed partial class RenderQueueApplicationService
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"[RenderQueueApplicationService] Failed while starting queued task {Path.GetFileName(taskCopy.BlendFilePath)}: {ex}");
+                            _owner._logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed while starting queued task {Path.GetFileName(taskCopy.BlendFilePath)}: {ex}", source: "RenderQueueApplicationService");
                             _owner.WriteTaskEvent(taskCopy, RenderLogScope.Queue, $"启动任务失败: {ex.Message}", RenderLogLevel.Error);
                         }
                         finally
@@ -175,7 +175,7 @@ public sealed partial class RenderQueueApplicationService
                     var saved = await _owner._dataPersistenceService.SaveDataAsync(appData);
                     if (!saved)
                     {
-                        Console.WriteLine("[RenderQueueApplicationService] Auto-save request completed with persistence failure.");
+                        _owner._logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, "Auto-save request completed with persistence failure.", source: "RenderQueueApplicationService");
                     }
                 }
             }
@@ -186,7 +186,7 @@ public sealed partial class RenderQueueApplicationService
                     _owner._saveWorkerRunning = false;
                 }
 
-                Console.WriteLine($"[RenderQueueApplicationService] Error in auto-save: {ex.Message}");
+                _owner._logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Error in auto-save: {ex.Message}", source: "RenderQueueApplicationService");
             }
         }
 

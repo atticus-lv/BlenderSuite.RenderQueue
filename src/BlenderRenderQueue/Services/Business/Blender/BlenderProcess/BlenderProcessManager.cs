@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 
@@ -14,7 +15,13 @@ public class BlenderProcessManager : IDisposable
 {
     private readonly ConcurrentDictionary<string, IBlenderProcess> _activeProcesses = new();
     private readonly object _lock = new();
+    private readonly IRenderLogService? _logService;
     private bool _disposed;
+
+    public BlenderProcessManager(IRenderLogService? logService = null)
+    {
+        _logService = logService;
+    }
 
     /// <summary>
     /// 进程创建事件
@@ -36,7 +43,7 @@ public class BlenderProcessManager : IDisposable
     /// </summary>
     public async Task<IBlenderProcess> CreateQueryProcessAsync(string blenderPath, CancellationToken cancellationToken = default)
     {
-        var process = new BlenderQueryProcess(blenderPath);
+        var process = new BlenderQueryProcess(blenderPath, _logService);
         await RegisterProcessAsync(process, cancellationToken);
         return process;
     }
@@ -46,7 +53,7 @@ public class BlenderProcessManager : IDisposable
     /// </summary>
     public async Task<IBlenderProcess> CreateRenderProcessAsync(string blenderPath, CancellationToken cancellationToken = default)
     {
-        var process = new BlenderRenderProcess(blenderPath);
+        var process = new BlenderRenderProcess(blenderPath, _logService);
         await RegisterProcessAsync(process, cancellationToken);
         return process;
     }
@@ -56,7 +63,7 @@ public class BlenderProcessManager : IDisposable
     /// </summary>
     public async Task<IBlenderProcess> CreateVideoProcessAsync(string blenderPath, CancellationToken cancellationToken = default)
     {
-        var process = new BlenderVideoProcess(blenderPath);
+        var process = new BlenderVideoProcess(blenderPath, _logService);
         await RegisterProcessAsync(process, cancellationToken);
         return process;
     }
@@ -73,7 +80,7 @@ public class BlenderProcessManager : IDisposable
         // 订阅进程退出事件，自动清理
         process.OnProcessExited += (exitCode) => UnregisterProcess(process.ProcessId);
         
-        Console.WriteLine($"[BlenderProcessManager] Process registered - ID: {process.ProcessId}, Type: {process.ProcessType}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Process registered - ID: {process.ProcessId}, Type: {process.ProcessType}", source: "BlenderProcessManager");
         
         // 启动进程
         await process.StartAsync(cancellationToken);
@@ -88,7 +95,7 @@ public class BlenderProcessManager : IDisposable
     {
         if (_activeProcesses.TryRemove(processId, out var process))
         {
-            Console.WriteLine($"[BlenderProcessManager] Process unregistered - ID: {processId}, Type: {process.ProcessType}");
+            _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Process unregistered - ID: {processId}, Type: {process.ProcessType}", source: "BlenderProcessManager");
             ProcessDestroyed?.Invoke(process);
         }
     }
@@ -123,7 +130,7 @@ public class BlenderProcessManager : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[BlenderProcessManager] Error stopping process {process.ProcessId}: {ex.Message}");
+                _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Error stopping process {process.ProcessId}: {ex.Message}", source: "BlenderProcessManager");
             }
         });
 
@@ -144,7 +151,7 @@ public class BlenderProcessManager : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[BlenderProcessManager] Error stopping process {process.ProcessId}: {ex.Message}");
+                _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Error stopping process {process.ProcessId}: {ex.Message}", source: "BlenderProcessManager");
             }
         });
 
@@ -172,7 +179,7 @@ public class BlenderProcessManager : IDisposable
     {
         if (_disposed) return;
 
-        Console.WriteLine("[BlenderProcessManager] Disposing process manager...");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, "Disposing process manager...", source: "BlenderProcessManager");
 
         // 停止所有进程
         StopAllProcessesAsync().GetAwaiter().GetResult();
@@ -186,14 +193,14 @@ public class BlenderProcessManager : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[BlenderProcessManager] Error disposing process {process.ProcessId}: {ex.Message}");
+                _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Error disposing process {process.ProcessId}: {ex.Message}", source: "BlenderProcessManager");
             }
         }
 
         _activeProcesses.Clear();
         _disposed = true;
 
-        Console.WriteLine("[BlenderProcessManager] Process manager disposed");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, "Process manager disposed", source: "BlenderProcessManager");
     }
 }
 

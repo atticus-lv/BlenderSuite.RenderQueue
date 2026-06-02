@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Avalonia.Media.Imaging;
 using BlenderRenderQueue.Helpers;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Models;
 
@@ -27,7 +28,7 @@ public class BlendFileInfo
     /// </summary>
     public static BlendFileInfo FromFilePath(string filePath)
     {
-        Console.WriteLine($"[BlendFileInfo] Starting to load file info: {filePath}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Starting to load file info: {filePath}", "BlendFileInfo");
         
         var fileInfo = new BlendFileInfo
         {
@@ -41,22 +42,22 @@ public class BlendFileInfo
             fileInfo.CreatedTime = fileInfoObj.CreationTime;
             fileInfo.LastModifiedTime = fileInfoObj.LastWriteTime;
             
-            Console.WriteLine($"[BlendFileInfo] File basic info - Size: {fileInfo.FileSizeFormatted}, Created: {fileInfo.CreatedTime:yyyy-MM-dd HH:mm:ss}, Modified: {fileInfo.LastModifiedTime:yyyy-MM-dd HH:mm:ss}");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"File basic info - Size: {fileInfo.FileSizeFormatted}, Created: {fileInfo.CreatedTime:yyyy-MM-dd HH:mm:ss}, Modified: {fileInfo.LastModifiedTime:yyyy-MM-dd HH:mm:ss}", "BlendFileInfo");
             
             // 提取缩略图
-            Console.WriteLine($"[BlendFileInfo] Starting thumbnail extraction...");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Starting thumbnail extraction...", "BlendFileInfo");
             fileInfo.Thumbnail = BlendThumbnailExtractor.ExtractThumbnailWithStatus(filePath, out var status);
 
-            Console.WriteLine(fileInfo.Thumbnail != null
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.Task, fileInfo.Thumbnail != null
                 ? $"[BlendFileInfo] ✅ Thumbnail extraction successful! Size: {fileInfo.Thumbnail.PixelSize.Width}x{fileInfo.Thumbnail.PixelSize.Height}"
-                : $"[BlendFileInfo] ❌ Thumbnail extraction failed - Status: {status}");
+                : $"[BlendFileInfo] ❌ Thumbnail extraction failed - Status: {status}", "BlendFileInfo");
         }
         else
         {
-            Console.WriteLine($"[BlendFileInfo] ❌ File does not exist: {filePath}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.Task, $"❌ File does not exist: {filePath}", "BlendFileInfo");
         }
 
-        Console.WriteLine($"[BlendFileInfo] File info loading completed");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"File info loading completed", "BlendFileInfo");
         return fileInfo;
     }
 
@@ -65,7 +66,7 @@ public class BlendFileInfo
     /// </summary>
     public void Refresh()
     {
-        Console.WriteLine($"[BlendFileInfo] Refreshing file info: {FilePath}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Refreshing file info: {FilePath}", "BlendFileInfo");
         
         if (File.Exists(FilePath))
         {
@@ -74,20 +75,20 @@ public class BlendFileInfo
             CreatedTime = fileInfoObj.CreationTime;
             LastModifiedTime = fileInfoObj.LastWriteTime;
             
-            Console.WriteLine($"[BlendFileInfo] File info updated - Size: {FileSizeFormatted}, Modified: {LastModifiedTime:yyyy-MM-dd HH:mm:ss}");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"File info updated - Size: {FileSizeFormatted}, Modified: {LastModifiedTime:yyyy-MM-dd HH:mm:ss}", "BlendFileInfo");
             
             // 重新提取缩略图
-            Console.WriteLine($"[BlendFileInfo] Re-extracting thumbnail...");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Re-extracting thumbnail...", "BlendFileInfo");
             Thumbnail?.Dispose();
             Thumbnail = BlendThumbnailExtractor.ExtractThumbnailWithStatus(FilePath, out var status);
 
-            Console.WriteLine(Thumbnail != null
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.Task, Thumbnail != null
                 ? $"[BlendFileInfo] ✅ Thumbnail refresh successful! Size: {Thumbnail.PixelSize.Width}x{Thumbnail.PixelSize.Height}"
-                : $"[BlendFileInfo] ❌ Thumbnail refresh failed - Status: {status}");
+                : $"[BlendFileInfo] ❌ Thumbnail refresh failed - Status: {status}", "BlendFileInfo");
         }
         else
         {
-            Console.WriteLine($"[BlendFileInfo] ❌ File does not exist, cannot refresh: {FilePath}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.Task, $"❌ File does not exist, cannot refresh: {FilePath}", "BlendFileInfo");
         }
     }
 
@@ -96,17 +97,17 @@ public class BlendFileInfo
     /// </summary>
     public void Dispose()
     {
-        Console.WriteLine($"[BlendFileInfo] Disposing resources: {FilePath}");
+        ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Disposing resources: {FilePath}", "BlendFileInfo");
         
         if (Thumbnail != null)
         {
-            Console.WriteLine($"[BlendFileInfo] Disposing thumbnail resource");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Disposing thumbnail resource", "BlendFileInfo");
             Thumbnail.Dispose();
             Thumbnail = null;
         }
         else
         {
-            Console.WriteLine($"[BlendFileInfo] No thumbnail resource to dispose (null)");
+            ApplicationLogWriter.Write(RenderLogLevel.Warning, RenderLogScope.Task, $"No thumbnail resource to dispose (null)", "BlendFileInfo");
         }
     }
 

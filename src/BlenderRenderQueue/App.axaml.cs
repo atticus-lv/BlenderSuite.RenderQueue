@@ -49,7 +49,7 @@ public partial class App : Application
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[App] Failed to start local submission host: {ex.Message}");
+                _renderLogService?.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to start local submission host: {ex.Message}", source: "App");
                 _renderLogService?.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"启动本地 submission host 失败: {ex.Message}", source: nameof(App));
             }
 
@@ -92,7 +92,7 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[App] Failed to start local submission host: {ex.Message}");
+            _renderLogService?.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to start local submission host: {ex.Message}", source: "App");
             _renderLogService?.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"本地 submission host 启动失败: {ex.Message}", source: nameof(App));
         }
     }
@@ -143,7 +143,7 @@ public partial class App : Application
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[App] Failed to stop local submission host: {ex.Message}");
+                    _renderLogService?.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to stop local submission host: {ex.Message}", source: "App");
                     _renderLogService?.Write(
                         RenderLogLevel.Warning,
                         RenderLogScope.Submission,
@@ -158,7 +158,7 @@ public partial class App : Application
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[App] Failed to dispose local submission host: {ex.Message}");
+                        _renderLogService?.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to dispose local submission host: {ex.Message}", source: "App");
                     }
                 }
             });

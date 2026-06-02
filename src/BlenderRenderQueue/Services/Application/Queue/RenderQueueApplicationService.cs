@@ -139,8 +139,8 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         _blenderPath = blenderPath;
         if (!string.IsNullOrWhiteSpace(blenderPath))
         {
-            _processService = new BlenderProcessService(blenderPath);
-            Console.WriteLine($"[RenderQueueApplicationService] Blender path set: {blenderPath}");
+            _processService = new BlenderProcessService(blenderPath, _logService);
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, $"Blender path set: {blenderPath}", source: "RenderQueueApplicationService");
         }
 
         foreach (var task in RenderTasks)
@@ -154,7 +154,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
             {
                 LoadTaskPropertiesWithLimitAsync(
                     task,
-                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to backfill task properties: {ex.Message}"))
+                    onError: ex => _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to backfill task properties: {ex.Message}", source: "RenderQueueApplicationService"))
                     .FireAndForget(
                         _logService,
                         nameof(RenderQueueApplicationService),
@@ -180,7 +180,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[RenderQueueApplicationService] Failed to shutdown worker on path change: {ex.Message}");
+                    _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to shutdown worker on path change: {ex.Message}", source: "RenderQueueApplicationService");
                     _logService.Write(RenderLogLevel.Warning, RenderLogScope.Worker, $"切换 Blender 路径时关闭 worker 失败: {ex.Message}", source: nameof(RenderQueueApplicationService));
                 }
             }).FireAndForget(
@@ -546,7 +546,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                             newTask.SelectedSceneName = savedSelectedSceneName;
                         }).GetTask()
                         : null,
-                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load copied task properties: {ex.Message}"))
+                    onError: ex => _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to load copied task properties: {ex.Message}", source: "RenderQueueApplicationService"))
                     .FireAndForget(
                         _logService,
                         nameof(RenderQueueApplicationService),
@@ -631,7 +631,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                 {
                     LoadTaskPropertiesWithLimitAsync(
                         task,
-                        onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load submitted task properties: {ex.Message}"),
+                        onError: ex => _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to load submitted task properties: {ex.Message}", source: "RenderQueueApplicationService"),
                         cancellationToken: cancellationToken)
                         .FireAndForget(
                             _logService,
@@ -651,7 +651,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[RenderQueueApplicationService] Failed to submit task locally: {ex.Message}");
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to submit task locally: {ex.Message}", source: "RenderQueueApplicationService");
                 _logService.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"本地 submission 入队失败: {ex.Message}", source: nameof(RenderQueueApplicationService));
                 return BuildSubmissionResponse(false, ex.Message);
             }
@@ -751,7 +751,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RenderQueueApplicationService] Error loading queue data: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Error loading queue data: {ex.Message}", source: "RenderQueueApplicationService");
             _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"加载持久化队列数据失败: {ex}", source: nameof(RenderQueueApplicationService));
         }
     }
@@ -772,7 +772,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
             {
                 LoadTaskPropertiesWithLimitAsync(
                     task,
-                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load task properties: {ex.Message}"))
+                    onError: ex => _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Failed to load task properties: {ex.Message}", source: "RenderQueueApplicationService"))
                     .FireAndForget(
                         _logService,
                         nameof(RenderQueueApplicationService),

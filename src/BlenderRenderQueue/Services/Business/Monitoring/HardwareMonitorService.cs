@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using LibreHardwareMonitor.Hardware;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Services.Business.Monitoring;
 
@@ -37,7 +38,7 @@ public class HardwareMonitorService : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[HardwareMonitorService] Failed to initialize Windows hardware monitor: {ex.Message}");
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to initialize Windows hardware monitor: {ex.Message}", "HardwareMonitorService");
                 _computer = null;
             }
 
@@ -166,7 +167,7 @@ public class HardwareMonitorService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[HardwareMonitorService] Failed to read macOS CPU/memory info: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to read macOS CPU/memory info: {ex.Message}", "HardwareMonitorService");
         }
 
         try
@@ -179,7 +180,7 @@ public class HardwareMonitorService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[HardwareMonitorService] Failed to read macOS GPU info: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to read macOS GPU info: {ex.Message}", "HardwareMonitorService");
         }
 
         return info;

@@ -9,6 +9,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Media;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Application.Queue;
 using BlenderRenderQueue.Services.Business.Submission;
 using BlenderRenderQueue.Services.UI;
@@ -27,6 +28,7 @@ public enum PostRenderBehavior
 public partial class RenderQueueViewModel : ViewModelBase
 {
     private readonly IRenderQueueApplicationService _queueService;
+    private readonly IRenderLogService _logService;
     private bool _hasPreheatedTaskDetail;
     protected internal IRenderQueueApplicationService QueueService => _queueService;
 
@@ -37,7 +39,7 @@ public partial class RenderQueueViewModel : ViewModelBase
     {
         if (value == null)
         {
-            Console.WriteLine("[SelectionPerf] task=<null> stage=SelectedTaskChanged elapsed=0.0ms cleared selection");
+            _logService.Write(RenderLogLevel.Debug, RenderLogScope.Queue, "task=<null> stage=SelectedTaskChanged elapsed=0.0ms cleared selection", source: "SelectionPerf");
             return;
         }
 
@@ -55,9 +57,10 @@ public partial class RenderQueueViewModel : ViewModelBase
         SelectionPerfTrace.Mark(value.Id, value.BlendFileName, "SelectedTaskChanged");
     }
 
-    public RenderQueueViewModel(IRenderQueueApplicationService queueService)
+    public RenderQueueViewModel(IRenderQueueApplicationService queueService, IRenderLogService logService)
     {
         _queueService = queueService;
+        _logService = logService;
         RenderTasks = queueService.RenderTasks;
 
         _queueService.SnapshotChanged += OnSnapshotChanged;
@@ -397,7 +400,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RenderQueueViewModel] Error opening file in Blender: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Error opening file in Blender: {ex.Message}", source: "RenderQueueViewModel");
         }
     }
 
@@ -412,7 +415,7 @@ public partial class RenderQueueViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RenderQueueViewModel] Error opening file directory: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Queue, $"Error opening file directory: {ex.Message}", source: "RenderQueueViewModel");
         }
     }
 

@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Services.Business.Persistence;
 
@@ -23,6 +24,8 @@ public partial class SettingsJsonContext : JsonSerializerContext
 /// </summary>
 public class SettingsPersistenceService : ISettingsPersistenceService
 {
+    private readonly IRenderLogService _logService;
+
     private static readonly string SettingsFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "BlenderRenderQueue",
@@ -37,6 +40,11 @@ public class SettingsPersistenceService : ISettingsPersistenceService
         // Use the pre-built JsonSerializerContext to support AOT mode
         TypeInfoResolver = SettingsJsonContext.Default
     };
+
+    public SettingsPersistenceService(IRenderLogService logService)
+    {
+        _logService = logService;
+    }
 
     public async Task<bool> SaveSettingsAsync(SettingsData settings)
     {
@@ -53,19 +61,19 @@ public class SettingsPersistenceService : ISettingsPersistenceService
             settings.Software = "BlenderRenderQueue";
             settings.Version = "0.0.1";
 
-            Console.WriteLine($"[SettingsPersistenceService] Saving settings to: {SettingsFilePath}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"Saving settings to: {SettingsFilePath}", source: "SettingsPersistenceService");
 
             // 序列化并保存到文件
             var json = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.SettingsData);
-            Console.WriteLine($"[SettingsPersistenceService] Serialized JSON: {json}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"Serialized JSON: {json}", source: "SettingsPersistenceService");
             await File.WriteAllTextAsync(SettingsFilePath, json);
 
-            Console.WriteLine($"[SettingsPersistenceService] ✅ Settings saved successfully - Selected Blender: {settings.SelectedBlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s");
+            _logService.Write(RenderLogLevel.Warning, RenderLogScope.Recovery, $"✅ Settings saved successfully - Selected Blender: {settings.SelectedBlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s", source: "SettingsPersistenceService");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SettingsPersistenceService] ❌ Failed to save settings: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Failed to save settings: {ex.Message}", source: "SettingsPersistenceService");
             return false;
         }
     }
@@ -76,41 +84,41 @@ public class SettingsPersistenceService : ISettingsPersistenceService
         {
             if (!File.Exists(SettingsFilePath))
             {
-                Console.WriteLine($"[SettingsPersistenceService] Settings file not found, using defaults: {SettingsFilePath}");
+                _logService.Write(RenderLogLevel.Warning, RenderLogScope.Recovery, $"Settings file not found, using defaults: {SettingsFilePath}", source: "SettingsPersistenceService");
                 return new SettingsData();
             }
 
             var json = await File.ReadAllTextAsync(SettingsFilePath);
-            Console.WriteLine($"[SettingsPersistenceService] Raw JSON content: {json}");
+            _logService.Write(RenderLogLevel.Debug, RenderLogScope.Recovery, $"Raw JSON content: {json}", source: "SettingsPersistenceService");
             
             var settings = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.SettingsData);
 
             if (settings == null)
             {
-                Console.WriteLine($"[SettingsPersistenceService] Failed to deserialize settings, using defaults");
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"Failed to deserialize settings, using defaults", source: "SettingsPersistenceService");
                 return new SettingsData();
             }
 
             // 版本兼容性检查
             if (string.IsNullOrEmpty(settings.Software) || settings.Software != "BlenderRenderQueue")
             {
-                Console.WriteLine($"[SettingsPersistenceService] ⚠️ Invalid software identifier, using defaults");
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"⚠️ Invalid software identifier, using defaults", source: "SettingsPersistenceService");
                 return new SettingsData();
             }
 
             // 版本检查（如果需要，可以在这里添加版本迁移逻辑）
             if (string.IsNullOrEmpty(settings.Version))
             {
-                Console.WriteLine($"[SettingsPersistenceService] ⚠️ No version found, assuming legacy format");
+                _logService.Write(RenderLogLevel.Warning, RenderLogScope.Recovery, $"⚠️ No version found, assuming legacy format", source: "SettingsPersistenceService");
                 settings.Version = "0.0.1"; // 设置默认版本
             }
 
-            Console.WriteLine($"[SettingsPersistenceService] ✅ Settings loaded successfully - Version: {settings.Version}, Selected Blender: {settings.SelectedBlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s");
+            _logService.Write(RenderLogLevel.Warning, RenderLogScope.Recovery, $"✅ Settings loaded successfully - Version: {settings.Version}, Selected Blender: {settings.SelectedBlenderPath}, Timeout: {settings.DefaultRenderTimeoutSeconds}s", source: "SettingsPersistenceService");
             return settings;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[SettingsPersistenceService] ❌ Failed to load settings: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Failed to load settings: {ex.Message}", source: "SettingsPersistenceService");
             return new SettingsData();
         }
     }

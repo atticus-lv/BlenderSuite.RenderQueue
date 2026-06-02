@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Application.Queue;
 using BlenderRenderQueue.Services.Business.Blender.WorkerHost;
@@ -15,7 +16,7 @@ namespace BlenderRenderQueue.ViewModels.DesignTime;
 /// </summary>
 public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
 {
-    public DesignTimeRenderQueueViewModel() : base(new DesignTimeQueueApplicationService())
+    public DesignTimeRenderQueueViewModel() : base(new DesignTimeQueueApplicationService(), new DesignTimeRenderLogService())
     {
         var service = (DesignTimeQueueApplicationService)QueueService;
 
@@ -80,6 +81,27 @@ public class DesignTimeRenderQueueViewModel : RenderQueueViewModel
 
         SelectedTask = task1;
     }
+}
+
+internal sealed class DesignTimeRenderLogService : IRenderLogService
+{
+    public string CurrentSessionId => "design-time";
+    public event EventHandler<RenderLogEvent>? LogAppended;
+    public IReadOnlyList<RenderLogEvent> GetEvents(RenderLogProjection? projection = null) => [];
+    public void Write(RenderLogEvent logEvent) => LogAppended?.Invoke(this, logEvent);
+    public void Write(
+        RenderLogLevel level,
+        RenderLogScope scope,
+        string message,
+        Guid? taskId = null,
+        string? blendFilePath = null,
+        string? source = null,
+        IReadOnlyDictionary<string, string>? metadata = null)
+    {
+    }
+
+    public void ClearHistory() { }
+    public void ClearAll() { }
 }
 
 internal sealed class DesignTimeQueueApplicationService : IRenderQueueApplicationService

@@ -1,4 +1,5 @@
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 
@@ -9,8 +10,8 @@ public class BlenderQueryProcess : BaseBlenderProcess
 {
     public override BlenderProcessType ProcessType => BlenderProcessType.Query;
 
-    public BlenderQueryProcess(string blenderPath) 
-        : base(blenderPath, BlenderProcessConfig.CreateQueryConfig(), ParsePipelineFactory.CreateForQuery())
+    public BlenderQueryProcess(string blenderPath, IRenderLogService? logService = null)
+        : base(blenderPath, BlenderProcessConfig.CreateQueryConfig(), ParsePipelineFactory.CreateForQuery(), logService)
     {
     }
 

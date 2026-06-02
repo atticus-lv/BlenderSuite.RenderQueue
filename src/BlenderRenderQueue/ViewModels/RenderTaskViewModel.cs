@@ -257,8 +257,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         if (_isQueueRunning == isQueueRunning) return;
         _isQueueRunning = isQueueRunning;
         OnPropertyChanged(nameof(CanRefresh));
-        Console.WriteLine(
-            $"[RenderTaskViewModel] Queue running state changed to: {isQueueRunning}, CanRefresh: {CanRefresh}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Queue running state changed to: {isQueueRunning}, CanRefresh: {CanRefresh}", Id, BlendFilePath, "RenderTaskViewModel");
     }
 
 
@@ -479,11 +478,11 @@ public partial class RenderTaskViewModel : ViewModelBase
             // 显示窗口
             window.ShowWindow();
 
-            Console.WriteLine($"[RenderTaskViewModel] ✅ Image preview window opened: {RenderedImagePath}");
+            _logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, $"✅ Image preview window opened: {RenderedImagePath}", Id, BlendFilePath, "RenderTaskViewModel");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[RenderTaskViewModel] Error opening image preview: {ex.Message}");
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Task, $"Error opening image preview: {ex.Message}", Id, BlendFilePath, "RenderTaskViewModel");
         }
     }
 
@@ -651,10 +650,8 @@ public partial class RenderTaskViewModel : ViewModelBase
         // 检查文件有效性
         IsValid = !string.IsNullOrEmpty(blendFilePath) && File.Exists(blendFilePath);
 
-        Console.WriteLine(
-            $"[RenderTaskViewModel] Constructor - ID: {Id}, File: {Path.GetFileName(blendFilePath)}, IsValid: {IsValid}");
-        Console.WriteLine(
-            $"[RenderTaskViewModel] Initial ScenePropertiesView state - IsLoading: {ScenePropertiesView.IsLoading}, IsLoaded: {ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {ScenePropertiesView.ShowEmptyState}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Constructor - ID: {Id}, File: {Path.GetFileName(blendFilePath)}, IsValid: {IsValid}", Id, BlendFilePath, "RenderTaskViewModel");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Initial ScenePropertiesView state - IsLoading: {ScenePropertiesView.IsLoading}, IsLoaded: {ScenePropertiesView.SceneProperties.IsLoaded}, ShowEmptyState: {ScenePropertiesView.ShowEmptyState}", Id, BlendFilePath, "RenderTaskViewModel");
 
         // 加载文件信息
         LoadFileInfo();
@@ -696,8 +693,7 @@ public partial class RenderTaskViewModel : ViewModelBase
         // 检查文件有效性
         IsValid = !string.IsNullOrEmpty(BlendFilePath) && File.Exists(BlendFilePath);
 
-        Console.WriteLine(
-            $"[RenderTaskViewModel] Constructor from RenderTaskInfo - ID: {Id}, File: {Path.GetFileName(BlendFilePath)}, IsValid: {IsValid}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Constructor from RenderTaskInfo - ID: {Id}, File: {Path.GetFileName(BlendFilePath)}, IsValid: {IsValid}", Id, BlendFilePath, "RenderTaskViewModel");
 
         // 加载文件信息
         LoadFileInfo();

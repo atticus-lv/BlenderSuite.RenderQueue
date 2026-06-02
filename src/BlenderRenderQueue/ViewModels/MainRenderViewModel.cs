@@ -204,25 +204,23 @@ public partial class MainRenderViewModel : ViewModelBase
                 // 先释放旧的Blender进程服务（如果存在）
                 if (_blenderProcessService != null)
                 {
-                    Console.WriteLine(
-                        $"[MainRenderViewModel] Disposing old Blender process service");
+                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Disposing old Blender process service", source: "MainRenderViewModel");
                     _blenderProcessService.Dispose();
                 }
 
                 // 设置Blender路径到渲染队列（不创建长期运行的服务）
-                Console.WriteLine($"[MainRenderViewModel] Setting Blender path: {blenderExecutable.Path}");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Setting Blender path: {blenderExecutable.Path}", source: "MainRenderViewModel");
                 RenderQueue.SetBlenderPath(blenderExecutable.Path);
 
                 // 只有在验证成功时才创建临时服务用于视频生成
                 try
                 {
-                    _blenderProcessService = new BlenderProcessService(blenderExecutable.Path);
-                    Console.WriteLine(
-                        $"[MainRenderViewModel] Temporary Blender process service created for video generation");
+                    _blenderProcessService = new BlenderProcessService(blenderExecutable.Path, _logService);
+                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Temporary Blender process service created for video generation", source: "MainRenderViewModel");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[MainRenderViewModel] Failed to create Blender process service: {ex.Message}");
+                    _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Failed to create Blender process service: {ex.Message}", source: "MainRenderViewModel");
                     // 即使服务创建失败，我们仍然认为Blender路径是有效的，因为版本信息获取成功了
                     _blenderProcessService = null;
                 }
@@ -286,8 +284,7 @@ public partial class MainRenderViewModel : ViewModelBase
         // 正确释放旧的Blender进程服务
         if (_blenderProcessService != null)
         {
-            Console.WriteLine(
-                $"[MainRenderViewModel] Disposing Blender process service due to invalid path");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Disposing Blender process service due to invalid path", source: "MainRenderViewModel");
             _blenderProcessService.Dispose();
         }
 
@@ -393,7 +390,7 @@ public partial class MainRenderViewModel : ViewModelBase
         HasBlenderValidationError = !e.IsValid;
         BlenderValidationMessage = e.Message;
         
-        Console.WriteLine($"[MainRenderViewModel] OnBlenderValidationChanged - IsValid: {e.IsValid}, Message: {e.Message}");
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"OnBlenderValidationChanged - IsValid: {e.IsValid}, Message: {e.Message}", source: "MainRenderViewModel");
         
         if (e.IsValid)
         {
@@ -402,18 +399,18 @@ public partial class MainRenderViewModel : ViewModelBase
             var activeTaskCount = RenderQueue.ActiveTaskCount;
             var queueState = RenderQueue.QueueState;
             
-            Console.WriteLine($"[MainRenderViewModel] 检查运行任务 - HasRunningTasks: {hasRunningTasks}, ActiveTaskCount: {activeTaskCount}, QueueState: {queueState}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"检查运行任务 - HasRunningTasks: {hasRunningTasks}, ActiveTaskCount: {activeTaskCount}, QueueState: {queueState}", source: "MainRenderViewModel");
             
             if (hasRunningTasks)
             {
                 // 如果有正在运行的任务，显示警告并询问用户
-                Console.WriteLine("[MainRenderViewModel] 检测到运行任务，显示警告弹窗");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "检测到运行任务，显示警告弹窗", source: "MainRenderViewModel");
                 ShowBlenderSwitchWarning();
             }
             else
             {
                 // 如果没有正在运行的任务，安全地切换Blender服务
-                Console.WriteLine("[MainRenderViewModel] 没有运行任务，直接切换Blender");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "没有运行任务，直接切换Blender", source: "MainRenderViewModel");
                 var selectedBlender = SettingsViewModel?.SelectedBlenderExecutable;
                 if (selectedBlender != null)
                 {
@@ -431,46 +428,46 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void ShowBlenderSwitchWarning()
     {
-        Console.WriteLine("[MainRenderViewModel] ShowBlenderSwitchWarning 被调用");
+        _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, "ShowBlenderSwitchWarning 被调用", source: "MainRenderViewModel");
         
         var selectedBlender = SettingsViewModel?.SelectedBlenderExecutable;
         if (selectedBlender == null) 
         {
-            Console.WriteLine("[MainRenderViewModel] selectedBlender 为 null，退出");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "selectedBlender 为 null，退出", source: "MainRenderViewModel");
             return;
         }
 
         var blenderName = selectedBlender.VersionBranchDisplay;
-        Console.WriteLine($"[MainRenderViewModel] 准备显示警告弹窗，Blender: {blenderName}");
+        _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"准备显示警告弹窗，Blender: {blenderName}", source: "MainRenderViewModel");
         
         // 确保在UI线程上执行
         Dispatcher.UIThread.Post(() =>
         {
-            Console.WriteLine("[MainRenderViewModel] 在UI线程上执行警告弹窗");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "在UI线程上执行警告弹窗", source: "MainRenderViewModel");
             
             var dialogManager = GetDialogManager();
             if (dialogManager == null)
             {
-                Console.WriteLine("[MainRenderViewModel] 无法获取DialogManager，跳过警告弹窗");
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "无法获取DialogManager，跳过警告弹窗", source: "MainRenderViewModel");
                 // 如果无法获取DialogManager，直接执行切换
                 ValidateSelectedBlender();
                 return;
             }
             
-            Console.WriteLine("[MainRenderViewModel] 创建并显示警告弹窗");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "创建并显示警告弹窗", source: "MainRenderViewModel");
             dialogManager.CreateDialog()
                 .WithTitle("⚠️ 切换Blender警告")
                 .WithContent($"检测到有正在运行的渲染任务。\n\n切换到 {blenderName} 将会中断当前正在进行的任务。\n\n是否确定要切换？")
                 .WithActionButton("取消", _ => 
                 {
                     // 取消切换，恢复之前的选择
-                    Console.WriteLine("[MainRenderViewModel] 用户取消了Blender切换");
+                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "用户取消了Blender切换", source: "MainRenderViewModel");
                     StatusMessage = "Blender切换已取消";
                 }, true)
                 .WithActionButton("确定切换", _ => 
                 {
                     // 用户确认切换，执行切换
-                    Console.WriteLine($"[MainRenderViewModel] 用户确认切换Blender到: {selectedBlender.Path}");
+                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"用户确认切换Blender到: {selectedBlender.Path}", source: "MainRenderViewModel");
                     ValidateSelectedBlender();
                 })
                 .Dismiss().ByClickingBackground()
@@ -513,7 +510,7 @@ public partial class MainRenderViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[MainRenderViewModel] Error getting DialogManager: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error getting DialogManager: {ex.Message}", source: "MainRenderViewModel");
             return null;
         }
     }
@@ -541,7 +538,7 @@ public partial class MainRenderViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[MainRenderViewModel] Error getting ToastManager: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error getting ToastManager: {ex.Message}", source: "MainRenderViewModel");
             return null;
         }
     }
@@ -569,7 +566,7 @@ public partial class MainRenderViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[MainRenderViewModel] Error showing toast: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error showing toast: {ex.Message}", source: "MainRenderViewModel");
         }
     }
 
@@ -582,7 +579,7 @@ public partial class MainRenderViewModel : ViewModelBase
         if (e.PropertyName == nameof(RenderQueue.QueueState))
         {
             var queueState = RenderQueue.QueueState;
-            Console.WriteLine($"[MainRenderViewModel] 队列状态变化 - QueueState: {queueState}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"队列状态变化 - QueueState: {queueState}", source: "MainRenderViewModel");
             
             // 通知SettingsViewModel更新CanSwitchBlender状态
             SettingsViewModel?.UpdateQueueState(queueState);
@@ -631,13 +628,13 @@ public partial class MainRenderViewModel : ViewModelBase
     {
         try
         {
-            Console.WriteLine("[MainRenderViewModel] Starting to load saved data...");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Starting to load saved data...", source: "MainRenderViewModel");
 
             // 等待设置初始化完成
             await Task.Delay(1000);
 
             // 等待BlenderService初始化完成后再加载队列数据
-            Console.WriteLine("[MainRenderViewModel] Waiting for Blender initialization...");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Waiting for Blender initialization...", source: "MainRenderViewModel");
 
             // 等待BlenderService初始化（最多等待10秒）
             var maxWaitTime = TimeSpan.FromSeconds(10);
@@ -648,7 +645,7 @@ public partial class MainRenderViewModel : ViewModelBase
                 // 检查BlenderService是否已初始化
                 if (RenderQueue.IsBlenderServiceReady())
                 {
-                    Console.WriteLine("[MainRenderViewModel] Blender is ready, loading queue data...");
+                    _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Blender is ready, loading queue data...", source: "MainRenderViewModel");
                     await RenderQueue.LoadQueueDataAsync();
                     break;
                 }
@@ -659,16 +656,15 @@ public partial class MainRenderViewModel : ViewModelBase
             // 如果超时，仍然尝试加载队列数据（但可能没有BlenderService）
             if (DateTime.UtcNow - startTime >= maxWaitTime)
             {
-                Console.WriteLine(
-                    "[MainRenderViewModel] ⚠️ Blender initialization timeout, loading queue data anyway...");
+                _logService.Write(RenderLogLevel.Warning, RenderLogScope.System, "⚠️ Blender initialization timeout, loading queue data anyway...", source: "MainRenderViewModel");
                 await RenderQueue.LoadQueueDataAsync();
             }
 
-            Console.WriteLine("[MainRenderViewModel] ✅ Saved data loaded successfully");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, "✅ Saved data loaded successfully", source: "MainRenderViewModel");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[MainRenderViewModel] ❌ Error loading saved data: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"❌ Error loading saved data: {ex.Message}", source: "MainRenderViewModel");
         }
     }
 

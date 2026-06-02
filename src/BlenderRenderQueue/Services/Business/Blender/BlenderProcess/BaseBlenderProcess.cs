@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
 namespace BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
@@ -16,6 +17,7 @@ public abstract class BaseBlenderProcess : IBlenderProcess
     protected readonly string _processId;
     private readonly BlenderProcessConfig _config;
     private readonly ParsePipeline _parsePipeline;
+    protected readonly IRenderLogService? _logService;
     protected Process? _process;
     protected bool _disposed;
     private bool _isRunning;
@@ -30,13 +32,18 @@ public abstract class BaseBlenderProcess : IBlenderProcess
     public event Action<string>? OnErrorReceived;
     public event Action<int>? OnProcessExited;
 
-    protected BaseBlenderProcess(string blenderPath, BlenderProcessConfig config, ParsePipeline? parsePipeline = null)
+    protected BaseBlenderProcess(
+        string blenderPath,
+        BlenderProcessConfig config,
+        ParsePipeline? parsePipeline = null,
+        IRenderLogService? logService = null)
     {
         _blenderPath = blenderPath;
         _processId = Guid.NewGuid().ToString("N")[..8];
         _config = config;
         _parsePipeline = parsePipeline ?? ParsePipelineFactory.CreateDefault();
-        Console.WriteLine($"[{GetType().Name}] Creating {ProcessType} process - ID: {_processId}, Path: {_blenderPath}");
+        _logService = logService;
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Creating {ProcessType} process - ID: {_processId}, Path: {_blenderPath}", source: GetType().Name);
     }
 
     public virtual async Task StartAsync(CancellationToken cancellationToken = default)
@@ -44,7 +51,7 @@ public abstract class BaseBlenderProcess : IBlenderProcess
         if (_disposed) throw new ObjectDisposedException(GetType().Name);
         if (_isRunning) return;
 
-        Console.WriteLine($"[{GetType().Name}] Starting {ProcessType} process - ID: {_processId}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Starting {ProcessType} process - ID: {_processId}", source: GetType().Name);
 
         try
         {
@@ -88,7 +95,7 @@ public abstract class BaseBlenderProcess : IBlenderProcess
             {
                 _isRunning = false;
                 OnProcessExited?.Invoke(_process.ExitCode);
-                Console.WriteLine($"[{GetType().Name}] Process exited - ID: {_processId}, ExitCode: {_process.ExitCode}");
+                _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Process exited - ID: {_processId}, ExitCode: {_process.ExitCode}", source: GetType().Name);
             };
 
             _process.Start();
@@ -96,11 +103,11 @@ public abstract class BaseBlenderProcess : IBlenderProcess
             _process.BeginErrorReadLine();
             _isRunning = true;
 
-            Console.WriteLine($"[{GetType().Name}] {ProcessType} process started - ID: {_processId}, PID: {_process.Id}");
+            _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"{ProcessType} process started - ID: {_processId}, PID: {_process.Id}", source: GetType().Name);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[{GetType().Name}] Failed to start {ProcessType} process - ID: {_processId}, Error: {ex.Message}");
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Failed to start {ProcessType} process - ID: {_processId}, Error: {ex.Message}", source: GetType().Name);
             throw new InvalidOperationException($"启动Blender {ProcessType}进程失败: {ex.Message}", ex);
         }
     }
@@ -110,7 +117,7 @@ public abstract class BaseBlenderProcess : IBlenderProcess
         if (_disposed) throw new ObjectDisposedException(GetType().Name);
         if (!IsRunning) throw new InvalidOperationException("进程未运行");
 
-        Console.WriteLine($"[{GetType().Name}] Executing script - ID: {_processId}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Executing script - ID: {_processId}", source: GetType().Name);
 
         var wrappedScript = $@"
 exec('''
@@ -142,11 +149,11 @@ print('__SCRIPT_COMPLETE__')
             await _process!.StandardInput.WriteLineAsync(wrappedScript);
             await _process.StandardInput.FlushAsync(cancellationToken);
 
-            Console.WriteLine($"[{GetType().Name}] Script sent, waiting for completion - ID: {_processId}");
+            _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Script sent, waiting for completion - ID: {_processId}", source: GetType().Name);
             await completionSource.Task.WaitAsync(cancellationToken);
             
             var result = outputBuilder.ToString().TrimEnd();
-            Console.WriteLine($"[{GetType().Name}] Script completed - ID: {_processId}, Result length: {result.Length}");
+            _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Script completed - ID: {_processId}, Result length: {result.Length}", source: GetType().Name);
             return result;
         }
         finally
@@ -159,7 +166,7 @@ print('__SCRIPT_COMPLETE__')
     {
         if (_disposed || !_isRunning) return;
 
-        Console.WriteLine($"[{GetType().Name}] Stopping {ProcessType} process - ID: {_processId}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Stopping {ProcessType} process - ID: {_processId}", source: GetType().Name);
 
         try
         {
@@ -171,7 +178,7 @@ print('__SCRIPT_COMPLETE__')
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[{GetType().Name}] Error stopping {ProcessType} process - ID: {_processId}, Error: {ex.Message}");
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Error stopping {ProcessType} process - ID: {_processId}, Error: {ex.Message}", source: GetType().Name);
         }
         finally
         {
@@ -183,7 +190,7 @@ print('__SCRIPT_COMPLETE__')
     {
         if (_disposed) return;
 
-        Console.WriteLine($"[{GetType().Name}] Disposing {ProcessType} process - ID: {_processId}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Disposing {ProcessType} process - ID: {_processId}", source: GetType().Name);
 
         try
         {
@@ -197,12 +204,12 @@ print('__SCRIPT_COMPLETE__')
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[{GetType().Name}] Error disposing {ProcessType} process - ID: {_processId}, Error: {ex.Message}");
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Error disposing {ProcessType} process - ID: {_processId}, Error: {ex.Message}", source: GetType().Name);
         }
         finally
         {
             _disposed = true;
-            Console.WriteLine($"[{GetType().Name}] {ProcessType} process disposed - ID: {_processId}");
+            _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"{ProcessType} process disposed - ID: {_processId}", source: GetType().Name);
         }
     }
 
@@ -247,7 +254,7 @@ print('__SCRIPT_COMPLETE__')
         catch (Exception ex)
         {
             // 解析失败时，原始输出已经传递了，这里只记录错误
-            Console.WriteLine($"[{GetType().Name}] Parse error for line: {line}, Error: {ex.Message}");
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Parse error for line: {line}, Error: {ex.Message}", source: GetType().Name);
         }
     }
 

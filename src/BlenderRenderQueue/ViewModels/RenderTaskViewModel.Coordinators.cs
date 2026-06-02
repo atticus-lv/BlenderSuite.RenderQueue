@@ -48,8 +48,7 @@ public partial class RenderTaskViewModel
                 var currentSelectedSceneName = _owner.SelectedSceneName;
                 var currentEnable = _owner.Enable;
 
-                Console.WriteLine(
-                    $"[RenderTaskViewModel] Refreshing file properties - preserving overrides: FrameRange={currentOverrideFrameRange} ({currentStartFrame}-{currentEndFrame}), Scene={currentOverrideScene} ({currentSelectedSceneName}), Enable={currentEnable}");
+                _owner._logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Refreshing file properties - preserving overrides: FrameRange={currentOverrideFrameRange} ({currentStartFrame}-{currentEndFrame}), Scene={currentOverrideScene} ({currentSelectedSceneName}), Enable={currentEnable}", _owner.Id, _owner.BlendFilePath, "RenderTaskViewModel");
 
                 await _owner.ScenePropertiesView.LoadPropertiesAsync(blenderPath, _owner.BlendFilePath);
 
@@ -66,14 +65,14 @@ public partial class RenderTaskViewModel
                 _owner.EnqueueLog("[REFRESH] 文件属性刷新完成");
                 _owner._logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, "文件属性刷新完成。", _owner.Id,
                     _owner.BlendFilePath, nameof(RenderTaskViewModel));
-                Console.WriteLine("[RenderTaskViewModel] ✅ File properties refreshed successfully - overrides preserved");
+                _owner._logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, "✅ File properties refreshed successfully - overrides preserved", _owner.Id, _owner.BlendFilePath, "RenderTaskViewModel");
             }
             catch (Exception ex)
             {
                 _owner.EnqueueLog($"[REFRESH] 刷新文件属性失败: {ex.Message}");
                 _owner._logService?.Write(RenderLogLevel.Error, RenderLogScope.Task, $"刷新文件属性失败: {ex}",
                     _owner.Id, _owner.BlendFilePath, nameof(RenderTaskViewModel));
-                Console.WriteLine($"[RenderTaskViewModel] ❌ Failed to refresh file properties: {ex.Message}");
+                _owner._logService?.Write(RenderLogLevel.Error, RenderLogScope.Task, $"❌ Failed to refresh file properties: {ex.Message}", _owner.Id, _owner.BlendFilePath, "RenderTaskViewModel");
             }
         }
 
@@ -148,8 +147,8 @@ public partial class RenderTaskViewModel
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[RenderTaskViewModel] Error loading image: {ex.Message}");
-                        Console.WriteLine($"[RenderTaskViewModel] Stack trace: {ex.StackTrace}");
+                        _owner._logService?.Write(RenderLogLevel.Error, RenderLogScope.Task, $"Error loading image: {ex.Message}", _owner.Id, _owner.BlendFilePath, "RenderTaskViewModel");
+                        _owner._logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Stack trace: {ex.StackTrace}", _owner.Id, _owner.BlendFilePath, "RenderTaskViewModel");
                         return null;
                     }
                 });
@@ -185,14 +184,14 @@ public partial class RenderTaskViewModel
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine($"[RenderTaskViewModel] Error setting optimized image: {ex.Message}");
+                                _owner._logService?.Write(RenderLogLevel.Error, RenderLogScope.Task, $"Error setting optimized image: {ex.Message}", _owner.Id, _owner.BlendFilePath, "RenderTaskViewModel");
                                 _owner.HasRenderedImage = false;
                             }
                         });
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[RenderTaskViewModel] Error loading optimized image: {ex.Message}");
+                        _owner._logService?.Write(RenderLogLevel.Error, RenderLogScope.Task, $"Error loading optimized image: {ex.Message}", _owner.Id, _owner.BlendFilePath, "RenderTaskViewModel");
                     }
                 }).FireAndForget(
                     _owner._logService,
@@ -202,7 +201,7 @@ public partial class RenderTaskViewModel
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[RenderTaskViewModel] Error in LoadRenderedImageAsync: {ex.Message}");
+                _owner._logService?.Write(RenderLogLevel.Error, RenderLogScope.Task, $"Error in LoadRenderedImageAsync: {ex.Message}", _owner.Id, _owner.BlendFilePath, "RenderTaskViewModel");
             }
         }
 
@@ -241,8 +240,8 @@ public partial class RenderTaskViewModel
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[RenderTaskViewModel] Error loading and optimizing image: {ex.Message}");
-                    Console.WriteLine($"[RenderTaskViewModel] Stack trace: {ex.StackTrace}");
+                    _owner._logService?.Write(RenderLogLevel.Error, RenderLogScope.Task, $"Error loading and optimizing image: {ex.Message}", _owner.Id, _owner.BlendFilePath, "RenderTaskViewModel");
+                    _owner._logService?.Write(RenderLogLevel.Info, RenderLogScope.Task, $"Stack trace: {ex.StackTrace}", _owner.Id, _owner.BlendFilePath, "RenderTaskViewModel");
                     return null;
                 }
             });
@@ -568,7 +567,7 @@ public partial class RenderTaskViewModel
 
                 try
                 {
-                    var tempVideoService = new BlenderVideoService(videoProcess);
+                    var tempVideoService = new BlenderVideoService(videoProcess, _owner._logService);
                     success = await tempVideoService.GenerateVideoFromImagesAsync(
                         frameDirectory,
                         outputVideoPath,

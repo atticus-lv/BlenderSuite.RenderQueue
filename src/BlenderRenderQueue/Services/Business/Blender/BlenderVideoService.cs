@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Models;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
 
@@ -42,7 +43,7 @@ public class VideoRenderOutputParser
             var newWidth = int.Parse(writeMatch.Groups[2].Value);
             var newHeight = int.Parse(writeMatch.Groups[3].Value);
             
-            Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 解析到写入帧: {newFrame} ({newWidth}x{newHeight})");
+            ApplicationLogWriter.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] 解析到写入帧: {newFrame} ({newWidth}x{newHeight})", "VideoRenderOutputParser");
             
             CurrentFrame = newFrame;
             Width = newWidth;
@@ -55,7 +56,7 @@ public class VideoRenderOutputParser
         if (appendMatch.Success)
         {
             var newFrame = int.Parse(appendMatch.Groups[1].Value);
-            Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 解析到追加帧: {newFrame}");
+            ApplicationLogWriter.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] 解析到追加帧: {newFrame}", "VideoRenderOutputParser");
             CurrentFrame = newFrame;
             return;
         }
@@ -63,7 +64,7 @@ public class VideoRenderOutputParser
         // 检测FFmpeg关闭
         if (FFmpegClosingRegex.IsMatch(line) || FFmpegFlushRegex.IsMatch(line))
         {
-            Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 检测到FFmpeg关闭信号");
+            ApplicationLogWriter.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] 检测到FFmpeg关闭信号", "VideoRenderOutputParser");
             IsCompleted = true;
         }
     }
@@ -72,23 +73,23 @@ public class VideoRenderOutputParser
     {
         if (TotalFrames == 0) 
         {
-            Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 获取进度: 0% (总帧数为0)");
+            ApplicationLogWriter.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] 获取进度: 0% (总帧数为0)", "VideoRenderOutputParser");
             return 0;
         }
         var progress = Math.Min(100, (double)CurrentFrame / TotalFrames * 100);
-        Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 获取进度: {progress:F1}% (当前帧: {CurrentFrame}/{TotalFrames})");
+        ApplicationLogWriter.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] 获取进度: {progress:F1}% (当前帧: {CurrentFrame}/{TotalFrames})", "VideoRenderOutputParser");
         return progress;
     }
 
     public void SetTotalFrames(int totalFrames)
     {
-        Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 设置总帧数: {totalFrames}");
+        ApplicationLogWriter.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] 设置总帧数: {totalFrames}", "VideoRenderOutputParser");
         TotalFrames = totalFrames;
     }
 
     public void Reset()
     {
-        Console.WriteLine($"[VideoRenderOutputParser] [DEBUG] 重置解析器状态");
+        ApplicationLogWriter.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] 重置解析器状态", "VideoRenderOutputParser");
         CurrentFrame = 0;
         TotalFrames = 0;
         Width = 0;
@@ -104,10 +105,12 @@ public class BlenderVideoService : IBlenderVideoService
 {
     private static readonly string[] SupportedImageExtensions = { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff", "*.tga" };
     private readonly IBlenderProcess _blenderProcess;
+    private readonly IRenderLogService? _logService;
 
-    public BlenderVideoService(IBlenderProcess blenderProcess)
+    public BlenderVideoService(IBlenderProcess blenderProcess, IRenderLogService? logService = null)
     {
         _blenderProcess = blenderProcess;
+        _logService = logService;
     }
 
     public async Task<bool> GenerateVideoFromImagesAsync(
@@ -133,7 +136,7 @@ public class BlenderVideoService : IBlenderVideoService
                 throw new InvalidOperationException($"在目录 {inputDirectory} 中未找到支持的图片文件 (PNG, JPG, JPEG, BMP, TIFF, TGA)");
             }
 
-        Console.WriteLine($"[BlenderVideoService] 找到 {imageFiles.Length} 个图片文件");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Video, $"找到 {imageFiles.Length} 个图片文件", source: "BlenderVideoService");
 
         // 获取第一张图片的分辨率
         var (width, height) = GetImageDimensions(imageFiles[0]);
@@ -157,7 +160,7 @@ public class BlenderVideoService : IBlenderVideoService
                 // 读取Python脚本内容
                 var scriptContent = await File.ReadAllTextAsync(tempScriptPath, cancellationToken);
                 
-                Console.WriteLine($"[BlenderVideoService] 开始生成视频: {Path.GetFileName(outputVideoPath)}");
+                _logService?.Write(RenderLogLevel.Info, RenderLogScope.Video, $"开始生成视频: {Path.GetFileName(outputVideoPath)}", source: "BlenderVideoService");
                 
                 // 创建输出解析器来跟踪进度
                 var outputParser = new RenderOutputParser();
@@ -181,10 +184,10 @@ public class BlenderVideoService : IBlenderVideoService
                     // 检测异常进度跳动（进度突然大幅下降）
                     if (newProgress < lastReportedProgress - 10 && lastReportedProgress > 50)
                     {
-                        Console.WriteLine($"[BlenderVideoService] [WARNING] 检测到异常进度跳动: {lastReportedProgress:F1}% -> {newProgress:F1}% (来源: {source})");
+                        _logService?.Write(RenderLogLevel.Warning, RenderLogScope.Video, $"[WARNING] 检测到异常进度跳动: {lastReportedProgress:F1}% -> {newProgress:F1}% (来源: {source})", source: "BlenderVideoService");
                     }
                     
-                    Console.WriteLine($"[BlenderVideoService] [DEBUG] 进度更新: {newProgress:F1}% (来源: {source}, 上次: {lastReportedProgress:F1}%)");
+                    _logService?.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] 进度更新: {newProgress:F1}% (来源: {source}, 上次: {lastReportedProgress:F1}%)", source: "BlenderVideoService");
                     lastReportedProgress = newProgress;
                     progressCallback?.Invoke(newProgress);
                 }
@@ -210,7 +213,7 @@ public class BlenderVideoService : IBlenderVideoService
                 // 订阅Blender进程的输出事件
                 _blenderProcess.OnOutputReceived += (line) =>
                 {
-                    Console.WriteLine($"[BlenderVideoService] [DEBUG] 收到输出: {line.Trim()}");
+                    _logService?.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] 收到输出: {line.Trim()}", source: "BlenderVideoService");
                     
                     // 使用视频解析器解析输出
                     videoParser.ParseLine(line);
@@ -241,7 +244,7 @@ public class BlenderVideoService : IBlenderVideoService
                     }
                     else if (line.Contains("渲染失败") || line.Contains("错误"))
                     {
-                        Console.WriteLine($"[BlenderVideoService] [ERROR] 检测到错误: {line}");
+                        _logService?.Write(RenderLogLevel.Error, RenderLogScope.Video, $"[ERROR] 检测到错误: {line}", source: "BlenderVideoService");
                     }
                     
                     // 解析输出以获取进度信息
@@ -270,7 +273,7 @@ public class BlenderVideoService : IBlenderVideoService
                                 UpdateProgress(100, "渲染全部完成事件");
                                 break;
                             case RenderError error:
-                                Console.WriteLine($"[BlenderVideoService] [ERROR] 渲染错误: {error.Message}");
+                                _logService?.Write(RenderLogLevel.Error, RenderLogScope.Video, $"[ERROR] 渲染错误: {error.Message}", source: "BlenderVideoService");
                                 break;
                         }
                     }
@@ -278,23 +281,23 @@ public class BlenderVideoService : IBlenderVideoService
                 
                 _blenderProcess.OnErrorReceived += (line) =>
                 {
-                    Console.WriteLine($"[BlenderVideoService] [ERROR] 收到错误输出: {line}");
+                    _logService?.Write(RenderLogLevel.Error, RenderLogScope.Video, $"[ERROR] 收到错误输出: {line}", source: "BlenderVideoService");
                 };
                 
                 // 使用Blender执行脚本
-                Console.WriteLine($"[BlenderVideoService] [DEBUG] 开始执行Blender脚本");
+                _logService?.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] 开始执行Blender脚本", source: "BlenderVideoService");
                 var result = await _blenderProcess.ExecuteScriptAsync(
                     scriptContent,
                     cancellationToken);
 
-                Console.WriteLine($"[BlenderVideoService] [DEBUG] Blender脚本执行完成");
+                _logService?.Write(RenderLogLevel.Debug, RenderLogScope.Video, $"[DEBUG] Blender脚本执行完成", source: "BlenderVideoService");
                 
                 if (!string.IsNullOrEmpty(result))
                 {
                     if (File.Exists(outputVideoPath))
                     {
                         var fileInfo = new FileInfo(outputVideoPath);
-                        Console.WriteLine($"[BlenderVideoService] ✅ 视频生成成功: {Path.GetFileName(outputVideoPath)} ({fileInfo.Length / 1024 / 1024} MB)");
+                        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Video, $"✅ 视频生成成功: {Path.GetFileName(outputVideoPath)} ({fileInfo.Length / 1024 / 1024} MB)", source: "BlenderVideoService");
                         
                         // 标记视频生成已完成
                         isVideoGenerationCompleted = true;
@@ -305,14 +308,14 @@ public class BlenderVideoService : IBlenderVideoService
                     }
                     else
                     {
-                        Console.WriteLine($"[BlenderVideoService] ❌ 输出文件不存在: {Path.GetFileName(outputVideoPath)}");
+                        _logService?.Write(RenderLogLevel.Error, RenderLogScope.Video, $"❌ 输出文件不存在: {Path.GetFileName(outputVideoPath)}", source: "BlenderVideoService");
                         isVideoGenerationCompleted = true;
                         return false;
                     }
                 }
                 else
                 {
-                    Console.WriteLine($"[BlenderVideoService] ❌ 视频生成失败");
+                    _logService?.Write(RenderLogLevel.Error, RenderLogScope.Video, $"❌ 视频生成失败", source: "BlenderVideoService");
                     isVideoGenerationCompleted = true;
                     return false;
                 }
@@ -374,7 +377,7 @@ public class BlenderVideoService : IBlenderVideoService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[BlenderVideoService] 获取Blender版本信息失败: {ex.Message}");
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Video, $"获取Blender版本信息失败: {ex.Message}", source: "BlenderVideoService");
             return null;
         }
     }
@@ -409,13 +412,13 @@ public class BlenderVideoService : IBlenderVideoService
             var width = bitmap.PixelSize.Width;
             var height = bitmap.PixelSize.Height;
             
-            Console.WriteLine($"[BlenderVideoService] 成功获取图片分辨率: {width}x{height} ({Path.GetFileName(imagePath)})");
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Video, $"成功获取图片分辨率: {width}x{height} ({Path.GetFileName(imagePath)})", nameof(BlenderVideoService));
             return (width, height);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[BlenderVideoService] 获取图片分辨率失败: {ex.Message}");
-            Console.WriteLine($"[BlenderVideoService] 使用默认分辨率: 1920x1080");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.Video, $"获取图片分辨率失败: {ex.Message}", nameof(BlenderVideoService));
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.Video, "使用默认分辨率: 1920x1080", nameof(BlenderVideoService));
             return (1920, 1080); // 默认分辨率
         }
     }

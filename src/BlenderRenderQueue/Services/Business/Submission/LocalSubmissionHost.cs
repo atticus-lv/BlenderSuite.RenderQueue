@@ -110,7 +110,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
 
             await ProbeReadyAsync(cancellationToken);
             await WriteEndpointFileAsync(CurrentEndpoint, cancellationToken);
-            Console.WriteLine($"[LocalSubmissionHost] Listening on {CurrentEndpoint.Host}:{CurrentEndpoint.Port}");
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.Submission, $"Listening on {CurrentEndpoint.Host}:{CurrentEndpoint.Port}", source: "LocalSubmissionHost");
             _logService.Write(
                 RenderLogLevel.Info,
                 RenderLogScope.Submission,
@@ -224,7 +224,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
             catch (Exception ex)
             {
                 client?.Dispose();
-                Console.WriteLine($"[LocalSubmissionHost] Accept loop error: {ex.Message}");
+                _logService.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"Accept loop error: {ex.Message}", source: "LocalSubmissionHost");
                 _logService.Write(RenderLogLevel.Warning, RenderLogScope.Submission, $"submission host 接收请求失败: {ex.Message}", source: nameof(LocalSubmissionHost));
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -292,7 +292,7 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[LocalSubmissionHost] Client handling error: {ex.Message}");
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"Client handling error: {ex.Message}", source: "LocalSubmissionHost");
             _logService.Write(RenderLogLevel.Error, RenderLogScope.Submission, $"submission 请求处理失败: {ex.Message}", source: nameof(LocalSubmissionHost));
 
             try
@@ -461,7 +461,11 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[LocalSubmissionHost] Failed to delete endpoint file: {ex.Message}");
+            ApplicationLogWriter.Write(
+                RenderLogLevel.Error,
+                RenderLogScope.Submission,
+                $"Failed to delete endpoint file: {ex.Message}",
+                nameof(LocalSubmissionHost));
         }
     }
 

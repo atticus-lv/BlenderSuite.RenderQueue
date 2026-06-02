@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
 namespace BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
@@ -13,8 +14,8 @@ public class BlenderVideoProcess : BaseBlenderProcess
 {
     public override BlenderProcessType ProcessType => BlenderProcessType.Video;
 
-    public BlenderVideoProcess(string blenderPath) 
-        : base(blenderPath, BlenderProcessConfig.CreateVideoConfig(), ParsePipelineFactory.CreateForVideo())
+    public BlenderVideoProcess(string blenderPath, IRenderLogService? logService = null)
+        : base(blenderPath, BlenderProcessConfig.CreateVideoConfig(), ParsePipelineFactory.CreateForVideo(), logService)
     {
     }
 
@@ -26,7 +27,7 @@ public class BlenderVideoProcess : BaseBlenderProcess
         if (_disposed) throw new ObjectDisposedException(nameof(BlenderVideoProcess));
         if (!IsRunning) throw new InvalidOperationException("进程未运行");
 
-        Console.WriteLine($"[BlenderVideoProcess] Executing video script - ID: {_processId}");
+        _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Executing video script - ID: {_processId}", source: "BlenderVideoProcess");
 
         var wrappedScript = $@"
 exec('''
@@ -74,7 +75,7 @@ print('__VIDEO_COMPLETE__')
         // 视频生成进程的错误处理
         var isBlenderCrash = errorData.Contains("Blender quit", StringComparison.OrdinalIgnoreCase);
         var isAccessViolationCrash = errorData.Contains("EXCEPTION_ACCESS_VIOLATION", StringComparison.OrdinalIgnoreCase);
-        
+
         if (isBlenderCrash || isAccessViolationCrash)
         {
             RaiseErrorReceived($"Error: {errorData}");

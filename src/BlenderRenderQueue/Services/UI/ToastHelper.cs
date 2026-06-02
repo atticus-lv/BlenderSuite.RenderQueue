@@ -4,6 +4,7 @@ using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
 using SukiUI.Toasts;
 using BlenderRenderQueue.ViewModels;
+using BlenderRenderQueue.Services.Application.Logging;
 
 namespace BlenderRenderQueue.Services.UI;
 
@@ -49,7 +50,7 @@ public static class ToastHelper
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ToastHelper] Error showing toast: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error showing toast: {ex.Message}", "ToastHelper");
             return false;
         }
     }
@@ -114,7 +115,7 @@ public static class ToastHelper
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ToastHelper] Error showing progress toast: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error showing progress toast: {ex.Message}", "ToastHelper");
             return null;
         }
     }
@@ -158,7 +159,7 @@ public static class ToastHelper
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ToastHelper] Error dismissing toast: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error dismissing toast: {ex.Message}", "ToastHelper");
         }
     }
 
@@ -181,7 +182,7 @@ public static class ToastHelper
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ToastHelper] Error getting ToastManager: {ex.Message}");
+            ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"Error getting ToastManager: {ex.Message}", "ToastHelper");
             return null;
         }
     }

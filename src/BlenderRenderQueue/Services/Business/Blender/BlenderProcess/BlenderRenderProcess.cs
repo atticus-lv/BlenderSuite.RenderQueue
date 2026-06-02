@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser.Core;
 
 namespace BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
@@ -13,8 +14,8 @@ public class BlenderRenderProcess : BaseBlenderProcess
 {
     public override BlenderProcessType ProcessType => BlenderProcessType.Render;
 
-    public BlenderRenderProcess(string blenderPath) 
-        : base(blenderPath, BlenderProcessConfig.CreateRenderConfig(), ParsePipelineFactory.CreateForRender())
+    public BlenderRenderProcess(string blenderPath, IRenderLogService? logService = null)
+        : base(blenderPath, BlenderProcessConfig.CreateRenderConfig(), ParsePipelineFactory.CreateForRender(), logService)
     {
     }
 
@@ -75,7 +76,7 @@ print('__RENDER_COMPLETE__')
         var isBlenderCrash = errorData.Contains("Blender quit", StringComparison.OrdinalIgnoreCase);
         var isAccessViolationCrash = errorData.Contains("EXCEPTION_ACCESS_VIOLATION", StringComparison.OrdinalIgnoreCase);
         var isNoCameraError = errorData.Contains("Cannot render, no camera", StringComparison.OrdinalIgnoreCase);
-        
+
         if (isBlenderCrash || isAccessViolationCrash || isNoCameraError)
         {
             RaiseErrorReceived($"Error: {errorData}");
