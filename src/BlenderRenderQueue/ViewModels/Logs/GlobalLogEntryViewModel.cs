@@ -39,7 +39,9 @@ public sealed class GlobalLogEntryViewModel
     public RenderLogEvent Event { get; }
     public IRelayCommand NavigateToTaskCommand { get; }
     public bool IsCurrentSession { get; }
+    public bool ShowSessionBadge => !IsCurrentSession;
     public string TimestampText => Event.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+    public string TimeText => Event.Timestamp.ToLocalTime().ToString("HH:mm:ss");
     public string LevelText => AppLocalizer.Instance[$"RenderLog_Level_{Event.Level}"];
     public string ScopeText => AppLocalizer.Instance[$"RenderLog_Scope_{Event.Scope}"];
     public string Message => Event.Message;

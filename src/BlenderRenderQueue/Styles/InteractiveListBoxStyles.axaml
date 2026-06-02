@@ -1,0 +1,61 @@
+<Styles xmlns="https://github.com/avaloniaui">
+    <Style Selector="ListBox.BrqInteractiveList">
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource SukiText}" />
+    </Style>
+
+    <Style Selector="ListBox.BrqInteractiveList ListBoxItem">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.BrqInteractiveList ListBoxItem:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.BrqInteractiveList ListBoxItem:selected">
+        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.BrqInteractiveList ListBoxItem:selected:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.BrqInteractiveList ListBoxItem:dragging">
+        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}" />
+    </Style>
+
+    <Style Selector="ListBox.BrqInteractiveList ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.12" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <Style Selector="ListBox.BrqInteractiveList ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.BrqInteractiveList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.BrqInteractiveList ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <Style Selector="ListBox.BrqInteractiveList ListBoxItem:dragging /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}" />
+    </Style>
+</Styles>

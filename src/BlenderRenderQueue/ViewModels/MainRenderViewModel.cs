@@ -308,10 +308,14 @@ public partial class MainRenderViewModel : ViewModelBase
         }
 
         // 检测完成后，直接应用设置（不再自动弹出对话框，用户可以通过侧边菜单访问设置）
-        var selectedPath = settings.SelectedBlenderExecutable?.Path ?? string.Empty;
-        ApplySettings(selectedPath, settings.DefaultRenderTimeoutSeconds,
+        ApplySettings(settings.DefaultRenderTimeoutSeconds,
             settings.MaxRetryAttempts, settings.VideoCodec.Value,
             settings.VideoQuality.Value);
+
+        if (settings.SelectedBlenderExecutable == null)
+        {
+            ApplyMissingBlenderSelectionState();
+        }
     }
 
     [RelayCommand]
@@ -357,6 +361,19 @@ public partial class MainRenderViewModel : ViewModelBase
         // 更新视频生成设置
         RenderQueue.SetVideoCodec(e.VideoCodec);
         RenderQueue.SetVideoQuality(e.VideoQuality);
+    }
+
+    private void ApplyMissingBlenderSelectionState()
+    {
+        _versionCts?.Cancel();
+        Interlocked.Increment(ref _validationRequestVersion);
+
+        IsLoadingBlenderInfo = false;
+        IsBlenderPathValid = false;
+        HasBlenderValidationError = true;
+        BlenderValidationMessage = "Blender_SelectExecutable";
+        StatusMessage = "Blender_PathInvalid";
+        ClearBlenderInfo();
     }
 
     private void OnBlenderValidationChanged(object? sender, BlenderValidationChangedEventArgs e)
@@ -451,12 +468,9 @@ public partial class MainRenderViewModel : ViewModelBase
         });
     }
 
-    private void ApplySettings(string blenderPath, int defaultRenderTimeoutSeconds, int maxRetryAttempts,
+    private void ApplySettings(int defaultRenderTimeoutSeconds, int maxRetryAttempts,
         string videoCodec, string videoQuality)
     {
-        // 验证选中的Blender
-        ValidateSelectedBlender();
-
         // 更新全局超时设置和重试次数
         RenderQueue.SetGlobalRenderTimeout(defaultRenderTimeoutSeconds);
         RenderQueue.SetGlobalMaxRetryAttempts(maxRetryAttempts);
@@ -673,6 +687,17 @@ public partial class MainRenderViewModel : ViewModelBase
     {
         if (!RenderQueue.SelectTask(taskId))
         {
+            return;
+        }
+
+        NavigateToRenderQueue();
+    }
+
+    private void NavigateToRenderQueue()
+    {
+        if (SelectedNavigationIndex == 0)
+        {
+            OnPropertyChanged(nameof(SelectedNavigationIndex));
             return;
         }
 

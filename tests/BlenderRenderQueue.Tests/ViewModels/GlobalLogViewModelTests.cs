@@ -116,6 +116,65 @@ public sealed class GlobalLogViewModelTests
         host.Close();
     }
 
+    [AvaloniaFact]
+    public void ClearAllCommand_RemovesCurrentAndHistoricalEntries()
+    {
+        var logService = TestLogServiceFactory.Create();
+        logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "Current event");
+        logService.Write(new RenderLogEvent
+        {
+            SessionId = "older-session",
+            Level = RenderLogLevel.Warning,
+            Scope = RenderLogScope.Queue,
+            Message = "Historical event"
+        });
+
+        using var sut = new GlobalLogViewModel(logService);
+
+        sut.ClearAllCommand.Execute(null);
+
+        Assert.Empty(sut.Entries);
+        Assert.Empty(logService.GetEvents());
+        Assert.False(sut.HasHistoricalEntries);
+        Assert.Single(sut.TaskOptions);
+    }
+
+    [AvaloniaFact]
+    public async Task DuplicateEventId_IsDisplayedOnlyOnce()
+    {
+        var logService = TestLogServiceFactory.Create();
+        var logEvent = new RenderLogEvent
+        {
+            EventId = Guid.NewGuid(),
+            Level = RenderLogLevel.Info,
+            Scope = RenderLogScope.Queue,
+            Message = "Same event"
+        };
+
+        using var sut = new GlobalLogViewModel(logService);
+
+        logService.Write(logEvent);
+        logService.Write(logEvent);
+        await DrainUiAsync();
+
+        Assert.Single(sut.Entries);
+        Assert.Equal(logEvent.EventId, sut.Entries[0].Event.EventId);
+    }
+
+    [AvaloniaFact]
+    public async Task ClearAllCommand_DropsQueuedAppendCallbacks()
+    {
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new GlobalLogViewModel(logService);
+
+        logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "Queued event");
+        sut.ClearAllCommand.Execute(null);
+        await DrainUiAsync();
+
+        Assert.Empty(sut.Entries);
+        Assert.Empty(logService.GetEvents());
+    }
+
     private static async Task WaitForDebounceAsync()
     {
         await Task.Delay(250);

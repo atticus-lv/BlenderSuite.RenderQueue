@@ -26,6 +26,7 @@
     <Application.Styles>
         <suki:SukiTheme ThemeColor="Blue" Locale="zh-CN" />
         <material:MaterialIconStyles />
+        <StyleInclude Source="avares://BlenderRenderQueue/Styles/InteractiveListBoxStyles.axaml" />
     </Application.Styles>
 
 </Application>

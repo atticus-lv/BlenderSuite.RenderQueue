@@ -128,6 +128,14 @@ public sealed class LocalSubmissionHost : ILocalSubmissionHost
         await _lifecycleLock.WaitAsync(cancellationToken);
         try
         {
+            if (_listener == null &&
+                _hostCts == null &&
+                _acceptLoopThread == null &&
+                CurrentEndpoint == null)
+            {
+                return;
+            }
+
             _hostCts?.Cancel();
 
             if (_listener != null)

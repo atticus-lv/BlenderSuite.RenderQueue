@@ -25,7 +25,9 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
     private readonly IRenderLogService _logService;
     private readonly DispatcherTimer _refreshTimer;
+    private readonly HashSet<Guid> _entryEventIds = [];
     private bool _isRefreshing;
+    private int _entryRevision;
     private ObservableCollection<GlobalLogEntryViewModel> _entries = new();
     private ObservableCollection<string> _scopeOptions = new(
         new[]
@@ -87,6 +89,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
             _entries = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasEntries));
+            OnPropertyChanged(nameof(FilterSummaryText));
         }
     }
 
@@ -137,6 +140,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         {
             if (SetProperty(ref _selectedScope, value) && !_isRefreshing)
             {
+                OnPropertyChanged(nameof(FilterSummaryText));
                 RequestRefresh();
             }
         }
@@ -149,6 +153,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         {
             if (SetProperty(ref _selectedLevel, value) && !_isRefreshing)
             {
+                OnPropertyChanged(nameof(FilterSummaryText));
                 RequestRefresh();
             }
         }
@@ -161,6 +166,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         {
             if (SetProperty(ref _selectedSession, value) && !_isRefreshing)
             {
+                OnPropertyChanged(nameof(FilterSummaryText));
                 RequestRefresh();
             }
         }
@@ -174,6 +180,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
             var next = value ?? TaskFilterOption.All;
             if (SetProperty(ref _selectedTask, next) && !_isRefreshing)
             {
+                OnPropertyChanged(nameof(FilterSummaryText));
                 RequestRefresh();
             }
         }
@@ -193,6 +200,20 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
     public string CurrentSessionId => _logService.CurrentSessionId;
     public bool HasEntries => Entries.Count > 0;
+    public string FilterSummaryText
+    {
+        get
+        {
+            var countText = string.Format(AppLocalizer.Instance["GlobalLog_FilterSummary_Count"], Entries.Count);
+            return string.Format(
+                AppLocalizer.Instance["GlobalLog_FilterSummary"],
+                countText,
+                LocalizeFilterLabel(SelectedSession),
+                LocalizeFilterLabel(SelectedLevel),
+                _selectedTask.DisplayLabel);
+        }
+    }
+
     public bool HasHistoricalEntries
     {
         get => _hasHistoricalEntries;
@@ -214,11 +235,17 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
     private void RefreshEntries()
     {
+        _entryRevision++;
         _isRefreshing = true;
         try
         {
-            UpdateHistoryState();
-            var events = _logService.GetEvents(BuildProjection());
+            var allEvents = _logService.GetEvents();
+            UpdateHistoryState(allEvents);
+            var projection = BuildProjection();
+            var currentSessionId = _logService.CurrentSessionId;
+            var events = allEvents
+                .Where(logEvent => projection.Matches(logEvent, currentSessionId))
+                .ToList();
             ReplaceEntries(events);
             RefreshTaskOptions(events);
         }
@@ -267,6 +294,7 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         var selectedTaskId = _selectedTask?.TaskId;
         var existing = TaskOptions.FirstOrDefault(option => option.TaskId == selectedTaskId) ?? TaskOptions[0];
         SetProperty(ref _selectedTask, existing, nameof(SelectedTask));
+        OnPropertyChanged(nameof(FilterSummaryText));
     }
 
     private RenderLogProjection BuildProjection()
@@ -306,8 +334,14 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
     private void OnLogAppended(object? sender, RenderLogEvent e)
     {
+        var appendRevision = _entryRevision;
         Dispatcher.UIThread.Post(() =>
         {
+            if (appendRevision != _entryRevision)
+            {
+                return;
+            }
+
             if (!string.Equals(e.SessionId, _logService.CurrentSessionId, StringComparison.Ordinal))
             {
                 HasHistoricalEntries = true;
@@ -361,15 +395,22 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
 
     private bool TryAppendEntry(RenderLogEvent logEvent)
     {
+        if (_entryEventIds.Contains(logEvent.EventId))
+        {
+            return true;
+        }
+
         var projection = BuildProjection();
         if (!projection.Matches(logEvent, _logService.CurrentSessionId))
         {
             return false;
         }
 
+        _entryEventIds.Add(logEvent.EventId);
         Entries.Insert(0, new GlobalLogEntryViewModel(logEvent, _logService.CurrentSessionId, NavigateToTask));
         EnsureTaskOption(logEvent);
         OnPropertyChanged(nameof(HasEntries));
+        OnPropertyChanged(nameof(FilterSummaryText));
         return true;
     }
 
@@ -398,10 +439,15 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
     private void ReplaceEntries(IEnumerable<RenderLogEvent> events)
     {
         Entries.Clear();
-        foreach (var entry in events.Select(logEvent =>
-                     new GlobalLogEntryViewModel(logEvent, _logService.CurrentSessionId, NavigateToTask)))
+        _entryEventIds.Clear();
+        foreach (var logEvent in events)
         {
-            Entries.Add(entry);
+            if (!_entryEventIds.Add(logEvent.EventId))
+            {
+                continue;
+            }
+
+            Entries.Add(new GlobalLogEntryViewModel(logEvent, _logService.CurrentSessionId, NavigateToTask));
         }
 
         OnPropertyChanged(nameof(HasEntries));
@@ -418,9 +464,14 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(TaskOptions));
     }
 
-    private void UpdateHistoryState()
+    private static string LocalizeFilterLabel(string key)
     {
-        HasHistoricalEntries = _logService.GetEvents().Any(logEvent =>
+        return AppLocalizer.Instance[key];
+    }
+
+    private void UpdateHistoryState(IEnumerable<RenderLogEvent> events)
+    {
+        HasHistoricalEntries = events.Any(logEvent =>
             !string.Equals(logEvent.SessionId, _logService.CurrentSessionId, StringComparison.Ordinal));
     }
 

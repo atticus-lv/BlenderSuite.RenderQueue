@@ -29,7 +29,7 @@
         </i:Interaction.Behaviors>
         <Panel>
             <ListBox ItemsSource="{Binding RenderTasks}"
-                     Classes="WithoutCheck Void"
+                     Classes="WithoutCheck Void Stack BrqInteractiveList"
                      SelectedItem="{Binding SelectedTask}"
                      Margin="4"
                      Name="TaskListBox">
@@ -39,32 +39,6 @@
                                                       Orientation="Vertical" />
                     </i:Interaction.Behaviors>
                     <ListBox.Styles>
-                        <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
-                            <Setter Property="Background" Value="Transparent" />
-                            <Setter Property="BorderBrush" Value="Transparent" />
-                            <Setter Property="Transitions">
-                                <Transitions>
-                                    <BrushTransition Property="Background" Duration="0:0:0.12" />
-                                    <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
-                                </Transitions>
-                            </Setter>
-                        </Style>
-                        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-                            <Setter Property="Background"
-                                    Value="{DynamicResource SukiPrimaryColor10}" />
-                        </Style>
-                        <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-                            <Setter Property="Background"
-                                    Value="{DynamicResource SukiPrimaryColor25}" />
-                        </Style>
-                        <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-                            <Setter Property="Background"
-                                    Value="{DynamicResource SukiPrimaryColor25}" />
-                        </Style>
-                        <Style Selector="ListBoxItem:dragging /template/ ContentPresenter#PART_ContentPresenter">
-                            <Setter Property="BorderBrush"
-                                    Value="{DynamicResource SukiPrimaryColor}" />
-                        </Style>
                         <Style Selector="ListBoxItem">
                             <Setter Property="Padding" Value="12,6" />
                             <Setter Property="BorderThickness" Value="1" />

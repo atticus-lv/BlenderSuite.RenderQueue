@@ -83,9 +83,7 @@ public partial class App : Application
 
         try
         {
-            _renderLogService?.Write(RenderLogLevel.Info, RenderLogScope.Submission, "开始启动本地 submission host。", source: nameof(App));
             await _localSubmissionHost.StartAsync();
-            _renderLogService?.Write(RenderLogLevel.Info, RenderLogScope.Submission, "本地 submission host 启动完成。", source: nameof(App));
         }
         catch (Exception ex)
         {
@@ -126,10 +124,8 @@ public partial class App : Application
 
                 try
                 {
-                    _renderLogService?.Write(RenderLogLevel.Info, RenderLogScope.Submission, "开始停止本地 submission host。", source: nameof(App));
                     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
                     await host.ShutdownAsync(cts.Token);
-                    _renderLogService?.Write(RenderLogLevel.Info, RenderLogScope.Submission, "本地 submission host 已完成停止。", source: nameof(App));
                 }
                 catch (OperationCanceledException)
                 {
