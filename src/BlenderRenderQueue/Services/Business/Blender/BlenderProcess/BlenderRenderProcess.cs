@@ -27,8 +27,6 @@ public class BlenderRenderProcess : BaseBlenderProcess
         if (_disposed) throw new ObjectDisposedException(nameof(BlenderRenderProcess));
         if (!IsRunning) throw new InvalidOperationException("进程未运行");
 
-        // Console.WriteLine($"[BlenderRenderProcess] Executing render script - ID: {_processId}");
-
         var wrappedScript = $@"
 exec('''
 {script}

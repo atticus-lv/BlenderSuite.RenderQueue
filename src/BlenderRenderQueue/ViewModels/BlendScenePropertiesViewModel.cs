@@ -47,8 +47,6 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
 
     partial void OnSelectedSceneChanged(BlendSceneProperties value)
     {
-        // Console.WriteLine($"[BlendScenePropertiesViewModel] SelectedScene changing");
-
         // 当选择的场景改变时，更新SceneProperties以保持向后兼容
         SceneProperties = value;
 
@@ -58,7 +56,6 @@ public partial class BlendScenePropertiesViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowEmptyState));
         OnPropertyChanged(nameof(SelectedSceneName));
 
-        // Console.WriteLine($"[BlendScenePropertiesViewModel] SelectedScene changed, IsLoaded: {value?.IsLoaded}");
     }
 
     [ObservableProperty] private bool _isLoading;
