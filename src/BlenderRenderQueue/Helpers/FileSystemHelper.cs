@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Extensions;
 
 namespace BlenderRenderQueue.Helpers;
 
@@ -148,7 +149,9 @@ public static class FileSystemHelper
             {
                 await Task.Delay(100); // 等待1秒
                 Environment.Exit(0);
-            });
+            }).FireAndForget(
+                source: nameof(FileSystemHelper),
+                message: "应用重启延迟退出后台任务失败。");
 
             return true;
         }

@@ -9,6 +9,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
 using BlenderRenderQueue.Behaviors;
+using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.ViewModels;
 
 namespace BlenderRenderQueue.Views;
@@ -83,6 +84,11 @@ public partial class FileDropView : UserControl
         }
         catch (Exception ex)
         {
+            UnhandledExceptionGuard.WriteHandledException(
+                ex,
+                nameof(FileDropView),
+                RenderLogScope.System,
+                "拖拽添加文件事件处理失败。");
             ShowMessage($"添加文件时出错: {ex.Message}", "错误");
         }
     }

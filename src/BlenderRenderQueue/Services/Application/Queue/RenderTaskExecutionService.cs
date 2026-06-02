@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
@@ -48,7 +49,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         WriteTaskEvent(task, RenderLogScope.Task, "用户请求暂停渲染。");
         task.FinalizePaused();
 
-        _ = Task.Run(async () =>
+        Task.Run(async () =>
         {
             try
             {
@@ -63,7 +64,11 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
                 DetachContext(context);
                 RemoveContextIfCurrent(task.Id, context);
             }
-        });
+        }).FireAndForget(
+            _logService,
+            nameof(RenderTaskExecutionService),
+            RenderLogScope.Task,
+            "暂停渲染后台取消任务失败。");
 
         return Task.CompletedTask;
     }
@@ -81,7 +86,7 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
         context.PauseRequested = false;
         WriteTaskEvent(task, RenderLogScope.Task, "用户请求停止渲染。");
 
-        _ = Task.Run(async () =>
+        Task.Run(async () =>
         {
             try
             {
@@ -98,7 +103,11 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
                 RemoveContextIfCurrent(task.Id, context);
                 task.FinalizeStopped();
             }
-        });
+        }).FireAndForget(
+            _logService,
+            nameof(RenderTaskExecutionService),
+            RenderLogScope.Task,
+            "停止渲染后台取消任务失败。");
     }
 
     private async Task RunRenderPipelineAsync(

@@ -11,6 +11,7 @@ using Avalonia.Interactivity;
 using System.Threading;
 using Avalonia.Input;
 using Avalonia.Threading;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Views;
 using BlenderRenderQueue.ViewModels;
 using BlenderRenderQueue.Helpers;
@@ -145,7 +146,9 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         {
             if (SetAndRaise(CurrentFrameProperty, ref _currentFrame, value))
             {
-                _ = UpdateCurrentImageAsync();
+                UpdateCurrentImageAsync().FireAndForget(
+                    source: nameof(ImageSequencePreviewControl),
+                    message: "图片序列当前帧后台刷新失败。");
                 UpdateFrameTexts();
             }
         }
@@ -263,7 +266,9 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         }
 
         Console.WriteLine($"[ImageSequencePreviewControl] Loading image sequence from: '{directoryPath}'");
-        _ = LoadImageSequenceAsync(directoryPath);
+        LoadImageSequenceAsync(directoryPath).FireAndForget(
+            source: nameof(ImageSequencePreviewControl),
+            message: "图片序列后台加载失败。");
 
         // 启动文件监控
         StartFileWatcher(directoryPath);
@@ -603,7 +608,9 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         CancelPendingRefresh();
         var cts = new CancellationTokenSource();
         _refreshDebounceCts = cts;
-        _ = DebounceRefreshAsync(cts.Token);
+        DebounceRefreshAsync(cts.Token).FireAndForget(
+            source: nameof(ImageSequencePreviewControl),
+            message: "图片序列防抖刷新后台任务失败。");
     }
 
     private async Task DebounceRefreshAsync(CancellationToken cancellationToken)

@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Avalonia.Controls;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Views;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
@@ -958,7 +959,11 @@ public partial class RenderTaskViewModel : ViewModelBase
                         Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyProgress(progressEvent.Progress));
                         break;
                     default:
-                        Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyRenderEvent(parsedEvent));
+                        Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyRenderEvent(parsedEvent).FireAndForget(
+                            _logService,
+                            nameof(RenderTaskViewModel),
+                            RenderLogScope.Task,
+                            "后台应用渲染事件失败。"));
                         break;
                 }
             }
@@ -1041,41 +1046,60 @@ public partial class RenderTaskViewModel : ViewModelBase
             new RenderTaskProgressEventArgs(OverallProgress01, Progress01, p.CurrentFrame, frameRenderTime));
     }
 
-    internal async void ApplyRenderEvent(RenderEvent e)
+    internal Task ApplyRenderEvent(RenderEvent e)
     {
-        if (Status is RenderTaskStatus.Completed or RenderTaskStatus.Failed or RenderTaskStatus.Cancelled)
+        try
         {
-            return;
+            if (Status is RenderTaskStatus.Completed or RenderTaskStatus.Failed or RenderTaskStatus.Cancelled)
+            {
+                return Task.CompletedTask;
+            }
+
+            switch (e)
+            {
+                case RenderSessionStarted s:
+                    EnqueueLog(s.IsAnimation ? $"开始动画渲染: {s.StartFrame}..{s.EndFrame}" : $"开始单帧渲染");
+                    SetStatus(RenderTaskStatus.Running);
+                    break;
+                case RenderStarted rs:
+                    EnqueueLog($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
+                    break;
+                case RenderSaved saved:
+                    EnqueueLog($"已保存: {saved.Path} (帧 {saved.Frame})");
+                    // 加载渲染完成的图片
+                    Task.Run(() => LoadRenderedImageAsync(saved.Path)).FireAndForget(
+                        _logService,
+                        nameof(RenderTaskViewModel),
+                        RenderLogScope.Task,
+                        "后台加载已渲染图片失败。");
+                    break;
+                case RenderCompletedFrame done:
+                    EnqueueLog($"帧 {done.Frame} 完成，用时 {done.Time}");
+                    break;
+                case RenderCompletedAll:
+                    EnqueueLog("全部帧完成");
+                    OverallProgress01 = 1;
+                    // In the worker-host pipeline, final completion is committed only after the
+                    // request returns successfully and the output path is verified on disk.
+                    break;
+                case RenderError err:
+                    EnqueueLog($"渲染错误: {err.Message}");
+                    // The worker-host pipeline owns retries and final failure transitions.
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logService?.Write(
+                RenderLogLevel.Error,
+                RenderLogScope.Task,
+                $"应用渲染事件失败: {ex}",
+                Id,
+                BlendFilePath,
+                nameof(RenderTaskViewModel));
         }
 
-        switch (e)
-        {
-            case RenderSessionStarted s:
-                EnqueueLog(s.IsAnimation ? $"开始动画渲染: {s.StartFrame}..{s.EndFrame}" : $"开始单帧渲染");
-                SetStatus(RenderTaskStatus.Running);
-                break;
-            case RenderStarted rs:
-                EnqueueLog($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
-                break;
-            case RenderSaved saved:
-                EnqueueLog($"已保存: {saved.Path} (帧 {saved.Frame})");
-                // 加载渲染完成的图片
-                _ = Task.Run(async () => await LoadRenderedImageAsync(saved.Path));
-                break;
-            case RenderCompletedFrame done:
-                EnqueueLog($"帧 {done.Frame} 完成，用时 {done.Time}");
-                break;
-            case RenderCompletedAll:
-                EnqueueLog("全部帧完成");
-                OverallProgress01 = 1;
-                // In the worker-host pipeline, final completion is committed only after the
-                // request returns successfully and the output path is verified on disk.
-                break;
-            case RenderError err:
-                EnqueueLog($"渲染错误: {err.Message}");
-                // The worker-host pipeline owns retries and final failure transitions.
-                break;
-        }
+        return Task.CompletedTask;
     }
 
     private void SetStatus(RenderTaskStatus status)

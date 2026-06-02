@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
+using BlenderRenderQueue.Extensions;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace BlenderRenderQueue.ViewModels;
@@ -41,10 +42,12 @@ public partial class ImagePreviewWindowViewModel : ViewModelBase
         ImagePath = imagePath;
         FrameInfo = frameNumber > 0 ? $"帧 {frameNumber}" : "单帧";
         Console.WriteLine($"[ImagePreviewWindowViewModel] ImagePath set to: '{ImagePath}'");
-        LoadImageAsync();
+        LoadImageAsync().FireAndForget(
+            source: nameof(ImagePreviewWindowViewModel),
+            message: "图片预览窗口后台加载图片失败。");
     }
 
-    private async void LoadImageAsync()
+    private async Task LoadImageAsync()
     {
         Console.WriteLine($"[ImagePreviewWindowViewModel] LoadImageAsync called with path: '{ImagePath}'");
         

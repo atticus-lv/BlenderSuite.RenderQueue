@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.ViewModels;
@@ -114,6 +115,11 @@ public sealed partial class RenderQueueApplicationService
                         }
                     });
 
+                    runningTaskRef[0].FireAndForget(
+                        _owner._logService,
+                        nameof(RenderQueueApplicationService),
+                        RenderLogScope.Queue,
+                        "队列调度后台任务失败。");
                     _owner._runningTasks.Add(runningTaskRef[0]);
                 }
             }
@@ -141,7 +147,11 @@ public sealed partial class RenderQueueApplicationService
                 _owner._saveWorkerRunning = true;
             }
 
-            _ = RunAutoSaveLoopAsync();
+            RunAutoSaveLoopAsync().FireAndForget(
+                _owner._logService,
+                nameof(RenderQueueApplicationService),
+                RenderLogScope.Queue,
+                "队列自动保存后台任务失败。");
         }
 
         public async Task RunAutoSaveLoopAsync()

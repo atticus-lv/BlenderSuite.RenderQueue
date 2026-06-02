@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Localizer;
 using BlenderRenderQueue.Models;
@@ -160,7 +161,7 @@ public partial class RenderTaskViewModel
 
                 bitmap.Dispose();
 
-                _ = Task.Run(async () =>
+                Task.Run(async () =>
                 {
                     try
                     {
@@ -193,7 +194,11 @@ public partial class RenderTaskViewModel
                     {
                         Console.WriteLine($"[RenderTaskViewModel] Error loading optimized image: {ex.Message}");
                     }
-                });
+                }).FireAndForget(
+                    _owner._logService,
+                    nameof(RenderTaskViewModel),
+                    RenderLogScope.Task,
+                    "后台优化渲染图片失败。");
             }
             catch (Exception ex)
             {

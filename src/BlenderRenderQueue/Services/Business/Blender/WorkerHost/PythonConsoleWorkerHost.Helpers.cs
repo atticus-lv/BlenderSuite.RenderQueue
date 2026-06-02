@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Services.Business.Blender.Extensions;
 
 namespace BlenderRenderQueue.Services.Business.Blender.WorkerHost;
@@ -105,6 +106,12 @@ public sealed partial class PythonConsoleWorkerHost
                 Task.Run(() => _owner._transportClient.ReadOutputLoopAsync(process.StandardOutput, false, _owner._disposeCts.Token));
             _owner._stderrTask =
                 Task.Run(() => _owner._transportClient.ReadOutputLoopAsync(process.StandardError, true, _owner._disposeCts.Token));
+            _owner._stdoutTask.FireAndForget(
+                source: nameof(PythonConsoleWorkerHost),
+                message: "Blender worker 标准输出读取后台任务失败。");
+            _owner._stderrTask.FireAndForget(
+                source: nameof(PythonConsoleWorkerHost),
+                message: "Blender worker 标准错误读取后台任务失败。");
 
             await _owner._transportClient.ProbeConsoleReadyAsync(cancellationToken);
             await _owner._transportClient.InjectBootstrapScriptAsync(cancellationToken);
@@ -631,7 +638,7 @@ public sealed partial class PythonConsoleWorkerHost
             _owner._heartbeatCts?.Dispose();
             _owner._heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(_owner._disposeCts.Token);
 
-            _ = Task.Run(async () =>
+            Task.Run(async () =>
             {
                 while (!_owner._heartbeatCts.IsCancellationRequested)
                 {
@@ -680,7 +687,9 @@ public sealed partial class PythonConsoleWorkerHost
                         break;
                     }
                 }
-            }, _owner._heartbeatCts.Token);
+            }, _owner._heartbeatCts.Token).FireAndForget(
+                source: nameof(PythonConsoleWorkerHost),
+                message: "Blender worker 心跳后台任务失败。");
         }
 
         private static DateTimeOffset? ParseDateTime(string value)

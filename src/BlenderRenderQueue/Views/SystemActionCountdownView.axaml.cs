@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using BlenderRenderQueue.Extensions;
 using SukiUI.Controls;
 
 namespace BlenderRenderQueue.Views;
@@ -32,7 +33,9 @@ public partial class SystemActionCountdownView : SukiWindow
         _cancellationTokenSource = new CancellationTokenSource();
         
         // 启动倒计时
-        _ = StartCountdownAsync(countdownSeconds);
+        StartCountdownAsync(countdownSeconds).FireAndForget(
+            source: nameof(SystemActionCountdownView),
+            message: "系统动作倒计时后台任务失败。");
     }
 
     private void OnCancelButtonClick(object? sender, RoutedEventArgs e)

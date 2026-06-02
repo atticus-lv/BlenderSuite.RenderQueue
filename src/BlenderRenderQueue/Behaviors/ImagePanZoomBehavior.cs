@@ -7,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using Avalonia.Xaml.Interactivity;
+using BlenderRenderQueue.Extensions;
 
 namespace BlenderRenderQueue.Behaviors;
 
@@ -128,27 +129,34 @@ public class ImagePanZoomBehavior : Behavior<Panel>
         if (!_isZooming)
         {
             _isZooming = true;
-            StartZoomAnimation();
+            StartZoomAnimation().FireAndForget(
+                source: nameof(ImagePanZoomBehavior),
+                message: "图片缩放动画后台任务失败。");
         }
 
         e.Handled = true;
     }
 
-    private async void StartZoomAnimation()
+    private async Task StartZoomAnimation()
     {
-        while (Math.Abs(_zoomVelocity) > ZoomAnimStopVelocity)
+        try
         {
-            _currentScale *= Math.Pow(ZoomScaleLogMap, _zoomVelocity);
-            _currentScale = Math.Clamp(_currentScale, MinScale, MaxScale);
+            while (Math.Abs(_zoomVelocity) > ZoomAnimStopVelocity)
+            {
+                _currentScale *= Math.Pow(ZoomScaleLogMap, _zoomVelocity);
+                _currentScale = Math.Clamp(_currentScale, MinScale, MaxScale);
 
-            _scaleTransform.ScaleX = _currentScale;
-            _scaleTransform.ScaleY = _currentScale;
+                _scaleTransform.ScaleX = _currentScale;
+                _scaleTransform.ScaleY = _currentScale;
 
-            _zoomVelocity *= ZoomAnimSpeedDecay;
-            await Task.Delay(ZoomUpdateInterval);
+                _zoomVelocity *= ZoomAnimSpeedDecay;
+                await Task.Delay(ZoomUpdateInterval);
+            }
         }
-
-        _isZooming = false;
+        finally
+        {
+            _isZooming = false;
+        }
     }
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -241,4 +249,4 @@ public class ImagePanZoomBehavior : Behavior<Panel>
     {
         _scaleTransform.ScaleY *= -1;
     }
-} 
+}

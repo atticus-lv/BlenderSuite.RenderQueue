@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Services.Application.Logging;
 using BlenderRenderQueue.Services.Business.Submission;
 using BlenderRenderQueue.ViewModels;
@@ -40,7 +41,11 @@ public partial class App : Application
             {
                 _renderLogService = AppServices.Instance.GetRequiredService<IRenderLogService>();
                 _localSubmissionHost = AppServices.Instance.GetRequiredService<ILocalSubmissionHost>();
-                Dispatcher.UIThread.Post(() => _ = StartLocalSubmissionHostAsync());
+                Dispatcher.UIThread.Post(() => StartLocalSubmissionHostAsync().FireAndForget(
+                    _renderLogService,
+                    nameof(App),
+                    RenderLogScope.Submission,
+                    "本地 submission host 后台启动任务失败。"));
             }
             catch (Exception ex)
             {
@@ -94,7 +99,8 @@ public partial class App : Application
 
     private void StopLocalSubmissionHost()
     {
-        _ = StopLocalSubmissionHostAsync();
+        var stopTask = StopLocalSubmissionHostAsync();
+        GC.KeepAlive(stopTask);
     }
 
     private Task StopLocalSubmissionHostAsync()
@@ -156,6 +162,11 @@ public partial class App : Application
                     }
                 }
             });
+            _localSubmissionHostStopTask.FireAndForget(
+                _renderLogService,
+                nameof(App),
+                RenderLogScope.Submission,
+                "本地 submission host 后台停止任务失败。");
 
             return _localSubmissionHostStopTask;
         }

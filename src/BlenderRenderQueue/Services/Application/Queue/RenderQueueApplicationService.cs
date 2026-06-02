@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using Avalonia.Threading;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Application.Logging;
@@ -151,9 +152,14 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         {
             foreach (var task in RenderTasks.Where(ShouldBackfillTaskProperties))
             {
-                _ = LoadTaskPropertiesWithLimitAsync(
+                LoadTaskPropertiesWithLimitAsync(
                     task,
-                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to backfill task properties: {ex.Message}"));
+                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to backfill task properties: {ex.Message}"))
+                    .FireAndForget(
+                        _logService,
+                        nameof(RenderQueueApplicationService),
+                        RenderLogScope.Task,
+                        "后台回填任务属性失败。");
             }
         }
 
@@ -166,7 +172,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                     ? "已清除 Blender 路径。"
                     : $"已更新 Blender 路径: {blenderPath}",
                 source: nameof(RenderQueueApplicationService));
-            _ = Task.Run(async () =>
+            Task.Run(async () =>
             {
                 try
                 {
@@ -177,7 +183,11 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                     Console.WriteLine($"[RenderQueueApplicationService] Failed to shutdown worker on path change: {ex.Message}");
                     _logService.Write(RenderLogLevel.Warning, RenderLogScope.Worker, $"切换 Blender 路径时关闭 worker 失败: {ex.Message}", source: nameof(RenderQueueApplicationService));
                 }
-            });
+            }).FireAndForget(
+                _logService,
+                nameof(RenderQueueApplicationService),
+                RenderLogScope.Worker,
+                "切换 Blender 路径时后台关闭 worker 任务失败。");
         }
     }
 
@@ -379,13 +389,17 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
             _runningTasks.Clear();
         }
 
-        _ = Task.Run(() =>
+        Task.Run(() =>
         {
             foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
             {
                 _executionService.Stop(task);
             }
-        });
+        }).FireAndForget(
+            _logService,
+            nameof(RenderQueueApplicationService),
+            RenderLogScope.Queue,
+            "停止队列后台任务失败。");
 
         PublishSnapshot();
     }
@@ -410,13 +424,17 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         _remainingTimeTimer.Stop();
         PublishSnapshot();
 
-        _ = Task.Run(async () =>
+        Task.Run(async () =>
         {
             foreach (var task in RenderTasks.Where(t => t.Status == RenderTaskStatus.Running))
             {
                 await _executionService.PauseAsync(task);
             }
-        });
+        }).FireAndForget(
+            _logService,
+            nameof(RenderQueueApplicationService),
+            RenderLogScope.Queue,
+            "暂停队列后台任务失败。");
     }
 
     public async Task ResumeQueueAsync()
@@ -519,7 +537,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
 
             if (IsBlenderServiceReady())
             {
-                _ = LoadTaskPropertiesWithLimitAsync(
+                LoadTaskPropertiesWithLimitAsync(
                     newTask,
                     postLoadAsync: savedOverrideScene && !string.IsNullOrEmpty(savedSelectedSceneName)
                         ? () => Dispatcher.UIThread.InvokeAsync(() =>
@@ -528,7 +546,12 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                             newTask.SelectedSceneName = savedSelectedSceneName;
                         }).GetTask()
                         : null,
-                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load copied task properties: {ex.Message}"));
+                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load copied task properties: {ex.Message}"))
+                    .FireAndForget(
+                        _logService,
+                        nameof(RenderQueueApplicationService),
+                        RenderLogScope.Task,
+                        "后台加载复制任务属性失败。");
             }
 
             StatusMessageChanged?.Invoke(this,
@@ -606,10 +629,15 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
 
                 if (IsBlenderServiceReady())
                 {
-                    _ = LoadTaskPropertiesWithLimitAsync(
+                    LoadTaskPropertiesWithLimitAsync(
                         task,
                         onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load submitted task properties: {ex.Message}"),
-                        cancellationToken: cancellationToken);
+                        cancellationToken: cancellationToken)
+                        .FireAndForget(
+                            _logService,
+                            nameof(RenderQueueApplicationService),
+                            RenderLogScope.Submission,
+                            "后台加载 submission 任务属性失败。");
                 }
 
                 StatusMessageChanged?.Invoke(this, Localizer.Localizer.Instance["Toast_BlenderPluginDetected"]);
@@ -696,7 +724,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                         task.ScenePropertiesView.LoadingMessage = "SceneProperties_LoadingFileProperties";
                     });
 
-                    _ = LoadTaskPropertiesWithLimitAsync(
+                    LoadTaskPropertiesWithLimitAsync(
                         task,
                         postLoadAsync: savedOverrideScene != null
                             ? () => Dispatcher.UIThread.InvokeAsync(() =>
@@ -709,7 +737,12 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                         {
                             task.ScenePropertiesView.IsLoading = false;
                             task.ScenePropertiesView.ErrorMessage = $"加载失败: {ex.Message}";
-                        }));
+                        }))
+                        .FireAndForget(
+                            _logService,
+                            nameof(RenderQueueApplicationService),
+                            RenderLogScope.Recovery,
+                            "后台加载恢复任务属性失败。");
                 }
             }
 
@@ -737,9 +770,14 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
 
             if (IsBlenderServiceReady())
             {
-                _ = LoadTaskPropertiesWithLimitAsync(
+                LoadTaskPropertiesWithLimitAsync(
                     task,
-                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load task properties: {ex.Message}"));
+                    onError: ex => Console.WriteLine($"[RenderQueueApplicationService] Failed to load task properties: {ex.Message}"))
+                    .FireAndForget(
+                        _logService,
+                        nameof(RenderQueueApplicationService),
+                        RenderLogScope.Task,
+                        "后台加载任务属性失败。");
             }
         }
         catch (Exception ex)
@@ -818,6 +856,13 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         }
         catch (Exception ex)
         {
+            _logService.Write(
+                RenderLogLevel.Error,
+                RenderLogScope.Task,
+                $"刷新任务文件属性失败: {ex}",
+                task.Id,
+                task.BlendFilePath,
+                nameof(RenderQueueApplicationService));
             StatusMessageChanged?.Invoke(this,
                 string.Format(Localizer.Localizer.Instance["Toast_TaskReloadFailed"], ex.Message));
         }
@@ -1082,7 +1127,11 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                     _queueStatusText = "Queue_Completed";
                     _queueState = QueueState.Completed;
                     _logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "队列已完成。", source: nameof(RenderQueueApplicationService));
-                    _ = HandlePostRenderBehaviorAsync();
+                    HandlePostRenderBehaviorAsync().FireAndForget(
+                        _logService,
+                        nameof(RenderQueueApplicationService),
+                        RenderLogScope.Queue,
+                        "队列完成后的系统行为后台任务失败。");
                 }
                 else
                 {

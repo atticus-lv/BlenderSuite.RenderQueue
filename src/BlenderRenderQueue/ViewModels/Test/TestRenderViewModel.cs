@@ -8,6 +8,7 @@ using Avalonia.Platform.Storage;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Blender;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
@@ -104,7 +105,7 @@ public partial class TestRenderViewModel : ViewModelBase
 				else
 				{
 					// 未命中则后台异步扫描常见目录，避免阻塞 UI
-					_ = Task.Run(async () =>
+					Task.Run(async () =>
 					{
 						var asyncExe = await BlenderRenderQueue.Helpers.BlenderLocator.FindBlenderExeAsync();
 						if (!string.IsNullOrWhiteSpace(asyncExe))
@@ -115,7 +116,9 @@ public partial class TestRenderViewModel : ViewModelBase
 								EnqueueLog($"异步检测到 Blender: {asyncExe}");
 							});
 						}
-					});
+					}).FireAndForget(
+						source: nameof(TestRenderViewModel),
+						message: "测试渲染页后台扫描 Blender 失败。");
 				}
 			}
 		}
@@ -130,7 +133,7 @@ public partial class TestRenderViewModel : ViewModelBase
 
 		if (string.IsNullOrWhiteSpace(value) || !File.Exists(value)) return;
 
-		_ = Task.Run(async () =>
+		Task.Run(async () =>
 		{
 			try
 			{
@@ -149,7 +152,9 @@ public partial class TestRenderViewModel : ViewModelBase
 					Avalonia.Threading.Dispatcher.UIThread.Post(() => EnqueueLog($"查询版本失败: {ex.Message}"));
 				}
 			}
-		});
+		}).FireAndForget(
+			source: nameof(TestRenderViewModel),
+			message: "测试渲染页后台查询 Blender 版本失败。");
 	}
 
 	[RelayCommand]

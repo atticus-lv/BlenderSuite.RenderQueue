@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Blender;
@@ -168,7 +169,9 @@ public partial class SettingsViewModel : ViewModelBase
     public void StartInitialization()
     {
         // 开始初始化检测
-        _ = Task.Run(async () => await InitializeAsync());
+        Task.Run(InitializeAsync).FireAndForget(
+            source: nameof(SettingsViewModel),
+            message: "设置初始化后台任务失败。");
     }
 
     private async Task InitializeAsync()
@@ -240,7 +243,9 @@ public partial class SettingsViewModel : ViewModelBase
         }
 
         // 异步获取Blender版本信息
-        _ = LoadBlenderInfoAsync(blender, ct, requestVersion);
+        LoadBlenderInfoAsync(blender, ct, requestVersion).FireAndForget(
+            source: nameof(SettingsViewModel),
+            message: "设置页后台加载 Blender 信息失败。");
     }
 
 
@@ -384,7 +389,9 @@ public partial class SettingsViewModel : ViewModelBase
                              select BlenderExecutable.CreateDefault(blenderPath))
                     {
                         BlenderExecutables.Add(blender);
-                        _ = Task.Run(async () => await ValidateBlenderAsync(blender));
+                        Task.Run(() => ValidateBlenderAsync(blender)).FireAndForget(
+                            source: nameof(SettingsViewModel),
+                            message: "自动检测 Blender 后台验证任务失败。");
                     }
 
                     // AutoSelect is automatically selected only if autoSelect is true and there is currently no Blender selected
@@ -458,7 +465,9 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
-            _ = Task.Run(async () => await SaveSettingsToFileAsync());
+            Task.Run(SaveSettingsToFileAsync).FireAndForget(
+                source: nameof(SettingsViewModel),
+                message: "重启前后台保存设置任务失败。");
             var success = FileSystemHelper.RestartApplication();
             Console.WriteLine(success
                 ? "[SettingsViewModel] ✅ Application restart initiated"

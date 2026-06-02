@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Services.Business.Monitoring;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -33,7 +34,9 @@ public partial class HardwareChartViewModel : ViewModelBase
 
     public HardwareChartViewModel()
     {
-        _ = InitializeAsync();
+        InitializeAsync().FireAndForget(
+            source: nameof(HardwareChartViewModel),
+            message: "硬件监控初始化后台任务失败。");
     }
 
     private async Task InitializeAsync()
@@ -47,7 +50,9 @@ public partial class HardwareChartViewModel : ViewModelBase
             _isInitialized = true;
             Dispatcher.UIThread.Post(() => IsLoading = false, DispatcherPriority.Background);
 
-            _ = Task.Run(() => ReadDataLoopAsync(_readLoopCts?.Token ?? CancellationToken.None));
+            Task.Run(() => ReadDataLoopAsync(_readLoopCts?.Token ?? CancellationToken.None)).FireAndForget(
+                source: nameof(HardwareChartViewModel),
+                message: "硬件监控读取循环后台任务失败。");
         }
         catch (Exception ex)
         {

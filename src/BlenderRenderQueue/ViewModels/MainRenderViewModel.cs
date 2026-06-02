@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Helpers;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Application.Logging;
@@ -98,6 +99,11 @@ public partial class MainRenderViewModel : ViewModelBase
 
         // 异步加载保存的数据
         InitialLoadTask = Task.Run(LoadSavedDataAsync);
+        InitialLoadTask.FireAndForget(
+            _logService,
+            nameof(MainRenderViewModel),
+            RenderLogScope.Recovery,
+            "启动时后台加载持久化数据失败。");
     }
 
     private void ValidateSelectedBlender()
@@ -143,7 +149,11 @@ public partial class MainRenderViewModel : ViewModelBase
         }
 
         // 异步获取Blender版本信息
-        _ = LoadBlenderInfoAsync(selectedBlender, ct, requestVersion);
+        LoadBlenderInfoAsync(selectedBlender, ct, requestVersion).FireAndForget(
+            _logService,
+            nameof(MainRenderViewModel),
+            RenderLogScope.System,
+            "后台加载 Blender 信息失败。");
     }
 
 

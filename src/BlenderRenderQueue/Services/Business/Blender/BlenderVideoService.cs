@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
+using BlenderRenderQueue.Extensions;
 using BlenderRenderQueue.Models;
 using BlenderRenderQueue.Services.Business.Blender.BlenderProcess;
 using BlenderRenderQueue.Services.Business.Blender.ProcessOutputParser;
@@ -202,6 +203,9 @@ public class BlenderVideoService : IBlenderVideoService
                         UpdateProgress(progress, "时间基础进度");
                     }
                 }, cancellationToken);
+                progressTask.FireAndForget(
+                    source: nameof(BlenderVideoService),
+                    message: "视频生成进度后台任务失败。");
                 
                 // 订阅Blender进程的输出事件
                 _blenderProcess.OnOutputReceived += (line) =>
