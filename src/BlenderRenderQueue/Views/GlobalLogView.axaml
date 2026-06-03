@@ -11,6 +11,19 @@
              x:DataType="vm:GlobalLogViewModel">
 
     <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10" Margin="10">
+        <Grid.Styles>
+            <Style Selector="TextBox.GlobalLogSearchBox">
+                <Setter Property="Width" Value="330" />
+                <Setter Property="MinWidth" Value="260" />
+                <Setter Property="Margin" Value="0 0 8 8" />
+            </Style>
+            <Style Selector="ComboBox.GlobalLogFilterBox">
+                <Setter Property="MinWidth" Value="154" />
+                <Setter Property="MaxWidth" Value="240" />
+                <Setter Property="Margin" Value="0 0 8 8" />
+            </Style>
+        </Grid.Styles>
+
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
             <TextBlock Text="{i18n:Localize GlobalLog_Title}"
                        FontSize="24"
@@ -35,63 +48,62 @@
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1"
-              ColumnDefinitions="2*,*,*,*,*,*"
-              ColumnSpacing="8">
+        <WrapPanel Grid.Row="1"
+                   Orientation="Horizontal">
             <TextBox PlaceholderText="{i18n:Localize GlobalLog_Search}"
                      Text="{Binding SearchText}"
-                     MinWidth="260" />
-            <ComboBox Grid.Column="1"
-                      ItemsSource="{Binding AudienceOptions}"
+                     Classes="GlobalLogSearchBox" />
+            <ComboBox ItemsSource="{Binding AudienceOptions}"
                       SelectedItem="{Binding SelectedAudience}"
-                      MinWidth="150">
+                      Width="156"
+                      Classes="GlobalLogFilterBox">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="x:String">
                         <TextBlock Text="{Binding ., Converter={StaticResource LocalizeConverter}}" />
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-            <ComboBox Grid.Column="2"
-                      ItemsSource="{Binding LevelOptions}"
+            <ComboBox ItemsSource="{Binding LevelOptions}"
                       SelectedItem="{Binding SelectedLevel}"
-                      MinWidth="170">
+                      Width="196"
+                      Classes="GlobalLogFilterBox">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="x:String">
                         <TextBlock Text="{Binding ., Converter={StaticResource LocalizeConverter}}" />
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-            <ComboBox Grid.Column="3"
-                      ItemsSource="{Binding ScopeOptions}"
+            <ComboBox ItemsSource="{Binding ScopeOptions}"
                       SelectedItem="{Binding SelectedScope}"
-                      MinWidth="150">
+                      Width="156"
+                      Classes="GlobalLogFilterBox">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="x:String">
                         <TextBlock Text="{Binding ., Converter={StaticResource LocalizeConverter}}" />
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-            <ComboBox Grid.Column="4"
-                      ItemsSource="{Binding SessionOptions}"
+            <ComboBox ItemsSource="{Binding SessionOptions}"
                       SelectedItem="{Binding SelectedSession}"
-                      MinWidth="150">
+                      Width="156"
+                      Classes="GlobalLogFilterBox">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="x:String">
                         <TextBlock Text="{Binding ., Converter={StaticResource LocalizeConverter}}" />
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-            <ComboBox Grid.Column="5"
-                      ItemsSource="{Binding TaskOptions}"
+            <ComboBox ItemsSource="{Binding TaskOptions}"
                       SelectedItem="{Binding SelectedTask}"
-                      MinWidth="180">
+                      Width="220"
+                      Classes="GlobalLogFilterBox">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="vm:GlobalLogViewModel+TaskFilterOption">
                         <TextBlock Text="{Binding DisplayLabel}" />
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
-        </Grid>
+        </WrapPanel>
 
         <TextBlock Grid.Row="2"
                    Text="{Binding FilterSummaryText}"
@@ -149,6 +161,15 @@
                             <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
                             <Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}" />
                         </Style>
+                        <Style Selector="Border.LogEntryTag">
+                            <Setter Property="CornerRadius" Value="7" />
+                            <Setter Property="Padding" Value="7,2" />
+                            <Setter Property="VerticalAlignment" Value="Top" />
+                        </Style>
+                        <Style Selector="TextBlock.LogEntryTagText">
+                            <Setter Property="FontSize" Value="11" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                        </Style>
                     </ListBox.Styles>
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="logVm:GlobalLogEntryViewModel">
@@ -167,35 +188,40 @@
                                                          Opacity="0.82" />
 
                                     <StackPanel Grid.Column="1" Spacing="5">
-                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                            <Border CornerRadius="7" Padding="6,2" Background="#283B5E">
-                                                <TextBlock Text="{Binding ScopeText}" FontSize="10" />
-                                            </Border>
-                                            <Border CornerRadius="7" Padding="6,2" Background="#3B3224">
-                                                <TextBlock Text="{Binding LevelText}" FontSize="10" />
-                                            </Border>
-                                            <Border CornerRadius="7"
-                                                    Padding="6,2"
-                                                    Background="#3A2934"
-                                                    IsVisible="{Binding ShowAudienceBadge}">
-                                                <TextBlock Text="{Binding AudienceText}" FontSize="10" />
-                                            </Border>
-                                            <Border CornerRadius="7"
-                                                    Padding="6,2"
-                                                    Background="#29313A"
-                                                    IsVisible="{Binding ShowSessionBadge}">
-                                                <TextBlock Text="{Binding SessionText}" FontSize="10" />
-                                            </Border>
-                                            <SelectableTextBlock Text="{Binding TaskText}"
-                                                                 IsVisible="{Binding HasTask}"
-                                                                 Opacity="0.62"
-                                                                 FontSize="12"
-                                                                 VerticalAlignment="Center" />
-                                        </StackPanel>
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                            <TextBlock Text="{Binding Message}"
+                                                       TextWrapping="Wrap"
+                                                       FontSize="13"
+                                                       VerticalAlignment="Top" />
 
-                                        <TextBlock Text="{Binding Message}"
-                                                   TextWrapping="Wrap"
-                                                   FontSize="12.5" />
+                                            <StackPanel Grid.Column="1"
+                                                        Orientation="Horizontal"
+                                                        Spacing="6"
+                                                        VerticalAlignment="Top"
+                                                        HorizontalAlignment="Right">
+                                                <SelectableTextBlock Text="{Binding TaskText}"
+                                                                     IsVisible="{Binding HasTask}"
+                                                                     Opacity="0.62"
+                                                                     FontSize="12"
+                                                                     VerticalAlignment="Center" />
+                                                <Border Background="#283B5E" Classes="LogEntryTag">
+                                                    <TextBlock Text="{Binding ScopeText}" Classes="LogEntryTagText" />
+                                                </Border>
+                                                <Border Background="#3B3224" Classes="LogEntryTag">
+                                                    <TextBlock Text="{Binding LevelText}" Classes="LogEntryTagText" />
+                                                </Border>
+                                                <Border Background="#3A2934"
+                                                        Classes="LogEntryTag"
+                                                        IsVisible="{Binding ShowAudienceBadge}">
+                                                    <TextBlock Text="{Binding AudienceText}" Classes="LogEntryTagText" />
+                                                </Border>
+                                                <Border Background="#29313A"
+                                                        Classes="LogEntryTag"
+                                                        IsVisible="{Binding ShowSessionBadge}">
+                                                    <TextBlock Text="{Binding SessionText}" Classes="LogEntryTagText" />
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
 
                                         <Expander Header="{Binding DetailsHeader}"
                                                   IsVisible="{Binding HasDetails}">
