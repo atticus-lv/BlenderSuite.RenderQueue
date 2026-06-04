@@ -6,7 +6,7 @@ import styles from './HomePage.module.css'
 
 const MOCKUP_WIDTH = 1280
 const MOCKUP_HEIGHT = 960
-const WASM_PREVIEW_SRC = `${import.meta.env.BASE_URL}wasm-preview/index.html?v=20260604-wasm-preview-7`
+const WASM_PREVIEW_SRC = `${import.meta.env.BASE_URL}wasm-preview/index.html?v=20260605-wasm-preview-11`
 const BRAND_LOGO_SRC = `${import.meta.env.BASE_URL}branding/logo.png`
 const CPU_VALUES = [28, 34, 31, 33, 58, 35, 39, 34, 36, 35, 42, 37, 45, 41]
 const GPU_VALUES = [45, 38, 42, 40, 35, 47, 29, 43, 38, 46, 41, 49, 44, 48]
@@ -14,13 +14,13 @@ const GPU_VALUES = [45, 38, 42, 40, 35, 47, 29, 43, 38, 46, 41, 49, 44, 48]
 const advantageCards = [
   {
     eyebrow: 'AOT Native',
-    title: 'AOT 原生桌面应用',
+    title: '高性能',
     description:
-      'AOT 编译，原生桌面体验。高性能、低占用、启动快，安装包不到 30 MB。',
+      '基于 .NET AOT 构建，提供原生桌面运行性能。启动快速、常驻占用低，安装包体积控制在 30 MB 以内。',
   },
   {
     eyebrow: 'Blender Extension',
-    title: 'Blender 扩展提交',
+    title: 'Blender 插件集成',
     description:
       '在 Blender 中读取场景、帧范围、输出路径和渲染配置，直接提交到桌面端队列。',
   },
@@ -690,7 +690,7 @@ export function HomePage() {
           </p>
           <div className={styles.heroActions}>
             <a className={styles.primaryCta} href={siteConfig.primaryCta.href}>
-              下载 / 获取试用
+              {siteConfig.primaryCta.label}
             </a>
             <a className={styles.secondaryCta} href="#workflow">
               查看工作流

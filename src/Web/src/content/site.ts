@@ -12,7 +12,7 @@ export const siteConfig = {
     '一个面向 Blender 工作流的队列渲染工具，专注于排队渲染、进度可见和结果整理。',
   version: '0.5.8.3',
   primaryCta: {
-    label: '下载 / 获取试用',
+    label: '下载',
     href: '#download',
   },
   secondaryCta: {

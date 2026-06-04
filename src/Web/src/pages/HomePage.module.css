@@ -152,7 +152,8 @@
   min-width: 0;
   height: var(--mockup-height, 960px);
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 0;
+  background: transparent;
 }
 
 .appWindow {
@@ -179,13 +180,11 @@
   width: 1280px;
   height: 960px;
   border: 0;
-  border-radius: 8px;
-  background: #05080d;
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.32);
-  color-scheme: dark;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   opacity: 0;
-  transform: scale(var(--mockup-scale, 1));
-  transform-origin: top left;
+  zoom: var(--mockup-scale, 1);
   transition: opacity 0.24s ease;
 }
 
