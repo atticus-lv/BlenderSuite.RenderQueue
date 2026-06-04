@@ -98,6 +98,15 @@ public sealed class PreviewRenderQueueViewModel : RenderQueueViewModel
         queueService.LoadDemoState();
         SelectedTask = queueService.RenderTasks.Count > 0 ? queueService.RenderTasks[0] : null;
     }
+
+    protected override Task<string> SelectBlendFileAsync()
+        => Task.FromResult(CreatePreviewBlendPath());
+
+    protected override Task<IReadOnlyList<string>> SelectMultipleBlendFilesAsync()
+        => Task.FromResult<IReadOnlyList<string>>([CreatePreviewBlendPath()]);
+
+    private static string CreatePreviewBlendPath()
+        => $"/Users/atticus/Desktop/RenderQueue/Studio_Shot_{DateTime.Now:HHmmss}.blend";
 }
 
 internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationService
@@ -226,7 +235,7 @@ internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationSe
             PostRenderBehavior = PostRenderBehavior,
             CanStartQueue = _queueState is QueueExecutionState.Idle or QueueExecutionState.Completed &&
                             enabledTasks.Length > 0,
-            CanStopQueue = _queueState is QueueExecutionState.Running or QueueExecutionState.Paused,
+            CanStopQueue = _queueState == QueueExecutionState.Running,
             CanPauseQueue = _queueState == QueueExecutionState.Running && CurrentRenderingTask != null,
             CanResumeQueue = _queueState == QueueExecutionState.Paused && CurrentRenderingTask != null,
             CanClearTasks = _queueState is QueueExecutionState.Idle or QueueExecutionState.Completed,
@@ -453,6 +462,13 @@ internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationSe
             return;
         }
 
+        if (!taskToRemove.IsPendingDeletion)
+        {
+            ClearPendingDeletionStates();
+            taskToRemove.IsPendingDeletion = true;
+            return;
+        }
+
         var index = RenderTasks.IndexOf(taskToRemove);
         if (index < 0)
         {
@@ -469,6 +485,14 @@ internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationSe
         RenderTasks.RemoveAt(index);
         setSelectedTask(RenderTasks.ElementAtOrDefault(Math.Min(index, RenderTasks.Count - 1)));
         PublishSnapshot();
+    }
+
+    private void ClearPendingDeletionStates()
+    {
+        foreach (var task in RenderTasks)
+        {
+            task.IsPendingDeletion = false;
+        }
     }
 
     public void RemoveAllTasks()

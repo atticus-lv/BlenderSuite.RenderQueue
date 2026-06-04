@@ -238,13 +238,13 @@ public partial class RenderQueueViewModel : ViewModelBase
     [RelayCommand]
     public void AddDroppedFiles(IEnumerable<string> filePaths) => _queueService.AddDroppedFiles(filePaths);
 
-    private Task<string> SelectBlendFileAsync()
+    protected virtual Task<string> SelectBlendFileAsync()
     {
         var fileTypes = CreateBlendFileTypes();
         return this.SelectFile("选择 Blend 文件", fileTypes);
     }
 
-    private async Task<IReadOnlyList<string>> SelectMultipleBlendFilesAsync()
+    protected virtual async Task<IReadOnlyList<string>> SelectMultipleBlendFilesAsync()
     {
         var fileTypes = CreateBlendFileTypes();
         return await this.SelectFiles("选择多个 Blend 文件", fileTypes);
