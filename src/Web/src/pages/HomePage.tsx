@@ -6,12 +6,20 @@ import styles from './HomePage.module.css'
 
 const MOCKUP_WIDTH = 1280
 const MOCKUP_HEIGHT = 960
-const WASM_PREVIEW_SRC = `${import.meta.env.BASE_URL}wasm-preview/index.html?v=20260605-wasm-preview-11`
+const WASM_PREVIEW_SRC = `${import.meta.env.BASE_URL}wasm-preview/index.html?v=20260605-wasm-preview-14`
 const BRAND_LOGO_SRC = `${import.meta.env.BASE_URL}branding/logo.png`
 const CPU_VALUES = [28, 34, 31, 33, 58, 35, 39, 34, 36, 35, 42, 37, 45, 41]
 const GPU_VALUES = [45, 38, 42, 40, 35, 47, 29, 43, 38, 46, 41, 49, 44, 48]
+const CARD_EASE = [0.16, 1, 0.3, 1] as const
+const CARD_VIEWPORT = { once: false, amount: 0.24 } as const
 
 const advantageCards = [
+  {
+    eyebrow: 'Open Source',
+    title: '开源',
+    description:
+      '项目以 AGPL-3.0 协议开源发布，源码、构建流程和发布记录可在 GitHub 查看。',
+  },
   {
     eyebrow: 'AOT Native',
     title: '高性能',
@@ -19,16 +27,10 @@ const advantageCards = [
       '基于 .NET AOT 构建，提供原生桌面运行性能。启动快速、常驻占用低，安装包体积控制在 30 MB 以内。',
   },
   {
-    eyebrow: 'Blender Extension',
-    title: 'Blender 插件集成',
+    eyebrow: 'Ready to Use',
+    title: '开箱即用',
     description:
-      '在 Blender 中读取场景、帧范围、输出路径和渲染配置，直接提交到桌面端队列。',
-  },
-  {
-    eyebrow: 'Queue Control',
-    title: '队列控制',
-    description:
-      '支持断点继续渲染、暂停、终止、插队和拖拽排序，适合长批次任务调度。',
+      '自动搜寻本机 Blender 并安装扩展插件，在 Blender 内一键提交到桌面端渲染队列。',
   },
 ]
 
@@ -79,6 +81,25 @@ const coreCapabilities = [
     description: '桌面端覆盖 Windows 与 macOS，按本地渲染环境组织配置。',
   },
 ]
+
+function getCardMotionProps(shouldReduceMotion: boolean | null, index: number) {
+  if (shouldReduceMotion) {
+    return {
+      initial: false as const,
+    }
+  }
+
+  return {
+    initial: { opacity: 0, y: 28, scale: 0.985 },
+    whileInView: { opacity: 1, y: 0, scale: 1 },
+    viewport: CARD_VIEWPORT,
+    transition: {
+      duration: 0.52,
+      delay: Math.min(index * 0.07, 0.24),
+      ease: CARD_EASE,
+    },
+  }
+}
 
 type QueueItem = {
   id: string
@@ -631,12 +652,18 @@ function HeroPreview() {
 }
 
 function DownloadSection() {
+  const platformIconPath = {
+    windows:
+      'M3 5.8L10.8 4.7V11.8H3V5.8ZM12 4.5L21 3.2V11.8H12V4.5ZM3 13H10.8V20.1L3 19V13ZM12 13H21V21.5L12 20.2V13Z',
+    macos:
+      'M17.2 12.5C17.18 9.9 19.34 8.65 19.44 8.59C18.21 6.81 16.31 6.56 15.66 6.54C14.08 6.38 12.55 7.49 11.75 7.49C10.93 7.49 9.7 6.56 8.36 6.59C6.64 6.62 5.04 7.62 4.16 9.17C2.34 12.29 3.69 16.89 5.44 19.41C6.31 20.65 7.33 22.04 8.66 21.99C9.95 21.94 10.43 21.16 12 21.16C13.55 21.16 14 21.99 15.35 21.96C16.74 21.94 17.62 20.71 18.46 19.45C19.47 18.03 19.88 16.64 19.9 16.56C19.87 16.55 17.23 15.54 17.2 12.5ZM14.63 4.86C15.33 4 15.81 2.83 15.68 1.65C14.66 1.69 13.39 2.35 12.66 3.19C12.01 3.94 11.43 5.16 11.58 6.29C12.73 6.38 13.9 5.71 14.63 4.86Z',
+  }
+
   return (
     <section id="download" className={styles.downloadSection} aria-labelledby="download-title">
       <div className={styles.downloadIntro}>
-        <span>下载</span>
         <h2 id="download-title">当前版本 {siteConfig.version}</h2>
-        <p>安装包和历史版本统一发布在 GitHub Releases。Windows 为当前主线，macOS 提供可用预览。</p>
+        <p>Windows 与 macOS 版本均可用，安装包和历史版本统一发布在 GitHub Releases。</p>
         <div className={styles.downloadActions}>
           <a href={siteConfig.releaseUrl} target="_blank" rel="noreferrer">
             GitHub Releases
@@ -652,7 +679,12 @@ function DownloadSection() {
           {downloadPlatforms.map((platform) => (
             <article key={platform.id} id={platform.href.slice(1)} className={styles.platformCard}>
               <span>{platform.status}</span>
-              <h3>{platform.label}</h3>
+              <h3>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d={platformIconPath[platform.icon]} />
+                </svg>
+                {platform.label}
+              </h3>
               {platform.note ? <p>{platform.note}</p> : null}
             </article>
           ))}
@@ -709,54 +741,55 @@ export function HomePage() {
 
       <section className={styles.storySection} aria-labelledby="positioning-title">
         <div className={styles.sectionHeader}>
-          <span>核心优势</span>
-          <h2 id="positioning-title">Blender 渲染任务管理</h2>
+          <h2 id="positioning-title">为什么要用这个？</h2>
           <p>
             适用于连续渲染、批量输出和无人值守任务。桌面端负责队列、监控、输出和完成后动作。
           </p>
         </div>
 
         <div className={styles.valueGrid}>
-          {advantageCards.map((item) => (
-            <article key={item.eyebrow} className={styles.valueCard}>
+          {advantageCards.map((item, index) => (
+            <motion.article
+              key={item.eyebrow}
+              className={styles.valueCard}
+              {...getCardMotionProps(shouldReduceMotion, index)}
+            >
               <span>{item.eyebrow}</span>
               <h3>{item.title}</h3>
               <p>{item.description}</p>
-            </article>
+            </motion.article>
           ))}
         </div>
       </section>
 
       <section id="workflow" className={styles.workflowSection} aria-labelledby="workflow-title">
         <div className={styles.sectionHeader}>
-          <span>工作流</span>
           <h2 id="workflow-title">提交、排队、监控、输出</h2>
         </div>
 
         <ol className={styles.workflowList}>
           {workflowSteps.map((step, index) => (
-            <li key={step.title}>
+            <motion.li key={step.title} {...getCardMotionProps(shouldReduceMotion, index)}>
               <span>{String(index + 1).padStart(2, '0')}</span>
               <h3>{step.title}</h3>
               <p>{step.body}</p>
-            </li>
+            </motion.li>
           ))}
         </ol>
       </section>
 
       <section id="features" className={styles.featureSection} aria-labelledby="features-title">
         <div className={styles.sectionHeader}>
-          <span>功能</span>
           <h2 id="features-title">核心功能</h2>
         </div>
 
         <div className={styles.featureGrid}>
-          {coreCapabilities.map((feature) => (
-            <article key={feature.title}>
+          {coreCapabilities.map((feature, index) => (
+            <motion.article key={feature.title} {...getCardMotionProps(shouldReduceMotion, index)}>
               <span>{feature.eyebrow}</span>
               <h3>{feature.title}</h3>
               <p>{feature.description}</p>
-            </article>
+            </motion.article>
           ))}
         </div>
       </section>

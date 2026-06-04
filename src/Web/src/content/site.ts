@@ -151,16 +151,18 @@ export const downloadPlatforms: DownloadPlatform[] = [
   {
     id: 'windows',
     label: 'Windows',
-    status: '当前主线',
+    icon: 'windows',
+    status: '可用版本',
     href: '#windows-download',
-    note: '推荐首选。当前发布流程与安装包最完整。',
+    note: '提供 Windows 安装包，可直接用于本地 Blender 渲染队列工作流。',
   },
   {
     id: 'macos',
     label: 'macOS',
-    status: '可用预览',
+    icon: 'macos',
+    status: '可用版本',
     href: '#macos-download',
-    note: '支持打包与分发，签名和公证流程仍在持续完善。',
+    note: '提供 macOS 构建，适用于本地 Blender 渲染任务管理。',
   },
 ]
 

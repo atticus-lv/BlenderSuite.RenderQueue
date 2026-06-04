@@ -17,6 +17,7 @@ export type WorkflowStep = {
 export type DownloadPlatform = {
   id: string
   label: string
+  icon: 'windows' | 'macos'
   status: string
   href: string
   note?: string
