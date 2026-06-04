@@ -19,6 +19,7 @@
         <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(DefineConstants);LINUX</DefineConstants>
         <Copyright>Atticus 2025</Copyright>
         <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+        <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
         <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
         <PackageIcon>Assets\logo.png</PackageIcon>
     </PropertyGroup>

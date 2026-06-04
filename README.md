@@ -161,7 +161,13 @@ dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r os
 
 ## 许可证
 
-本项目采用自定义许可协议，详见：
+本项目采用双授权模式：
 
-- [中文许可协议](install/license_zh.txt)
-- [English License Agreement](install/license_en.txt)
+- 公共版本采用 [GNU Affero General Public License v3.0 only](LICENSE)（`AGPL-3.0-only`）
+- 闭源分发、专有产品集成、OEM、SaaS/托管服务或其他不兼容 AGPLv3 的商业用途，需要单独商业授权，详见 [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)
+- 提交贡献需同意 [CONTRIBUTOR_LICENSE_AGREEMENT.md](CONTRIBUTOR_LICENSE_AGREEMENT.md)
+
+安装包内的中英文许可说明：
+
+- [中文许可说明](Install/license_zh.txt)
+- [English License Notice](Install/license_en.txt)

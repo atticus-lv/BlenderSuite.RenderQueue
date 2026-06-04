@@ -1,65 +1,88 @@
-BlenderRenderQueue Software License Agreement
+Blender Render Queue Software License Notice
 
 Copyright (C) 2024 Atticus
 
-This Software License Agreement ("Agreement") is a legal agreement between you (either an individual or an entity) and the software author for the BlenderRenderQueue software ("Software"). By installing, copying, or otherwise using the Software, you agree to be bound by the terms of this Agreement. If you do not agree to the terms of this Agreement, do not install or use the Software.
+This software is distributed under a dual-license model:
 
-1. License Grant
-1.1 Subject to the terms and conditions of this Agreement, the author hereby grants you a non-exclusive, non-transferable license to use the Software.
-1.2 This license permits you to:
-   - Install and use the Software on your computer
-   - Make one backup copy of the Software
-   - Distribute the Software to other users, provided that you include a complete copy of this license agreement
+1. Public license: GNU Affero General Public License Version 3 only
+   (`AGPL-3.0-only`)
+2. Commercial license: a separate written commercial license granted by the
+   copyright holder
 
-2. Use Restrictions
-2.1 You may not:
-   - Reverse engineer, decompile, disassemble, or attempt to extract the source code of the Software
-   - Remove, alter, or obscure any copyright notices, trademarks, or other proprietary rights notices in the Software
-   - Use the Software for any illegal, harmful, threatening, defamatory, infringing, obscene, or otherwise objectionable purpose
-   - Modify, adapt, translate, or create derivative works of the Software
-   - Rent, lease, sell, sublicense, or otherwise transfer rights to the Software
-   - Circumvent any technical limitations or security measures in the Software
+If you have not obtained a separate commercial license, your use, copying,
+modification, distribution, redistribution, and network use of this software
+are governed by AGPLv3.
 
-3. Intellectual Property
-3.1 The Software and all related materials are protected by copyright laws and other intellectual property laws.
-3.2 All rights, title, and interest in the Software remain with the author.
-3.3 This Agreement does not grant you any rights to trademarks, service marks, trade names, or other proprietary rights of the author.
+The full AGPLv3 text is available in the LICENSE file at the root of this
+project.
 
-4. Disclaimer of Warranties
-4.1 The Software is provided "AS IS" without warranty of any kind, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, and non-infringement.
-4.2 The author does not warrant that the Software will meet your requirements or that the operation of the Software will be uninterrupted or error-free.
-4.3 You assume all risks associated with the use of the Software.
+1. Uses Allowed Under AGPLv3
 
-5. Limitation of Liability
-5.1 In no event shall the author or its licensors be liable for any direct, indirect, incidental, special, consequential, or punitive damages, including but not limited to loss of profits, data loss, business interruption, or other commercial damages, regardless of how such damages are caused and regardless of whether the author has been advised of the possibility of such damages.
-5.2 Even if the author has been advised of the possibility of damages, the author's total liability to you shall not exceed the amount you paid to obtain a license to the Software (if any).
+Subject to AGPLv3, you may:
 
-6. Privacy and Data
-6.1 The Software may collect and use certain information to provide and improve services.
-6.2 The author is committed to protecting your privacy and will handle your data in accordance with applicable privacy laws and regulations.
-6.3 For detailed information about data collection and use, please refer to the Software's privacy policy.
+- view, download, copy, and run the software;
+- use the software for personal projects, learning projects, or internal
+  commercial workflows;
+- modify the software;
+- distribute the original version, modified versions, repackaged versions, or
+  rebranded versions; and
+- distribute the software for free or for a fee, provided that you comply with
+  AGPLv3 source code, license notice, and downstream rights requirements.
 
-7. Updates and Support
-7.1 The author may release updated versions of the Software from time to time.
-7.2 The author does not promise to provide technical support or maintenance services.
-7.3 You are responsible for ensuring that the Software is compatible with your system.
+2. Source Code Requirements
 
-8. Termination
-8.1 Your license will automatically terminate without notice if you breach any terms of this Agreement.
-8.2 Upon termination, you must cease using the Software and destroy all copies.
-8.3 Provisions of this Agreement that by their nature should survive termination shall continue to be effective.
+If you distribute a modified version, repackaged version, rebranded version,
+derivative version, or binary version of this software, you must provide the
+complete corresponding source code as required by AGPLv3, and you must ensure
+that recipients can continue to use, copy, modify, and redistribute it under
+AGPLv3.
 
-9. Governing Law and Dispute Resolution
-9.1 This Agreement shall be governed by the laws of the People's Republic of China, without regard to conflict of law principles.
-9.2 Any disputes arising from this Agreement shall be resolved through friendly consultation. If consultation fails, the dispute shall be submitted to a people's court with jurisdiction.
+If you modify this software and make it available for users to interact with
+remotely through a computer network, you must also provide the corresponding
+source code to those users as required by Section 13 of AGPLv3.
 
-10. Miscellaneous
-10.1 If any provision of this Agreement is deemed invalid or unenforceable, the remaining provisions shall remain in effect.
-10.2 This Agreement constitutes the entire agreement between you and the author regarding the use of the Software.
-10.3 The author reserves the right to modify this Agreement at any time. The modified agreement will take effect upon Software updates.
+3. When a Commercial License Is Required
 
-By installing or using the Software, you acknowledge that you have read, understood, and agree to be bound by this Agreement.
+You must obtain a separate commercial license if you want to use this software
+without complying with AGPLv3. Examples include:
 
-For any questions, please contact: Atticus
+- closed-source distribution of this software or modified versions;
+- closed-source repackaging, rebranding, or release as your own product;
+- embedding, bundling, or integrating this software into a proprietary
+  commercial product;
+- offering this software as an OEM, reseller, managed service, SaaS, client
+  delivery, consulting service, or other third-party commercial service under
+  non-AGPL terms; or
+- removing or bypassing AGPLv3 requirements for source availability, license
+  propagation, or downstream user rights.
 
-Last updated: September 2025
+Commercial licenses are granted only by a separate written agreement with the
+copyright holder. This notice does not itself grant any additional commercial
+license.
+
+4. Trademarks and Branding
+
+Unless separately permitted in writing, this license does not grant rights to
+use Blender Render Queue, Atticus, or related marks as trademarks, service
+marks, product endorsements, or official certifications.
+
+5. Contributor License
+
+By submitting contributions to this project, you agree to the Contributor
+License Agreement in CONTRIBUTOR_LICENSE_AGREEMENT.md at the root of this
+project. That agreement allows the project to use your contributions under
+AGPLv3 and separate commercial licenses.
+
+6. Disclaimer
+
+To the maximum extent permitted by applicable law, this software is provided
+"as is", without warranty of any kind, express or implied, including but not
+limited to warranties of merchantability, fitness for a particular purpose, and
+non-infringement. You use the software at your own risk.
+
+7. Contact
+
+For commercial licensing or license questions, contact: Atticus
+
+Last updated: June 2026
+
