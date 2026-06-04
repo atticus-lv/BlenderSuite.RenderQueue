@@ -59,7 +59,10 @@ jobs:
           fi
 
       - name: Restore WebAssembly workload
-        run: dotnet workload restore src/BlenderRenderQueue.BrowserPreview/BlenderRenderQueue.BrowserPreview.csproj
+        run: |
+          dotnet workload install wasm-tools
+          dotnet workload restore src/BlenderRenderQueue.BrowserPreview/BlenderRenderQueue.BrowserPreview.csproj
+          dotnet workload list
 
       - name: Install web dependencies
         working-directory: src/Web
