@@ -41,7 +41,7 @@ function RoutedApp() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ScrollToTop />
       <RoutedApp />
     </BrowserRouter>

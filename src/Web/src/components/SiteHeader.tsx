@@ -4,6 +4,9 @@ import { navItems, siteConfig } from '../content/site'
 import { BrandMark } from './BrandMark'
 import styles from './SiteHeader.module.css'
 
+const basePath = import.meta.env.BASE_URL
+const anchorHref = (hash: string) => `${basePath}${hash}`.replace(/\/{2,}/g, '/')
+
 export function SiteHeader() {
   const shouldReduceMotion = useReducedMotion()
 
@@ -33,7 +36,7 @@ export function SiteHeader() {
               <a
                 key={item.label}
                 className={styles.navLink}
-                href={item.href.startsWith('#') ? `/${item.href}` : item.href}
+                href={item.href.startsWith('#') ? anchorHref(item.href) : item.href}
               >
                 {item.label}
               </a>
