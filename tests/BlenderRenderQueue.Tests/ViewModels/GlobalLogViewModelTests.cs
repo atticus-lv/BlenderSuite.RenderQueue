@@ -45,6 +45,54 @@ public sealed class GlobalLogViewModelTests
     }
 
     [AvaloniaFact]
+    public void DefaultView_ShowsCurrentSessionOnly()
+    {
+        var logService = TestLogServiceFactory.Create();
+        logService.Write(new RenderLogEvent
+        {
+            SessionId = "older-session",
+            Level = RenderLogLevel.Info,
+            Scope = RenderLogScope.Queue,
+            Message = "Historical event"
+        });
+        logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "Current event");
+
+        using var sut = new GlobalLogViewModel(logService);
+
+        Assert.Equal("GlobalLog_Filter_CurrentSession", sut.SelectedSession);
+        Assert.Single(sut.Entries);
+        Assert.Equal("Current event", sut.Entries[0].Message);
+        Assert.True(sut.HasHistoricalEntries);
+    }
+
+    [AvaloniaFact]
+    public async Task LevelFilters_AreSeverityThresholds()
+    {
+        var logService = TestLogServiceFactory.Create();
+        logService.Write(RenderLogLevel.Info, RenderLogScope.System, "Info event");
+        logService.Write(RenderLogLevel.Warning, RenderLogScope.System, "Warning event");
+        logService.Write(RenderLogLevel.Error, RenderLogScope.System, "Error event");
+
+        using var sut = new GlobalLogViewModel(logService);
+
+        Assert.Equal(3, sut.Entries.Count);
+
+        sut.SelectedLevel = "GlobalLog_Filter_WarningsAndErrors";
+        await WaitForDebounceAsync();
+
+        Assert.Equal(2, sut.Entries.Count);
+        Assert.DoesNotContain(sut.Entries, entry => entry.Message == "Info event");
+        Assert.Contains(sut.Entries, entry => entry.Message == "Warning event");
+        Assert.Contains(sut.Entries, entry => entry.Message == "Error event");
+
+        sut.SelectedLevel = "GlobalLog_Filter_ErrorsOnly";
+        await WaitForDebounceAsync();
+
+        Assert.Single(sut.Entries);
+        Assert.Equal("Error event", sut.Entries[0].Message);
+    }
+
+    [AvaloniaFact]
     public async Task DefaultView_HidesDiagnosticEntries()
     {
         var logService = TestLogServiceFactory.Create();
@@ -125,7 +173,7 @@ public sealed class GlobalLogViewModelTests
     }
 
     [AvaloniaFact]
-    public void HistoricalSessionEntries_AreCollapsedInAllSessionsView()
+    public async Task HistoricalSessionEntries_AreCollapsedInAllSessionsView()
     {
         var logService = TestLogServiceFactory.Create();
         logService.Write(new RenderLogEvent
@@ -145,6 +193,8 @@ public sealed class GlobalLogViewModelTests
         logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "Current event");
 
         using var sut = new GlobalLogViewModel(logService);
+        sut.SelectedSession = "GlobalLog_Filter_AllSessions";
+        await WaitForDebounceAsync();
 
         Assert.Equal(2, sut.Entries.Count);
         var historyEntry = sut.Entries.Single(entry => entry.ShowSessionBadge);

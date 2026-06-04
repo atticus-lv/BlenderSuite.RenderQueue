@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia.Controls.Notifications;
 using Avalonia.Threading;
@@ -35,6 +36,9 @@ public partial class MainRenderViewModel : ViewModelBase
     private int _selectedNavigationIndex;
 
     [ObservableProperty]
+    private bool _isInfoPageVisible;
+
+    [ObservableProperty]
     private bool _isBlenderPathValid;
 
     [ObservableProperty]
@@ -64,6 +68,12 @@ public partial class MainRenderViewModel : ViewModelBase
 
     [ObservableProperty]
     private SettingsViewModel? _settingsViewModel;
+
+    public string AppVersion => typeof(MainRenderViewModel).Assembly.GetName().Version?.ToString() ?? "Unknown";
+
+    public string RuntimeDisplay => $"{RuntimeInformation.FrameworkDescription} / {RuntimeInformation.ProcessArchitecture}";
+
+    public string OperatingSystemDisplay => RuntimeInformation.OSDescription;
 
     // 内部状态
     private BlenderProcessService? _blenderProcessService;
@@ -347,13 +357,39 @@ public partial class MainRenderViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToSettings()
     {
-        // 在导航到设置页面时，同步队列状态（与开始队列按钮逻辑保持一致）
-        if (SettingsViewModel != null)
+        NavigateToNavigationIndex(2);
+    }
+
+    [RelayCommand]
+    private void ShowInfoPage()
+    {
+        IsInfoPageVisible = true;
+    }
+
+    public void NavigateToNavigationIndex(int navigationIndex)
+    {
+        IsInfoPageVisible = false;
+
+        var normalizedIndex = navigationIndex switch
         {
+            1 => 1,
+            2 => 2,
+            _ => 0
+        };
+
+        if (normalizedIndex == 2 && SettingsViewModel != null)
+        {
+            // 在导航到设置页面时，同步队列状态（与开始队列按钮逻辑保持一致）
             SettingsViewModel.UpdateQueueState(RenderQueue.QueueState);
         }
-        
 
+        if (SelectedNavigationIndex == normalizedIndex)
+        {
+            OnPropertyChanged(nameof(SelectedNavigationIndex));
+            return;
+        }
+
+        SelectedNavigationIndex = normalizedIndex;
     }
 
     private void ShowSettingsDialog()
@@ -719,13 +755,7 @@ public partial class MainRenderViewModel : ViewModelBase
 
     private void NavigateToRenderQueue()
     {
-        if (SelectedNavigationIndex == 0)
-        {
-            OnPropertyChanged(nameof(SelectedNavigationIndex));
-            return;
-        }
-
-        SelectedNavigationIndex = 0;
+        NavigateToNavigationIndex(0);
     }
 
     private void OnTaskCompleted(object? sender, TaskCompletedEventArgs e)

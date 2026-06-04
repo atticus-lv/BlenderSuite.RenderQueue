@@ -48,10 +48,10 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
         new[]
         {
             DefaultLevels,
-            AllLevels,
-            DebugOnly,
+            WarningsAndErrors,
             ErrorsOnly,
-            WarningsAndErrors
+            AllLevels,
+            DebugOnly
         });
     private ObservableCollection<string> _audienceOptions = new(
         new[]
@@ -63,15 +63,15 @@ public sealed class GlobalLogViewModel : ViewModelBase, IDisposable
     private ObservableCollection<string> _sessionOptions = new(
         new[]
         {
-            AllSessions,
             CurrentSession,
+            AllSessions,
             HistoryOnly
         });
     private ObservableCollection<TaskFilterOption> _taskOptions = new(new[] { TaskFilterOption.All });
     private string _selectedScope = AllScopes;
     private string _selectedLevel = DefaultLevels;
     private string _selectedAudience = UserLogs;
-    private string _selectedSession = AllSessions;
+    private string _selectedSession = CurrentSession;
     private TaskFilterOption _selectedTask = TaskFilterOption.All;
     private string _searchText = string.Empty;
     private bool _hasHistoricalEntries;

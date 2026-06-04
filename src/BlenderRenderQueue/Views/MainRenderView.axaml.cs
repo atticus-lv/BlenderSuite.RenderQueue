@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using BlenderRenderQueue.ViewModels;
 using SukiUI.Controls;
@@ -12,6 +13,7 @@ public partial class MainRenderView : UserControl
     private SukiSideMenuItem? _queueMenuItem;
     private SukiSideMenuItem? _logsMenuItem;
     private SukiSideMenuItem? _settingsMenuItem;
+    private SukiSideMenuItem? _infoMenuItem;
     private MainRenderViewModel? _viewModel;
 
     public MainRenderView()
@@ -28,6 +30,7 @@ public partial class MainRenderView : UserControl
         _queueMenuItem = this.FindControl<SukiSideMenuItem>("QueueMenuItem");
         _logsMenuItem = this.FindControl<SukiSideMenuItem>("LogsMenuItem");
         _settingsMenuItem = this.FindControl<SukiSideMenuItem>("SettingsMenuItem");
+        _infoMenuItem = this.FindControl<SukiSideMenuItem>("InfoMenuItem");
     }
 
     private void HookViewModel()
@@ -47,16 +50,38 @@ public partial class MainRenderView : UserControl
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainRenderViewModel.SelectedNavigationIndex))
+        if (e.PropertyName == nameof(MainRenderViewModel.SelectedNavigationIndex) ||
+            e.PropertyName == nameof(MainRenderViewModel.IsInfoPageVisible))
         {
             ApplySelectedNavigation();
         }
+    }
+
+    private void OnNavigationMenuItemTapped(object? sender, TappedEventArgs e)
+    {
+        if (_viewModel == null || sender is not Control control)
+        {
+            return;
+        }
+
+        if (!int.TryParse(control.Tag?.ToString(), out var navigationIndex))
+        {
+            return;
+        }
+
+        _viewModel.NavigateToNavigationIndex(navigationIndex);
     }
 
     private void ApplySelectedNavigation()
     {
         if (_sideMenu == null || _viewModel == null)
         {
+            return;
+        }
+
+        if (_viewModel.IsInfoPageVisible)
+        {
+            _sideMenu.SelectedItem = _infoMenuItem;
             return;
         }
 
