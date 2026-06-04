@@ -22,6 +22,7 @@ public partial class HardwareChartViewModel : ViewModelBase
     private CancellationTokenSource? _readLoopCts = new();
     private HardwareMonitorService.HardwareInfo? _pendingInfo;
     private bool _uiUpdateQueued;
+    private int _previewSampleIndex;
 
     [ObservableProperty]
     private IReadOnlyList<double> _cpuLoadValues = Array.Empty<double>();
@@ -43,6 +44,19 @@ public partial class HardwareChartViewModel : ViewModelBase
     {
         try
         {
+            if (OperatingSystem.IsBrowser())
+            {
+                SeedPreviewSamples();
+                _isReading = true;
+                _isInitialized = true;
+                Dispatcher.UIThread.Post(() => IsLoading = false, DispatcherPriority.Background);
+
+                ReadPreviewDataLoopAsync(_readLoopCts?.Token ?? CancellationToken.None).FireAndForget(
+                    source: nameof(HardwareChartViewModel),
+                    message: "浏览器预览硬件监控读取循环后台任务失败。");
+                return;
+            }
+
             await Task.Delay(2000);
             await Task.Run(() => _monitorService = new HardwareMonitorService());
 
@@ -58,6 +72,25 @@ public partial class HardwareChartViewModel : ViewModelBase
         {
             Dispatcher.UIThread.Post(() => IsLoading = false, DispatcherPriority.Background);
             System.Diagnostics.Debug.WriteLine($"硬件监控初始化错误: {ex.Message}");
+        }
+    }
+
+    private async Task ReadPreviewDataLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(280));
+
+            while (!cancellationToken.IsCancellationRequested &&
+                   await timer.WaitForNextTickAsync(cancellationToken) &&
+                   _isReading)
+            {
+                QueueUiUpdate(CreatePreviewHardwareInfo());
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore cancellation during shutdown.
         }
     }
 
@@ -150,6 +183,28 @@ public partial class HardwareChartViewModel : ViewModelBase
         {
             history.Dequeue();
         }
+    }
+
+    private void SeedPreviewSamples()
+    {
+        for (var i = 0; i < MaxDataPoints; i++)
+        {
+            _previewSampleIndex = i;
+            AppendSample(CreatePreviewHardwareInfo());
+        }
+    }
+
+    private HardwareMonitorService.HardwareInfo CreatePreviewHardwareInfo()
+    {
+        var sample = _previewSampleIndex++;
+        var cpuLoad = 58d + Math.Sin(sample * 0.34d) * 18d + Math.Sin(sample * 0.91d) * 5d;
+        var gpuLoad = 72d + Math.Sin(sample * 0.27d + 1.8d) * 12d + Math.Sin(sample * 0.63d) * 7d;
+
+        return new HardwareMonitorService.HardwareInfo
+        {
+            CpuLoad = (float)Math.Clamp(cpuLoad, 22d, 94d),
+            GpuLoad = (float)Math.Clamp(gpuLoad, 30d, 98d)
+        };
     }
 
     public void Dispose()

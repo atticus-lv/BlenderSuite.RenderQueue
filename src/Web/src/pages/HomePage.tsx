@@ -7,7 +7,7 @@ import styles from './HomePage.module.css'
 
 const MOCKUP_WIDTH = 1280
 const MOCKUP_HEIGHT = 960
-const WASM_PREVIEW_SRC = `${import.meta.env.BASE_URL}wasm-preview/index.html?v=20260604-wasm-preview-5`
+const WASM_PREVIEW_SRC = `${import.meta.env.BASE_URL}wasm-preview/index.html?v=20260604-wasm-preview-6`
 const CPU_VALUES = [28, 34, 31, 33, 58, 35, 39, 34, 36, 35, 42, 37, 45, 41]
 const GPU_VALUES = [45, 38, 42, 40, 35, 47, 29, 43, 38, 46, 41, 49, 44, 48]
 

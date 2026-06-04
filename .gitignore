@@ -471,3 +471,7 @@ $RECYCLE.BIN/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# Local generated artifacts
+output/product-design-audit/
+src/Web/.npm-cache/
