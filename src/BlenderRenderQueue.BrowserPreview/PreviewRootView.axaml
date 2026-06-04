@@ -1,0 +1,322 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:BlenderRenderQueue.Views;assembly=BlenderRenderQueue"
+             xmlns:preview="clr-namespace:BlenderRenderQueue.BrowserPreview"
+             xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             x:Class="BlenderRenderQueue.BrowserPreview.PreviewRootView"
+             x:DataType="preview:PreviewRootViewModel"
+             FontFamily="Inter, Arial"
+             Foreground="#EEF4FF">
+    <UserControl.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="Foreground" Value="#EEF4FF" />
+        </Style>
+        <Style Selector="SelectableTextBlock">
+            <Setter Property="Foreground" Value="#EEF4FF" />
+        </Style>
+        <Style Selector="TextBlock.secondary">
+            <Setter Property="Foreground" Value="#B9C7D9" />
+        </Style>
+        <Style Selector="Border.DemoPanel">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="#132a45" />
+            <Setter Property="BorderBrush" Value="#2a4a68" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Border.LogEntrySurface">
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12 9" />
+            <Setter Property="Background" Value="#102238" />
+            <Setter Property="BorderBrush" Value="#253f5b" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Border.LogTag">
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="Padding" Value="7 2" />
+            <Setter Property="Background" Value="#273e5f" />
+        </Style>
+        <Style Selector="TextBlock.LogTagText">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBlock.SectionTitle">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Background="#05080d">
+        <Viewbox Stretch="Uniform" Margin="24">
+            <Border Width="1214"
+                    Height="806"
+                    CornerRadius="8"
+                    BorderThickness="1"
+                    BorderBrush="#27435f"
+                    Background="#0b1828"
+                    ClipToBounds="True">
+                <Grid RowDefinitions="36,*">
+                    <Border Background="#0f2742"
+                            BorderBrush="#27435f"
+                            BorderThickness="0 0 0 1">
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="12 0">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Border Width="18"
+                                        Height="18"
+                                        CornerRadius="3"
+                                        Background="#052038"
+                                        BorderBrush="#1197e8"
+                                        BorderThickness="1">
+                                    <Image Source="avares://BlenderRenderQueue/Assets/logo.png"
+                                           Width="14"
+                                           Height="14" />
+                                </Border>
+                                <TextBlock Text="Blender Render Queue"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center"
+                                        Spacing="14">
+                                <material:MaterialIcon Kind="WindowMinimize"
+                                                       Width="16"
+                                                       Height="16"
+                                                       Foreground="#d8e6f8" />
+                                <material:MaterialIcon Kind="WindowMaximize"
+                                                       Width="15"
+                                                       Height="15"
+                                                       Foreground="#d8e6f8" />
+                                <material:MaterialIcon Kind="Close"
+                                                       Width="16"
+                                                       Height="16"
+                                                       Foreground="#d8e6f8" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <suki:SukiSideMenu x:Name="PreviewSideMenu"
+                                       Grid.Row="1"
+                                       IsSearchEnabled="False"
+                                       IsMenuExpanded="False">
+                        <suki:SukiSideMenu.Items>
+                            <suki:SukiSideMenuItem x:Name="QueueMenuItem"
+                                                   Header="Render Queue"
+                                                   Classes="Compact">
+                                <suki:SukiSideMenuItem.Icon>
+                                    <material:MaterialIcon Kind="ListStatus" Width="24" Height="24" />
+                                </suki:SukiSideMenuItem.Icon>
+                                <suki:SukiSideMenuItem.PageContent>
+                                    <views:RenderQueueView DataContext="{Binding RenderQueue}"
+                                                           Margin="0 4 0 0" />
+                                </suki:SukiSideMenuItem.PageContent>
+                            </suki:SukiSideMenuItem>
+
+                            <suki:SukiSideMenuItem Header="Logs"
+                                                   Classes="Compact">
+                                <suki:SukiSideMenuItem.Icon>
+                                    <material:MaterialIcon Kind="TextBoxSearch" Width="24" Height="24" />
+                                </suki:SukiSideMenuItem.Icon>
+                                <suki:SukiSideMenuItem.PageContent>
+                                    <suki:GlassCard Margin="8" Padding="14">
+                                        <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                <TextBlock Text="Global Logs"
+                                                           FontSize="24"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" />
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                                    <Button Width="34"
+                                                            Height="34"
+                                                            Padding="0"
+                                                            Classes="Basic Icon"
+                                                            ToolTip.Tip="Refresh">
+                                                        <material:MaterialIcon Kind="Refresh" Width="18" Height="18" />
+                                                    </Button>
+                                                    <Button Content="Clear History"
+                                                            Classes="Flat Rounded" />
+                                                    <Button Content="Clear All"
+                                                            Classes="Flat Rounded" />
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <WrapPanel Grid.Row="1" Orientation="Horizontal">
+                                                <TextBox Width="300"
+                                                         MinWidth="260"
+                                                         Margin="0 0 8 8"
+                                                         Text="render"
+                                                         PlaceholderText="Search logs" />
+                                                <ComboBox Width="150" Margin="0 0 8 8" SelectedIndex="0">
+                                                    <ComboBoxItem Content="All audience" />
+                                                    <ComboBoxItem Content="User" />
+                                                    <ComboBoxItem Content="System" />
+                                                </ComboBox>
+                                                <ComboBox Width="170" Margin="0 0 8 8" SelectedIndex="0">
+                                                    <ComboBoxItem Content="All levels" />
+                                                    <ComboBoxItem Content="Info" />
+                                                    <ComboBoxItem Content="Warning" />
+                                                    <ComboBoxItem Content="Error" />
+                                                </ComboBox>
+                                                <ComboBox Width="150" Margin="0 0 8 8" SelectedIndex="1">
+                                                    <ComboBoxItem Content="All scopes" />
+                                                    <ComboBoxItem Content="Queue" />
+                                                    <ComboBoxItem Content="Task" />
+                                                </ComboBox>
+                                                <ComboBox Width="210" Margin="0 0 8 8" SelectedIndex="1">
+                                                    <ComboBoxItem Content="All tasks" />
+                                                    <ComboBoxItem Content="Interior_Light.blend" />
+                                                    <ComboBoxItem Content="Logo_Reveal.blend" />
+                                                </ComboBox>
+                                            </WrapPanel>
+
+                                            <TextBlock Grid.Row="2"
+                                                       Classes="secondary"
+                                                       Text="Showing 5 entries from the current render session."
+                                                       FontSize="12"
+                                                       Margin="2 0 0 0" />
+
+                                            <ScrollViewer Grid.Row="3"
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          HorizontalScrollBarVisibility="Disabled">
+                                                <StackPanel Spacing="6">
+                                                    <Border Classes="LogEntrySurface">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                            <SelectableTextBlock Text="19:49:32"
+                                                                                 FontSize="12"
+                                                                                 FontWeight="SemiBold"
+                                                                                 Opacity="0.82"
+                                                                                 Margin="0 2 0 0" />
+                                                            <StackPanel Grid.Column="1" Spacing="5">
+                                                                <TextBlock Text="Started rendering Interior_Light.blend with Camera scene."
+                                                                           TextWrapping="Wrap"
+                                                                           FontSize="13" />
+                                                                <TextBlock Classes="secondary"
+                                                                           Text="Blender 4.3.2 | Cycles | frame range 1-180"
+                                                                           FontSize="11.5" />
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="2"
+                                                                        Orientation="Horizontal"
+                                                                        Spacing="6"
+                                                                        VerticalAlignment="Top">
+                                                                <Border Classes="LogTag">
+                                                                    <TextBlock Text="Queue" Classes="LogTagText" />
+                                                                </Border>
+                                                                <Border Classes="LogTag" Background="#2f4934">
+                                                                    <TextBlock Text="Info" Classes="LogTagText" />
+                                                                </Border>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                    <Border Classes="LogEntrySurface">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                            <SelectableTextBlock Text="19:50:06"
+                                                                                 FontSize="12"
+                                                                                 FontWeight="SemiBold"
+                                                                                 Opacity="0.82"
+                                                                                 Margin="0 2 0 0" />
+                                                            <StackPanel Grid.Column="1" Spacing="5">
+                                                                <TextBlock Text="Progress updated: 115 / 430 frames completed."
+                                                                           TextWrapping="Wrap"
+                                                                           FontSize="13" />
+                                                                <TextBlock Classes="secondary"
+                                                                           Text="Estimated remaining time: 00:12:40"
+                                                                           FontSize="11.5" />
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="2"
+                                                                        Orientation="Horizontal"
+                                                                        Spacing="6"
+                                                                        VerticalAlignment="Top">
+                                                                <TextBlock Text="Interior_Light.blend"
+                                                                           Classes="secondary"
+                                                                           FontSize="12"
+                                                                           VerticalAlignment="Center" />
+                                                                <Border Classes="LogTag">
+                                                                    <TextBlock Text="Task" Classes="LogTagText" />
+                                                                </Border>
+                                                                <Border Classes="LogTag" Background="#2f4934">
+                                                                    <TextBlock Text="Info" Classes="LogTagText" />
+                                                                </Border>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                    <Border Classes="LogEntrySurface">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                            <SelectableTextBlock Text="19:50:28"
+                                                                                 FontSize="12"
+                                                                                 FontWeight="SemiBold"
+                                                                                 Opacity="0.82"
+                                                                                 Margin="0 2 0 0" />
+                                                            <StackPanel Grid.Column="1" Spacing="5">
+                                                                <TextBlock Text="Output path resolved to /render/output/path/frame_####.png."
+                                                                           TextWrapping="Wrap"
+                                                                           FontSize="13" />
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="2"
+                                                                        Orientation="Horizontal"
+                                                                        Spacing="6"
+                                                                        VerticalAlignment="Top">
+                                                                <Border Classes="LogTag">
+                                                                    <TextBlock Text="Output" Classes="LogTagText" />
+                                                                </Border>
+                                                                <Border Classes="LogTag" Background="#3f3625">
+                                                                    <TextBlock Text="Debug" Classes="LogTagText" />
+                                                                </Border>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                    <Border Classes="LogEntrySurface">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                            <SelectableTextBlock Text="19:51:10"
+                                                                                 FontSize="12"
+                                                                                 FontWeight="SemiBold"
+                                                                                 Opacity="0.82"
+                                                                                 Margin="0 2 0 0" />
+                                                            <StackPanel Grid.Column="1" Spacing="5">
+                                                                <TextBlock Text="Logo_Reveal.blend is queued and waiting for the active task."
+                                                                           TextWrapping="Wrap"
+                                                                           FontSize="13" />
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="2"
+                                                                        Orientation="Horizontal"
+                                                                        Spacing="6"
+                                                                        VerticalAlignment="Top">
+                                                                <Border Classes="LogTag">
+                                                                    <TextBlock Text="Queue" Classes="LogTagText" />
+                                                                </Border>
+                                                                <Border Classes="LogTag" Background="#2f4934">
+                                                                    <TextBlock Text="Info" Classes="LogTagText" />
+                                                                </Border>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </Grid>
+                                    </suki:GlassCard>
+                                </suki:SukiSideMenuItem.PageContent>
+                            </suki:SukiSideMenuItem>
+
+                            <suki:SukiSideMenuItem Header="Settings"
+                                                   Classes="Compact">
+                                <suki:SukiSideMenuItem.Icon>
+                                    <material:MaterialIcon Kind="Settings" Width="24" Height="24" />
+                                </suki:SukiSideMenuItem.Icon>
+                                <suki:SukiSideMenuItem.PageContent>
+                                    <suki:GlassCard Margin="8">
+                                        <views:SettingsView DataContext="{Binding Settings}" />
+                                    </suki:GlassCard>
+                                </suki:SukiSideMenuItem.PageContent>
+                            </suki:SukiSideMenuItem>
+                        </suki:SukiSideMenu.Items>
+
+                        <suki:SukiSideMenu.HeaderContent>
+                        </suki:SukiSideMenu.HeaderContent>
+
+                        <suki:SukiSideMenu.FooterContent>
+                        </suki:SukiSideMenu.FooterContent>
+                    </suki:SukiSideMenu>
+                </Grid>
+            </Border>
+        </Viewbox>
+    </Grid>
+</UserControl>
