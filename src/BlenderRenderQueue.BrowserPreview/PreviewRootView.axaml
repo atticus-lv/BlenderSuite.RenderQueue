@@ -7,34 +7,34 @@
              x:Class="BlenderRenderQueue.BrowserPreview.PreviewRootView"
              x:DataType="preview:PreviewRootViewModel"
              FontFamily="Inter, Arial"
-             Foreground="#EEF4FF">
+             Foreground="{DynamicResource SukiText}">
     <UserControl.Styles>
         <Style Selector="TextBlock">
-            <Setter Property="Foreground" Value="#EEF4FF" />
+            <Setter Property="Foreground" Value="{DynamicResource SukiText}" />
         </Style>
         <Style Selector="SelectableTextBlock">
-            <Setter Property="Foreground" Value="#EEF4FF" />
+            <Setter Property="Foreground" Value="{DynamicResource SukiText}" />
         </Style>
         <Style Selector="TextBlock.secondary">
-            <Setter Property="Foreground" Value="#B9C7D9" />
+            <Setter Property="Foreground" Value="{DynamicResource SukiLowText}" />
         </Style>
         <Style Selector="Border.DemoPanel">
             <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Background" Value="#132a45" />
-            <Setter Property="BorderBrush" Value="#2a4a68" />
+            <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SukiBorderColor}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.LogEntrySurface">
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="12 9" />
-            <Setter Property="Background" Value="#102238" />
-            <Setter Property="BorderBrush" Value="#253f5b" />
+            <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SukiBorderColor}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.LogTag">
             <Setter Property="CornerRadius" Value="7" />
             <Setter Property="Padding" Value="7 2" />
-            <Setter Property="Background" Value="#273e5f" />
+            <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
         </Style>
         <Style Selector="TextBlock.LogTagText">
             <Setter Property="FontSize" Value="11" />
@@ -46,31 +46,25 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid Background="#05080d">
+    <suki:SukiMainHost BackgroundStyle="GradientDarker">
         <Viewbox Stretch="Uniform" Margin="8">
             <Border Width="1214"
                     Height="900"
                     CornerRadius="7"
                     BorderThickness="1"
-                    BorderBrush="#213c58"
-                    Background="#07111f"
+                    BorderBrush="{DynamicResource SukiBorderColor}"
+                    Background="{DynamicResource SukiBackgroundColor}"
                     ClipToBounds="True">
                 <Grid RowDefinitions="36,*">
-                    <Border Background="#0f2742"
-                            BorderBrush="#27435f"
+                    <Border Background="{DynamicResource SukiPrimaryColor10}"
+                            BorderBrush="{DynamicResource SukiBorderColor}"
                             BorderThickness="0 0 0 1">
                         <Grid ColumnDefinitions="Auto,*,Auto" Margin="12 0">
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                <Border Width="18"
-                                        Height="18"
-                                        CornerRadius="3"
-                                        Background="#052038"
-                                        BorderBrush="#1197e8"
-                                        BorderThickness="1">
-                                    <Image Source="avares://BlenderRenderQueue/Assets/logo.png"
-                                           Width="14"
-                                           Height="14" />
-                                </Border>
+                                <Image Source="avares://BlenderRenderQueue/Assets/logo.ico"
+                                       Width="15"
+                                       Height="15"
+                                       VerticalAlignment="Center" />
                                 <TextBlock Text="Blender Render Queue"
                                            FontSize="14"
                                            FontWeight="SemiBold"
@@ -83,15 +77,15 @@
                                 <material:MaterialIcon Kind="WindowMinimize"
                                                        Width="16"
                                                        Height="16"
-                                                       Foreground="#d8e6f8" />
+                                                       Foreground="{DynamicResource SukiText}" />
                                 <material:MaterialIcon Kind="WindowMaximize"
                                                        Width="15"
                                                        Height="15"
-                                                       Foreground="#d8e6f8" />
+                                                       Foreground="{DynamicResource SukiText}" />
                                 <material:MaterialIcon Kind="Close"
                                                        Width="16"
                                                        Height="16"
-                                                       Foreground="#d8e6f8" />
+                                                       Foreground="{DynamicResource SukiText}" />
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -201,7 +195,7 @@
                                                                 <Border Classes="LogTag">
                                                                     <TextBlock Text="Queue" Classes="LogTagText" />
                                                                 </Border>
-                                                                <Border Classes="LogTag" Background="#2f4934">
+                                                                <Border Classes="LogTag" Background="{DynamicResource SukiSuccessDarkColor}">
                                                                     <TextBlock Text="Info" Classes="LogTagText" />
                                                                 </Border>
                                                             </StackPanel>
@@ -233,7 +227,7 @@
                                                                 <Border Classes="LogTag">
                                                                     <TextBlock Text="Task" Classes="LogTagText" />
                                                                 </Border>
-                                                                <Border Classes="LogTag" Background="#2f4934">
+                                                                <Border Classes="LogTag" Background="{DynamicResource SukiSuccessDarkColor}">
                                                                     <TextBlock Text="Info" Classes="LogTagText" />
                                                                 </Border>
                                                             </StackPanel>
@@ -258,7 +252,7 @@
                                                                 <Border Classes="LogTag">
                                                                     <TextBlock Text="Output" Classes="LogTagText" />
                                                                 </Border>
-                                                                <Border Classes="LogTag" Background="#3f3625">
+                                                                <Border Classes="LogTag" Background="{DynamicResource SukiWarningDarkColor}">
                                                                     <TextBlock Text="Debug" Classes="LogTagText" />
                                                                 </Border>
                                                             </StackPanel>
@@ -283,7 +277,7 @@
                                                                 <Border Classes="LogTag">
                                                                     <TextBlock Text="Queue" Classes="LogTagText" />
                                                                 </Border>
-                                                                <Border Classes="LogTag" Background="#2f4934">
+                                                                <Border Classes="LogTag" Background="{DynamicResource SukiSuccessDarkColor}">
                                                                     <TextBlock Text="Info" Classes="LogTagText" />
                                                                 </Border>
                                                             </StackPanel>
@@ -318,5 +312,5 @@
                 </Grid>
             </Border>
         </Viewbox>
-    </Grid>
+    </suki:SukiMainHost>
 </UserControl>

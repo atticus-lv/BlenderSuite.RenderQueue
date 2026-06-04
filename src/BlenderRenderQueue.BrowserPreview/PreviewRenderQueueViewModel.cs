@@ -107,6 +107,8 @@ internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationSe
     private int _demoFrame = 115;
     private int _demoSample = 116;
     private int _demoTick;
+    private int _addedTaskIndex = 1;
+    private QueueExecutionState _queueState = QueueExecutionState.Idle;
 
     public PreviewQueueApplicationService()
     {
@@ -143,35 +145,21 @@ internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationSe
         RenderTasks.Add(logo);
 
         CurrentRenderingTask = interior;
-        Snapshot = new RenderQueueSnapshot
-        {
-            State = QueueExecutionState.Running,
-            CurrentTaskId = interior.Id,
-            ActiveTaskCount = 1,
-            CompletedTaskCount = 0,
-            FailedTaskCount = 0,
-            TotalFrames = 430,
-            CompletedFrameProgress = 115,
-            OverallProgress01 = 115d / 430d,
-            QueueStatusText = "Queue_Running",
-            RemainingTimeText = "Queue_RemainingTimeFormat:00:12:40",
-            AutoStartNext = AutoStartNext,
-            PostRenderBehavior = PostRenderBehavior,
-            CanStartQueue = true,
-            CanStopQueue = true,
-            CanPauseQueue = true,
-            CanResumeQueue = false,
-            CanClearTasks = true
-        };
-
-        SnapshotChanged?.Invoke(this, Snapshot);
+        _queueState = QueueExecutionState.Running;
+        PublishSnapshot();
         _demoTimer.Start();
     }
 
     private void OnDemoTimerTick(object? sender, EventArgs e)
     {
+        if (_queueState != QueueExecutionState.Running)
+        {
+            return;
+        }
+
         if (CurrentRenderingTask is not { } task)
         {
+            StartNextEnabledTask(resetProgress: false);
             return;
         }
 
@@ -200,8 +188,7 @@ internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationSe
         task.SavedPath = task.RenderedImagePath;
         task.HasRenderedImage = true;
 
-        Snapshot = BuildSnapshot();
-        SnapshotChanged?.Invoke(this, Snapshot);
+        PublishSnapshot();
     }
 
     private RenderQueueSnapshot BuildSnapshot()
@@ -211,28 +198,91 @@ internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationSe
         var completedFrameProgress = enabledTasks.Sum(task => task.RealTotalFrames * task.OverallProgress01);
         var overallProgress = totalFrames > 0 ? Math.Clamp(completedFrameProgress / totalFrames, 0, 1) : 0;
         var remainingSeconds = Math.Max(90, (int)Math.Round((1 - overallProgress) * 1020));
+        var isActive = _queueState is QueueExecutionState.Running or QueueExecutionState.Paused &&
+                       CurrentRenderingTask != null;
 
         return new RenderQueueSnapshot
         {
-            State = QueueExecutionState.Running,
-            CurrentTaskId = CurrentRenderingTask?.Id,
-            ActiveTaskCount = CurrentRenderingTask == null ? 0 : 1,
-            CompletedTaskCount = 0,
+            State = _queueState,
+            CurrentTaskId = isActive ? CurrentRenderingTask?.Id : null,
+            ActiveTaskCount = isActive ? 1 : 0,
+            CompletedTaskCount = RenderTasks.Count(task => task.Status == RenderTaskStatus.Completed),
             FailedTaskCount = 0,
             TotalFrames = totalFrames,
             CompletedFrameProgress = completedFrameProgress,
             OverallProgress01 = overallProgress,
-            QueueStatusText = "Queue_Running",
-            RemainingTimeText = $"Queue_RemainingTimeFormat:{TimeSpan.FromSeconds(remainingSeconds):hh\\:mm\\:ss}",
+            QueueStatusText = _queueState switch
+            {
+                QueueExecutionState.Running => "Queue_Running",
+                QueueExecutionState.Paused => "Queue_Paused",
+                QueueExecutionState.Completed => "Queue_Completed",
+                QueueExecutionState.Error => "Queue_Error",
+                _ => "Queue_Idle"
+            },
+            RemainingTimeText = _queueState is QueueExecutionState.Running or QueueExecutionState.Paused
+                ? $"Queue_RemainingTimeFormat:{TimeSpan.FromSeconds(remainingSeconds):hh\\:mm\\:ss}"
+                : string.Empty,
             AutoStartNext = AutoStartNext,
             PostRenderBehavior = PostRenderBehavior,
-            CanStartQueue = true,
-            CanStopQueue = true,
-            CanPauseQueue = true,
-            CanResumeQueue = false,
-            CanClearTasks = true,
+            CanStartQueue = _queueState is QueueExecutionState.Idle or QueueExecutionState.Completed &&
+                            enabledTasks.Length > 0,
+            CanStopQueue = _queueState is QueueExecutionState.Running or QueueExecutionState.Paused,
+            CanPauseQueue = _queueState == QueueExecutionState.Running && CurrentRenderingTask != null,
+            CanResumeQueue = _queueState == QueueExecutionState.Paused && CurrentRenderingTask != null,
+            CanClearTasks = _queueState is QueueExecutionState.Idle or QueueExecutionState.Completed,
             Tasks = RenderTasks.Select(BuildTaskSnapshot).ToList()
         };
+    }
+
+    private void PublishSnapshot()
+    {
+        Snapshot = BuildSnapshot();
+        SnapshotChanged?.Invoke(this, Snapshot);
+    }
+
+    private RenderTaskViewModel? StartNextEnabledTask(bool resetProgress)
+    {
+        var nextTask = RenderTasks.FirstOrDefault(task => task is { Enable: true, IsValid: true } &&
+                                                          task.Status != RenderTaskStatus.Completed);
+        if (nextTask == null)
+        {
+            CurrentRenderingTask = null;
+            _queueState = QueueExecutionState.Completed;
+            _demoTimer.Stop();
+            PublishSnapshot();
+            return null;
+        }
+
+        CurrentRenderingTask = nextTask;
+        if (resetProgress || nextTask.Status is RenderTaskStatus.Cancelled or RenderTaskStatus.Completed)
+        {
+            ResetTaskProgress(nextTask);
+        }
+
+        _demoFrame = Math.Max(nextTask.RealStartFrame, nextTask.CurrentFrame);
+        _demoSample = 36;
+        nextTask.Status = RenderTaskStatus.Running;
+        nextTask.Engine = "Cycles";
+        nextTask.HasRenderedImage = true;
+        nextTask.RenderedImage = _mockFrames[_demoTick % _mockFrames.Length];
+        nextTask.RenderedImagePath = $"/render/output/frame_{_demoFrame:0000}.png";
+        nextTask.SavedPath = nextTask.RenderedImagePath;
+        _queueState = QueueExecutionState.Running;
+        _demoTimer.Start();
+        PublishSnapshot();
+        return nextTask;
+    }
+
+    private static void ResetTaskProgress(RenderTaskViewModel task)
+    {
+        task.Status = RenderTaskStatus.Pending;
+        task.CurrentFrame = task.RealStartFrame;
+        task.CompletedFrames = 0;
+        task.Progress01 = 0;
+        task.OverallProgress01 = 0;
+        task.SampleText = "0/250";
+        task.StatusDetailText = string.Empty;
+        task.HasRenderedImage = false;
     }
 
     private static RenderTaskSnapshot BuildTaskSnapshot(RenderTaskViewModel task)
@@ -361,23 +411,191 @@ internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationSe
     public void SetVideoQuality(string quality) { }
     public void SetBlenderPath(string blenderPath) { }
     public bool IsBlenderServiceReady() => true;
-    public void AddBlendFiles(IEnumerable<string> filePaths) { }
-    public void AddDroppedFiles(IEnumerable<string> filePaths) { }
-    public void RemoveSelectedTask(RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask) { }
-    public void RemoveTask(RenderTaskViewModel? taskToRemove, RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask) { }
-    public void RemoveAllTasks() { }
-    public void RemoveCompletedTasks() { }
-    public Task StartQueueAsync() => Task.CompletedTask;
-    public void StopQueue() { }
-    public void PauseQueue() { }
-    public Task ResumeQueueAsync() => Task.CompletedTask;
-    public void MoveTaskUp(RenderTaskViewModel? selectedTask) { }
-    public void MoveTaskDown(RenderTaskViewModel? selectedTask) { }
-    public void MoveTaskToTop(RenderTaskViewModel? selectedTask) { }
-    public void MoveTaskToBottom(RenderTaskViewModel? selectedTask) { }
-    public void CopyTask(RenderTaskViewModel? taskToCopy, Action<RenderTaskViewModel?> setSelectedTask) { }
-    public void RequestRemoveAllTasksConfirmation() { }
+    public void AddBlendFiles(IEnumerable<string> filePaths)
+    {
+        var paths = filePaths as string[] ?? filePaths.ToArray();
+        if (paths.Length == 0)
+        {
+            paths = [$"Studio_Shot_{_addedTaskIndex:00}.blend"];
+        }
+
+        foreach (var path in paths)
+        {
+            var fileName = System.IO.Path.GetFileName(path);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                fileName = $"Studio_Shot_{_addedTaskIndex:00}.blend";
+            }
+
+            RenderTasks.Add(CreateTask(fileName, "Camera", 1, 120 + _addedTaskIndex * 24, RenderTaskStatus.Pending, 0, 0, 0));
+            _addedTaskIndex++;
+        }
+
+        if (_queueState == QueueExecutionState.Completed)
+        {
+            _queueState = QueueExecutionState.Idle;
+        }
+
+        PublishSnapshot();
+    }
+
+    public void AddDroppedFiles(IEnumerable<string> filePaths) => AddBlendFiles(filePaths);
+
+    public void RemoveSelectedTask(RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask)
+    {
+        RemoveTask(selectedTask, selectedTask, setSelectedTask);
+    }
+
+    public void RemoveTask(RenderTaskViewModel? taskToRemove, RenderTaskViewModel? selectedTask, Action<RenderTaskViewModel?> setSelectedTask)
+    {
+        if (taskToRemove == null)
+        {
+            return;
+        }
+
+        var index = RenderTasks.IndexOf(taskToRemove);
+        if (index < 0)
+        {
+            return;
+        }
+
+        if (CurrentRenderingTask == taskToRemove)
+        {
+            CurrentRenderingTask = null;
+            _demoTimer.Stop();
+            _queueState = QueueExecutionState.Idle;
+        }
+
+        RenderTasks.RemoveAt(index);
+        setSelectedTask(RenderTasks.ElementAtOrDefault(Math.Min(index, RenderTasks.Count - 1)));
+        PublishSnapshot();
+    }
+
+    public void RemoveAllTasks()
+    {
+        _demoTimer.Stop();
+        CurrentRenderingTask = null;
+        RenderTasks.Clear();
+        _queueState = QueueExecutionState.Idle;
+        PublishSnapshot();
+    }
+
+    public void RemoveCompletedTasks()
+    {
+        foreach (var task in RenderTasks.Where(task => task.Status == RenderTaskStatus.Completed).ToArray())
+        {
+            RenderTasks.Remove(task);
+        }
+
+        PublishSnapshot();
+    }
+
+    public Task StartQueueAsync()
+    {
+        if (_queueState is QueueExecutionState.Idle or QueueExecutionState.Completed)
+        {
+            StartNextEnabledTask(resetProgress: true);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public void StopQueue()
+    {
+        _demoTimer.Stop();
+        if (CurrentRenderingTask != null)
+        {
+            CurrentRenderingTask.Status = RenderTaskStatus.Cancelled;
+        }
+
+        CurrentRenderingTask = null;
+        _queueState = QueueExecutionState.Idle;
+        PublishSnapshot();
+    }
+
+    public void PauseQueue()
+    {
+        if (_queueState != QueueExecutionState.Running || CurrentRenderingTask == null)
+        {
+            return;
+        }
+
+        _demoTimer.Stop();
+        CurrentRenderingTask.Status = RenderTaskStatus.Paused;
+        _queueState = QueueExecutionState.Paused;
+        PublishSnapshot();
+    }
+
+    public Task ResumeQueueAsync()
+    {
+        if (_queueState == QueueExecutionState.Paused && CurrentRenderingTask != null)
+        {
+            CurrentRenderingTask.Status = RenderTaskStatus.Running;
+            _queueState = QueueExecutionState.Running;
+            _demoTimer.Start();
+            PublishSnapshot();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public void MoveTaskUp(RenderTaskViewModel? selectedTask) => MoveTask(selectedTask, -1);
+    public void MoveTaskDown(RenderTaskViewModel? selectedTask) => MoveTask(selectedTask, 1);
+    public void MoveTaskToTop(RenderTaskViewModel? selectedTask) => MoveTaskTo(selectedTask, 0);
+    public void MoveTaskToBottom(RenderTaskViewModel? selectedTask) => MoveTaskTo(selectedTask, RenderTasks.Count - 1);
+
+    public void CopyTask(RenderTaskViewModel? taskToCopy, Action<RenderTaskViewModel?> setSelectedTask)
+    {
+        if (taskToCopy == null)
+        {
+            return;
+        }
+
+        var copy = CreateTask(
+            $"{System.IO.Path.GetFileNameWithoutExtension(taskToCopy.BlendFileName)}_Copy.blend",
+            taskToCopy.SelectedSceneName,
+            taskToCopy.RealStartFrame,
+            taskToCopy.RealEndFrame,
+            RenderTaskStatus.Pending,
+            0,
+            0,
+            0);
+
+        RenderTasks.Add(copy);
+        setSelectedTask(copy);
+        PublishSnapshot();
+    }
+
+    public void RequestRemoveAllTasksConfirmation() => RemoveAllTasks();
     public Task LoadQueueDataAsync() => Task.CompletedTask;
+
+    private void MoveTask(RenderTaskViewModel? selectedTask, int offset)
+    {
+        if (selectedTask == null)
+        {
+            return;
+        }
+
+        MoveTaskTo(selectedTask, RenderTasks.IndexOf(selectedTask) + offset);
+    }
+
+    private void MoveTaskTo(RenderTaskViewModel? selectedTask, int newIndex)
+    {
+        if (selectedTask == null)
+        {
+            return;
+        }
+
+        var oldIndex = RenderTasks.IndexOf(selectedTask);
+        if (oldIndex < 0 || newIndex < 0 || newIndex >= RenderTasks.Count || oldIndex == newIndex)
+        {
+            return;
+        }
+
+        RenderTasks.Move(oldIndex, newIndex);
+        PublishSnapshot();
+    }
+
     public void Dispose()
     {
         _demoTimer.Stop();
