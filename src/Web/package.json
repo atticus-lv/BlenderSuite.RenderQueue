@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "wasm-preview:build": "dotnet publish ../BlenderRenderQueue.BrowserPreview/BlenderRenderQueue.BrowserPreview.csproj -c Release",
+    "wasm-preview:sync": "node scripts/sync-wasm-preview.mjs",
+    "wasm-preview:mount": "npm run wasm-preview:build && npm run wasm-preview:sync"
   },
   "dependencies": {
     "framer-motion": "^12.38.0",

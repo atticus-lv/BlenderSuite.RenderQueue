@@ -19,10 +19,7 @@
   --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
   --font-body: 'Manrope', 'Segoe UI', sans-serif;
   color: var(--text-primary);
-  background:
-    radial-gradient(circle at top right, rgba(20, 150, 255, 0.2), transparent 28%),
-    radial-gradient(circle at 20% 20%, rgba(20, 150, 255, 0.12), transparent 22%),
-    var(--bg);
+  background: var(--bg);
   font-family: var(--font-body);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -46,19 +43,6 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--text-primary);
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), transparent 80%);
-  pointer-events: none;
-  opacity: 0.2;
 }
 
 a {

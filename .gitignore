@@ -255,6 +255,7 @@ install/macOS/output/
 install/macOS/symbols/
 src/Web/node_modules/
 src/Web/dist/
+src/Web/public/wasm-preview/
 *.dmg
 *.pfx
 *.publishsettings
