@@ -13,7 +13,7 @@ export const siteConfig = {
   version: '0.5.8.3',
   primaryCta: {
     label: '下载 / 获取试用',
-    href: '/download',
+    href: '#download',
   },
   secondaryCta: {
     label: '查看功能亮点',
@@ -27,7 +27,7 @@ export const navItems: NavItem[] = [
   { label: '概览', href: '#overview' },
   { label: '工作流', href: '#workflow' },
   { label: '功能', href: '#features' },
-  { label: '下载', href: '/download' },
+  { label: '下载', href: '#download' },
 ]
 
 export const supportHighlights: FeatureItem[] = [
@@ -161,13 +161,6 @@ export const downloadPlatforms: DownloadPlatform[] = [
     status: '可用预览',
     href: '#macos-download',
     note: '支持打包与分发，签名和公证流程仍在持续完善。',
-  },
-  {
-    id: 'android',
-    label: 'Android',
-    status: '实验归档',
-    href: '#android-archive',
-    note: '历史实验方向，当前不属于主线下载范围。',
   },
 ]
 

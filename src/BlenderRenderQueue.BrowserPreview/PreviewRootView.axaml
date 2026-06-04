@@ -47,13 +47,13 @@
     </UserControl.Styles>
 
     <Grid Background="#05080d">
-        <Viewbox Stretch="Uniform" Margin="24">
+        <Viewbox Stretch="Uniform" Margin="8">
             <Border Width="1214"
-                    Height="806"
-                    CornerRadius="8"
+                    Height="900"
+                    CornerRadius="7"
                     BorderThickness="1"
-                    BorderBrush="#27435f"
-                    Background="#0b1828"
+                    BorderBrush="#213c58"
+                    Background="#07111f"
                     ClipToBounds="True">
                 <Grid RowDefinitions="36,*">
                     <Border Background="#0f2742"

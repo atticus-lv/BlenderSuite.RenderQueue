@@ -106,12 +106,53 @@
   background: rgba(20, 150, 255, 0.08);
 }
 
+.previewBlock {
+  width: min(100%, 1280px);
+  min-width: 0;
+}
+
+.previewPrompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0 0 18px;
+  color: rgba(232, 241, 255, 0.88);
+  font-family: "HanziPen SC", "Kaiti SC", "Yuanti SC", "Comic Sans MS", cursive;
+  font-size: clamp(2.4rem, 3.8vw, 3.04rem);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  transform: rotate(-1deg);
+}
+
+.handDrawnArrow {
+  width: clamp(44px, 4.8vw, 58px);
+  height: clamp(40px, 4.5vw, 54px);
+  color: #8bcfff;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4.2;
+  transform: rotate(8deg) translateY(4px);
+  animation: promptArrowDrop 1.35s ease-in-out infinite;
+}
+
+.handDrawnArrow .arrowGhost {
+  opacity: 0.35;
+  stroke-width: 2.6;
+}
+
 .heroVisual {
+  position: relative;
   width: min(100%, 1280px);
   min-width: 0;
   height: var(--mockup-height, 960px);
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .appWindow {
@@ -137,15 +178,44 @@
   overflow: hidden;
   width: 1280px;
   height: 960px;
-  border: 1px solid rgba(161, 202, 255, 0.15);
-  border-radius: 10px;
+  border: 0;
+  border-radius: 8px;
   background: #05080d;
-  box-shadow:
-    0 44px 120px rgba(0, 0, 0, 0.46),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.32);
   color-scheme: dark;
+  opacity: 0;
   transform: scale(var(--mockup-scale, 1));
   transform-origin: top left;
+  transition: opacity 0.24s ease;
+}
+
+.frameLoaded {
+  opacity: 1;
+}
+
+.previewLoading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  align-content: center;
+  border-radius: 8px;
+  color: rgba(232, 241, 255, 0.86);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(20, 150, 255, 0.12), transparent 32%),
+    #05080d;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.loadingSpinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(139, 207, 255, 0.2);
+  border-top-color: #1496ff;
+  border-radius: 999px;
+  animation: previewLoadingSpin 0.85s linear infinite;
 }
 
 .titleBar {
@@ -783,22 +853,257 @@
   background: rgba(255, 255, 255, 0.025);
 }
 
-.noteSection {
+.storySection,
+.workflowSection,
+.featureSection,
+.downloadSection {
+  margin: 78px auto 0;
+}
+
+.sectionHeader {
   max-width: 720px;
-  margin: 28px auto 0;
-  color: var(--text-muted);
+  margin: 0 auto 26px;
   text-align: center;
 }
 
-.noteSection p {
-  margin: 0;
-  font-size: 0.92rem;
+.sectionHeader span,
+.downloadIntro > span,
+.releaseNotes > span,
+.valueCard > span,
+.featureGrid article > span,
+.platformCard > span {
+  display: inline-block;
+  color: #8bcfff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sectionHeader h2,
+.downloadIntro h2 {
+  margin: 12px 0 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(1.72rem, 2.5vw, 2.45rem);
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.sectionHeader p,
+.downloadIntro p {
+  margin: 14px auto 0;
+  max-width: 39rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.valueGrid,
+.featureGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.valueGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.valueCard,
+.featureGrid article,
+.workflowList li {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 42%),
+    rgba(255, 255, 255, 0.025);
+}
+
+.valueCard {
+  min-height: 198px;
+  padding: 24px;
+}
+
+.valueCard h3,
+.featureGrid h3,
+.workflowList h3 {
+  margin: 12px 0 0;
+  color: var(--text-primary);
+  font-size: 1.04rem;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.valueCard p,
+.featureGrid p,
+.workflowList p {
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.93rem;
   line-height: 1.7;
+}
+
+.workflowList {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflowList li {
+  min-height: 182px;
+  padding: 24px;
+}
+
+.workflowList li > span {
+  color: var(--app-orange);
+  font-family: var(--font-display);
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+
+.featureGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.featureGrid article {
+  min-height: 164px;
+  padding: 22px;
+}
+
+.featureGrid article > span {
+  color: rgba(139, 207, 255, 0.76);
+  font-size: 0.68rem;
+}
+
+.downloadSection {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 18px;
+  align-items: stretch;
+  scroll-margin-top: 120px;
+}
+
+.downloadIntro,
+.downloadPanel {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 46%),
+    rgba(255, 255, 255, 0.025);
+}
+
+.downloadIntro {
+  padding: 28px;
+}
+
+.downloadIntro h2 {
+  font-size: clamp(1.8rem, 2.8vw, 2.7rem);
+}
+
+.downloadIntro p {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.downloadActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.downloadActions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 0 16px;
+  color: var(--text-primary);
+  font-size: 0.94rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.035);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.downloadActions a:first-child {
+  color: #111827;
+  border-color: transparent;
+  background: #f5f7fa;
+}
+
+.downloadActions a:hover,
+.downloadActions a:focus-visible {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.downloadPanel {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.platformGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.platformCard {
+  min-height: 158px;
+  border: 1px solid rgba(171, 207, 255, 0.12);
+  border-radius: 8px;
+  padding: 18px;
+  background: rgba(5, 12, 22, 0.26);
+}
+
+.platformCard h3 {
+  margin: 10px 0 0;
+  color: var(--text-primary);
+  font-size: 1.18rem;
+  letter-spacing: 0;
+}
+
+.platformCard p {
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.releaseNotes {
+  border-top: 1px solid rgba(171, 207, 255, 0.12);
+  padding-top: 16px;
+}
+
+.releaseNotes ul {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding-left: 1.15rem;
+  color: var(--text-secondary);
+  font-size: 0.93rem;
+  line-height: 1.65;
 }
 
 @media (max-width: 980px) {
   .heroVisual {
+    width: calc(100% - 48px);
+    margin-right: auto;
+    margin-left: auto;
     border-radius: 8px;
+  }
+
+  .downloadSection {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -806,6 +1111,10 @@
   .page {
     width: min(calc(100vw - 20px), 1180px);
     padding-top: 26px;
+  }
+
+  .heroVisual {
+    width: calc(100% - 36px);
   }
 
   .heroCopy {
@@ -817,8 +1126,33 @@
     justify-content: flex-start;
   }
 
-  .noteSection {
+  .storySection,
+  .workflowSection,
+  .featureSection,
+  .downloadSection {
+    margin-top: 56px;
+  }
+
+  .sectionHeader {
     text-align: left;
+  }
+
+  .valueGrid,
+  .workflowList,
+  .featureGrid,
+  .platformGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .valueCard,
+  .workflowList li,
+  .featureGrid article {
+    min-height: auto;
+  }
+
+  .downloadIntro,
+  .downloadPanel {
+    padding: 20px;
   }
 }
 
@@ -843,9 +1177,28 @@
   }
 }
 
+@keyframes promptArrowDrop {
+  0%,
+  100% {
+    transform: translateY(-1px);
+  }
+
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+@keyframes previewLoadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .running,
-  .progressRail span::after {
+  .progressRail span::after,
+  .handDrawnArrow,
+  .loadingSpinner {
     animation: none;
   }
 

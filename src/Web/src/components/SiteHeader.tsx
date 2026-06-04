@@ -41,9 +41,6 @@ export function SiteHeader() {
           )}
         </nav>
 
-        <Link className={styles.cta} to={siteConfig.primaryCta.href}>
-          {siteConfig.primaryCta.label}
-        </Link>
       </div>
     </motion.header>
   )

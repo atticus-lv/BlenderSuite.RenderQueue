@@ -1,15 +1,83 @@
 import { motion, Reorder, useDragControls, useReducedMotion } from 'framer-motion'
 import type { CSSProperties, MouseEvent, PointerEvent } from 'react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { siteConfig } from '../content/site'
+import { downloadPlatforms, releaseNotes, siteConfig } from '../content/site'
 import styles from './HomePage.module.css'
 
 const MOCKUP_WIDTH = 1280
 const MOCKUP_HEIGHT = 960
-const WASM_PREVIEW_SRC = `${import.meta.env.BASE_URL}wasm-preview/index.html?v=20260604-wasm-preview-6`
+const WASM_PREVIEW_SRC = `${import.meta.env.BASE_URL}wasm-preview/index.html?v=20260604-wasm-preview-7`
 const CPU_VALUES = [28, 34, 31, 33, 58, 35, 39, 34, 36, 35, 42, 37, 45, 41]
 const GPU_VALUES = [45, 38, 42, 40, 35, 47, 29, 43, 38, 46, 41, 49, 44, 48]
+
+const advantageCards = [
+  {
+    eyebrow: 'AOT Native',
+    title: 'AOT 原生桌面应用',
+    description:
+      'AOT 编译，原生桌面体验。高性能、低占用、启动快，安装包不到 30 MB。',
+  },
+  {
+    eyebrow: 'Blender Extension',
+    title: 'Blender 扩展提交',
+    description:
+      '在 Blender 中读取场景、帧范围、输出路径和渲染配置，直接提交到桌面端队列。',
+  },
+  {
+    eyebrow: 'Queue Control',
+    title: '队列控制',
+    description:
+      '支持断点继续渲染、暂停、终止、插队和拖拽排序，适合长批次任务调度。',
+  },
+]
+
+const workflowSteps = [
+  {
+    title: '提交场景',
+    body: '通过 Blender 扩展选择场景与帧范围，生成桌面端渲染任务。',
+  },
+  {
+    title: '管理队列',
+    body: '调整任务顺序、启停任务、查看运行状态，并按任务覆写渲染参数。',
+  },
+  {
+    title: '处理输出',
+    body: '监控帧进度和日志，预览序列帧，并在完成后执行合成或电源动作。',
+  },
+]
+
+const coreCapabilities = [
+  {
+    eyebrow: 'Task Management',
+    title: '任务队列',
+    description: '支持任务排序、暂停、继续、禁用和重新组织，适合批量场景渲染。',
+  },
+  {
+    eyebrow: 'Scene Submit',
+    title: '场景提交',
+    description: '支持 Blender 5.0 剪辑序列，可读取多场景镜头并生成拼接渲染任务。',
+  },
+  {
+    eyebrow: 'Frame Pipeline',
+    title: '序列帧处理',
+    description: '提供序列帧预览、输出整理和视频合成相关流程。',
+  },
+  {
+    eyebrow: 'Live Monitor',
+    title: '运行监控',
+    description: '展示队列状态、当前帧、任务进度、硬件占用和底层日志。',
+  },
+  {
+    eyebrow: 'Post Render',
+    title: '完成后动作',
+    description: '支持渲染完成后执行合成、整理输出、关机或睡眠等动作。',
+  },
+  {
+    eyebrow: 'Cross Platform',
+    title: 'Windows / macOS',
+    description: '桌面端覆盖 Windows 与 macOS，按本地渲染环境组织配置。',
+  },
+]
 
 type QueueItem = {
   id: string
@@ -89,6 +157,22 @@ function MaterialIcon({ path, label }: { path: string; label?: string }) {
       viewBox="0 0 24 24"
     >
       <path d={path} />
+    </svg>
+  )
+}
+
+function HandDrawnArrow() {
+  return (
+    <svg
+      aria-hidden="true"
+      className={styles.handDrawnArrow}
+      focusable="false"
+      viewBox="0 0 58 54"
+    >
+      <path d="M10 7C18 17 28 24 41 29" />
+      <path d="M40 29C34 30 29 32 24 36" />
+      <path d="M40 29C36 22 34 17 34 12" />
+      <path d="M12 10C17 14 22 19 27 24" className={styles.arrowGhost} />
     </svg>
   )
 }
@@ -475,23 +559,114 @@ function AppMockup() {
 function HeroPreview() {
   const { ref: mockupFrameRef, scale: mockupScale } = useMockupScale()
   const hasWasmPreview = usePreviewAssetAvailable(WASM_PREVIEW_SRC)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const wheelCleanupRef = useRef<(() => void) | null>(null)
+  const [isFrameLoaded, setFrameLoaded] = useState(false)
   const mockupScaleStyle = {
     '--mockup-scale': mockupScale,
     '--mockup-height': `${MOCKUP_HEIGHT * mockupScale}px`,
   } as CSSProperties
 
+  useEffect(
+    () => () => {
+      wheelCleanupRef.current?.()
+      wheelCleanupRef.current = null
+    },
+    [],
+  )
+
+  const handleFrameLoad = () => {
+    setFrameLoaded(true)
+    wheelCleanupRef.current?.()
+    wheelCleanupRef.current = null
+
+    const contentWindow = iframeRef.current?.contentWindow
+    if (!contentWindow) return
+
+    const forwardWheelToPage = (event: WheelEvent) => {
+      event.preventDefault()
+      window.scrollBy({
+        top: event.deltaY,
+        left: event.deltaX,
+        behavior: 'auto',
+      })
+    }
+
+    contentWindow.addEventListener('wheel', forwardWheelToPage, { passive: false })
+    wheelCleanupRef.current = () => {
+      contentWindow.removeEventListener('wheel', forwardWheelToPage)
+    }
+  }
+
   return (
-    <div ref={mockupFrameRef} className={styles.heroVisual} style={mockupScaleStyle}>
-      {hasWasmPreview ? (
-        <iframe
-          className={styles.wasmPreviewFrame}
-          title="Blender Render Queue live preview"
-          src={WASM_PREVIEW_SRC}
-        />
-      ) : (
-        <AppMockup />
-      )}
+    <div className={styles.previewBlock}>
+      <div className={styles.previewPrompt}>
+        <span>来试试吧</span>
+        <HandDrawnArrow />
+      </div>
+      <div ref={mockupFrameRef} className={styles.heroVisual} style={mockupScaleStyle}>
+        {hasWasmPreview ? (
+          <>
+            <iframe
+              ref={iframeRef}
+              className={`${styles.wasmPreviewFrame} ${isFrameLoaded ? styles.frameLoaded : ''}`}
+              title="Blender Render Queue live preview"
+              src={WASM_PREVIEW_SRC}
+              onLoad={handleFrameLoad}
+            />
+            {!isFrameLoaded ? (
+              <div className={styles.previewLoading} role="status" aria-live="polite">
+                <span className={styles.loadingSpinner} aria-hidden="true" />
+                <span>正在加载预览...</span>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <AppMockup />
+        )}
+      </div>
     </div>
+  )
+}
+
+function DownloadSection() {
+  return (
+    <section id="download" className={styles.downloadSection} aria-labelledby="download-title">
+      <div className={styles.downloadIntro}>
+        <span>下载</span>
+        <h2 id="download-title">当前版本 {siteConfig.version}</h2>
+        <p>安装包和历史版本统一发布在 GitHub Releases。Windows 为当前主线，macOS 提供可用预览。</p>
+        <div className={styles.downloadActions}>
+          <a href={siteConfig.releaseUrl} target="_blank" rel="noreferrer">
+            GitHub Releases
+          </a>
+          <a href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
+            源码仓库
+          </a>
+        </div>
+      </div>
+
+      <div className={styles.downloadPanel}>
+        <div className={styles.platformGrid}>
+          {downloadPlatforms.map((platform) => (
+            <article key={platform.id} id={platform.href.slice(1)} className={styles.platformCard}>
+              <span>{platform.status}</span>
+              <h3>{platform.label}</h3>
+              {platform.note ? <p>{platform.note}</p> : null}
+            </article>
+          ))}
+        </div>
+
+        <div className={styles.releaseNotes}>
+          <span>Release Notes</span>
+          <ul>
+            {releaseNotes.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -510,12 +685,12 @@ export function HomePage() {
           <span className={styles.eyebrow}>BlenderSuite</span>
           <h1>Blender Render Queue</h1>
           <p>
-            简洁的 Blender 队列渲染桌面工具。官网首屏直接呈现软件本体，不额外包装成另一套视觉。
+            基于 Avalonia 构建的跨平台高性能 Blender 渲染调度工具。
           </p>
           <div className={styles.heroActions}>
-            <Link className={styles.primaryCta} to={siteConfig.primaryCta.href}>
+            <a className={styles.primaryCta} href={siteConfig.primaryCta.href}>
               下载 / 获取试用
-            </Link>
+            </a>
             <a className={styles.secondaryCta} href="#workflow">
               查看工作流
             </a>
@@ -525,17 +700,67 @@ export function HomePage() {
         <HeroPreview />
       </section>
 
-      <section id="workflow" className={styles.capabilityStrip} aria-label="Workflow highlights">
-        <span>批量场景排队</span>
-        <span>实时进度监控</span>
-        <span>输出结果整理</span>
+      <section className={styles.capabilityStrip} aria-label="Workflow highlights">
+        <span>AOT 原生桌面</span>
+        <span>Blender 扩展提交</span>
+        <span>序列帧自动合成</span>
       </section>
 
-      <section id="features" className={styles.noteSection}>
-        <p>
-          视觉语言来自桌面端源码：SukiUI 深色蓝主题、GlassCard 面板、6-8px 控件圆角、蓝色任务选中态和橙色启动动作。
-        </p>
+      <section className={styles.storySection} aria-labelledby="positioning-title">
+        <div className={styles.sectionHeader}>
+          <span>核心优势</span>
+          <h2 id="positioning-title">Blender 渲染任务管理</h2>
+          <p>
+            适用于连续渲染、批量输出和无人值守任务。桌面端负责队列、监控、输出和完成后动作。
+          </p>
+        </div>
+
+        <div className={styles.valueGrid}>
+          {advantageCards.map((item) => (
+            <article key={item.eyebrow} className={styles.valueCard}>
+              <span>{item.eyebrow}</span>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+            </article>
+          ))}
+        </div>
       </section>
+
+      <section id="workflow" className={styles.workflowSection} aria-labelledby="workflow-title">
+        <div className={styles.sectionHeader}>
+          <span>工作流</span>
+          <h2 id="workflow-title">提交、排队、监控、输出</h2>
+        </div>
+
+        <ol className={styles.workflowList}>
+          {workflowSteps.map((step, index) => (
+            <li key={step.title}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section id="features" className={styles.featureSection} aria-labelledby="features-title">
+        <div className={styles.sectionHeader}>
+          <span>功能</span>
+          <h2 id="features-title">核心功能</h2>
+        </div>
+
+        <div className={styles.featureGrid}>
+          {coreCapabilities.map((feature) => (
+            <article key={feature.title}>
+              <span>{feature.eyebrow}</span>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <DownloadSection />
     </motion.div>
   )
 }

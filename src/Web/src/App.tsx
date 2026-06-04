@@ -2,16 +2,24 @@ import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { SiteFooter } from './components/SiteFooter'
 import { SiteHeader } from './components/SiteHeader'
-import { DownloadPage } from './pages/DownloadPage'
 import { HomePage } from './pages/HomePage'
 import styles from './App.module.css'
 
 function ScrollToTop() {
-  const { pathname } = useLocation()
+  const { hash, pathname } = useLocation()
 
   useEffect(() => {
+    if (hash) {
+      const frame = window.requestAnimationFrame(() => {
+        document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView()
+      })
+
+      return () => window.cancelAnimationFrame(frame)
+    }
+
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior })
-  }, [pathname])
+    return undefined
+  }, [hash, pathname])
 
   return null
 }
@@ -23,7 +31,7 @@ function RoutedApp() {
       <main className={styles.main}>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/download" element={<DownloadPage />} />
+          <Route path="*" element={<HomePage />} />
         </Routes>
       </main>
       <SiteFooter />
