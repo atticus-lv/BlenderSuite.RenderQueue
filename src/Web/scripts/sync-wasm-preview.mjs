@@ -54,11 +54,13 @@ if (!source) {
 
 const target = resolve(webRoot, 'public', 'wasm-preview')
 const browserPreviewSourceRoot = resolve(repoSrcRoot, 'BlenderRenderQueue.BrowserPreview', 'wwwroot')
+const appLogoSource = resolve(repoSrcRoot, 'BlenderRenderQueue', 'Assets', 'logo.png')
 
 rmSync(target, { recursive: true, force: true })
 cpSync(source, target, { recursive: true })
 cpSync(browserPreviewSourceRoot, target, { recursive: true })
 copyFileSync(resolve(browserPreviewSourceRoot, 'main.js'), resolve(target, 'main.js'))
+copyFileSync(appLogoSource, resolve(target, 'logo.png'))
 
 const mainJs = readFileSync(resolve(target, 'main.js'))
 writeFileSync(resolve(target, 'main.js.gz'), gzipSync(mainJs))
@@ -112,4 +114,5 @@ console.log(`Synced BrowserPreview assets:`)
 console.log(`  ${source}`)
 console.log(`  -> ${target}`)
 console.log('  main.js and compressed variants overridden from BrowserPreview source')
+console.log('  app logo copied for deployed BrowserPreview asset requests')
 console.log('  stale framework hash assets pruned from dotnet.js manifest')
