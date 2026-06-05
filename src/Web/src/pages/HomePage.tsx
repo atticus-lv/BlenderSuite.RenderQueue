@@ -18,26 +18,26 @@ const advantageCards = [
     eyebrow: 'Open Source',
     title: '开源',
     description:
-      '项目以 AGPL-3.0 协议开源发布，源码、构建流程和发布记录可在 GitHub 查看。',
+      '遵循AGPL-3.0 协议，源码、构建流程和发布记录均可在 GitHub 查看。',
   },
   {
     eyebrow: 'AOT Native',
     title: '高性能',
     description:
-      '基于 .NET AOT 构建，提供原生桌面运行性能。启动快速、常驻占用低，安装包体积控制在 30 MB 以内。',
+      '.NET 10 + avalonia 12，通过aot提供原生级性能。启动快速、内存占用低',
   },
   {
     eyebrow: 'Ready to Use',
     title: '开箱即用',
     description:
-      '自动搜寻本机 Blender 并安装扩展插件，在 Blender 内一键提交到桌面端渲染队列。',
+      '一键安装，自动搜寻本机 Blender 并安装扩展插件，在 Blender 内一键提交，即可开始渲染',
   },
 ]
 
 const workflowSteps = [
   {
     title: '提交场景',
-    body: '通过 Blender 扩展选择场景与帧范围，生成桌面端渲染任务。',
+    body: '通过 Blender 扩展，自动选择场景与帧范围，生成桌面端渲染任务。',
   },
   {
     title: '管理队列',
@@ -45,7 +45,7 @@ const workflowSteps = [
   },
   {
     title: '处理输出',
-    body: '监控帧进度和日志，预览序列帧，并在完成后执行合成或电源动作。',
+    body: '预览序列帧，一键合成或渲染后关闭主机',
   },
 ]
 
@@ -53,17 +53,17 @@ const coreCapabilities = [
   {
     eyebrow: 'Task Management',
     title: '任务队列',
-    description: '支持任务排序、暂停、继续、禁用和重新组织，适合批量场景渲染。',
+    description: '支持任务排序、暂停、继续、禁用和覆写',
   },
   {
-    eyebrow: 'Scene Submit',
-    title: '场景提交',
+    eyebrow: 'Muiltiple Scene',
+    title: '多场景',
     description: '支持 Blender 5.0 剪辑序列，可读取多场景镜头并生成拼接渲染任务。',
   },
   {
     eyebrow: 'Frame Pipeline',
     title: '序列帧处理',
-    description: '提供序列帧预览、输出整理和视频合成相关流程。',
+    description: '支持路径表达式解析，序列帧预览，一键合成视频',
   },
   {
     eyebrow: 'Live Monitor',
@@ -73,12 +73,12 @@ const coreCapabilities = [
   {
     eyebrow: 'Post Render',
     title: '完成后动作',
-    description: '支持渲染完成后执行合成、整理输出、关机或睡眠等动作。',
+    description: '渲染完成后关机或睡眠。',
   },
   {
     eyebrow: 'Cross Platform',
     title: 'Windows / macOS',
-    description: '桌面端覆盖 Windows 与 macOS，按本地渲染环境组织配置。',
+    description: '桌面端覆盖 Windows 与 macOS，x64/arm',
   },
 ]
 
@@ -741,10 +741,7 @@ export function HomePage() {
 
       <section className={styles.storySection} aria-labelledby="positioning-title">
         <div className={styles.sectionHeader}>
-          <h2 id="positioning-title">为什么要用这个？</h2>
-          <p>
-            适用于连续渲染、批量输出和无人值守任务。桌面端负责队列、监控、输出和完成后动作。
-          </p>
+          <h2 id="positioning-title">优势</h2>
         </div>
 
         <div className={styles.valueGrid}>
@@ -764,7 +761,7 @@ export function HomePage() {
 
       <section id="workflow" className={styles.workflowSection} aria-labelledby="workflow-title">
         <div className={styles.sectionHeader}>
-          <h2 id="workflow-title">提交、排队、监控、输出</h2>
+          <h2 id="workflow-title">工作流</h2>
         </div>
 
         <ol className={styles.workflowList}>
