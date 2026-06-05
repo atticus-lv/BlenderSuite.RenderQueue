@@ -37,7 +37,7 @@ export const supportedLocales = ['zh', 'en'] as const
 
 export const siteConfig = {
   productName: 'Blender Suite: Render Queue',
-  version: '0.6.0.0',
+  version: '0.6.1.0',
   githubUrl: 'https://github.com/atticus-lv/BlenderSuite.RenderQueue',
   releaseUrl: 'https://github.com/atticus-lv/BlenderSuite.RenderQueue/releases',
 }
@@ -45,7 +45,6 @@ export const siteConfig = {
 export const siteContent: Record<SiteLocale, HomeContent> = {
   zh: {
     navItems: [
-      { label: '试试', href: '#preview' },
       { label: '下载', href: '#download' },
     ],
     hero: {
@@ -129,7 +128,6 @@ export const siteContent: Record<SiteLocale, HomeContent> = {
   },
   en: {
     navItems: [
-      { label: 'Try', href: '#preview' },
       { label: 'Download', href: '#download' },
     ],
     hero: {

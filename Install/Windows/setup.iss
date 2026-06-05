@@ -9,7 +9,7 @@
 #define MyAppShortcutName "BlenderSuite.RenderQueue"
 #endif
 #ifndef MyAppVersion
-#define MyAppVersion "0.6.0.0"
+#define MyAppVersion "0.6.1.0"
 #endif
 #ifndef MyAppPublisher
 #define MyAppPublisher "Atticus"
