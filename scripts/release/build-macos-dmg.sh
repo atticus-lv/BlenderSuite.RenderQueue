@@ -17,6 +17,8 @@ APP_NAME="BlenderSuite.RenderQueue"
 APP_DISPLAY_NAME="Blender Suite: Render Queue"
 APP_EXECUTABLE_NAME="BlenderSuite.RenderQueue"
 APP_BUNDLE_NAME="${APP_NAME}.app"
+APP_PRODUCT_ID="a8239aab-c146-434c-85c1-d6d56bc9b77c"
+APP_BUNDLE_IDENTIFIER="com.atticus.blenderrenderqueue"
 PUBLISH_ROOT="$REPO_ROOT/install/macOS/publish"
 BUILD_ROOT="$REPO_ROOT/install/macOS/build"
 STAGING_ROOT="$REPO_ROOT/install/macOS/staging"
@@ -160,7 +162,9 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
     <key>CFBundleExecutable</key>
     <string>${APP_EXECUTABLE_NAME}</string>
     <key>CFBundleIdentifier</key>
-    <string>com.atticus.blenderrenderqueue</string>
+    <string>${APP_BUNDLE_IDENTIFIER}</string>
+    <key>BRQApplicationId</key>
+    <string>${APP_PRODUCT_ID}</string>
     ${ICON_PLIST}
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>

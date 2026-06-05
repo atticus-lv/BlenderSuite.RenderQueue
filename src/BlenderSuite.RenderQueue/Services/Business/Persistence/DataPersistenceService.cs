@@ -4,7 +4,9 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using BlenderSuite.RenderQueue;
 using BlenderSuite.RenderQueue.Models;
+using BlenderSuite.RenderQueue.Services.Application;
 using BlenderSuite.RenderQueue.Services.Application.Logging;
 
 namespace BlenderSuite.RenderQueue.Services.Business.Persistence;
@@ -24,39 +26,20 @@ internal partial class AppDataJsonContext : JsonSerializerContext
 /// </summary>
 public class DataPersistenceService : IDataPersistenceService
 {
-    private readonly string _dataFilePath;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly string _defaultDataFilePath;
     private readonly IRenderLogService _logService;
 
     public DataPersistenceService(IRenderLogService logService)
     {
         _logService = logService;
-        // 数据文件路径：运行目录下的 data.json
-        // _dataFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data.json");
-        _dataFilePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "BlenderSuite.RenderQueue",
-            "data.json"
-        );
-        var directory = Path.GetDirectoryName(_dataFilePath);
-        if (!Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory!);
-        }
-
-        // JSON 序列化选项 - 配置为支持 AOT 编译
-        _jsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = true, // 格式化输出，便于阅读
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            TypeInfoResolver = AppDataJsonContext.Default
-        };
+        _defaultDataFilePath = Path.Combine(ApplicationPaths.GetAppDataDirectory(), "data.json");
+        EnsureDataFileDirectory(_defaultDataFilePath);
     }
 
-    public async Task<bool> SaveDataAsync(AppData data)
+    public async Task<bool> SaveDataAsync(AppData data, string? filePath = null)
     {
         string? tempFilePath = null;
+        var targetFilePath = ResolveDataFilePath(filePath);
         var operation = _logService.BeginOperation(
             RenderLogScope.Recovery,
             "SaveQueueData",
@@ -64,17 +47,18 @@ public class DataPersistenceService : IDataPersistenceService
             "开始保存队列数据。",
             metadata: new Dictionary<string, string>
             {
-                ["path"] = _dataFilePath,
+                ["path"] = targetFilePath,
                 ["task_count"] = data.RenderQueue.Count.ToString()
             });
         try
         {
+            EnsureDataFileDirectory(targetFilePath);
             var json = JsonSerializer.Serialize(data, AppDataJsonContext.Default.AppData);
-            tempFilePath = $"{_dataFilePath}.{Guid.NewGuid():N}.tmp";
+            tempFilePath = $"{targetFilePath}.{Guid.NewGuid():N}.tmp";
             operation.Detail($"写入临时数据文件: {tempFilePath}");
 
             await File.WriteAllTextAsync(tempFilePath, json);
-            File.Move(tempFilePath, _dataFilePath, overwrite: true);
+            File.Move(tempFilePath, targetFilePath, overwrite: true);
 
             operation.Complete(
                 $"队列数据保存完成，任务数: {data.RenderQueue.Count}",
@@ -100,8 +84,9 @@ public class DataPersistenceService : IDataPersistenceService
         }
     }
 
-    public async Task<AppData> LoadDataAsync()
+    public async Task<AppData> LoadDataAsync(string? filePath = null)
     {
+        var targetFilePath = ResolveDataFilePath(filePath);
         var operation = _logService.BeginOperation(
             RenderLogScope.Recovery,
             "LoadQueueDataFile",
@@ -109,11 +94,11 @@ public class DataPersistenceService : IDataPersistenceService
             "开始读取队列数据文件。",
             metadata: new Dictionary<string, string>
             {
-                ["path"] = _dataFilePath
+                ["path"] = targetFilePath
             });
         try
         {
-            if (!DataFileExists())
+            if (!DataFileExists(targetFilePath))
             {
                 operation.Complete(
                     "未找到队列数据文件，使用默认空队列。",
@@ -122,10 +107,10 @@ public class DataPersistenceService : IDataPersistenceService
                 return new AppData();
             }
 
-            operation.Detail($"读取队列数据文件: {_dataFilePath}");
+            operation.Detail($"读取队列数据文件: {targetFilePath}");
 
             // 异步读取文件
-            var json = await File.ReadAllTextAsync(_dataFilePath);
+            var json = await File.ReadAllTextAsync(targetFilePath);
 
             // 反序列化 JSON
             var data = JsonSerializer.Deserialize(json, AppDataJsonContext.Default.AppData);
@@ -133,6 +118,12 @@ public class DataPersistenceService : IDataPersistenceService
             if (data == null)
             {
                 operation.Fail("队列数据反序列化失败，使用默认空队列。");
+                return new AppData();
+            }
+
+            if (!IsSupportedQueueData(data))
+            {
+                operation.Fail("队列数据身份或格式版本不匹配，使用默认空队列。");
                 return new AppData();
             }
 
@@ -148,19 +139,20 @@ public class DataPersistenceService : IDataPersistenceService
         }
     }
 
-    public bool DataFileExists()
+    public bool DataFileExists(string? filePath = null)
     {
-        return File.Exists(_dataFilePath);
+        return File.Exists(ResolveDataFilePath(filePath));
     }
 
-    public bool DeleteDataFile()
+    public bool DeleteDataFile(string? filePath = null)
     {
+        var targetFilePath = ResolveDataFilePath(filePath);
         try
         {
-            if (DataFileExists())
+            if (DataFileExists(targetFilePath))
             {
-                File.Delete(_dataFilePath);
-                _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"✅ Data file deleted: {_dataFilePath}", source: "DataPersistenceService");
+                File.Delete(targetFilePath);
+                _logService.Write(RenderLogLevel.Info, RenderLogScope.Recovery, $"✅ Data file deleted: {targetFilePath}", source: "DataPersistenceService");
                 return true;
             }
 
@@ -170,6 +162,27 @@ public class DataPersistenceService : IDataPersistenceService
         {
             _logService.Write(RenderLogLevel.Error, RenderLogScope.Recovery, $"❌ Error deleting data file: {ex.Message}", source: "DataPersistenceService");
             return false;
+        }
+    }
+
+    private static bool IsSupportedQueueData(AppData data)
+    {
+        return string.Equals(data.ApplicationId, ApplicationIdentity.ProductId, StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(data.Schema, ApplicationIdentity.QueueDataSchema, StringComparison.Ordinal) &&
+               data.SchemaVersion == ApplicationIdentity.QueueDataSchemaVersion;
+    }
+
+    private string ResolveDataFilePath(string? filePath)
+    {
+        return string.IsNullOrWhiteSpace(filePath) ? _defaultDataFilePath : filePath;
+    }
+
+    private static void EnsureDataFileDirectory(string filePath)
+    {
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
         }
     }
 }

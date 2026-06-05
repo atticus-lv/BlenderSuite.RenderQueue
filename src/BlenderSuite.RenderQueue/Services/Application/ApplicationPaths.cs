@@ -17,6 +17,6 @@ internal static class ApplicationPaths
 
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "BlenderSuite.RenderQueue");
+            ApplicationIdentity.AppDataDirectoryName);
     }
 }

@@ -51,6 +51,9 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
     private int _activeTaskCount;
     private int _completedTaskCount;
     private int _failedTaskCount;
+    private Guid _batchId = Guid.NewGuid();
+    private string _batchName = string.Empty;
+    private DateTimeOffset _batchCreatedAt = DateTimeOffset.UtcNow;
     private bool _savePending;
     private bool _saveWorkerRunning;
     private bool _disposed;
@@ -573,6 +576,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         try
         {
             var appData = await _dataPersistenceService.LoadDataAsync();
+            ApplyBatchMetadata(appData);
             operation.Detail(
                 $"读取到持久化任务数: {appData.RenderQueue.Count}",
                 metadata: new Dictionary<string, string>
@@ -651,6 +655,13 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
             operation.Detail($"Error loading queue data: {ex.Message}", RenderLogLevel.Error);
             operation.Fail($"加载持久化队列数据失败: {ex.Message}");
         }
+    }
+
+    private void ApplyBatchMetadata(AppData appData)
+    {
+        _batchId = appData.BatchId == Guid.Empty ? Guid.NewGuid() : appData.BatchId;
+        _batchName = appData.BatchName ?? string.Empty;
+        _batchCreatedAt = appData.CreatedAt == default ? DateTimeOffset.UtcNow : appData.CreatedAt;
     }
 
     private void AddTaskToQueue(string blendFilePath)

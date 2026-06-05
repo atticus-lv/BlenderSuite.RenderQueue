@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 using BlenderSuite.RenderQueue.Models;
+using BlenderSuite.RenderQueue.Services.Application;
 using BlenderSuite.RenderQueue.Services.Application.Logging;
 using BlenderSuite.RenderQueue.Services.Business.Persistence;
 
@@ -50,8 +51,7 @@ sealed class Program
         try
         {
             var settingsFilePath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "BlenderSuite.RenderQueue",
+                ApplicationPaths.GetAppDataDirectory(),
                 "settings.json"
             );
 

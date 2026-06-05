@@ -17,6 +17,9 @@
 #ifndef MyAppExeName
 #define MyAppExeName "BlenderSuite.RenderQueue.exe"
 #endif
+#ifndef MyAppId
+#define MyAppId "a8239aab-c146-434c-85c1-d6d56bc9b77c"
+#endif
 #ifndef MyPublishDir
 #define MyPublishDir ".\publish\aot\win-x64"
 #endif
@@ -28,7 +31,7 @@
 #pragma coding UTF-8
 
 [Setup]
-AppId={{a8239aab-c146-434c-85c1-d6d56bc9b77c}
+AppId={{{#MyAppId}}
 AppName={#MyAppDisplayName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}

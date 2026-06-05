@@ -4,7 +4,9 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using BlenderSuite.RenderQueue;
 using BlenderSuite.RenderQueue.Models;
+using BlenderSuite.RenderQueue.Services.Application;
 using BlenderSuite.RenderQueue.Services.Application.Logging;
 
 namespace BlenderSuite.RenderQueue.Services.Business.Persistence;
@@ -26,11 +28,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService
 {
     private readonly IRenderLogService _logService;
 
-    private static readonly string SettingsFilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "BlenderSuite.RenderQueue",
-        "settings.json"
-    );
+    private static readonly string SettingsFilePath = Path.Combine(ApplicationPaths.GetAppDataDirectory(), "settings.json");
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -67,7 +65,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService
             }
 
             // 确保版本信息正确
-            settings.Software = "BlenderSuite.RenderQueue";
+            settings.Software = ApplicationIdentity.ProductName;
             settings.Version = "0.0.1";
 
             operation.Detail($"保存设置到: {SettingsFilePath}");
@@ -140,7 +138,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService
             }
 
             // 版本兼容性检查
-            if (string.IsNullOrEmpty(settings.Software) || settings.Software != "BlenderSuite.RenderQueue")
+            if (string.IsNullOrEmpty(settings.Software) || settings.Software != ApplicationIdentity.ProductName)
             {
                 operation.Fail("设置文件软件标识无效，使用默认设置。");
                 return new SettingsData();

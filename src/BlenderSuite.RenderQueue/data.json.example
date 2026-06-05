@@ -1,26 +1,33 @@
 {
-  "Software": "BlenderSuite.RenderQueue",
-  "Version": "0.0.1",
-  "Settings": {
-    "BlenderPath": "C:\\Program Files\\Blender Foundation\\Blender 4.0\\blender.exe",
-    "FfmpegPath": "C:\\ffmpeg\\bin\\ffmpeg.exe"
-  },
+  "ApplicationId": "a8239aab-c146-434c-85c1-d6d56bc9b77c",
+  "ApplicationName": "BlenderSuite.RenderQueue",
+  "Schema": "render-queue",
+  "SchemaVersion": 1,
+  "AppVersion": "0.6.0.0",
+  "BatchId": "3f95c6f6-b54f-4130-9d0d-4fb60f2f239f",
+  "BatchName": "",
+  "CreatedAt": "2026-06-05T00:00:00Z",
+  "UpdatedAt": "2026-06-05T00:00:00Z",
   "RenderQueue": [
     {
       "RenderTask": {
+        "Id": "bfa6b8b9-e0fe-4b03-9153-cf471f011a8a",
         "Filename": "test_file.blend",
         "Filepath": "C:\\Users\\atticus\\Downloads\\test_file\\test_file.blend",
         "StartFrame": 1,
         "EndFrame": 1,
+        "LastRenderedFrame": 0,
         "Enable": true
       }
     },
     {
       "RenderTask": {
+        "Id": "ea29de85-5d9a-4c7f-bdea-a0ad3a2620d1",
         "Filename": "animation.blend",
         "Filepath": "C:\\Users\\atticus\\Downloads\\animation\\animation.blend",
         "StartFrame": 1,
         "EndFrame": 1,
+        "LastRenderedFrame": 0,
         "Enable": true,
         "Override": {
           "OverrideFrameRange": {

@@ -194,6 +194,10 @@ public sealed partial class RenderQueueApplicationService
         {
             return new AppData
             {
+                BatchId = _owner._batchId,
+                BatchName = _owner._batchName,
+                CreatedAt = _owner._batchCreatedAt,
+                UpdatedAt = DateTimeOffset.UtcNow,
                 RenderQueue = _owner.RenderTasks.Select(task => new RenderTaskData
                 {
                     RenderTask = RenderQueueApplicationService.CreateRenderTaskInfo(task)

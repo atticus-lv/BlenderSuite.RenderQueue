@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using BlenderSuite.RenderQueue;
 
 namespace BlenderSuite.RenderQueue.Models;
 
@@ -9,11 +10,32 @@ namespace BlenderSuite.RenderQueue.Models;
 /// </summary>
 public class AppData
 {
-    [JsonPropertyName("Software")]
-    public string Software { get; init; } = "BlenderSuite.RenderQueue";
+    [JsonPropertyName("ApplicationId")]
+    public string ApplicationId { get; set; } = ApplicationIdentity.ProductId;
 
-    [JsonPropertyName("Version")]
-    public string Version { get; init; } = "0.0.1";
+    [JsonPropertyName("ApplicationName")]
+    public string ApplicationName { get; set; } = ApplicationIdentity.ProductName;
+
+    [JsonPropertyName("Schema")]
+    public string Schema { get; set; } = ApplicationIdentity.QueueDataSchema;
+
+    [JsonPropertyName("SchemaVersion")]
+    public int SchemaVersion { get; set; } = ApplicationIdentity.QueueDataSchemaVersion;
+
+    [JsonPropertyName("AppVersion")]
+    public string AppVersion { get; set; } = ApplicationIdentity.GetAppVersion();
+
+    [JsonPropertyName("BatchId")]
+    public Guid BatchId { get; set; } = Guid.NewGuid();
+
+    [JsonPropertyName("BatchName")]
+    public string BatchName { get; set; } = string.Empty;
+
+    [JsonPropertyName("CreatedAt")]
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    [JsonPropertyName("UpdatedAt")]
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     [JsonPropertyName("RenderQueue")]
     public List<RenderTaskData> RenderQueue { get; set; } = [];

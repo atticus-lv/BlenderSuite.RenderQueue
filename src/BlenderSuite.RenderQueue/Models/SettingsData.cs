@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using BlenderSuite.RenderQueue;
 
 namespace BlenderSuite.RenderQueue.Models;
 
@@ -9,7 +10,7 @@ namespace BlenderSuite.RenderQueue.Models;
 public class SettingsData
 {
     [JsonPropertyName("Software")]
-    public string Software { get; set; } = "BlenderSuite.RenderQueue";
+    public string Software { get; set; } = ApplicationIdentity.ProductName;
 
     [JsonPropertyName("Version")]
     public string Version { get; set; } = "0.0.1";
