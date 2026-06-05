@@ -19,7 +19,13 @@ goto usage_error
 
 :args_done
 
-for %%I in ("%~dp0..\..") do set "REPO_ROOT=%%~fI"
+if defined RENDERQUEUE_REPO_ROOT (
+    for %%I in ("%RENDERQUEUE_REPO_ROOT%") do set "REPO_ROOT=%%~fI"
+) else if defined GITHUB_WORKSPACE (
+    for %%I in ("%GITHUB_WORKSPACE%") do set "REPO_ROOT=%%~fI"
+) else (
+    for %%I in ("%~dp0..\..") do set "REPO_ROOT=%%~fI"
+)
 set "PROJECT_FILE=%REPO_ROOT%\src\BlenderSuite.RenderQueue\BlenderSuite.RenderQueue.csproj"
 set "PUBLISH_DIR=%REPO_ROOT%\install\Windows\publish\aot\win-x64"
 set "OUTPUT_DIR=%REPO_ROOT%\install\Windows\output"
