@@ -5,6 +5,10 @@
 }
 
 .inner {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
   width: var(--container);
   margin: 0 auto;
   padding-top: 24px;
@@ -18,8 +22,18 @@
   line-height: 1.6;
 }
 
+.credit {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
 @media (max-width: 760px) {
   .inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
     padding-top: 20px;
   }
 }

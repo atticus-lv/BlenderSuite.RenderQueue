@@ -1,7 +1,7 @@
 import { motion, Reorder, useDragControls, useReducedMotion } from 'framer-motion'
 import type { CSSProperties, MouseEvent, PointerEvent } from 'react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { downloadPlatforms, releaseNotes, siteConfig } from '../content/site'
+import { downloadPlatforms, siteConfig } from '../content/site'
 import styles from './HomePage.module.css'
 
 const MOCKUP_WIDTH = 1280
@@ -623,7 +623,7 @@ function HeroPreview() {
   return (
     <div className={styles.previewBlock}>
       <div className={styles.previewPrompt}>
-        <span>来试试吧</span>
+        <span>试试交互手感</span>
         <HandDrawnArrow />
       </div>
       <div ref={mockupFrameRef} className={styles.heroVisual} style={mockupScaleStyle}>
@@ -662,41 +662,24 @@ function DownloadSection() {
   return (
     <section id="download" className={styles.downloadSection} aria-labelledby="download-title">
       <div className={styles.downloadIntro}>
-        <h2 id="download-title">当前版本 {siteConfig.version}</h2>
-        <p>Windows 与 macOS 版本均可用，安装包和历史版本统一发布在 GitHub Releases。</p>
-        <div className={styles.downloadActions}>
-          <a href={siteConfig.releaseUrl} target="_blank" rel="noreferrer">
-            GitHub Releases
-          </a>
-          <a href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
-            源码仓库
-          </a>
-        </div>
+        <span>Download</span>
+        <h2 id="download-title">下载 Blender Suite: Render Queue</h2>
+        <p>当前版本 {siteConfig.version}</p>
       </div>
 
       <div className={styles.downloadPanel}>
-        <div className={styles.platformGrid}>
+        <a className={styles.downloadPrimaryAction} href={siteConfig.releaseUrl} target="_blank" rel="noreferrer">
+          GitHub Releases
+        </a>
+        <div className={styles.platformGrid} aria-label="可用平台">
           {downloadPlatforms.map((platform) => (
-            <article key={platform.id} id={platform.href.slice(1)} className={styles.platformCard}>
-              <span>{platform.status}</span>
-              <h3>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d={platformIconPath[platform.icon]} />
-                </svg>
-                {platform.label}
-              </h3>
-              {platform.note ? <p>{platform.note}</p> : null}
-            </article>
+            <div key={platform.id} id={platform.href.slice(1)} className={styles.platformCard}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d={platformIconPath[platform.icon]} />
+              </svg>
+              <span>{platform.label}</span>
+            </div>
           ))}
-        </div>
-
-        <div className={styles.releaseNotes}>
-          <span>Release Notes</span>
-          <ul>
-            {releaseNotes.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
         </div>
       </div>
     </section>
@@ -731,12 +714,6 @@ export function HomePage() {
         </div>
 
         <HeroPreview />
-      </section>
-
-      <section className={styles.capabilityStrip} aria-label="Workflow highlights">
-        <span>AOT 原生桌面</span>
-        <span>Blender 扩展提交</span>
-        <span>序列帧自动合成</span>
       </section>
 
       <section className={styles.storySection} aria-labelledby="positioning-title">

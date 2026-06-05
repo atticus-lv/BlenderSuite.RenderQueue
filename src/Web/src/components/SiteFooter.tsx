@@ -7,6 +7,7 @@ export function SiteFooter() {
         <p className={styles.copyright}>
           Copyright © 2026 BlenderSuite.RenderQueue contributors. Licensed under AGPL-3.0.
         </p>
+        <span className={styles.credit}>by atticus-lv</span>
       </div>
     </footer>
   )

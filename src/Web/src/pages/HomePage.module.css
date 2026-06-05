@@ -867,10 +867,8 @@
 
 .sectionHeader span,
 .downloadIntro > span,
-.releaseNotes > span,
 .valueCard > span,
-.featureGrid article > span,
-.platformCard > span {
+.featureGrid article > span {
   display: inline-block;
   color: #8bcfff;
   font-size: 0.72rem;
@@ -978,130 +976,92 @@
 }
 
 .downloadSection {
-  display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: 18px;
-  align-items: stretch;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 28px;
+  background:
+    linear-gradient(135deg, rgba(35, 122, 204, 0.18), transparent 42%),
+    rgba(255, 255, 255, 0.025);
   scroll-margin-top: 120px;
 }
 
-.downloadIntro,
-.downloadPanel {
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 46%),
-    rgba(255, 255, 255, 0.025);
-}
-
 .downloadIntro {
-  padding: 28px;
+  min-width: 0;
 }
 
 .downloadIntro h2 {
-  font-size: clamp(1.8rem, 2.8vw, 2.7rem);
+  font-size: clamp(1.65rem, 2.5vw, 2.25rem);
 }
 
 .downloadIntro p {
-  margin-left: 0;
-  margin-right: 0;
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
-.downloadActions {
+.downloadPanel {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 24px;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
-.downloadActions a {
+.downloadPrimaryAction {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  border: 1px solid var(--border-subtle);
+  min-height: 46px;
+  border: 1px solid transparent;
   border-radius: 999px;
-  padding: 0 16px;
-  color: var(--text-primary);
+  padding: 0 20px;
+  color: #111827;
   font-size: 0.94rem;
   font-weight: 800;
-  background: rgba(255, 255, 255, 0.035);
+  background: #f5f7fa;
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease,
     transform 0.2s ease;
 }
 
-.downloadActions a:first-child {
-  color: #111827;
-  border-color: transparent;
-  background: #f5f7fa;
-}
-
-.downloadActions a:hover,
-.downloadActions a:focus-visible {
+.downloadPrimaryAction:hover,
+.downloadPrimaryAction:focus-visible {
   border-color: var(--border-strong);
   transform: translateY(-1px);
 }
 
-.downloadPanel {
-  display: grid;
-  gap: 18px;
-  padding: 18px;
-}
-
 .platformGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
 .platformCard {
-  min-height: 158px;
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 8px;
   border: 1px solid rgba(171, 207, 255, 0.12);
-  border-radius: 8px;
-  padding: 18px;
+  border-radius: 999px;
+  padding: 0 14px;
+  color: var(--text-primary);
+  font-size: 0.94rem;
+  font-weight: 800;
   background: rgba(5, 12, 22, 0.26);
 }
 
-.platformCard h3 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 10px 0 0;
-  color: var(--text-primary);
-  font-size: 1.18rem;
-  letter-spacing: 0;
-}
-
-.platformCard h3 svg {
-  width: 22px;
-  height: 22px;
+.platformCard svg {
+  width: 20px;
+  height: 20px;
   flex: 0 0 auto;
   fill: currentColor;
   opacity: 0.92;
-}
-
-.platformCard p {
-  margin: 12px 0 0;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.65;
-}
-
-.releaseNotes {
-  border-top: 1px solid rgba(171, 207, 255, 0.12);
-  padding-top: 16px;
-}
-
-.releaseNotes ul {
-  display: grid;
-  gap: 10px;
-  margin: 14px 0 0;
-  padding-left: 1.15rem;
-  color: var(--text-secondary);
-  font-size: 0.93rem;
-  line-height: 1.65;
 }
 
 @media (max-width: 980px) {
@@ -1113,7 +1073,13 @@
   }
 
   .downloadSection {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .downloadPanel {
+    justify-content: flex-start;
+    width: 100%;
   }
 }
 
@@ -1149,8 +1115,7 @@
 
   .valueGrid,
   .workflowList,
-  .featureGrid,
-  .platformGrid {
+  .featureGrid {
     grid-template-columns: 1fr;
   }
 
@@ -1160,9 +1125,21 @@
     min-height: auto;
   }
 
-  .downloadIntro,
-  .downloadPanel {
+  .downloadSection {
     padding: 20px;
+  }
+
+  .downloadPrimaryAction {
+    width: 100%;
+  }
+
+  .platformGrid {
+    width: 100%;
+  }
+
+  .platformCard {
+    flex: 1 1 140px;
+    justify-content: center;
   }
 }
 
