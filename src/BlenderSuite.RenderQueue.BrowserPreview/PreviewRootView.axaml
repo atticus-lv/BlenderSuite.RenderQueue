@@ -60,8 +60,8 @@
     </UserControl.Styles>
 
     <suki:SukiMainHost BackgroundStyle="GradientDarker">
-        <Viewbox Stretch="Uniform" Margin="8">
-            <Border Width="1214"
+        <Viewbox Stretch="Uniform">
+            <Border Width="1200"
                     Height="900"
                     CornerRadius="7"
                     BorderThickness="1"
