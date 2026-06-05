@@ -9,7 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/atticus-lv/BlenderSuite.RenderQueue/releases">Releases</a>
+  <a href="https://atticus-lv.github.io/BlenderSuite.RenderQueue/">Website</a>
+  ·
+  <a href="https://github.com/atticus-lv/BlenderSuite.RenderQueue/releases">Download</a>
   ·
   <a href="docs/README.md">Development</a>
   ·
