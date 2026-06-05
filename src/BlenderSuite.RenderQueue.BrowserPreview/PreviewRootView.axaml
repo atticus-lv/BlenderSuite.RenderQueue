@@ -44,6 +44,19 @@
             <Setter Property="FontSize" Value="20" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
+        <Style Selector="Border.PreviewTitleBar">
+            <Setter Property="Height" Value="36" />
+            <Setter Property="Background" Value="{DynamicResource SukiBackgroundColor}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SukiBorderColor}" />
+            <Setter Property="BorderThickness" Value="0 0 0 1" />
+        </Style>
+        <Style Selector="Border.PreviewWindowButton">
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
     </UserControl.Styles>
 
     <suki:SukiMainHost BackgroundStyle="GradientDarker">
@@ -56,10 +69,8 @@
                     Background="{DynamicResource SukiBackgroundColor}"
                     ClipToBounds="True">
                 <Grid RowDefinitions="36,*">
-                    <Border Background="{DynamicResource SukiPrimaryColor10}"
-                            BorderBrush="{DynamicResource SukiBorderColor}"
-                            BorderThickness="0 0 0 1">
-                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="12 0">
+                    <Border Classes="PreviewTitleBar">
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="12 0 8 0">
                             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <Image Source="avares://BlenderSuite.RenderQueue/Assets/logo.ico"
                                        Width="15"
@@ -72,20 +83,33 @@
                             </StackPanel>
                             <StackPanel Grid.Column="2"
                                         Orientation="Horizontal"
-                                        VerticalAlignment="Center"
-                                        Spacing="14">
-                                <material:MaterialIcon Kind="WindowMinimize"
-                                                       Width="16"
-                                                       Height="16"
-                                                       Foreground="{DynamicResource SukiText}" />
-                                <material:MaterialIcon Kind="WindowMaximize"
-                                                       Width="15"
-                                                       Height="15"
-                                                       Foreground="{DynamicResource SukiText}" />
-                                <material:MaterialIcon Kind="Close"
-                                                       Width="16"
-                                                       Height="16"
-                                                       Foreground="{DynamicResource SukiText}" />
+                                        VerticalAlignment="Stretch"
+                                        Spacing="2"
+                                        IsHitTestVisible="False">
+                                <Border Classes="PreviewWindowButton">
+                                    <material:MaterialIcon Kind="WindowMinimize"
+                                                           Width="16"
+                                                           Height="16"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource SukiText}" />
+                                </Border>
+                                <Border Classes="PreviewWindowButton">
+                                    <material:MaterialIcon Kind="WindowMaximize"
+                                                           Width="15"
+                                                           Height="15"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource SukiText}" />
+                                </Border>
+                                <Border Classes="PreviewWindowButton">
+                                    <material:MaterialIcon Kind="Close"
+                                                           Width="16"
+                                                           Height="16"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource SukiText}" />
+                                </Border>
                             </StackPanel>
                         </Grid>
                     </Border>

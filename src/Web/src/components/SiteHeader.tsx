@@ -1,14 +1,14 @@
 import { motion, useReducedMotion } from 'framer-motion'
-import { Link } from 'react-router-dom'
-import { navItems } from '../content/site'
+import { Link, useLocation } from 'react-router-dom'
+import type { SiteLocale } from '../content/site'
+import { siteContent } from '../content/site'
 import { BrandMark } from './BrandMark'
 import styles from './SiteHeader.module.css'
 
-const basePath = import.meta.env.BASE_URL
-const anchorHref = (hash: string) => `${basePath}${hash}`.replace(/\/{2,}/g, '/')
-
-export function SiteHeader() {
+export function SiteHeader({ locale }: { locale: SiteLocale }) {
   const shouldReduceMotion = useReducedMotion()
+  const { hash } = useLocation()
+  const content = siteContent[locale]
 
   return (
     <motion.header
@@ -18,7 +18,7 @@ export function SiteHeader() {
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className={styles.bar}>
-        <Link className={styles.brand} to="/">
+        <Link className={styles.brand} to={`/${locale}`}>
           <BrandMark compact />
           <div>
             <span className={styles.brandName}>Blender Suite</span>
@@ -26,24 +26,30 @@ export function SiteHeader() {
           </div>
         </Link>
 
-        <nav className={styles.nav} aria-label="主导航">
-          {navItems.map((item) =>
-            item.href.startsWith('/') ? (
-              <Link key={item.label} className={styles.navLink} to={item.href}>
+        <div className={styles.navCluster}>
+          <nav className={styles.nav} aria-label={locale === 'zh' ? '主导航' : 'Main navigation'}>
+            {content.navItems.map((item) => (
+              <Link key={item.href} className={styles.navLink} to={`/${locale}${item.href}`}>
                 {item.label}
               </Link>
-            ) : (
-              <a
-                key={item.label}
-                className={styles.navLink}
-                href={item.href.startsWith('#') ? anchorHref(item.href) : item.href}
-              >
-                {item.label}
-              </a>
-            ),
-          )}
-        </nav>
+            ))}
+          </nav>
 
+          <div className={styles.languageSwitch} aria-label={content.languageToggleLabel}>
+            <Link
+              className={`${styles.languageOption} ${locale === 'zh' ? styles.languageOptionActive : ''}`}
+              to={`/zh${hash}`}
+            >
+              中文
+            </Link>
+            <Link
+              className={`${styles.languageOption} ${locale === 'en' ? styles.languageOptionActive : ''}`}
+              to={`/en${hash}`}
+            >
+              EN
+            </Link>
+          </div>
+        </div>
       </div>
     </motion.header>
   )

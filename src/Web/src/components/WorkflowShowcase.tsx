@@ -5,8 +5,10 @@ import {
   useScroll,
 } from 'framer-motion'
 import { startTransition, useRef, useState } from 'react'
-import { workflowSteps } from '../content/site'
+import { siteContent } from '../content/site'
 import styles from './WorkflowShowcase.module.css'
+
+const workflowSteps = siteContent.zh.workflowSteps
 
 const panelNotes = [
   '收拢多个 Blender 场景与参数设置。',

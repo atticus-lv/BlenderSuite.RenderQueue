@@ -1,86 +1,19 @@
 import { motion, Reorder, useDragControls, useReducedMotion } from 'framer-motion'
-import type { CSSProperties, MouseEvent, PointerEvent } from 'react'
+import type { CSSProperties, MouseEvent, PointerEvent, ReactNode } from 'react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { downloadPlatforms, siteConfig } from '../content/site'
+import type { HomeContent, SiteLocale } from '../content/site'
+import { downloadPlatforms, siteConfig, siteContent } from '../content/site'
 import styles from './HomePage.module.css'
 
 const MOCKUP_WIDTH = 1280
 const MOCKUP_HEIGHT = 960
-const WASM_PREVIEW_SRC = `${import.meta.env.BASE_URL}wasm-preview/index.html?v=20260605-wasm-preview-14`
+const WASM_PREVIEW_SRC = `${import.meta.env.BASE_URL}wasm-preview/index.html?v=20260605-wasm-preview-titlebar-1`
 const BRAND_LOGO_SRC = `${import.meta.env.BASE_URL}branding/logo.png`
 const CPU_VALUES = [28, 34, 31, 33, 58, 35, 39, 34, 36, 35, 42, 37, 45, 41]
 const GPU_VALUES = [45, 38, 42, 40, 35, 47, 29, 43, 38, 46, 41, 49, 44, 48]
 const CARD_EASE = [0.16, 1, 0.3, 1] as const
-const CARD_VIEWPORT = { once: false, amount: 0.24 } as const
-
-const advantageCards = [
-  {
-    eyebrow: 'Open Source',
-    title: '开源',
-    description:
-      '遵循AGPL-3.0 协议，源码、构建流程和发布记录均可在 GitHub 查看。',
-  },
-  {
-    eyebrow: 'AOT Native',
-    title: '高性能',
-    description:
-      '.NET 10 + avalonia 12，通过aot提供原生级性能。启动快速、内存占用低',
-  },
-  {
-    eyebrow: 'Ready to Use',
-    title: '开箱即用',
-    description:
-      '一键安装，自动搜寻本机 Blender 并安装扩展插件，在 Blender 内一键提交，即可开始渲染',
-  },
-]
-
-const workflowSteps = [
-  {
-    title: '提交场景',
-    body: '通过 Blender 扩展，自动选择场景与帧范围，生成桌面端渲染任务。',
-  },
-  {
-    title: '管理队列',
-    body: '调整任务顺序、启停任务、查看运行状态，并按任务覆写渲染参数。',
-  },
-  {
-    title: '处理输出',
-    body: '预览序列帧，一键合成或渲染后关闭主机',
-  },
-]
-
-const coreCapabilities = [
-  {
-    eyebrow: 'Task Management',
-    title: '任务队列',
-    description: '支持任务排序、暂停、继续、禁用和覆写',
-  },
-  {
-    eyebrow: 'Muiltiple Scene',
-    title: '多场景',
-    description: '支持 Blender 5.0 剪辑序列，可读取多场景镜头并生成拼接渲染任务。',
-  },
-  {
-    eyebrow: 'Frame Pipeline',
-    title: '序列帧处理',
-    description: '支持路径表达式解析，序列帧预览，一键合成视频',
-  },
-  {
-    eyebrow: 'Live Monitor',
-    title: '运行监控',
-    description: '展示队列状态、当前帧、任务进度、硬件占用和底层日志。',
-  },
-  {
-    eyebrow: 'Post Render',
-    title: '完成后动作',
-    description: '渲染完成后关机或睡眠。',
-  },
-  {
-    eyebrow: 'Cross Platform',
-    title: 'Windows / macOS',
-    description: '桌面端覆盖 Windows 与 macOS，x64/arm',
-  },
-]
+const CARD_VIEWPORT = { once: false, amount: 0.2, margin: '0px 0px -25% 0px' } as const
+const TITLE_VIEWPORT = { once: false, amount: 0.8, margin: '0px 0px -25% 0px' } as const
 
 function getCardMotionProps(shouldReduceMotion: boolean | null, index: number) {
   if (shouldReduceMotion) {
@@ -99,6 +32,40 @@ function getCardMotionProps(shouldReduceMotion: boolean | null, index: number) {
       ease: CARD_EASE,
     },
   }
+}
+
+function getSectionTitleMotionProps(shouldReduceMotion: boolean | null) {
+  if (shouldReduceMotion) {
+    return {
+      initial: false as const,
+    }
+  }
+
+  return {
+    initial: { opacity: 0, y: 10 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: TITLE_VIEWPORT,
+    transition: {
+      duration: 0.48,
+      ease: CARD_EASE,
+    },
+  }
+}
+
+function SectionTitle({
+  id,
+  children,
+  shouldReduceMotion,
+}: {
+  id: string
+  children: ReactNode
+  shouldReduceMotion: boolean | null
+}) {
+  return (
+    <motion.h2 id={id} className={styles.sectionTitle} {...getSectionTitleMotionProps(shouldReduceMotion)}>
+      {children}
+    </motion.h2>
+  )
 }
 
 type QueueItem = {
@@ -183,6 +150,130 @@ function MaterialIcon({ path, label }: { path: string; label?: string }) {
   )
 }
 
+function KineticGridBackground({ disabled }: { disabled: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const container = canvas?.parentElement
+    if (!canvas || !container || disabled) return undefined
+
+    const context = canvas.getContext('2d')
+    if (!context) return undefined
+
+    let frameId = 0
+    let width = 0
+    let height = 0
+    const pointer = {
+      active: false,
+      x: 0,
+      y: 0,
+      pulse: 0,
+    }
+
+    const resize = () => {
+      const rect = container.getBoundingClientRect()
+      const ratio = Math.min(window.devicePixelRatio || 1, 2)
+      width = rect.width
+      height = rect.height
+      canvas.width = Math.max(1, Math.floor(width * ratio))
+      canvas.height = Math.max(1, Math.floor(height * ratio))
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      context.setTransform(ratio, 0, 0, ratio, 0, 0)
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const rect = container.getBoundingClientRect()
+      pointer.active = true
+      pointer.x = event.clientX - rect.left
+      pointer.y = event.clientY - rect.top
+    }
+
+    const handlePointerLeave = () => {
+      pointer.active = false
+    }
+
+    const handlePointerDown = () => {
+      pointer.pulse = 1
+    }
+
+    const draw = (time: number) => {
+      context.clearRect(0, 0, width, height)
+
+      const spacing = width < 720 ? 34 : 42
+      const radius = width < 720 ? 96 : 132
+      const dotRadius = width < 720 ? 1.15 : 1.35
+      const columns = Math.ceil(width / spacing) + 2
+      const rows = Math.ceil(height / spacing) + 2
+      const originX = (width - (columns - 1) * spacing) / 2
+      const originY = (height - (rows - 1) * spacing) / 2
+      const pulse = pointer.pulse
+
+      context.save()
+      context.globalCompositeOperation = 'lighter'
+
+      for (let row = 0; row < rows; row += 1) {
+        for (let column = 0; column < columns; column += 1) {
+          const baseX = originX + column * spacing
+          const baseY = originY + row * spacing
+          const wave = Math.sin(time * 0.0012 + row * 0.42 + column * 0.18) * 1.6
+          let x = baseX
+          let y = baseY + wave
+          let alpha = 0.18
+          let size = dotRadius
+
+          if (pointer.active) {
+            const dx = x - pointer.x
+            const dy = y - pointer.y
+            const distance = Math.hypot(dx, dy)
+            const influence = Math.max(0, 1 - distance / (radius + pulse * 80))
+
+            if (influence > 0) {
+              const push = influence * influence * (28 + pulse * 44)
+              const angle = Math.atan2(dy, dx)
+              x += Math.cos(angle) * push
+              y += Math.sin(angle) * push
+              alpha += influence * 0.46
+              size += influence * 1.8
+            }
+          }
+
+          context.beginPath()
+          context.fillStyle = `rgba(139, 207, 255, ${alpha})`
+          context.arc(x, y, size, 0, Math.PI * 2)
+          context.fill()
+        }
+      }
+
+      context.restore()
+      pointer.pulse = Math.max(0, pointer.pulse - 0.035)
+      frameId = window.requestAnimationFrame(draw)
+    }
+
+    const resizeObserver = new ResizeObserver(resize)
+    resizeObserver.observe(container)
+    resize()
+
+    container.addEventListener('pointermove', handlePointerMove)
+    container.addEventListener('pointerleave', handlePointerLeave)
+    container.addEventListener('pointerdown', handlePointerDown)
+    frameId = window.requestAnimationFrame(draw)
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      resizeObserver.disconnect()
+      container.removeEventListener('pointermove', handlePointerMove)
+      container.removeEventListener('pointerleave', handlePointerLeave)
+      container.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [disabled])
+
+  if (disabled) return null
+
+  return <canvas ref={canvasRef} className={styles.kineticGrid} aria-hidden="true" />
+}
+
 function HandDrawnArrow() {
   return (
     <svg
@@ -191,10 +282,10 @@ function HandDrawnArrow() {
       focusable="false"
       viewBox="0 0 58 54"
     >
-      <path d="M10 7C18 17 28 24 41 29" />
-      <path d="M40 29C34 30 29 32 24 36" />
-      <path d="M40 29C36 22 34 17 34 12" />
-      <path d="M12 10C17 14 22 19 27 24" className={styles.arrowGhost} />
+      <path d="M48 7C40 17 30 24 17 29" />
+      <path d="M18 29C24 30 29 32 34 36" />
+      <path d="M18 29C22 22 24 17 24 12" />
+      <path d="M46 10C41 14 36 19 31 24" className={styles.arrowGhost} />
     </svg>
   )
 }
@@ -578,7 +669,7 @@ function AppMockup() {
   )
 }
 
-function HeroPreview() {
+function HeroPreview({ content }: { content: HomeContent['preview'] }) {
   const { ref: mockupFrameRef, scale: mockupScale } = useMockupScale()
   const hasWasmPreview = usePreviewAssetAvailable(WASM_PREVIEW_SRC)
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -623,7 +714,7 @@ function HeroPreview() {
   return (
     <div className={styles.previewBlock}>
       <div className={styles.previewPrompt}>
-        <span>试试交互手感</span>
+        <span>{content.prompt}</span>
         <HandDrawnArrow />
       </div>
       <div ref={mockupFrameRef} className={styles.heroVisual} style={mockupScaleStyle}>
@@ -639,7 +730,7 @@ function HeroPreview() {
             {!isFrameLoaded ? (
               <div className={styles.previewLoading} role="status" aria-live="polite">
                 <span className={styles.loadingSpinner} aria-hidden="true" />
-                <span>正在加载预览...</span>
+                <span>{content.loading}</span>
               </div>
             ) : null}
           </>
@@ -651,7 +742,7 @@ function HeroPreview() {
   )
 }
 
-function DownloadSection() {
+function DownloadSection({ content }: { content: HomeContent['download'] }) {
   const platformIconPath = {
     windows:
       'M3 5.8L10.8 4.7V11.8H3V5.8ZM12 4.5L21 3.2V11.8H12V4.5ZM3 13H10.8V20.1L3 19V13ZM12 13H21V21.5L12 20.2V13Z',
@@ -662,16 +753,17 @@ function DownloadSection() {
   return (
     <section id="download" className={styles.downloadSection} aria-labelledby="download-title">
       <div className={styles.downloadIntro}>
-        <span>Download</span>
-        <h2 id="download-title">下载 Blender Suite: Render Queue</h2>
-        <p>当前版本 {siteConfig.version}</p>
+        <h2 id="download-title">{content.title}</h2>
+        <p>
+          {content.versionLabel} {siteConfig.version}
+        </p>
       </div>
 
       <div className={styles.downloadPanel}>
         <a className={styles.downloadPrimaryAction} href={siteConfig.releaseUrl} target="_blank" rel="noreferrer">
-          GitHub Releases
+          {content.releaseLink}
         </a>
-        <div className={styles.platformGrid} aria-label="可用平台">
+        <div className={styles.platformGrid} aria-label={content.platformsLabel}>
           {downloadPlatforms.map((platform) => (
             <div key={platform.id} id={platform.href.slice(1)} className={styles.platformCard}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -686,8 +778,13 @@ function DownloadSection() {
   )
 }
 
-export function HomePage() {
+export function HomePage({ locale }: { locale: SiteLocale }) {
   const shouldReduceMotion = useReducedMotion()
+  const content = siteContent[locale]
+
+  useEffect(() => {
+    document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en'
+  }, [locale])
 
   return (
     <motion.div
@@ -697,38 +794,40 @@ export function HomePage() {
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
     >
       <section id="overview" className={styles.hero}>
+        <KineticGridBackground disabled={Boolean(shouldReduceMotion)} />
         <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}>Blender Suite</span>
-          <h1>Blender Suite: Render Queue</h1>
-          <p>
-            基于 Avalonia 构建的跨平台高性能 Blender 渲染调度工具。
-          </p>
+          <span className={styles.eyebrow}>{content.hero.eyebrow}</span>
+          <h1>{content.hero.title}</h1>
+          <p>{content.hero.description}</p>
           <div className={styles.heroActions}>
-            <a className={styles.primaryCta} href={siteConfig.primaryCta.href}>
-              {siteConfig.primaryCta.label}
+            <a className={styles.primaryCta} href="#preview">
+              {content.hero.primaryCta}
             </a>
-            <a className={styles.secondaryCta} href="#workflow">
-              查看工作流
+            <a className={styles.secondaryCta} href="#download">
+              {content.hero.secondaryCta}
             </a>
           </div>
         </div>
+      </section>
 
-        <HeroPreview />
+      <section id="preview" className={styles.previewSection} aria-label={content.preview.prompt}>
+        <HeroPreview content={content.preview} />
       </section>
 
       <section className={styles.storySection} aria-labelledby="positioning-title">
         <div className={styles.sectionHeader}>
-          <h2 id="positioning-title">优势</h2>
+          <SectionTitle id="positioning-title" shouldReduceMotion={shouldReduceMotion}>
+            {content.sections.advantages}
+          </SectionTitle>
         </div>
 
         <div className={styles.valueGrid}>
-          {advantageCards.map((item, index) => (
+          {content.advantages.map((item, index) => (
             <motion.article
-              key={item.eyebrow}
+              key={item.title}
               className={styles.valueCard}
               {...getCardMotionProps(shouldReduceMotion, index)}
             >
-              <span>{item.eyebrow}</span>
               <h3>{item.title}</h3>
               <p>{item.description}</p>
             </motion.article>
@@ -738,11 +837,13 @@ export function HomePage() {
 
       <section id="workflow" className={styles.workflowSection} aria-labelledby="workflow-title">
         <div className={styles.sectionHeader}>
-          <h2 id="workflow-title">工作流</h2>
+          <SectionTitle id="workflow-title" shouldReduceMotion={shouldReduceMotion}>
+            {content.sections.workflow}
+          </SectionTitle>
         </div>
 
         <ol className={styles.workflowList}>
-          {workflowSteps.map((step, index) => (
+          {content.workflowSteps.map((step, index) => (
             <motion.li key={step.title} {...getCardMotionProps(shouldReduceMotion, index)}>
               <span>{String(index + 1).padStart(2, '0')}</span>
               <h3>{step.title}</h3>
@@ -754,13 +855,14 @@ export function HomePage() {
 
       <section id="features" className={styles.featureSection} aria-labelledby="features-title">
         <div className={styles.sectionHeader}>
-          <h2 id="features-title">核心功能</h2>
+          <SectionTitle id="features-title" shouldReduceMotion={shouldReduceMotion}>
+            {content.sections.features}
+          </SectionTitle>
         </div>
 
         <div className={styles.featureGrid}>
-          {coreCapabilities.map((feature, index) => (
+          {content.coreCapabilities.map((feature, index) => (
             <motion.article key={feature.title} {...getCardMotionProps(shouldReduceMotion, index)}>
-              <span>{feature.eyebrow}</span>
               <h3>{feature.title}</h3>
               <p>{feature.description}</p>
             </motion.article>
@@ -768,7 +870,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <DownloadSection />
+      <DownloadSection content={content.download} />
     </motion.div>
   )
 }
