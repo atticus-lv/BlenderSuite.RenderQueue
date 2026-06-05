@@ -209,6 +209,8 @@ function KineticGridBackground({ disabled }: { disabled: boolean }) {
       const originX = (width - (columns - 1) * spacing) / 2
       const originY = (height - (rows - 1) * spacing) / 2
       const pulse = pointer.pulse
+      const timeSlow = time * 0.00042
+      const timeFast = time * 0.0011
 
       context.save()
       context.globalCompositeOperation = 'lighter'
@@ -217,11 +219,20 @@ function KineticGridBackground({ disabled }: { disabled: boolean }) {
         for (let column = 0; column < columns; column += 1) {
           const baseX = originX + column * spacing
           const baseY = originY + row * spacing
-          const wave = Math.sin(time * 0.0012 + row * 0.42 + column * 0.18) * 1.6
-          let x = baseX
-          let y = baseY + wave
-          let alpha = 0.18
-          let size = dotRadius
+          const driftX = Math.sin(timeFast + row * 0.36 + column * 0.22) * 3.8
+          const driftY = Math.cos(timeFast * 0.82 + row * 0.28 + column * 0.34) * 3.8
+          const centerFalloff = Math.max(0, 1 - Math.hypot(baseX - width / 2, baseY - height / 2) / Math.max(width, height))
+          const ripple =
+            0.5 +
+            0.5 *
+              Math.sin(
+                timeSlow * 4.4 +
+                  Math.hypot(baseX - width * 0.52, baseY - height * 0.46) * 0.018,
+              )
+          let x = baseX + driftX
+          let y = baseY + driftY
+          let alpha = 0.2 + ripple * 0.22 + centerFalloff * 0.12
+          let size = dotRadius + ripple * 0.62
 
           if (pointer.active) {
             const dx = x - pointer.x
@@ -238,6 +249,11 @@ function KineticGridBackground({ disabled }: { disabled: boolean }) {
               size += influence * 1.8
             }
           }
+
+          context.beginPath()
+          context.fillStyle = `rgba(139, 207, 255, ${alpha * 0.18})`
+          context.arc(x, y, size * 2.8, 0, Math.PI * 2)
+          context.fill()
 
           context.beginPath()
           context.fillStyle = `rgba(139, 207, 255, ${alpha})`
@@ -738,6 +754,7 @@ function HeroPreview({ content }: { content: HomeContent['preview'] }) {
           <AppMockup />
         )}
       </div>
+      <p className={styles.previewNote}>{content.note}</p>
     </div>
   )
 }

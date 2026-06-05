@@ -155,6 +155,15 @@
   transform: rotate(-1deg);
 }
 
+.previewNote {
+  max-width: min(720px, calc(100vw - 32px));
+  margin: 18px auto 0;
+  color: rgba(173, 195, 221, 0.72);
+  font-size: 0.92rem;
+  line-height: 1.7;
+  text-align: center;
+}
+
 .handDrawnArrow {
   width: clamp(44px, 4.8vw, 58px);
   height: clamp(40px, 4.5vw, 54px);

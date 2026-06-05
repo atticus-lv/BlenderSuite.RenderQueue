@@ -13,6 +13,7 @@ export type HomeContent = {
   }
   preview: {
     prompt: string
+    note: string
     loading: string
   }
   sections: {
@@ -56,6 +57,7 @@ export const siteContent: Record<SiteLocale, HomeContent> = {
     },
     preview: {
       prompt: '试试交互手感',
+      note: '此内嵌页面由项目编译为 WASM，交互效果与桌面端一致。',
       loading: '正在加载预览...',
     },
     sections: {
@@ -139,6 +141,7 @@ export const siteContent: Record<SiteLocale, HomeContent> = {
     },
     preview: {
       prompt: 'Try the interaction',
+      note: 'This embedded page is compiled to WASM from the project and keeps the same interaction feel as the desktop app.',
       loading: 'Loading preview...',
     },
     sections: {
