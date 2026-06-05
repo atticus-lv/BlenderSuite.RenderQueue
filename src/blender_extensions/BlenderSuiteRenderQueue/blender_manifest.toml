@@ -2,7 +2,7 @@ schema_version = "1.0.0"
 
 id = "BlenderSuiteRenderQueue"
 type = "add-on"
-version = "0.6.1"
+version = "0.6.2"
 
 name = "Blender Suite Render Queue"
 tagline = "Submit renders from Blender to Blender Suite Render Queue"

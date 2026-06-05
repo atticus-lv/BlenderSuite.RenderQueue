@@ -3,6 +3,7 @@ import bpy
 from .prefs import BlenderSuiteRenderQueuePreferences
 from .sender.operators import BSRQ_OT_submit_scene
 from .sender.panels import draw_header, register_panels, unregister_panels
+from .shared.icons import register_icons, unregister_icons
 
 
 classes = (
@@ -12,6 +13,8 @@ classes = (
 
 
 def register():
+    register_icons()
+
     for cls in classes:
         bpy.utils.register_class(cls)
 
@@ -23,6 +26,8 @@ def unregister():
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+
+    unregister_icons()
 
 
 if __name__ == "__main__":
