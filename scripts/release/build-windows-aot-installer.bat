@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 
 set "OPEN_OUTPUT=true"
 
@@ -55,9 +55,9 @@ set "ISCC_PATH=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
 if exist "%ProgramFiles%\Inno Setup 6\ISCC.exe" set "ISCC_PATH=%ProgramFiles%\Inno Setup 6\ISCC.exe"
 if defined INNO_SETUP_COMPILER set "ISCC_PATH=%INNO_SETUP_COMPILER%"
 
-if not exist "%ISCC_PATH%" (
+if not exist "!ISCC_PATH!" (
     echo ERROR: Inno Setup compiler not found.
-    echo Expected at: %ISCC_PATH%
+    echo Expected at: !ISCC_PATH!
     echo You can also set INNO_SETUP_COMPILER to the full path of ISCC.exe
     exit /b 1
 )
