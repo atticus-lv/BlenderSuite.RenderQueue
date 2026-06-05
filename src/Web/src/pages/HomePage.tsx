@@ -1,5 +1,5 @@
 import { motion, Reorder, useDragControls, useReducedMotion } from 'framer-motion'
-import type { CSSProperties, MouseEvent, PointerEvent, ReactNode } from 'react'
+import type { CSSProperties, MouseEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { HomeContent, SiteLocale } from '../content/site'
 import { downloadPlatforms, siteConfig, siteContent } from '../content/site'
@@ -183,7 +183,7 @@ function KineticGridBackground({ disabled }: { disabled: boolean }) {
       context.setTransform(ratio, 0, 0, ratio, 0, 0)
     }
 
-    const handlePointerMove = (event: PointerEvent) => {
+    const handlePointerMove = (event: globalThis.PointerEvent) => {
       const rect = container.getBoundingClientRect()
       pointer.active = true
       pointer.x = event.clientX - rect.left
@@ -433,7 +433,7 @@ function QueueRow({
   const controls = useDragControls()
   const selected = selectedId === item.id
 
-  const startDrag = (event: PointerEvent<HTMLButtonElement>) => {
+  const startDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
     onSelect(item.id)
     controls.start(event)
   }
