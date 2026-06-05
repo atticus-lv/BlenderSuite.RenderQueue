@@ -10,7 +10,7 @@ export const siteConfig = {
   productName: 'Blender Suite: Render Queue',
   shortDescription:
     '一个面向 Blender 工作流的队列渲染工具，专注于排队渲染、进度可见和结果整理。',
-  version: '0.5.8.3',
+  version: '0.6.0.0',
   primaryCta: {
     label: '下载',
     href: '#download',
