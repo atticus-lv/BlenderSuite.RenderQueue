@@ -1,12 +1,12 @@
 ; 定义应用程序信息
 #ifndef MyAppName
-#define MyAppName "BlenderRenderQueue"
+#define MyAppName "BlenderSuite.RenderQueue"
 #endif
 #ifndef MyAppDisplayName
 #define MyAppDisplayName "Blender Suite: Render Queue"
 #endif
 #ifndef MyAppShortcutName
-#define MyAppShortcutName "Blender Suite Render Queue"
+#define MyAppShortcutName "BlenderSuite.RenderQueue"
 #endif
 #ifndef MyAppVersion
 #define MyAppVersion "0.5.8.3"
@@ -15,7 +15,7 @@
 #define MyAppPublisher "Atticus"
 #endif
 #ifndef MyAppExeName
-#define MyAppExeName "BlenderRenderQueue.exe"
+#define MyAppExeName "BlenderSuite.RenderQueue.exe"
 #endif
 #ifndef MyPublishDir
 #define MyPublishDir ".\publish\aot\win-x64"

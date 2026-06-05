@@ -13,8 +13,10 @@ EOF
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_FILE="$REPO_ROOT/src/BlenderRenderQueue/BlenderRenderQueue.csproj"
-APP_NAME="BlenderRenderQueue"
+APP_NAME="BlenderSuite.RenderQueue"
 APP_DISPLAY_NAME="Blender Suite: Render Queue"
+PUBLISH_EXECUTABLE_NAME="BlenderRenderQueue"
+APP_EXECUTABLE_NAME="BlenderSuite.RenderQueue"
 APP_BUNDLE_NAME="${APP_NAME}.app"
 PUBLISH_ROOT="$REPO_ROOT/install/macOS/publish"
 BUILD_ROOT="$REPO_ROOT/install/macOS/build"
@@ -100,7 +102,8 @@ STAGING_DIR="$STAGING_ROOT/$BUILD_FLAVOR/$RID"
 SYMBOLS_DIR="$SYMBOLS_ROOT/$BUILD_FLAVOR/$RID"
 APP_DIR="$BUILD_DIR/$APP_BUNDLE_NAME"
 DMG_PATH="$OUTPUT_ROOT/${APP_NAME}-${APP_VERSION}-${RID}-${DMG_SUFFIX}.dmg"
-APP_EXECUTABLE="$APP_DIR/Contents/MacOS/$APP_NAME"
+PUBLISH_EXECUTABLE="$APP_DIR/Contents/MacOS/$PUBLISH_EXECUTABLE_NAME"
+APP_EXECUTABLE="$APP_DIR/Contents/MacOS/$APP_EXECUTABLE_NAME"
 ICONSET_DIR="$BUILD_DIR/${APP_NAME}.iconset"
 ICON_FILE="$APP_DIR/Contents/Resources/${APP_NAME}.icns"
 
@@ -127,6 +130,10 @@ if compgen -G "$APP_DIR/Contents/MacOS/*.dSYM" > /dev/null; then
   mv "$APP_DIR/Contents/MacOS/"*.dSYM "$SYMBOLS_DIR"/
 fi
 
+if [[ "$PUBLISH_EXECUTABLE_NAME" != "$APP_EXECUTABLE_NAME" && -f "$PUBLISH_EXECUTABLE" ]]; then
+  mv "$PUBLISH_EXECUTABLE" "$APP_EXECUTABLE"
+fi
+
 chmod +x "$APP_EXECUTABLE"
 
 ICON_PLIST=""
@@ -144,7 +151,7 @@ if [[ -f "$ICON_SOURCE" ]] && command -v sips >/dev/null 2>&1 && command -v icon
   sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_512x512.png" >/dev/null
   cp "$ICON_SOURCE" "$ICONSET_DIR/icon_512x512@2x.png"
   iconutil -c icns "$ICONSET_DIR" -o "$ICON_FILE"
-  ICON_PLIST=$'    <key>CFBundleIconFile</key>\n    <string>BlenderRenderQueue</string>'
+  ICON_PLIST=$'    <key>CFBundleIconFile</key>\n    <string>BlenderSuite.RenderQueue</string>'
 fi
 
 cat > "$APP_DIR/Contents/Info.plist" <<EOF
@@ -157,7 +164,7 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
     <key>CFBundleDisplayName</key>
     <string>${APP_DISPLAY_NAME}</string>
     <key>CFBundleExecutable</key>
-    <string>${APP_NAME}</string>
+    <string>${APP_EXECUTABLE_NAME}</string>
     <key>CFBundleIdentifier</key>
     <string>com.atticus.blenderrenderqueue</string>
     ${ICON_PLIST}

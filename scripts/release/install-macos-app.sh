@@ -5,7 +5,7 @@ usage() {
   cat <<'EOF'
 Usage: install-macos-app.sh <dmg-path> [--app-name NAME] [--target-dir DIR]
 
-Mounts a DMG, removes old BlenderRenderQueue app bundles from the target directory,
+Mounts a DMG, removes old app bundles from the target directory,
 installs the app bundle using its standard name, and detaches the image.
 EOF
 }
@@ -16,7 +16,7 @@ if [[ $# -lt 1 ]]; then
 fi
 
 DMG_PATH=""
-APP_NAME="BlenderRenderQueue"
+APP_NAME="BlenderSuite.RenderQueue"
 TARGET_DIR="/Applications"
 
 while [[ $# -gt 0 ]]; do

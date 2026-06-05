@@ -24,6 +24,8 @@ set "PROJECT_FILE=%REPO_ROOT%\src\BlenderRenderQueue\BlenderRenderQueue.csproj"
 set "PUBLISH_DIR=%REPO_ROOT%\install\Windows\publish\aot\win-x64"
 set "OUTPUT_DIR=%REPO_ROOT%\install\Windows\output"
 set "INNO_SCRIPT=%REPO_ROOT%\install\Windows\setup.iss"
+set "PUBLISH_EXE_NAME=BlenderRenderQueue.exe"
+set "APP_EXE_NAME=BlenderSuite.RenderQueue.exe"
 set "RID=win-x64"
 set "CONFIGURATION=Release"
 
@@ -73,8 +75,13 @@ dotnet publish "%PROJECT_FILE%" ^
   -o "%PUBLISH_DIR%"
 if errorlevel 1 exit /b %errorlevel%
 
+if exist "%PUBLISH_DIR%\%PUBLISH_EXE_NAME%" (
+    ren "%PUBLISH_DIR%\%PUBLISH_EXE_NAME%" "%APP_EXE_NAME%"
+)
+
 "%ISCC_PATH%" ^
   "/dUTF8Output=yes" ^
+  "/DMyAppExeName=%APP_EXE_NAME%" ^
   "/DMyAppVersion=%APP_VERSION%" ^
   "/DMyPublishDir=%PUBLISH_DIR%" ^
   "/DMyOutputDir=%OUTPUT_DIR%" ^
