@@ -60,6 +60,8 @@ public sealed class GlobalLogEntryViewModel
     public string TimeText => Event.Timestamp.ToLocalTime().ToString("HH:mm:ss");
     public string LevelText => AppLocalizer.Instance[$"RenderLog_Level_{Event.Level}"];
     public string ScopeText => AppLocalizer.Instance[$"RenderLog_Scope_{Event.Scope}"];
+    public bool IsWorkerScope => Event.Scope == RenderLogScope.Worker;
+    public bool IsInfoLevel => Event.Level == RenderLogLevel.Info;
     public string AudienceText => RenderLogMetadata.IsDiagnostic(Event)
         ? AppLocalizer.Instance["GlobalLog_Audience_Diagnostic"]
         : AppLocalizer.Instance["GlobalLog_Audience_User"];

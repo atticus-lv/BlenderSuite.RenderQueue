@@ -170,6 +170,9 @@
                             <Setter Property="FontSize" Value="11" />
                             <Setter Property="FontWeight" Value="SemiBold" />
                         </Style>
+                        <Style Selector="TextBlock.LogEntryTagText.PrimaryOnColor">
+                            <Setter Property="Foreground" Value="White" />
+                        </Style>
                     </ListBox.Styles>
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="logVm:GlobalLogEntryViewModel">
@@ -204,10 +207,26 @@
                                                                      Opacity="0.62"
                                                                      FontSize="12"
                                                                      VerticalAlignment="Center" />
-                                                <Border Background="#283B5E" Classes="LogEntryTag">
+                                                <Border Background="{DynamicResource SukiPrimaryColor}"
+                                                        BorderBrush="{DynamicResource SukiPrimaryColor}"
+                                                        Classes="LogEntryTag"
+                                                        IsVisible="{Binding IsWorkerScope}">
+                                                    <TextBlock Text="{Binding ScopeText}" Classes="LogEntryTagText PrimaryOnColor" />
+                                                </Border>
+                                                <Border Background="#283B5E"
+                                                        Classes="LogEntryTag"
+                                                        IsVisible="{Binding !IsWorkerScope}">
                                                     <TextBlock Text="{Binding ScopeText}" Classes="LogEntryTagText" />
                                                 </Border>
-                                                <Border Background="#3B3224" Classes="LogEntryTag">
+                                                <Border Background="{DynamicResource SukiPrimaryColor}"
+                                                        BorderBrush="{DynamicResource SukiPrimaryColor}"
+                                                        Classes="LogEntryTag"
+                                                        IsVisible="{Binding IsInfoLevel}">
+                                                    <TextBlock Text="{Binding LevelText}" Classes="LogEntryTagText PrimaryOnColor" />
+                                                </Border>
+                                                <Border Background="#3B3224"
+                                                        Classes="LogEntryTag"
+                                                        IsVisible="{Binding !IsInfoLevel}">
                                                     <TextBlock Text="{Binding LevelText}" Classes="LogEntryTagText" />
                                                 </Border>
                                                 <Border Background="#3A2934"

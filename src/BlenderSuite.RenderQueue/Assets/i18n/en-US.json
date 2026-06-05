@@ -172,6 +172,7 @@
   "Queue_RenderQueue": "Render Queue",
   "MainRender_Logs": "Logs",
   "MainRender_NoBlenderAvailable": "No Blender available",
+  "MainRender_GoToSettings": "Go to Settings",
   "Blender_SelectExecutable": "Please select a Blender executable file",
   "Blender_SelectFileDialog": "Select Blender Executable File",
   "Blender_PathInvalid": "Blender path is invalid",

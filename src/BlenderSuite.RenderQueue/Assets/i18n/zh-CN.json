@@ -172,6 +172,7 @@
   "Queue_RenderQueue": "渲染队列",
   "MainRender_Logs": "日志",
   "MainRender_NoBlenderAvailable": "没有可用的blender",
+  "MainRender_GoToSettings": "前往设置",
   "Blender_SelectExecutable": "请选择一个Blender可执行文件",
   "Blender_SelectFileDialog": "选择 Blender 可执行文件",
   "Blender_PathInvalid": "Blender路径无效",

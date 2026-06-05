@@ -59,6 +59,17 @@
                                     HorizontalAlignment="Center"
                                     TextWrapping="Wrap"
                                     TextAlignment="Center" />
+                                <Button Classes="Rounded"
+                                        Background="{DynamicResource SukiPrimaryColor}"
+                                        BorderBrush="{DynamicResource SukiPrimaryColor}"
+                                        Foreground="White"
+                                        HorizontalAlignment="Center"
+                                        Command="{Binding $parent[UserControl].((vm:MainRenderViewModel)DataContext).NavigateToSettingsCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <avalonia:MaterialIcon Kind="Settings" Width="18" Height="18" />
+                                        <TextBlock Text="{i18n:Localize MainRender_GoToSettings}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </Grid>
                     </suki:SukiSideMenuItem.PageContent>
