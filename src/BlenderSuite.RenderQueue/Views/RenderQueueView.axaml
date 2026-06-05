@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
+             xmlns:design="clr-namespace:BlenderSuite.RenderQueue.ViewModels.DesignTime"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:views="clr-namespace:BlenderSuite.RenderQueue.Views"
+             xmlns:viewModels="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
+             xmlns:services="clr-namespace:BlenderSuite.RenderQueue.Services"
+             xmlns:i18n="clr-namespace:BlenderSuite.RenderQueue.Localizer"
+             xmlns:ui="clr-namespace:BlenderSuite.RenderQueue.Services.UI"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+             x:Class="BlenderSuite.RenderQueue.Views.RenderQueueView"
+             x:DataType="viewModels:RenderQueueViewModel"
+             ui:ToplevelService.Register="{Binding}">
+
+    <Design.DataContext>
+        <design:DesignTimeRenderQueueViewModel />
+    </Design.DataContext>
+
+
+    <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="*,Auto">
+        <Border Width="1"
+                Height="1"
+                Opacity="0"
+                IsHitTestVisible="False"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                ClipToBounds="True"
+                IsVisible="{Binding TaskDetailPreheatTask, Converter={x:Static conv:ObjectConverters.IsNotNull}}">
+            <views:RenderTaskView DataContext="{Binding TaskDetailPreheatTask}" />
+        </Border>
+
+        <Grid Row="0" ColumnDefinitions="*,Auto,Auto,Auto">
+            <suki:GlassCard Margin="8 4 4 4">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Margin="24 0 0 0" VerticalAlignment="Center">
+                        <!-- 进度信息 -->
+                        <StackPanel Spacing="4"
+                                    VerticalAlignment="Center">
+                            <TextBlock
+                                Text="{Binding QueueStatusText, Converter={StaticResource LocalizeConverter}}"
+                                FontWeight="Bold" />
+
+                            <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizeConverter}">
+                                        <Binding Source="{}Success: {0} | Failed: {1}" />
+                                        <Binding Path="CompletedTaskCount" />
+                                        <Binding Path="FailedTaskCount" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <!-- <TextBlock Text="{Binding TotalFrames, StringFormat='总帧数: {0}'}" /> -->
+                            <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="Bold">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource LocalizeConverter}">
+                                        <Binding Source="{}Frames: {0} | {1}" />
+                                        <Binding Path="CompletedFrames" />
+                                        <Binding Path="TotalFrames" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                            <!-- 剩余时间显示 -->
+                            <TextBlock FontSize="16"
+                                       FontFamily="Foran"
+                                       FontWeight="Bold"
+                                       IsVisible="{Binding IsQueueRunning}"
+                                       Foreground="{DynamicResource SukiAccentColor}"
+                                       Text="{Binding RemainingTimeText, Converter={StaticResource LocalizeConverter}}"
+                                       VerticalAlignment="Center">
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                    <Viewbox Grid.Column="1" Width="80"
+                             Height="80"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             IsVisible="{Binding IsQueueRunning}">
+                        <suki:CircleProgressBar Value="{Binding OverallQueueProgressInt}">
+                            <TextBlock Margin="1,1,0,0"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="32"
+                                       FontWeight="Bold"
+                                       Text="{Binding OverallQueueProgressInt,StringFormat={}{0}%}" />
+                        </suki:CircleProgressBar>
+                    </Viewbox>
+                </Grid>
+
+            </suki:GlassCard>
+            <suki:GlassCard Grid.Column="1" Margin="4" Padding="16 8" IsVisible="{Binding IsQueueRunning}">
+                <views:RenderTaskProgressPreviewView DataContext="{Binding CurrentRenderingTask}"
+                                                     IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
+                                                     Margin="16  0 " />
+            </suki:GlassCard>
+            <suki:GlassCard Grid.Column="2" Margin="4" Padding="8" MaxWidth="250">
+                <Viewbox Height="100">
+                    <views:HardwareChartView Width="200" />
+                </Viewbox>
+            </suki:GlassCard>
+            <!-- 队列按钮部分 -->
+            <suki:GlassCard Grid.Column="3" Margin="4 4 8 4">
+                <views:RenderQueueButtonsView DataContext="{Binding}" />
+            </suki:GlassCard>
+        </Grid>
+
+        <SplitView DisplayMode="Inline" Name="RightPanelBorder"
+                   Grid.Row="2" Grid.ColumnSpan="2" Grid.Column="0" Margin="4">
+            <SplitView.IsPaneOpen>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                    <Binding Path="SelectedTask"
+                             Converter="{x:Static conv:ObjectConverters.IsNotNull}" />
+                    <Binding Path="!HasNoTasks" />
+                </MultiBinding>
+            </SplitView.IsPaneOpen>
+            <SplitView.Pane>
+                <!-- 任务详情 -->
+                <Border Grid.Column="0" Margin="4">
+                    <Panel>
+                        <suki:GlassCard IsAnimated="False">
+                            <Panel>
+                                <views:RenderTaskView DataContext="{Binding SelectedTask}" />
+                            </Panel>
+                        </suki:GlassCard>
+                    </Panel>
+                </Border>
+            </SplitView.Pane>
+            <SplitView.Content>
+                <suki:GlassCard Padding="0" Margin="4">
+                    <views:RenderQueueTaskListView DataContext="{Binding}" Margin="4" />
+                </suki:GlassCard>
+            </SplitView.Content>
+        </SplitView>
+
+
+    </Grid>
+</UserControl>

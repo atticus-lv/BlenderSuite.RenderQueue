@@ -12,10 +12,9 @@ EOF
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-PROJECT_FILE="$REPO_ROOT/src/BlenderRenderQueue/BlenderRenderQueue.csproj"
+PROJECT_FILE="$REPO_ROOT/src/BlenderSuite.RenderQueue/BlenderSuite.RenderQueue.csproj"
 APP_NAME="BlenderSuite.RenderQueue"
 APP_DISPLAY_NAME="Blender Suite: Render Queue"
-PUBLISH_EXECUTABLE_NAME="BlenderRenderQueue"
 APP_EXECUTABLE_NAME="BlenderSuite.RenderQueue"
 APP_BUNDLE_NAME="${APP_NAME}.app"
 PUBLISH_ROOT="$REPO_ROOT/install/macOS/publish"
@@ -23,7 +22,7 @@ BUILD_ROOT="$REPO_ROOT/install/macOS/build"
 STAGING_ROOT="$REPO_ROOT/install/macOS/staging"
 OUTPUT_ROOT="$REPO_ROOT/install/macOS/output"
 SYMBOLS_ROOT="$REPO_ROOT/install/macOS/symbols"
-ICON_SOURCE="$REPO_ROOT/src/BlenderRenderQueue/Assets/logo.png"
+ICON_SOURCE="$REPO_ROOT/src/BlenderSuite.RenderQueue/Assets/logo.png"
 RID=""
 OPEN_OUTPUT="true"
 INSTALL_APP="false"
@@ -102,7 +101,6 @@ STAGING_DIR="$STAGING_ROOT/$BUILD_FLAVOR/$RID"
 SYMBOLS_DIR="$SYMBOLS_ROOT/$BUILD_FLAVOR/$RID"
 APP_DIR="$BUILD_DIR/$APP_BUNDLE_NAME"
 DMG_PATH="$OUTPUT_ROOT/${APP_NAME}-${APP_VERSION}-${RID}-${DMG_SUFFIX}.dmg"
-PUBLISH_EXECUTABLE="$APP_DIR/Contents/MacOS/$PUBLISH_EXECUTABLE_NAME"
 APP_EXECUTABLE="$APP_DIR/Contents/MacOS/$APP_EXECUTABLE_NAME"
 ICONSET_DIR="$BUILD_DIR/${APP_NAME}.iconset"
 ICON_FILE="$APP_DIR/Contents/Resources/${APP_NAME}.icns"
@@ -128,10 +126,6 @@ cp -R "$PUBLISH_DIR"/. "$APP_DIR/Contents/MacOS/"
 if compgen -G "$APP_DIR/Contents/MacOS/*.dSYM" > /dev/null; then
   mkdir -p "$SYMBOLS_DIR"
   mv "$APP_DIR/Contents/MacOS/"*.dSYM "$SYMBOLS_DIR"/
-fi
-
-if [[ "$PUBLISH_EXECUTABLE_NAME" != "$APP_EXECUTABLE_NAME" && -f "$PUBLISH_EXECUTABLE" ]]; then
-  mv "$PUBLISH_EXECUTABLE" "$APP_EXECUTABLE"
 fi
 
 chmod +x "$APP_EXECUTABLE"

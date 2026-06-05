@@ -1,0 +1,41 @@
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+                 xmlns:i18n="clr-namespace:BlenderSuite.RenderQueue.Localizer"
+                 xmlns:suki="https://github.com/kikipoulet/SukiUI"
+                 mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+                 x:Class="BlenderSuite.RenderQueue.Views.SystemActionCountdownView"
+                 Title="{i18n:Localize SystemControl_CountdownTitle}"
+                 Width="400" Height="200"
+                 WindowStartupLocation="CenterScreen"
+                 CanResize="False"
+                 BackgroundStyle="GradientDarker"
+                 ShowBottomBorder="False"
+                 IsTitleBarVisible="False"
+                 ShowInTaskbar="True">
+
+    <StackPanel Margin="20" Spacing="15" VerticalAlignment="Center">
+        <TextBlock Name="TitleText"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   TextWrapping="Wrap" />
+
+        <TextBlock Name="CountdownText"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center" />
+
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="10">
+            <Button Name="CancelButton"
+                    Content="{i18n:Localize SystemControl_Cancel}"
+                    Width="100"
+                    Height="35" />
+        </StackPanel>
+    </StackPanel>
+</suki:SukiWindow>
+

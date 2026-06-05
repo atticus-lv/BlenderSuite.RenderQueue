@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:behaviors="clr-namespace:BlenderSuite.RenderQueue.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="400"
+             x:Class="BlenderSuite.RenderQueue.Views.FileDropView">
+
+    <ContentControl Classes="Drag"
+                    Padding="40">
+        <ContentControl.Styles>
+            <Style Selector="ContentControl.Drag">
+                <Setter Property="Content" Value="拖拽 .blend 文件到这里" />
+            </Style>
+        </ContentControl.Styles>
+        <i:Interaction.Behaviors>
+            <behaviors:ContentControlFilesDropBehavior
+                ContentDuringDrag="释放文件以添加任务"
+                BackgroundDuringDrag="{DynamicResource SukiPrimaryColor10}" />
+        </i:Interaction.Behaviors>
+        <ContentControl.ContentTemplate>
+            <DataTemplate DataType="x:String">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                    <TextBlock Text="{Binding .}"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="支持单个或多个 .blend 文件"
+                               FontSize="12"
+                               Foreground="Gray"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </DataTemplate>
+        </ContentControl.ContentTemplate>
+    </ContentControl>
+</UserControl>

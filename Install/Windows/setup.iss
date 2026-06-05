@@ -42,7 +42,7 @@ DefaultGroupName={#MyAppShortcutName}
 OutputDir={#MyOutputDir}
 OutputBaseFilename={#MyAppName}-{#MyAppVersion}.Setup
 
-SetupIconFile=..\..\src\BlenderRenderQueue\Assets\logo.ico
+SetupIconFile=..\..\src\BlenderSuite.RenderQueue\Assets\logo.ico
 Compression=lzma
 SolidCompression=yes
 

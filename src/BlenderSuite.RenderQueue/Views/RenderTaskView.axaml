@@ -1,0 +1,427 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
+             xmlns:design="clr-namespace:BlenderSuite.RenderQueue.ViewModels.DesignTime"
+             xmlns:views="clr-namespace:BlenderSuite.RenderQueue.Views"
+             xmlns:controls="clr-namespace:BlenderSuite.RenderQueue.Controls"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:i18n="clr-namespace:BlenderSuite.RenderQueue.Localizer"
+             xmlns:logVm="clr-namespace:BlenderSuite.RenderQueue.ViewModels.Logs"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:ui="clr-namespace:BlenderSuite.RenderQueue.Services.UI"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="BlenderSuite.RenderQueue.Views.RenderTaskView"
+             x:DataType="vm:RenderTaskViewModel"
+             ui:ToplevelService.Register="{Binding}">
+
+    <Design.DataContext>
+        <design:DesignTimeRenderTaskViewModel />
+    </Design.DataContext>
+
+
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="8" Margin="8">
+                    <StackPanel Orientation="Horizontal">
+                        <SelectableTextBlock Text="{Binding BlendFileName}" FontWeight="Bold" FontSize="20"
+                                             VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+
+                        <Border
+                            Background="{Binding Status, Converter={StaticResource StatusToColorConverter}}"
+                            CornerRadius="4" Padding="8,4">
+                            <TextBlock
+                                Text="{Binding Status, Converter={StaticResource StatusToLocalizedTextConverter}}"
+                                FontSize="12" FontWeight="Bold" />
+                        </Border>
+                        <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}"
+                                   VerticalAlignment="Center" FontSize="14" />
+
+
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding StatusDetailText}"
+                               IsVisible="{Binding HasStatusDetailText}"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Opacity="0.8" />
+
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="8" VerticalAlignment="Center">
+                    <DropDownButton Classes="Outlined Rounded" Content="{i18n:Localize RenderTask_Open}">
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuItem Header="{i18n:Localize Queue_OpenInBlender}"
+                                          Command="{Binding OpenInBlenderCommand}"
+                                          IsEnabled="{Binding IsValid}">
+                                    <MenuItem.Icon>
+                                        <avalonia:MaterialIcon Kind="BlenderSoftware" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="{i18n:Localize Queue_OpenFolder}"
+                                          Command="{Binding OpenFileDirectoryCommand}">
+                                    <MenuItem.Icon>
+                                        <avalonia:MaterialIcon Kind="FolderOpen" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="{i18n:Localize Queue_FramePathDirectory}"
+                                          Command="{Binding OpenFramePathDirectoryCommand}">
+                                    <MenuItem.Icon>
+                                        <avalonia:MaterialIcon Kind="Image" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+
+                                <Separator />
+
+                                <MenuItem Header="{i18n:Localize Queue_Refresh}"
+                                          Command="{Binding RefreshFileInfoCommand}"
+                                          IsEnabled="{Binding CanRefresh}">
+                                    <MenuItem.Icon>
+                                        <avalonia:MaterialIcon Kind="Refresh" Width="16"
+                                                               Height="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
+                    <Button Command="{Binding RefreshFileInfoCommand}"
+                            Classes="Rounded Danger"
+                            IsVisible="{Binding !IsValid}"
+                            IsEnabled="{Binding CanRefresh}"
+                            FontSize="12">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <avalonia:MaterialIcon Kind="Refresh" />
+                            <TextBlock Text="{i18n:Localize RenderTask_FileError}" Margin="4 0 0 0"></TextBlock>
+                        </StackPanel>
+                    </Button>
+
+                </StackPanel>
+            </Grid>
+
+            <suki:GlassCard Grid.Row="1" IsAnimated="False">
+                <TabControl IsVisible="{Binding IsValid}"
+                            Name="TabControl"
+                            SelectedIndex="{Binding SelectedDetailTabIndex}">
+                    <TabItem Header="{i18n:Localize RenderTask_SceneInfo}">
+                        <views:BlendScenePropertiesView DataContext="{Binding ScenePropertiesView}" />
+                    </TabItem>
+                    <TabItem Header="{i18n:Localize RenderTask_RenderSettings}">
+                        <ContentControl Content="{Binding RenderSettingsContent}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate x:DataType="vm:RenderTaskViewModel">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0">
+                                        <suki:BusyArea IsBusy="{Binding !CanModifyEnable}">
+                                            <StackPanel Spacing="12" Margin="8 4">
+                                            <StackPanel Spacing="8">
+                                                <CheckBox Content="{i18n:Localize RenderTask_RenderAnimation}"
+                                                          IsChecked="{Binding Animation}" />
+                                                <StackPanel IsVisible="{Binding Animation}" Spacing="8" Margin="16,0,0,0">
+                                                    <CheckBox Content="{i18n:Localize RenderTask_OverrideFrameRange}"
+                                                              IsChecked="{Binding OverrideFrameRange}">
+                                                        <CheckBox.IsEnabled>
+                                                            <Binding Path="CanModifyOverride" />
+                                                        </CheckBox.IsEnabled>
+                                                    </CheckBox>
+                                                    <StackPanel IsVisible="{Binding OverrideFrameRange}" Spacing="8"
+                                                                Margin="16,0,0,0">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto">
+                                                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                                                       Text="{i18n:Localize RenderTask_StartFrame}"
+                                                                       VerticalAlignment="Center" />
+                                                            <NumericUpDown Grid.Row="0" Grid.Column="1"
+                                                                           Value="{Binding StartFrame}"
+                                                                           Minimum="1" Maximum="100000" Width="120">
+                                                                <NumericUpDown.IsEnabled>
+                                                                    <Binding Path="CanModifyOverride" />
+                                                                </NumericUpDown.IsEnabled>
+                                                            </NumericUpDown>
+                                                            <TextBlock Grid.Row="0" Grid.Column="2"
+                                                                       Text="{i18n:Localize RenderTask_EndFrame}"
+                                                                       VerticalAlignment="Center" />
+                                                            <NumericUpDown Grid.Row="0" Grid.Column="3" Value="{Binding EndFrame}"
+                                                                           Minimum="1" Maximum="100000" Width="120">
+                                                                <NumericUpDown.IsEnabled>
+                                                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                                        <Binding Path="CanModifyOverride" />
+                                                                    </MultiBinding>
+                                                                </NumericUpDown.IsEnabled>
+                                                            </NumericUpDown>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="8">
+                                                <CheckBox Content="{i18n:Localize RenderTask_OverrideScene}"
+                                                          IsChecked="{Binding OverrideScene}">
+                                                    <CheckBox.IsEnabled>
+                                                        <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                            <Binding Path="CanModifyOverride" />
+                                                        </MultiBinding>
+                                                    </CheckBox.IsEnabled>
+                                                </CheckBox>
+                                                <StackPanel IsVisible="{Binding OverrideScene}" Spacing="8" Margin="16,0,0,0">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                                   Text="{i18n:Localize RenderTask_Scene}"
+                                                                   VerticalAlignment="Center" />
+                                                        <ComboBox Grid.Row="0" Grid.Column="1"
+                                                                  ItemsSource="{Binding AvailableSceneNames}"
+                                                                  SelectedItem="{Binding SelectedSceneName}"
+                                                                  Width="200" HorizontalAlignment="Left">
+                                                            <ComboBox.IsEnabled>
+                                                                <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                                    <Binding Path="CanModifyOverride" />
+                                                                </MultiBinding>
+                                                            </ComboBox.IsEnabled>
+                                                        </ComboBox>
+                                                        <TextBlock Grid.Row="0" Grid.Column="2"
+                                                                   Text="{i18n:Localize RenderTask_SameAsDefaultScene}"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{DynamicResource SukiAccentColor}"
+                                                                   FontSize="12"
+                                                                   Margin="8,0,0,0"
+                                                                   IsVisible="{Binding IsOverrideSceneIsDefaultScene}" />
+                                                    </Grid>
+
+                                                    <Border Grid.Row="1" Grid.ColumnSpan="3"
+                                                            Background="#FFF3CD" BorderBrush="#FFEAA7" BorderThickness="1"
+                                                            CornerRadius="4" Padding="8" Margin="0,4,0,0"
+                                                            IsVisible="{Binding ShowSceneOverrideWarning}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <TextBlock Text="⚠️" FontSize="16" VerticalAlignment="Center" />
+                                                            <TextBlock Text="{i18n:Localize RenderTask_SceneOverrideWarning}"
+                                                                       FontSize="12" VerticalAlignment="Center"
+                                                                       Foreground="#856404" TextWrapping="Wrap" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            </StackPanel>
+                                        </suki:BusyArea>
+                                    </ScrollViewer>
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
+
+                    </TabItem>
+                    <TabItem Header="{i18n:Localize RenderTask_OutputPreview}">
+                        <ContentControl Content="{Binding OutputPreviewContent}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate x:DataType="vm:RenderTaskViewModel">
+                                    <Grid RowDefinitions="Auto,*">
+                                        <controls:ImageSequencePreviewControl Grid.Row="1"
+                                                                              FolderPath="{Binding FramePathDirectory}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
+                    </TabItem>
+                    <TabItem Header="{i18n:Localize RenderTask_Log}">
+                        <ContentControl Content="{Binding LogContent}">
+                            <ContentControl.ContentTemplate>
+                                <DataTemplate x:DataType="vm:RenderTaskViewModel">
+                                    <Grid RowDefinitions="Auto,*" Margin="8 4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="8 0" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center">
+                                            <Button Content="{i18n:Localize RenderTask_ClearLog}"
+                                                    Command="{Binding ClearLogCommand}"
+                                                    Classes="Rounded" />
+                                            <Button
+                                                Content="{Binding LogPauseButtonText, Converter={StaticResource LocalizeConverter}}"
+                                                Command="{Binding ToggleLogPauseCommand}"
+                                                Classes="Rounded" />
+                                            <Button Content="{i18n:Localize RenderTask_CopyDiagnostics}"
+                                                    Command="{Binding CopyDebugDiagnosticsCommand}"
+                                                    Classes="Rounded"
+                                                    IsVisible="{Binding HasDebugEntries}" />
+                                        </StackPanel>
+
+                                        <TabControl Grid.Row="1"
+                                                    Margin="4 10"
+                                                    SelectedIndex="{Binding SelectedLogTabIndex}">
+                                            <TabItem Header="{i18n:Localize RenderTask_LogTimeline}">
+                                                <Grid RowDefinitions="Auto,*">
+                                                    <TextBlock Text="{i18n:Localize RenderTask_TimelineEmpty}"
+                                                               Margin="8"
+                                                               Opacity="0.65"
+                                                               IsVisible="{Binding !HasTimelineEntries}" />
+
+                                                    <ListBox Grid.Row="1"
+                                                             IsVisible="{Binding HasTimelineEntries}"
+                                                             ItemsSource="{Binding TimelineEntries}"
+                                                             Classes="Void"
+                                                             Background="Transparent"
+                                                             BorderThickness="0"
+                                                             Padding="0"
+                                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                                        <ListBox.Styles>
+                                                            <Style Selector="ListBoxItem">
+                                                                <Setter Property="Margin" Value="0 0 0 4" />
+                                                                <Setter Property="Padding" Value="0" />
+                                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                            </Style>
+                                                            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                                                                <Setter Property="Background" Value="Transparent" />
+                                                                <Setter Property="BorderBrush" Value="Transparent" />
+                                                            </Style>
+                                                            <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+                                                                <Setter Property="Background" Value="Transparent" />
+                                                                <Setter Property="BorderBrush" Value="Transparent" />
+                                                            </Style>
+                                                        </ListBox.Styles>
+                                                        <ListBox.ItemTemplate>
+                                                            <DataTemplate x:DataType="logVm:TaskLogEntryViewModel">
+                                                                <suki:GlassCard Margin="0 0 0 4" IsAnimated="False" Padding="0">
+                                                                    <StackPanel Spacing="3" Margin="6">
+                                                                        <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="5">
+                                                                            <SelectableTextBlock Grid.Column="0"
+                                                                                                 Text="{Binding TimeText}"
+                                                                                                 FontWeight="SemiBold"
+                                                                                                 FontSize="12" />
+                                                                            <Border Grid.Column="1" CornerRadius="8" Padding="5,1" Background="#223B82F6">
+                                                                                <TextBlock Text="{Binding ScopeText}" FontSize="10" />
+                                                                            </Border>
+                                                                            <Border Grid.Column="2" CornerRadius="8" Padding="5,1" Background="#2210B981">
+                                                                                <TextBlock Text="{Binding LevelText}" FontSize="10" />
+                                                                            </Border>
+                                                                        </Grid>
+                                                                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="12" />
+                                                                    </StackPanel>
+                                                                </suki:GlassCard>
+                                                            </DataTemplate>
+                                                        </ListBox.ItemTemplate>
+                                                    </ListBox>
+                                                </Grid>
+                                            </TabItem>
+
+                                            <TabItem Header="{i18n:Localize RenderTask_LogDebug}">
+                                                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+                                                    <TextBlock Text="{i18n:Localize RenderTask_DebugEmpty}"
+                                                               Margin="8"
+                                                               Opacity="0.65"
+                                                               IsVisible="{Binding !HasDebugEntries}" />
+
+                                                    <ListBox Grid.Row="1"
+                                                             IsVisible="{Binding HasDebugEntries}"
+                                                             ItemsSource="{Binding DebugEntries}"
+                                                             Classes="Void"
+                                                             Background="Transparent"
+                                                             BorderThickness="0"
+                                                             Padding="0"
+                                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                                        <ListBox.Styles>
+                                                            <Style Selector="ListBoxItem">
+                                                                <Setter Property="Margin" Value="0 0 0 8" />
+                                                                <Setter Property="Padding" Value="0" />
+                                                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                            </Style>
+                                                            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                                                                <Setter Property="Background" Value="Transparent" />
+                                                                <Setter Property="BorderBrush" Value="Transparent" />
+                                                            </Style>
+                                                            <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+                                                                <Setter Property="Background" Value="Transparent" />
+                                                                <Setter Property="BorderBrush" Value="Transparent" />
+                                                            </Style>
+                                                        </ListBox.Styles>
+                                                        <ListBox.ItemTemplate>
+                                                            <DataTemplate x:DataType="logVm:TaskLogEntryViewModel">
+                                                                <Border Margin="0 0 0 8"
+                                                                        Padding="8"
+                                                                        CornerRadius="6"
+                                                                        Background="#11000000">
+                                                                    <StackPanel Spacing="3">
+                                                                        <SelectableTextBlock Text="{Binding TimestampText}"
+                                                                                             FontWeight="SemiBold"
+                                                                                             FontSize="12" />
+                                                                        <SelectableTextBlock Text="{Binding Message}"
+                                                                                             TextWrapping="Wrap"
+                                                                                             FontSize="12" />
+                                                                        <SelectableTextBlock Text="{Binding MetadataText}"
+                                                                                             TextWrapping="Wrap"
+                                                                                             FontFamily="Consolas"
+                                                                                             FontSize="10"
+                                                                                             Opacity="0.7"
+                                                                                             IsVisible="{Binding HasMetadata}" />
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ListBox.ItemTemplate>
+                                                    </ListBox>
+
+                                                    <TextBox Grid.Row="2"
+                                                             Text="{Binding DebugLogText}"
+                                                             TextWrapping="Wrap"
+                                                             IsReadOnly="True"
+                                                             AcceptsReturn="True"
+                                                             MinHeight="96"
+                                                             BorderThickness="0"
+                                                             Background="Transparent"
+                                                             FontFamily="Consolas"
+                                                             FontSize="11"
+                                                             Padding="6" />
+                                                </Grid>
+                                            </TabItem>
+                                        </TabControl>
+                                    </Grid>
+                                </DataTemplate>
+                            </ContentControl.ContentTemplate>
+                        </ContentControl>
+                    </TabItem>
+                </TabControl>
+            </suki:GlassCard>
+            <suki:GlassCard Grid.Row="2" IsAnimated="False" IsVisible="{Binding !#TabControl.SelectedIndex}">
+                <StackPanel>
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="4">
+                        <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="Auto,16,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{i18n:Localize RenderTask_Size}"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <SelectableTextBlock Grid.Row="0" Grid.Column="2"
+                                                     Text="{Binding FileInfo.FileSizeFormatted}"
+                                                     VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize RenderTask_Created}"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <SelectableTextBlock Grid.Row="1" Grid.Column="2"
+                                                     Text="{Binding FileInfo.CreatedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                                     VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="{i18n:Localize RenderTask_Modified}"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <SelectableTextBlock Grid.Row="2" Grid.Column="2"
+                                                     Text="{Binding FileInfo.LastModifiedTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                                     VerticalAlignment="Center" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="{i18n:Localize RenderTask_Path}"
+                                           FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                                <SelectableTextBlock Grid.Row="3" Grid.Column="2" Text="{Binding FileInfo.FilePath}"
+                                                     VerticalAlignment="Center"
+                                                     TextWrapping="NoWrap">
+                                </SelectableTextBlock>
+                            </Grid>
+
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </suki:GlassCard>
+    </Grid>
+</UserControl>

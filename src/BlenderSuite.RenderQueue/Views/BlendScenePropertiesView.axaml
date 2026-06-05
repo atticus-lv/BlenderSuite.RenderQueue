@@ -1,0 +1,265 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:BlenderSuite.RenderQueue.ViewModels"
+             xmlns:design="using:BlenderSuite.RenderQueue.ViewModels.DesignTime"
+             xmlns:conv="using:Avalonia.Data.Converters"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
+             xmlns:i18n="clr-namespace:BlenderSuite.RenderQueue.Localizer"
+             xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
+             x:Class="BlenderSuite.RenderQueue.Views.BlendScenePropertiesView"
+             x:DataType="vm:BlendScenePropertiesViewModel">
+
+    <Design.DataContext>
+        <design:DesignTimeBlendScenePropertiesViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- 内容区域 -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="10">
+                <!-- 加载状态 -->
+                <Border CornerRadius="4" IsVisible="{Binding IsLoading}" VerticalAlignment="Center"
+                        HorizontalAlignment="Center">
+                    <StackPanel Orientation="Vertical" Spacing="8">
+                        <!-- <ProgressBar IsIndeterminate="True" /> -->
+                        <suki:Loading LoadingStyle="Simple" />
+                        <TextBlock Text="{Binding LoadingMessage, Converter={StaticResource LocalizeConverter}}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 错误信息 -->
+                <Border CornerRadius="4" IsVisible="{Binding HasErrorMessage}"
+                        HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="❌" FontSize="16" />
+                        <TextBlock Text="{Binding ErrorMessage}" VerticalAlignment="Center" Foreground="#C62828"
+                                   FontWeight="Bold" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 场景选择器 -->
+                <ScrollViewer x:Name="SceneScrollViewer"
+                              HorizontalScrollBarVisibility="Auto" 
+                              VerticalScrollBarVisibility="Disabled">
+                    <ListBox ItemsSource="{Binding SortedScenes}"
+                             IsVisible="{Binding SelectedSceneProperties.IsLoaded}"
+                             SelectedItem="{Binding SelectedScene}"
+                             Classes="WithoutCheck Void"
+                             IsEnabled="{Binding !IsLoading}"
+                             SelectionMode="Single">
+                        <ListBox.Styles>
+                            <!-- <Style Selector="ListBoxItem /template/ Border"> -->
+                            <!--     <Setter Property="Background" -->
+                            <!--             Value="Transparent" /> -->
+                            <!--     <Setter Property="Transitions"> -->
+                            <!--         <Setter.Value> -->
+                            <!--             <Transitions> -->
+                            <!--                 <BrushTransition Property="Background" Duration="0:0:0.1" /> -->
+                            <!--             </Transitions> -->
+                            <!--         </Setter.Value> -->
+                            <!--     </Setter> -->
+                            <!-- </Style> -->
+                            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                                <Setter Property="Background"
+                                        Value="{DynamicResource SukiPrimaryColor10}" />
+                            </Style>
+                            <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+                                <Setter Property="Background"
+                                        Value="{DynamicResource SukiPrimaryColor25}" />
+                            </Style>
+                        </ListBox.Styles>
+
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="4" Margin="4,2">
+                                    <material:MaterialIcon Kind="Home" IsVisible="{Binding IsDefaultScene}" />
+                                    <TextBlock Text="{Binding SceneName}"
+                                               FontWeight="SemiBold"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+
+
+                <!-- 文件信息 -->
+                <Border CornerRadius="4" Padding="0" IsVisible="{Binding SelectedSceneProperties.IsLoaded}">
+                    <Grid ColumnDefinitions="Auto,10,*"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+
+
+                        <!-- 场景类型 -->
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{i18n:Localize SceneProperties_SceneType}"
+                                   FontWeight="SemiBold" MinWidth="80"
+                                   VerticalAlignment="Center" />
+                        <SelectableTextBlock Grid.Row="1" Grid.Column="2"
+                                             Text="{Binding SelectedSceneProperties.SceneTypeDisplayText, Converter={StaticResource LocalizeConverter}}"
+                                             VerticalAlignment="Center" />
+
+                        <!-- 场景信息分隔线 -->
+                        <Rectangle Grid.Row="2" Grid.ColumnSpan="3" Grid.Column="0" Height="1" Fill="Transparent"
+                                   Margin="0,8"
+                                   IsVisible="{Binding SceneNames.Count, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+
+                        <!-- 帧范围 -->
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="{i18n:Localize SceneProperties_FrameRange}"
+                                   FontWeight="SemiBold" MinWidth="80"
+                                   VerticalAlignment="Center" />
+                        <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" Spacing="5"
+                                    VerticalAlignment="Center">
+                            <SelectableTextBlock Text="{Binding SelectedSceneProperties.FrameStart}"
+                                                 VerticalAlignment="Center" />
+                            <SelectableTextBlock Text="{i18n:Localize SceneProperties_FrameSeparator}" />
+                            <SelectableTextBlock Text="{Binding SelectedSceneProperties.FrameEnd}"
+                                                 VerticalAlignment="Center" />
+                            <SelectableTextBlock Text="{i18n:Localize SceneProperties_FrameStartBracket}" />
+                            <SelectableTextBlock Text="{Binding SelectedSceneProperties.TotalFrames}"
+                                                 VerticalAlignment="Center" />
+                            <SelectableTextBlock Text="{i18n:Localize SceneProperties_FrameEndBracket}" />
+                        </StackPanel>
+
+                        <!-- 当前帧 -->
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="{i18n:Localize SceneProperties_CurrentFrame}"
+                                   FontWeight="SemiBold" MinWidth="80"
+                                   VerticalAlignment="Center" />
+                        <SelectableTextBlock Grid.Row="4" Grid.Column="2"
+                                             Text="{Binding SelectedSceneProperties.FrameCurrent}"
+                                             VerticalAlignment="Center" />
+
+                        <!-- FPS -->
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="{i18n:Localize SceneProperties_FrameRate}"
+                                   FontWeight="SemiBold" MinWidth="80" />
+                        <SelectableTextBlock Grid.Row="5" Grid.Column="2"
+                                             Text="{Binding SelectedSceneProperties.Fps, StringFormat='{}{0:F2} fps'}"
+                                             IsVisible="{Binding SelectedSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNotNull}}" />
+                        <TextBlock Grid.Row="5" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
+                                   IsVisible="{Binding SelectedSceneProperties.Fps, Converter={x:Static conv:ObjectConverters.IsNull}}" />
+
+                        <!-- 分隔线 -->
+                        <Rectangle Grid.Row="6" Grid.ColumnSpan="3" Grid.Column="0" Height="1" Fill="Transparent"
+                                   Margin="0,8" />
+
+                        <!-- 渲染引擎 -->
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="{i18n:Localize SceneProperties_RenderEngine}"
+                                   FontWeight="SemiBold" MinWidth="80" />
+                        <SelectableTextBlock Grid.Row="7" Grid.Column="2"
+                                             Text="{Binding SelectedSceneProperties.RenderEngineDisplayName}"
+                                             IsVisible="{Binding SelectedSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Grid.Row="7" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
+                                   IsVisible="{Binding SelectedSceneProperties.RenderEngine, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+
+                        <!-- Cycles时间限制 -->
+                        <TextBlock Grid.Row="8" Grid.Column="0" Text="{i18n:Localize SceneProperties_TimeLimit}"
+                                   FontWeight="SemiBold" MinWidth="80"
+                                   IsVisible="{Binding SelectedSceneProperties.HasCyclesTimeLimit}" />
+                        <TextBlock Grid.Row="8" Grid.Column="2"
+                                   Text="{Binding SelectedSceneProperties.CyclesTimeLimit, StringFormat='{}{0:F1} 秒'}"
+                                   IsVisible="{Binding SelectedSceneProperties.HasCyclesTimeLimit}" />
+
+                        <!-- 相机名称 - 单一相机 -->
+                        <TextBlock Grid.Row="9" Grid.Column="0" Text="{i18n:Localize SceneProperties_Camera}"
+                                   FontWeight="SemiBold" MinWidth="80"
+                                   IsVisible="{Binding SelectedSceneProperties.IsMultiCameraScene, Converter={x:Static conv:BoolConverters.Not}}" />
+                        <SelectableTextBlock Grid.Row="9" Grid.Column="2"
+                                             Text="{Binding SelectedSceneProperties.CameraName}">
+                            <SelectableTextBlock.IsVisible>
+                                <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
+                                    <Binding Path="SelectedSceneProperties.IsMultiCameraScene"
+                                             Converter="{x:Static conv:BoolConverters.Not}" />
+                                    <Binding Path="SelectedSceneProperties.CameraName"
+                                             Converter="{x:Static conv:StringConverters.IsNotNullOrEmpty}" />
+                                </MultiBinding>
+                            </SelectableTextBlock.IsVisible>
+                        </SelectableTextBlock>
+                        <TextBlock Grid.Row="9" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
+                                   Foreground="{DynamicResource SukiDangerColor}">
+                            <TextBlock.IsVisible>
+                                <MultiBinding Converter="{x:Static conv:BoolConverters.And}">
+                                    <Binding Path="SelectedSceneProperties.IsMultiCameraScene"
+                                             Converter="{x:Static conv:BoolConverters.Not}" />
+                                    <Binding Path="SelectedSceneProperties.CameraName"
+                                             Converter="{x:Static conv:StringConverters.IsNullOrEmpty}" />
+                                </MultiBinding>
+                            </TextBlock.IsVisible>
+                        </TextBlock>
+
+                        <!-- 相机类型 - 多相机 -->
+                        <TextBlock Grid.Row="9" Grid.Column="0" Text="{i18n:Localize SceneProperties_Camera}"
+                                   FontWeight="SemiBold" MinWidth="80"
+                                   VerticalAlignment="Center"
+                                   IsVisible="{Binding SelectedSceneProperties.IsMultiCameraScene}" />
+                        <TextBlock Grid.Row="9" Grid.Column="2"
+                                   Text="{Binding SelectedSceneProperties.CameraTypeDisplayText, Converter={StaticResource LocalizeConverter}}"
+                                   VerticalAlignment="Center"
+                                   IsVisible="{Binding SelectedSceneProperties.IsMultiCameraScene}" />
+
+                        <!-- 分隔线 -->
+                        <Rectangle Grid.Row="10" Grid.ColumnSpan="3" Grid.Column="0" Height="1" Fill="Transparent"
+                                   Margin="0,8" />
+
+                        <!-- 输出路径 -->
+                        <TextBlock Grid.Row="11" Grid.Column="0" Text="{i18n:Localize SceneProperties_OutputPath}"
+                                   FontWeight="SemiBold" MinWidth="80" />
+                        <SelectableTextBlock Grid.Row="11" Grid.Column="2"
+                                             Text="{Binding SelectedSceneProperties.RenderOutputPath}"
+                                             TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
+                                             IsVisible="{Binding SelectedSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Grid.Row="11" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
+                                   Foreground="{DynamicResource SukiDangerColor}"
+                                   IsVisible="{Binding SelectedSceneProperties.RenderOutputPath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+
+                        <!-- Frame Path -->
+                        <TextBlock Grid.Row="12" Grid.Column="0" Text="{i18n:Localize SceneProperties_RealFramePath}"
+                                   FontWeight="SemiBold" MinWidth="80"
+                                   VerticalAlignment="Center" />
+                        <SelectableTextBlock Grid.Row="12" Grid.Column="2"
+                                             Text="{Binding SelectedSceneProperties.FramePath}"
+                                             TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"
+                                             IsVisible="{Binding SelectedSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Grid.Row="12" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
+                                   Foreground="{DynamicResource SukiDangerColor}"
+                                   IsVisible="{Binding SelectedSceneProperties.FramePath, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+
+                        <!-- 输出格式 -->
+                        <TextBlock Grid.Row="13" Grid.Column="0" Text="{i18n:Localize SceneProperties_OutputFormat}"
+                                   FontWeight="SemiBold" MinWidth="80" />
+                        <SelectableTextBlock Grid.Row="13" Grid.Column="2"
+                                             Text="{Binding SelectedSceneProperties.RenderOutputFormat}"
+                                             IsVisible="{Binding SelectedSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Grid.Row="13" Grid.Column="2" Text="{i18n:Localize SceneProperties_NotSet}"
+                                   Foreground="{DynamicResource SukiDangerColor}"
+                                   IsVisible="{Binding SelectedSceneProperties.RenderOutputFormat, Converter={x:Static conv:StringConverters.IsNullOrEmpty}}" />
+
+                    </Grid>
+                </Border>
+
+                <!-- 空状态 -->
+                <Border CornerRadius="4">
+                    <Border.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="ShowEmptyState" />
+                            <Binding Path="!IsLoading" />
+                        </MultiBinding>
+                    </Border.IsVisible>
+                    <StackPanel HorizontalAlignment="Center" Spacing="8">
+                        <TextBlock Text="📄" FontSize="24" HorizontalAlignment="Center" />
+                        <TextBlock Text="{i18n:Localize SceneProperties_FileNotLoaded}" HorizontalAlignment="Center" FontStyle="Italic" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+    </Grid>
+</UserControl>

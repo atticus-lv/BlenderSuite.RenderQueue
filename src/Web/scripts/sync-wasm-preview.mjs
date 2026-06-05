@@ -19,7 +19,7 @@ const configuration = process.env.BRQ_WASM_CONFIGURATION ?? 'Release'
 const candidates = [
   resolve(
     repoSrcRoot,
-    'BlenderRenderQueue.BrowserPreview',
+    'BlenderSuite.RenderQueue.BrowserPreview',
     'bin',
     configuration,
     'net10.0-browser',
@@ -28,7 +28,7 @@ const candidates = [
   ),
   resolve(
     repoSrcRoot,
-    'BlenderRenderQueue.BrowserPreview',
+    'BlenderSuite.RenderQueue.BrowserPreview',
     'bin',
     configuration,
     'net10.0-browser',
@@ -36,7 +36,7 @@ const candidates = [
   ),
   resolve(
     repoSrcRoot,
-    'BlenderRenderQueue.BrowserPreview',
+    'BlenderSuite.RenderQueue.BrowserPreview',
     'bin',
     'Debug',
     'net10.0-browser',
@@ -53,8 +53,8 @@ if (!source) {
 }
 
 const target = resolve(webRoot, 'public', 'wasm-preview')
-const browserPreviewSourceRoot = resolve(repoSrcRoot, 'BlenderRenderQueue.BrowserPreview', 'wwwroot')
-const appLogoSource = resolve(repoSrcRoot, 'BlenderRenderQueue', 'Assets', 'logo.png')
+const browserPreviewSourceRoot = resolve(repoSrcRoot, 'BlenderSuite.RenderQueue.BrowserPreview', 'wwwroot')
+const appLogoSource = resolve(repoSrcRoot, 'BlenderSuite.RenderQueue', 'Assets', 'logo.png')
 
 rmSync(target, { recursive: true, force: true })
 cpSync(source, target, { recursive: true })

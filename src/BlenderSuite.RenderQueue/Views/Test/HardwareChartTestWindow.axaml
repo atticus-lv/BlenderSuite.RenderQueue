@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+        x:Class="BlenderSuite.RenderQueue.Views.Test.HardwareChartTestWindow"
+        x:DataType="vm:HardwareChartViewModel"
+        Title="硬件监控图表测试" Width="300" Height="200"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <Grid Grid.Row="1">
+            <ContentControl Content="{Binding}" />
+        </Grid>
+    </Grid>
+</Window>

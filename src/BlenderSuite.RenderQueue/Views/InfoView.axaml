@@ -1,0 +1,190 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
+             xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d"
+             x:Class="BlenderSuite.RenderQueue.Views.InfoView"
+             x:DataType="vm:MainRenderViewModel"
+             d:DesignWidth="900"
+             d:DesignHeight="720">
+
+    <ScrollViewer>
+        <StackPanel Margin="32,28"
+                    Spacing="26"
+                    MaxWidth="980"
+                    HorizontalAlignment="Left">
+            <Grid ColumnDefinitions="Auto,*"
+                  ColumnSpacing="16">
+                <avalonia:MaterialIcon Kind="InfoCircleOutline"
+                                       Width="36"
+                                       Height="36"
+                                       Foreground="{DynamicResource SukiAccentColor}"
+                                       VerticalAlignment="Center" />
+
+                <StackPanel Grid.Column="1"
+                            Spacing="4">
+                    <TextBlock Text="Blender Suite: Render Queue"
+                               FontSize="30"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="版本信息与开源组件许可"
+                               FontSize="14"
+                               Opacity="0.68" />
+                </StackPanel>
+            </Grid>
+
+            <Border Height="1"
+                    Background="{DynamicResource SukiBorderColor}" />
+
+            <Grid ColumnDefinitions="220,*"
+                  RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                  RowSpacing="12"
+                  ColumnSpacing="24">
+                <TextBlock Text="应用版本"
+                           Opacity="0.66" />
+                <SelectableTextBlock Grid.Column="1"
+                                     Text="{Binding AppVersion}" />
+
+                <TextBlock Grid.Row="1"
+                           Text="作者"
+                           Opacity="0.66" />
+                <SelectableTextBlock Grid.Row="1"
+                                     Grid.Column="1"
+                                     Text="Atticus" />
+
+                <TextBlock Grid.Row="2"
+                           Text="版权"
+                           Opacity="0.66" />
+                <SelectableTextBlock Grid.Row="2"
+                                     Grid.Column="1"
+                                     Text="Atticus 2025" />
+
+                <TextBlock Grid.Row="3"
+                           Text="运行时"
+                           Opacity="0.66" />
+                <SelectableTextBlock Grid.Row="3"
+                                     Grid.Column="1"
+                                     Text="{Binding RuntimeDisplay}"
+                                     TextWrapping="Wrap" />
+
+                <TextBlock Grid.Row="4"
+                           Text="操作系统"
+                           Opacity="0.66" />
+                <SelectableTextBlock Grid.Row="4"
+                                     Grid.Column="1"
+                                     Text="{Binding OperatingSystemDisplay}"
+                                     TextWrapping="Wrap" />
+            </Grid>
+
+            <StackPanel Spacing="12">
+                <TextBlock Text="项目许可"
+                           FontSize="18"
+                           FontWeight="SemiBold" />
+                <Grid ColumnDefinitions="220,*"
+                      RowDefinitions="Auto,Auto"
+                      RowSpacing="12"
+                      ColumnSpacing="24">
+                    <TextBlock Text="许可类型"
+                               Opacity="0.66" />
+                    <SelectableTextBlock Grid.Column="1"
+                                         Text="自定义许可协议" />
+
+                    <TextBlock Grid.Row="1"
+                               Text="许可文件"
+                               Opacity="0.66" />
+                    <SelectableTextBlock Grid.Row="1"
+                                         Grid.Column="1"
+                                         Text="install/license_zh.txt, install/license_en.txt"
+                                         TextWrapping="Wrap" />
+                </Grid>
+            </StackPanel>
+
+            <StackPanel Spacing="12">
+                <TextBlock Text="开源组件"
+                           FontSize="18"
+                           FontWeight="SemiBold" />
+
+                <Grid ColumnDefinitions="*,140,140"
+                      RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                      RowSpacing="10"
+                      ColumnSpacing="18">
+                    <TextBlock Text="组件"
+                               FontWeight="SemiBold"
+                               Opacity="0.72" />
+                    <TextBlock Grid.Column="1"
+                               Text="版本"
+                               FontWeight="SemiBold"
+                               Opacity="0.72" />
+                    <TextBlock Grid.Column="2"
+                               Text="许可"
+                               FontWeight="SemiBold"
+                               Opacity="0.72" />
+
+                    <SelectableTextBlock Grid.Row="1"
+                                         Text="Avalonia" />
+                    <SelectableTextBlock Grid.Row="1"
+                                         Grid.Column="1"
+                                         Text="12.0.3" />
+                    <SelectableTextBlock Grid.Row="1"
+                                         Grid.Column="2"
+                                         Text="MIT" />
+
+                    <SelectableTextBlock Grid.Row="2"
+                                         Text="SukiUI" />
+                    <SelectableTextBlock Grid.Row="2"
+                                         Grid.Column="1"
+                                         Text="7.0.1" />
+                    <SelectableTextBlock Grid.Row="2"
+                                         Grid.Column="2"
+                                         Text="MIT" />
+
+                    <SelectableTextBlock Grid.Row="3"
+                                         Text="CommunityToolkit.Mvvm" />
+                    <SelectableTextBlock Grid.Row="3"
+                                         Grid.Column="1"
+                                         Text="8.2.1" />
+                    <SelectableTextBlock Grid.Row="3"
+                                         Grid.Column="2"
+                                         Text="MIT" />
+
+                    <SelectableTextBlock Grid.Row="4"
+                                         Text="LibreHardwareMonitorLib" />
+                    <SelectableTextBlock Grid.Row="4"
+                                         Grid.Column="1"
+                                         Text="0.9.5-pre474" />
+                    <SelectableTextBlock Grid.Row="4"
+                                         Grid.Column="2"
+                                         Text="MPL-2.0" />
+
+                    <SelectableTextBlock Grid.Row="5"
+                                         Text="Material.Icons.Avalonia" />
+                    <SelectableTextBlock Grid.Row="5"
+                                         Grid.Column="1"
+                                         Text="3.0.2" />
+                    <SelectableTextBlock Grid.Row="5"
+                                         Grid.Column="2"
+                                         Text="MIT" />
+
+                    <SelectableTextBlock Grid.Row="6"
+                                         Text="Microsoft.Extensions.DependencyInjection" />
+                    <SelectableTextBlock Grid.Row="6"
+                                         Grid.Column="1"
+                                         Text="10.0.0" />
+                    <SelectableTextBlock Grid.Row="6"
+                                         Grid.Column="2"
+                                         Text="MIT" />
+
+                    <SelectableTextBlock Grid.Row="7"
+                                         Text="Xaml.Behaviors" />
+                    <SelectableTextBlock Grid.Row="7"
+                                         Grid.Column="1"
+                                         Text="12.0.0" />
+                    <SelectableTextBlock Grid.Row="7"
+                                         Grid.Column="2"
+                                         Text="MIT" />
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

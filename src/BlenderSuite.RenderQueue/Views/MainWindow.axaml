@@ -1,0 +1,42 @@
+<suki:SukiWindow
+    BackgroundStyle="GradientDarker"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:BlenderSuite.RenderQueue.ViewModels"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:suki="https://github.com/kikipoulet/SukiUI"
+    xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="960"
+    Width="1280" Height="960"
+    WindowStartupLocation="CenterScreen"
+    x:Class="BlenderSuite.RenderQueue.Views.MainWindow"
+    x:DataType="vm:MainWindowViewModel"
+    Icon="/Assets/logo.ico"
+    ShowTitlebarBackground="True"
+    TitleBarAutoShowDelay="2"
+    ShowBottomBorder="False"
+    Title="Blender Suite: Render Queue">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+
+    <suki:SukiWindow.Hosts>
+        <suki:SukiDialogHost Manager="{Binding DialogManager}" />
+        <suki:SukiToastHost Manager="{Binding ToastManager}" />
+    </suki:SukiWindow.Hosts>
+
+    <suki:SukiWindow.LogoContent>
+        <Image Source="avares://BlenderSuite.RenderQueue/Assets/logo.ico" Width="15" Height="15" VerticalAlignment="Center" />
+    </suki:SukiWindow.LogoContent>
+    <Panel>
+        <TextBlock Text="{Binding AppVersion, StringFormat=v{0}}" Opacity="0.3" VerticalAlignment="Bottom"
+                   HorizontalAlignment="Right" Margin="20 16" />
+        <ContentControl Content="{Binding Content}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+    </Panel>
+    <suki:SukiWindow.RightWindowTitleBarControls>
+    </suki:SukiWindow.RightWindowTitleBarControls>
+</suki:SukiWindow>

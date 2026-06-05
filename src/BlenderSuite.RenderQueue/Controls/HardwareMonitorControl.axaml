@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls1="clr-namespace:BlenderSuite.RenderQueue.Controls"
+             xmlns:suki="https://github.com/kikipoulet/SukiUI"
+
+             x:Class="BlenderSuite.RenderQueue.Controls.HardwareMonitorControl">
+
+    <StackPanel Spacing="10" Orientation="Horizontal" VerticalAlignment="Center">
+        <!-- CPU 信息 -->
+        <StackPanel Spacing="4">
+            <!-- <ProgressBar  -->
+            <!--              Value="{Binding $parent[controls:HardwareMonitorControl].CpuLoad}" -->
+            <!--              Maximum="100" /> -->
+            <Border Width="60" Height="60">
+                <Viewbox Width="60" Height="60">
+                    <suki:CircleProgressBar Value="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad }" StrokeWidth="12">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad ,StringFormat={}{0:#0}%}" FontWeight="SemiBold" FontSize="36" />
+                            <!-- <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].CpuTemperature,StringFormat={}{0}℃ }" FontWeight="SemiBold" FontSize="24"  /> -->
+                        </StackPanel>
+                    </suki:CircleProgressBar>
+                </Viewbox>
+            </Border>
+            <TextBlock Text="CPU" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"  FontSize="18"/>
+            <!-- <TextBlock -->
+            <!--     Text="{Binding $parent[controls1:HardwareMonitorControl].CpuLoad, StringFormat={}{0:F1}%}" -->
+            <!--     VerticalAlignment="Center" /> -->
+
+        </StackPanel>
+
+        <!-- 内存信息 -->
+        <!-- <StackPanel Orientation="Horizontal" Spacing="4"> -->
+        <!--     <TextBlock Text="Mem" /> -->
+        <!--     <TextBlock -->
+        <!--         Text="{Binding $parent[controls1:HardwareMonitorControl].MemoryUsedPercentage, StringFormat={}{0:F1}%}" -->
+        <!--         VerticalAlignment="Center" /> -->
+        <!-- </StackPanel> -->
+
+        <!-- GPU 信息 -->
+        <StackPanel Spacing="4">
+            <!-- <ProgressBar Value="{Binding $parent[controls:HardwareMonitorControl].GpuLoad}" -->
+            <!--              Maximum="100" /> -->
+            <!-- <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].GpuLoad, StringFormat={}{0:F1}%}" -->
+            <!--            VerticalAlignment="Center" /> -->
+            <Border Width="60" Height="60">
+                <Viewbox Width="60" Height="60">
+                    <suki:CircleProgressBar Value="{Binding $parent[controls1:HardwareMonitorControl].GpuLoad }" StrokeWidth="12">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].GpuLoad ,StringFormat={}{0:#0}%}" FontWeight="SemiBold" FontSize="36" />
+                            <TextBlock Text="{Binding $parent[controls1:HardwareMonitorControl].GpuTemperature,StringFormat={}{0}℃ }" FontWeight="SemiBold" FontSize="24" />
+                        </StackPanel>
+                    </suki:CircleProgressBar>
+                </Viewbox>
+            </Border>
+            
+            <TextBlock Text="GPU" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold" FontSize="18"/>
+
+            <!-- <TextBlock Text="温度:" Grid.Row="1" Grid.Column="0" Margin="0,0,10,0" /> -->
+            <!-- <TextBlock Text="{Binding $parent[controls:HardwareMonitorControl].GpuTemperature, StringFormat={}{0:F1}°C}" /> -->
+        </StackPanel>
+    </StackPanel>
+
+</UserControl>

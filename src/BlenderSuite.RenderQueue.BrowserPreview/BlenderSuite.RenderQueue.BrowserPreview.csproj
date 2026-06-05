@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BlenderSuite.RenderQueue.BrowserPreview</AssemblyName>
+    <RootNamespace>BlenderSuite.RenderQueue.BrowserPreview</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <WasmBuildNative>true</WasmBuildNative>
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Browser" />
+    <PackageReference Include="SkiaSharp.NativeAssets.WebAssembly" VersionOverride="3.119.4-preview.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BlenderSuite.RenderQueue\BlenderSuite.RenderQueue.csproj" />
+  </ItemGroup>
+</Project>

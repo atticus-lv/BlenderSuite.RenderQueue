@@ -132,19 +132,19 @@ chmod +x scripts/release/build-macos-dmg.sh
 ### Windows Native AOT
 
 ```bash
-dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r win-x64 --self-contained true -p:PublishAot=true -o install/Windows/publish/aot/win-x64
+dotnet publish src/BlenderSuite.RenderQueue/BlenderSuite.RenderQueue.csproj -c Release -r win-x64 --self-contained true -p:PublishAot=true -o install/Windows/publish/aot/win-x64
 ```
 
 ### macOS Native AOT
 
 ```bash
-dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=true -o install/macOS/publish/aot/osx-arm64
+dotnet publish src/BlenderSuite.RenderQueue/BlenderSuite.RenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=true -o install/macOS/publish/aot/osx-arm64
 ```
 
 ### macOS 非 AOT
 
 ```bash
-dotnet publish src/BlenderRenderQueue/BlenderRenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=false -o install/macOS/publish/non-aot/osx-arm64
+dotnet publish src/BlenderSuite.RenderQueue/BlenderSuite.RenderQueue.csproj -c Release -r osx-arm64 --self-contained true -p:PublishAot=false -o install/macOS/publish/non-aot/osx-arm64
 ```
 
 ### Windows Inno Setup
