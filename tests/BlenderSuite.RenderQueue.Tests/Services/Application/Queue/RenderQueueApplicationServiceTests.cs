@@ -11,6 +11,7 @@ using BlenderSuite.RenderQueue.Services.Application.Queue;
 using BlenderSuite.RenderQueue.Services.Business.Blender;
 using BlenderSuite.RenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderSuite.RenderQueue.Services.Business.Persistence;
+using BlenderSuite.RenderQueue.Services.Business.Submission;
 using BlenderSuite.RenderQueue.ViewModels;
 using Xunit;
 
@@ -21,6 +22,74 @@ public sealed class RenderQueueApplicationServiceTests
     private static IRenderTaskFactory CreateTaskFactory(IRenderLogService logService)
     {
         return new RenderTaskFactory(new FakeBlenderQueryService(), logService);
+    }
+
+    [AvaloniaFact]
+    public async Task SubmitTaskAsync_AddsTaskAndPublishesSnapshotWithoutViewModelBridge()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        var workerHost = new FakeBlenderWorkerHost();
+        var executionService = new FakeRenderTaskExecutionService();
+        var persistenceService = new FakeDataPersistenceService();
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
+
+        var response = await sut.SubmitTaskAsync(new LocalSubmissionRequest
+        {
+            Filepath = blendFile.Path,
+            Filename = Path.GetFileName(blendFile.Path),
+            SceneName = "SceneA",
+            OverrideFrameRange = true,
+            FrameStart = 3,
+            FrameEnd = 5
+        });
+        await DrainUiAsync();
+
+        Assert.True(response.Ok);
+        Assert.Single(sut.RenderTasks);
+        var task = sut.RenderTasks.Single();
+        Assert.Equal("SceneA", task.SelectedSceneName);
+        Assert.True(task.OverrideFrameRange);
+        Assert.Equal(3, task.StartFrame);
+        Assert.Equal(5, task.EndFrame);
+        Assert.Single(sut.Snapshot.Tasks);
+        Assert.Equal(task.Id, sut.Snapshot.Tasks[0].TaskId);
+        Assert.Equal(QueueExecutionState.Idle, sut.Snapshot.State);
+    }
+
+    [AvaloniaFact]
+    public async Task StartQueueFromSubmissionAsync_StartsExecutionThroughApplicationService()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        using var blenderExecutable = TemporaryFile.Create(".exe");
+
+        var workerHost = new FakeBlenderWorkerHost();
+        var executionService = new FakeRenderTaskExecutionService();
+        var persistenceService = new FakeDataPersistenceService();
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
+        sut.SetBlenderPath(blenderExecutable.Path);
+
+        await sut.SubmitTaskAsync(new LocalSubmissionRequest
+        {
+            Filepath = blendFile.Path,
+            Filename = Path.GetFileName(blendFile.Path),
+            SceneName = string.Empty,
+            OverrideFrameRange = false,
+            FrameStart = 1,
+            FrameEnd = 1
+        });
+
+        var response = await sut.StartQueueFromSubmissionAsync();
+        await WaitUntilAsync(() => executionService.StartCalls == 1);
+        await WaitUntilAsync(() => sut.Snapshot.State == QueueExecutionState.Completed);
+        await DrainUiAsync();
+
+        Assert.True(response.Ok);
+        Assert.Equal(1, workerHost.EnsureReadyCalls);
+        Assert.Equal(1, executionService.StartCalls);
+        Assert.Equal(QueueExecutionState.Completed, sut.Snapshot.State);
+        Assert.Equal(1.0, sut.Snapshot.OverallProgress01, 3);
     }
 
     [AvaloniaFact]

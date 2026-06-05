@@ -3,7 +3,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
+#if WINDOWS
 using LibreHardwareMonitor.Hardware;
+#endif
 using BlenderSuite.RenderQueue.Services.Application.Logging;
 
 namespace BlenderSuite.RenderQueue.Services.Business.Monitoring;
@@ -14,12 +16,15 @@ public class HardwareMonitorService : IDisposable
     private static readonly Regex PhysMemRegex = new(@"PhysMem:\s*(?<used>[\d.]+[KMGTP]?) used.*,\s*(?<unused>[\d.]+[KMGTP]?) unused", RegexOptions.Compiled);
     private static readonly Regex GpuUtilizationRegex = new(@"""Device Utilization %""\s*=\s*(?<value>\d+)", RegexOptions.Compiled);
 
+#if WINDOWS
     private readonly Computer? _computer;
+#endif
 
     public bool IsSupported { get; }
 
     public HardwareMonitorService()
     {
+#if WINDOWS
         if (OperatingSystem.IsWindows())
         {
             try
@@ -44,6 +49,7 @@ public class HardwareMonitorService : IDisposable
 
             return;
         }
+#endif
 
         if (OperatingSystem.IsMacOS())
         {
@@ -69,10 +75,12 @@ public class HardwareMonitorService : IDisposable
             return new HardwareInfo();
         }
 
+#if WINDOWS
         if (OperatingSystem.IsWindows())
         {
             return GetWindowsHardwareInfo();
         }
+#endif
 
         if (OperatingSystem.IsMacOS())
         {
@@ -82,6 +90,7 @@ public class HardwareMonitorService : IDisposable
         return new HardwareInfo();
     }
 
+#if WINDOWS
     private HardwareInfo GetWindowsHardwareInfo()
     {
         var info = new HardwareInfo();
@@ -152,6 +161,7 @@ public class HardwareMonitorService : IDisposable
 
         return info;
     }
+#endif
 
     private HardwareInfo GetMacHardwareInfo()
     {
@@ -324,6 +334,8 @@ public class HardwareMonitorService : IDisposable
 
     public void Dispose()
     {
+#if WINDOWS
         _computer?.Close();
+#endif
     }
 }

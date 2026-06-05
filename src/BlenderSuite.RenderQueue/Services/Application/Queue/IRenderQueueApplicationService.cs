@@ -1,7 +1,9 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using BlenderSuite.RenderQueue.Services.Business.Submission;
 using BlenderSuite.RenderQueue.ViewModels;
 
 namespace BlenderSuite.RenderQueue.Services.Application.Queue;
@@ -42,6 +44,8 @@ public interface IRenderQueueApplicationService : IDisposable
     void MoveTaskToBottom(RenderTaskViewModel? selectedTask);
     void CopyTask(RenderTaskViewModel? taskToCopy, Action<RenderTaskViewModel?> setSelectedTask);
     void RequestRemoveAllTasksConfirmation();
+    Task<LocalSubmissionResponse> SubmitTaskAsync(LocalSubmissionRequest request, CancellationToken cancellationToken = default);
+    Task<LocalSubmissionResponse> StartQueueFromSubmissionAsync(CancellationToken cancellationToken = default);
 
     Task LoadQueueDataAsync();
 }

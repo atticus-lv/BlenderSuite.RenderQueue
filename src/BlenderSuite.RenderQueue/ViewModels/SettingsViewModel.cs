@@ -11,6 +11,7 @@ using BlenderSuite.RenderQueue.Helpers;
 using BlenderSuite.RenderQueue.Models;
 using BlenderSuite.RenderQueue.Services.Application.Logging;
 using BlenderSuite.RenderQueue.Services.Business.Blender;
+using BlenderSuite.RenderQueue.Services.Business.Blender.Extensions;
 using BlenderSuite.RenderQueue.Services.Business.Persistence;
 using BlenderSuite.RenderQueue.Services.UI;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -68,6 +69,12 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hardwareAccelerationChanged; // 硬件加速是否已更改
 
+    [ObservableProperty]
+    private bool _isInstallingBlenderExtension;
+
+    [ObservableProperty]
+    private string _blenderExtensionStatusMessage = string.Empty;
+
     private readonly SukiTheme _theme;
 
 
@@ -117,6 +124,7 @@ public partial class SettingsViewModel : ViewModelBase
 
     // 内部状态
     private readonly ISettingsPersistenceService _settingsPersistenceService;
+    private readonly IBlenderExtensionManager _blenderExtensionManager;
     private readonly IBlenderValidationService _blenderValidationService;
     private readonly IRenderLogService _logService;
     private bool _isLoadingSettings;
@@ -132,11 +140,13 @@ public partial class SettingsViewModel : ViewModelBase
 
     public SettingsViewModel(
         ISettingsPersistenceService settingsPersistenceService,
+        IBlenderExtensionManager blenderExtensionManager,
         IBlenderValidationService blenderValidationService,
         IRenderLogService logService)
     {
         // 构造函数中不进行自动检测，等待StartInitialization调用
         _settingsPersistenceService = settingsPersistenceService;
+        _blenderExtensionManager = blenderExtensionManager;
         _blenderValidationService = blenderValidationService;
         _logService = logService;
         _theme = new SukiTheme();
@@ -182,6 +192,7 @@ public partial class SettingsViewModel : ViewModelBase
                 if (SelectedBlenderExecutable.IsFileStillValid())
                 {
                     ValidateSelectedBlender(SelectedBlenderExecutable);
+                    await EnsureBlenderExtensionInstalledAsync(SelectedBlenderExecutable, showToasts: false);
                     blenderDetected = true;
                 }
                 else
@@ -425,6 +436,7 @@ public partial class SettingsViewModel : ViewModelBase
         {
             SelectedBlenderExecutable = blenderExecutable;
             await SaveSettingsToFileAsync();
+            await EnsureBlenderExtensionInstalledAsync(blenderExecutable, showToasts: true);
             // 选择Blender后立即保存，所以清除未保存更改标记
             HasUnsavedChanges = false;
         }
@@ -674,6 +686,55 @@ public partial class SettingsViewModel : ViewModelBase
         finally
         {
             _isLoadingSettings = false;
+        }
+    }
+
+    private async Task EnsureBlenderExtensionInstalledAsync(BlenderExecutable blenderExecutable, bool showToasts)
+    {
+        if (string.IsNullOrWhiteSpace(blenderExecutable.Path) || !File.Exists(blenderExecutable.Path))
+        {
+            return;
+        }
+
+        try
+        {
+            IsInstallingBlenderExtension = true;
+            BlenderExtensionStatusMessage = $"Checking Blender extension for {blenderExecutable.DisplayName}...";
+
+            var result = await _blenderExtensionManager.EnsureInstalledAsync(blenderExecutable.Path);
+            BlenderExtensionStatusMessage = result.Message;
+
+            _logService.Write(RenderLogLevel.Info, RenderLogScope.System, $"Blender extension check: {result.Outcome} - {result.Message}", source: nameof(SettingsViewModel), metadata: RenderLogMetadata.Diagnostic());
+
+            if (!showToasts)
+            {
+                return;
+            }
+
+            switch (result.Outcome)
+            {
+                case BlenderExtensionInstallOutcome.Installed:
+                case BlenderExtensionInstallOutcome.Updated:
+                    this.ShowSuccessToast("Blender Extension", result.Message);
+                    break;
+                case BlenderExtensionInstallOutcome.Failed:
+                    this.ShowErrorToast("Blender Extension", result.Message);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            BlenderExtensionStatusMessage = ex.Message;
+            _logService.Write(RenderLogLevel.Error, RenderLogScope.System, $"Blender extension install failed: {ex.Message}", source: nameof(SettingsViewModel));
+
+            if (showToasts)
+            {
+                this.ShowErrorToast("Blender Extension", ex.Message);
+            }
+        }
+        finally
+        {
+            IsInstallingBlenderExtension = false;
         }
     }
 

@@ -2,8 +2,10 @@ using System;
 using BlenderSuite.RenderQueue.Services.Application.Logging;
 using BlenderSuite.RenderQueue.Services.Application.Queue;
 using BlenderSuite.RenderQueue.Services.Business.Blender;
+using BlenderSuite.RenderQueue.Services.Business.Blender.Extensions;
 using BlenderSuite.RenderQueue.Services.Business.Blender.WorkerHost;
 using BlenderSuite.RenderQueue.Services.Business.Persistence;
+using BlenderSuite.RenderQueue.Services.Business.Submission;
 using BlenderSuite.RenderQueue.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,12 +27,14 @@ public static class AppServices
         services.AddSingleton<ILogPersistenceService, JsonLinesLogPersistenceService>();
         services.AddSingleton<IRenderLogService, RenderLogService>();
         services.AddSingleton<IBlenderCliInfoService, BlenderCliInfoService>();
+        services.AddSingleton<IBlenderExtensionManager, BlenderExtensionManager>();
         services.AddSingleton<IBlenderValidationService, BlenderValidationService>();
         services.AddSingleton<IBlenderQueryService, BlenderQueryService>();
         services.AddSingleton<IBlenderWorkerHost, PythonConsoleWorkerHost>();
         services.AddSingleton<IRenderTaskFactory, RenderTaskFactory>();
         services.AddSingleton<IRenderTaskExecutionService, RenderTaskExecutionService>();
         services.AddSingleton<IRenderQueueApplicationService, RenderQueueApplicationService>();
+        services.AddSingleton<ILocalSubmissionHost, LocalSubmissionHost>();
         services.AddSingleton<RenderQueueViewModel>();
         services.AddSingleton<GlobalLogViewModel>();
 

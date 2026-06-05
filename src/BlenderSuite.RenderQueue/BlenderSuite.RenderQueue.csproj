@@ -16,9 +16,11 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Version>0.6.1.0</Version>
         <Authors>Atticus</Authors>
-        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(DefineConstants);WINDOWS</DefineConstants>
-        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(DefineConstants);OSX</DefineConstants>
-        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(DefineConstants);LINUX</DefineConstants>
+        <IsWindowsRuntime Condition="'$(RuntimeIdentifier)' == 'win-x64' Or '$(RuntimeIdentifier)' == 'win-x86' Or '$(RuntimeIdentifier)' == 'win-arm64'">true</IsWindowsRuntime>
+        <IsWindowsRuntime Condition="'$(IsWindowsRuntime)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">true</IsWindowsRuntime>
+        <DefineConstants Condition="'$(IsWindowsRuntime)' == 'true'">$(DefineConstants);WINDOWS</DefineConstants>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('OSX')) Or '$(RuntimeIdentifier)' == 'osx-arm64' Or '$(RuntimeIdentifier)' == 'osx-x64'">$(DefineConstants);OSX</DefineConstants>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Linux')) Or '$(RuntimeIdentifier)' == 'linux-x64' Or '$(RuntimeIdentifier)' == 'linux-arm64'">$(DefineConstants);LINUX</DefineConstants>
         <Copyright>Atticus 2025</Copyright>
         <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
         <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
@@ -34,6 +36,15 @@
         <Content Include="Resources\Python\*.py">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+        <Content Include="Resources\BlenderExtensions\*.zip">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+        <Content Include="..\blender_extensions\BlenderSuiteRenderQueue\**\*">
+            <Link>Resources\BlenderExtensions\BlenderSuiteRenderQueue\%(RecursiveDir)%(Filename)%(Extension)</Link>
+            <TargetPath>Resources\BlenderExtensions\BlenderSuiteRenderQueue\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>
@@ -43,7 +54,7 @@
         <PackageReference Include="Avalonia.Fonts.Inter" />
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" />
         <PackageReference Include="CommunityToolkit.Mvvm" />
-        <PackageReference Include="LibreHardwareMonitorLib" />
+        <PackageReference Include="LibreHardwareMonitorLib" Condition="'$(IsWindowsRuntime)' == 'true'" />
         <PackageReference Include="Material.Icons.Avalonia" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
         <PackageReference Include="SukiUI" />

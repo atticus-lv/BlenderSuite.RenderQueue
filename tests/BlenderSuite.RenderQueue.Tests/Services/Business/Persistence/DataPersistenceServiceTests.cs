@@ -89,7 +89,7 @@ public sealed class DataPersistenceServiceTests
 
     private sealed class TemporaryAppDataDirectory : IDisposable
     {
-        private const string AppDataOverrideEnv = "BRQ_APP_DATA_DIR";
+        private const string AppDataOverrideEnv = "BSRQ_APP_DATA_DIR";
         private readonly string? _previousValue;
 
         private TemporaryAppDataDirectory(string path, string? previousValue)

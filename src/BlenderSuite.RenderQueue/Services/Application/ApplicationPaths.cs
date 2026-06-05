@@ -5,7 +5,7 @@ namespace BlenderSuite.RenderQueue.Services.Application;
 
 internal static class ApplicationPaths
 {
-    private const string AppDataOverrideEnv = "BRQ_APP_DATA_DIR";
+    private const string AppDataOverrideEnv = "BSRQ_APP_DATA_DIR";
 
     public static string GetAppDataDirectory()
     {

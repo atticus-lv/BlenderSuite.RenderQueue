@@ -12,7 +12,9 @@ using BlenderSuite.RenderQueue.Models;
 using BlenderSuite.RenderQueue.Services.Application.Logging;
 using BlenderSuite.RenderQueue.Services.Application.Queue;
 using BlenderSuite.RenderQueue.Services.Business.Blender;
+using BlenderSuite.RenderQueue.Services.Business.Blender.Extensions;
 using BlenderSuite.RenderQueue.Services.Business.Persistence;
+using BlenderSuite.RenderQueue.Services.Business.Submission;
 using BlenderSuite.RenderQueue.ViewModels;
 using BlenderSuite.RenderQueue.ViewModels.DesignTime;
 
@@ -33,6 +35,7 @@ public sealed class PreviewRootViewModel
     {
         var settings = new SettingsViewModel(
             new PreviewSettingsPersistenceService(),
+            new PreviewBlenderExtensionManager(),
             new PreviewBlenderValidationService(),
             new PreviewRenderLogService());
 
@@ -591,6 +594,8 @@ internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationSe
     }
 
     public void RequestRemoveAllTasksConfirmation() => RemoveAllTasks();
+    public Task<LocalSubmissionResponse> SubmitTaskAsync(LocalSubmissionRequest request, CancellationToken cancellationToken = default) => Task.FromResult(new LocalSubmissionResponse());
+    public Task<LocalSubmissionResponse> StartQueueFromSubmissionAsync(CancellationToken cancellationToken = default) => Task.FromResult(new LocalSubmissionResponse());
     public Task LoadQueueDataAsync() => Task.CompletedTask;
 
     private void MoveTask(RenderTaskViewModel? selectedTask, int offset)
@@ -628,6 +633,21 @@ internal sealed class PreviewQueueApplicationService : IRenderQueueApplicationSe
         {
             frame.Dispose();
         }
+    }
+}
+
+internal sealed class PreviewBlenderExtensionManager : IBlenderExtensionManager
+{
+    public Task<BlenderExtensionInstallResult> EnsureInstalledAsync(
+        string blenderExecutablePath,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new BlenderExtensionInstallResult
+        {
+            Outcome = BlenderExtensionInstallOutcome.Skipped,
+            BlenderExecutablePath = blenderExecutablePath,
+            Message = "Skipped in browser preview."
+        });
     }
 }
 
