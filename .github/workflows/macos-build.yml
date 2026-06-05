@@ -37,7 +37,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Build unsigned Apple Silicon DMG
+      - name: Build ad-hoc signed Apple Silicon DMG
         run: |
           ./scripts/release/build-macos-aot-dmg.sh osx-arm64 --no-open
 

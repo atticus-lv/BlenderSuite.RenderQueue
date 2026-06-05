@@ -19,6 +19,7 @@ APP_EXECUTABLE_NAME="BlenderSuite.RenderQueue"
 APP_BUNDLE_NAME="${APP_NAME}.app"
 APP_PRODUCT_ID="a8239aab-c146-434c-85c1-d6d56bc9b77c"
 APP_BUNDLE_IDENTIFIER="com.atticus.blenderrenderqueue"
+ADHOC_SIGN="${MACOS_ADHOC_SIGN:-true}"
 PUBLISH_ROOT="$REPO_ROOT/install/macOS/publish"
 BUILD_ROOT="$REPO_ROOT/install/macOS/build"
 STAGING_ROOT="$REPO_ROOT/install/macOS/staging"
@@ -281,6 +282,32 @@ end tell
 EOF
 }
 
+sign_app_bundle() {
+  local app_dir="$1"
+
+  if [[ "$ADHOC_SIGN" != "true" ]]; then
+    echo "==> Skipping app bundle ad-hoc signing"
+    return
+  fi
+
+  echo "==> Ad-hoc signing .app bundle"
+  codesign --force --deep --sign - --timestamp=none "$app_dir"
+  codesign --verify --deep --strict --verbose=2 "$app_dir"
+}
+
+sign_dmg() {
+  local dmg_path="$1"
+
+  if [[ "$ADHOC_SIGN" != "true" ]]; then
+    echo "==> Skipping DMG ad-hoc signing"
+    return
+  fi
+
+  echo "==> Ad-hoc signing DMG"
+  codesign --force --sign - --timestamp=none "$dmg_path"
+  codesign --verify --verbose=2 "$dmg_path"
+}
+
 echo "==> Building macOS ${BUILD_TITLE} publish"
 echo "RID: $RID"
 echo "Version: $APP_VERSION"
@@ -358,14 +385,17 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
 </plist>
 EOF
 
+if [[ -f "$DMG_BACKGROUND_SOURCE" ]]; then
+  cp "$DMG_BACKGROUND_SOURCE" "$APP_DIR/Contents/Resources/$DMG_BACKGROUND_NAME"
+else
+  create_dmg_background "$APP_DIR/Contents/Resources/$DMG_BACKGROUND_NAME"
+fi
+
+sign_app_bundle "$APP_DIR"
+
 echo "==> Creating DMG"
 cp -R "$APP_DIR" "$STAGING_DIR/"
 ln -s /Applications "$STAGING_DIR/Applications"
-if [[ -f "$DMG_BACKGROUND_SOURCE" ]]; then
-  cp "$DMG_BACKGROUND_SOURCE" "$STAGING_DIR/$APP_BUNDLE_NAME/Contents/Resources/$DMG_BACKGROUND_NAME"
-else
-  create_dmg_background "$STAGING_DIR/$APP_BUNDLE_NAME/Contents/Resources/$DMG_BACKGROUND_NAME"
-fi
 touch "$STAGING_DIR/$APP_BUNDLE_NAME"
 
 rm -f "$DMG_PATH" "$RW_DMG_PATH"
@@ -405,6 +435,8 @@ hdiutil convert "$RW_DMG_PATH" \
   -imagekey zlib-level=9 \
   -o "$DMG_PATH" >/dev/null
 rm -f "$RW_DMG_PATH"
+
+sign_dmg "$DMG_PATH"
 
 echo "==> Done"
 echo "App bundle: $APP_DIR"
