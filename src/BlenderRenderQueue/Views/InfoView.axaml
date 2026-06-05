@@ -25,7 +25,7 @@
 
                 <StackPanel Grid.Column="1"
                             Spacing="4">
-                    <TextBlock Text="Blender Render Queue"
+                    <TextBlock Text="Blender Suite: Render Queue"
                                FontSize="30"
                                FontWeight="SemiBold" />
                     <TextBlock Text="版本信息与开源组件许可"

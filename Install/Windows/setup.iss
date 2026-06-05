@@ -2,6 +2,12 @@
 #ifndef MyAppName
 #define MyAppName "BlenderRenderQueue"
 #endif
+#ifndef MyAppDisplayName
+#define MyAppDisplayName "Blender Suite: Render Queue"
+#endif
+#ifndef MyAppShortcutName
+#define MyAppShortcutName "Blender Suite Render Queue"
+#endif
 #ifndef MyAppVersion
 #define MyAppVersion "0.5.8.3"
 #endif
@@ -23,7 +29,7 @@
 
 [Setup]
 AppId={{a8239aab-c146-434c-85c1-d6d56bc9b77c}
-AppName={#MyAppName}
+AppName={#MyAppDisplayName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 WizardStyle=modern
@@ -32,7 +38,7 @@ ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 
 DefaultDirName={commonpf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
+DefaultGroupName={#MyAppShortcutName}
 OutputDir={#MyOutputDir}
 OutputBaseFilename={#MyAppName}-{#MyAppVersion}.Setup
 
@@ -42,7 +48,7 @@ SolidCompression=yes
 
 PrivilegesRequired=admin
 
-UninstallDisplayName={#MyAppName}
+UninstallDisplayName={#MyAppDisplayName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
@@ -60,8 +66,8 @@ Source: "{#MyPublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdi
 Name: "{app}"
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{group}\{#MyAppShortcutName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{commondesktop}\{#MyAppShortcutName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Code]
 function GetUninstallString(): String;
@@ -90,7 +96,7 @@ begin
   sUnInstallString := GetUninstallString();
   if sUnInstallString <> '' then begin
     sUnInstallString := RemoveQuotes(sUnInstallString);
-    if MsgBox('A previous version of BlenderRenderQueue is already installed. Do you want to uninstall it first?', 
+    if MsgBox('A previous version of Blender Suite: Render Queue is already installed. Do you want to uninstall it first?',
               mbConfirmation, MB_YESNO) = IDYES then begin
       Exec(sUnInstallString, '/SILENT /NORESTART /SUPPRESSMSGBOXES','', SW_HIDE, ewWaitUntilTerminated, iResultCode);
       Result := True;
@@ -109,4 +115,4 @@ begin
 end;
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppDisplayName}}"; Flags: nowait postinstall skipifsilent

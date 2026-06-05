@@ -1,4 +1,4 @@
-Blender Render Queue 软件许可说明
+Blender Suite: Render Queue 软件许可说明
 
 版权所有 (C) 2024 Atticus
 
@@ -41,7 +41,7 @@ Blender Render Queue 软件许可说明
 
 4. 商标和品牌
 
-除非获得书面许可，本许可不授予您使用 Blender Render Queue、Atticus 或相关标识作为商标、服务标识、产品背书或官方认证的权利。
+除非获得书面许可，本许可不授予您使用 Blender Suite: Render Queue、Atticus 或相关标识作为商标、服务标识、产品背书或官方认证的权利。
 
 5. 贡献者授权
 
@@ -56,4 +56,3 @@ Blender Render Queue 软件许可说明
 如需商业授权或有许可问题，请联系：Atticus
 
 最后更新：2026年6月
-

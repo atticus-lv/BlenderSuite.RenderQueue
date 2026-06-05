@@ -1,4 +1,4 @@
-# Blender Render Queue Web
+# Blender Suite: Render Queue Web
 
 官网前端位于 `src/Web/`，使用 `Vite + React + TypeScript`，当前是一个不接后端的静态站点原型。
 

@@ -1,6 +1,6 @@
-﻿# Blender Render Queue
+﻿# Blender Suite: Render Queue
 
-Blender Render Queue 是一个面向 Blender 工作流的队列渲染工具。当前仓库主线聚焦桌面应用、测试，以及对应平台的发布与安装包脚本。
+Blender Suite: Render Queue 是一个面向 Blender 工作流的队列渲染工具。当前仓库主线聚焦桌面应用、测试，以及对应平台的发布与安装包脚本。
 
 ## 当前状态
 

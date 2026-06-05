@@ -14,6 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PROJECT_FILE="$REPO_ROOT/src/BlenderRenderQueue/BlenderRenderQueue.csproj"
 APP_NAME="BlenderRenderQueue"
+APP_DISPLAY_NAME="Blender Suite: Render Queue"
 APP_BUNDLE_NAME="${APP_NAME}.app"
 PUBLISH_ROOT="$REPO_ROOT/install/macOS/publish"
 BUILD_ROOT="$REPO_ROOT/install/macOS/build"
@@ -154,7 +155,7 @@ cat > "$APP_DIR/Contents/Info.plist" <<EOF
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>${APP_NAME}</string>
+    <string>${APP_DISPLAY_NAME}</string>
     <key>CFBundleExecutable</key>
     <string>${APP_NAME}</string>
     <key>CFBundleIdentifier</key>

@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping improve Blender Render Queue.
+Thank you for helping improve Blender Suite: Render Queue.
 
 By submitting a contribution, you agree to the
 [Contributor License Agreement](CONTRIBUTOR_LICENSE_AGREEMENT.md). This is
@@ -19,4 +19,3 @@ commercial licenses.
 
 The public project remains available under AGPLv3. Commercial licenses are
 handled separately by Atticus. See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
-

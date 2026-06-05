@@ -7,7 +7,7 @@ import type {
 } from '../types/site'
 
 export const siteConfig = {
-  productName: 'Blender Render Queue',
+  productName: 'Blender Suite: Render Queue',
   shortDescription:
     '一个面向 Blender 工作流的队列渲染工具，专注于排队渲染、进度可见和结果整理。',
   version: '0.5.8.3',
@@ -107,7 +107,7 @@ export const featureStories: FeatureStory[] = [
     intro:
       '真正的价值不是“能渲染”，而是把多个 Blender 任务收拢进一条可持续运转的链路。',
     body:
-      'Blender Render Queue 把添加任务、排队执行、观察进度、暂停恢复和结果收尾放进同一个工作台里。你不需要在多个窗口之间来回确认，也不需要靠记忆维持当前轮次跑到了哪里。',
+      'Blender Suite: Render Queue 把添加任务、排队执行、观察进度、暂停恢复和结果收尾放进同一个工作台里。你不需要在多个窗口之间来回确认，也不需要靠记忆维持当前轮次跑到了哪里。',
     points: [
       '多个场景和帧段可以连续排队执行，避免重复打开与重复设置。',
       '运行中的队列可以暂停、恢复或停止，让长任务更符合真实机器状态。',
@@ -122,7 +122,7 @@ export const featureStories: FeatureStory[] = [
     intro:
       '这个项目不是一个包着网页壳的控制台，而是为持续使用准备的原生桌面应用。',
     body:
-      '从启动速度到界面响应，再到长期打开时的可用性，Blender Render Queue 都以桌面工作流为前提设计。它更接近一个你可以全天挂着的辅助面板，而不是一个偶尔打开的脚本入口。',
+      '从启动速度到界面响应，再到长期打开时的可用性，Blender Suite: Render Queue 都以桌面工作流为前提设计。它更接近一个你可以全天挂着的辅助面板，而不是一个偶尔打开的脚本入口。',
     points: [
       '原生 App 形态让启动、切换和日常操作更干脆，适合频繁进入工作流。',
       '核心交互围绕队列、状态、日志和设置展开，没有多余页面层层包裹。',

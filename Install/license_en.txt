@@ -1,4 +1,4 @@
-Blender Render Queue Software License Notice
+Blender Suite: Render Queue Software License Notice
 
 Copyright (C) 2024 Atticus
 
@@ -63,7 +63,7 @@ license.
 4. Trademarks and Branding
 
 Unless separately permitted in writing, this license does not grant rights to
-use Blender Render Queue, Atticus, or related marks as trademarks, service
+use Blender Suite: Render Queue, Atticus, or related marks as trademarks, service
 marks, product endorsements, or official certifications.
 
 5. Contributor License
@@ -85,4 +85,3 @@ non-infringement. You use the software at your own risk.
 For commercial licensing or license questions, contact: Atticus
 
 Last updated: June 2026
-

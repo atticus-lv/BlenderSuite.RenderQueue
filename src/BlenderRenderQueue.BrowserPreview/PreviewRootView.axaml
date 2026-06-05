@@ -65,7 +65,7 @@
                                        Width="15"
                                        Height="15"
                                        VerticalAlignment="Center" />
-                                <TextBlock Text="Blender Render Queue"
+                                <TextBlock Text="Blender Suite: Render Queue"
                                            FontSize="14"
                                            FontWeight="SemiBold"
                                            VerticalAlignment="Center" />

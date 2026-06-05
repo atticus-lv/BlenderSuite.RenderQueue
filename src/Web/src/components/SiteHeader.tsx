@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { navItems, siteConfig } from '../content/site'
+import { navItems } from '../content/site'
 import { BrandMark } from './BrandMark'
 import styles from './SiteHeader.module.css'
 
@@ -21,8 +21,8 @@ export function SiteHeader() {
         <Link className={styles.brand} to="/">
           <BrandMark compact />
           <div>
-            <span className={styles.brandName}>BlenderSuite</span>
-            <span className={styles.productName}>{siteConfig.productName}</span>
+            <span className={styles.brandName}>Blender Suite</span>
+            <span className={styles.productName}>Render Queue</span>
           </div>
         </Link>
 

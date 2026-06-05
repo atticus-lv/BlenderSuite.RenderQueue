@@ -16,7 +16,7 @@
     ShowTitlebarBackground="True"
     TitleBarAutoShowDelay="2"
     ShowBottomBorder="False"
-    Title="Blender Render Queue">
+    Title="Blender Suite: Render Queue">
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,

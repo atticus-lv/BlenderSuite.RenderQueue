@@ -425,10 +425,10 @@ function AppMockup() {
   }
 
   return (
-    <div className={styles.appWindow} aria-label="Blender Render Queue interface preview">
+    <div className={styles.appWindow} aria-label="Blender Suite: Render Queue interface preview">
       <div className={styles.titleBar}>
         <img className={styles.appIcon} src={BRAND_LOGO_SRC} alt="" />
-        <strong>Blender Render Queue</strong>
+        <strong>Blender Suite: Render Queue</strong>
         <div className={styles.windowControls} aria-hidden="true">
           <span />
           <span />
@@ -632,7 +632,7 @@ function HeroPreview() {
             <iframe
               ref={iframeRef}
               className={`${styles.wasmPreviewFrame} ${isFrameLoaded ? styles.frameLoaded : ''}`}
-              title="Blender Render Queue live preview"
+              title="Blender Suite: Render Queue live preview"
               src={WASM_PREVIEW_SRC}
               onLoad={handleFrameLoad}
             />
@@ -715,8 +715,8 @@ export function HomePage() {
     >
       <section id="overview" className={styles.hero}>
         <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}>BlenderSuite</span>
-          <h1>Blender Render Queue</h1>
+          <span className={styles.eyebrow}>Blender Suite</span>
+          <h1>Blender Suite: Render Queue</h1>
           <p>
             基于 Avalonia 构建的跨平台高性能 Blender 渲染调度工具。
           </p>
