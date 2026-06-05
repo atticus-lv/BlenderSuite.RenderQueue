@@ -40,12 +40,12 @@ jobs:
       - name: Download Inno Setup
         shell: pwsh
         run: |
-          Invoke-WebRequest "https://files.jrsoftware.org/is/6/innosetup-6.2.2.exe" -OutFile "innosetup-6.2.2.exe"
+          Invoke-WebRequest "https://jrsoftware.org/download.php/is.exe" -OutFile "innosetup.exe"
 
       - name: Install Inno Setup
         shell: pwsh
         run: |
-          Start-Process -FilePath "innosetup-6.2.2.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+          Start-Process -FilePath "innosetup.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
 
       - name: Download Chinese Language Pack
         shell: pwsh
