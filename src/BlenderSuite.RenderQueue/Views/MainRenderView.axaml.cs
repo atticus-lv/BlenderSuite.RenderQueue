@@ -2,6 +2,8 @@ using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
+using Avalonia.Interactivity;
+using BlenderSuite.RenderQueue.Helpers;
 using BlenderSuite.RenderQueue.ViewModels;
 using SukiUI.Controls;
 
@@ -91,5 +93,15 @@ public partial class MainRenderView : UserControl
             2 => _settingsMenuItem,
             _ => _queueMenuItem
         };
+    }
+
+    private void OpenUrlButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string url })
+        {
+            return;
+        }
+
+        UrlLaunchHelper.OpenUrl(url);
     }
 }

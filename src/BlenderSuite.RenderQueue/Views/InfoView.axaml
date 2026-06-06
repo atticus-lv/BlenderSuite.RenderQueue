@@ -10,35 +10,46 @@
              d:DesignWidth="900"
              d:DesignHeight="720">
 
+    <UserControl.Styles>
+        <Style Selector="Button.InfoLinkButton">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="6,2" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Foreground" Value="{DynamicResource SukiText}" />
+        </Style>
+        <Style Selector="Button.InfoLinkButton:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor10}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.InfoLinkButton:pressed">
+            <Setter Property="Background" Value="{DynamicResource SukiPrimaryColor25}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+    </UserControl.Styles>
+
     <ScrollViewer>
         <StackPanel Margin="32,28"
                     Spacing="26"
                     MaxWidth="980"
                     HorizontalAlignment="Left">
-            <Grid ColumnDefinitions="Auto,*"
-                  ColumnSpacing="16">
-                <avalonia:MaterialIcon Kind="InfoCircleOutline"
-                                       Width="36"
-                                       Height="36"
-                                       Foreground="{DynamicResource SukiAccentColor}"
-                                       VerticalAlignment="Center" />
-
-                <StackPanel Grid.Column="1"
-                            Spacing="4">
-                    <TextBlock Text="Blender Suite: Render Queue"
-                               FontSize="30"
-                               FontWeight="SemiBold" />
-                    <TextBlock Text="版本信息与开源组件许可"
-                               FontSize="14"
-                               Opacity="0.68" />
-                </StackPanel>
-            </Grid>
+            <StackPanel Spacing="4">
+                <TextBlock Text="Blender Suite: Render Queue"
+                           FontSize="30"
+                           FontWeight="SemiBold" />
+                <TextBlock Text="版本信息与开源组件许可"
+                           FontSize="14"
+                           Opacity="0.68" />
+            </StackPanel>
 
             <Border Height="1"
                     Background="{DynamicResource SukiBorderColor}" />
 
             <Grid ColumnDefinitions="220,*"
-                  RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                  RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
                   RowSpacing="12"
                   ColumnSpacing="24">
                 <TextBlock Text="应用版本"
@@ -75,6 +86,19 @@
                                      Grid.Column="1"
                                      Text="{Binding OperatingSystemDisplay}"
                                      TextWrapping="Wrap" />
+
+                <TextBlock Grid.Row="5"
+                           Text="源码仓库"
+                           Opacity="0.66" />
+                <Button Grid.Row="5"
+                        Grid.Column="1"
+                        Classes="InfoLinkButton"
+                        Tag="https://github.com/atticus-lv/BlenderSuite.RenderQueue"
+                        Click="OpenUrlButton_OnClick">
+                    <TextBlock Text="https://github.com/atticus-lv/BlenderSuite.RenderQueue"
+                               TextDecorations="Underline"
+                               TextWrapping="Wrap" />
+                </Button>
             </Grid>
 
             <StackPanel Spacing="12">
@@ -88,15 +112,43 @@
                     <TextBlock Text="许可类型"
                                Opacity="0.66" />
                     <SelectableTextBlock Grid.Column="1"
-                                         Text="自定义许可协议" />
+                                         Text="AGPL-3.0-only（公共版本）；商业授权需单独协议"
+                                         TextWrapping="Wrap" />
 
                     <TextBlock Grid.Row="1"
                                Text="许可文件"
                                Opacity="0.66" />
-                    <SelectableTextBlock Grid.Row="1"
-                                         Grid.Column="1"
-                                         Text="install/license_zh.txt, install/license_en.txt"
-                                         TextWrapping="Wrap" />
+                    <WrapPanel Grid.Row="1"
+                               Grid.Column="1">
+                        <Button Classes="InfoLinkButton"
+                                Margin="0,0,8,6"
+                                Tag="https://github.com/atticus-lv/BlenderSuite.RenderQueue/blob/main/LICENSE"
+                                Click="OpenUrlButton_OnClick">
+                            <TextBlock Text="LICENSE"
+                                       TextDecorations="Underline" />
+                        </Button>
+                        <Button Classes="InfoLinkButton"
+                                Margin="0,0,8,6"
+                                Tag="https://github.com/atticus-lv/BlenderSuite.RenderQueue/blob/main/COMMERCIAL_LICENSE.md"
+                                Click="OpenUrlButton_OnClick">
+                            <TextBlock Text="COMMERCIAL_LICENSE.md"
+                                       TextDecorations="Underline" />
+                        </Button>
+                        <Button Classes="InfoLinkButton"
+                                Margin="0,0,8,6"
+                                Tag="https://github.com/atticus-lv/BlenderSuite.RenderQueue/blob/main/Install/license_zh.txt"
+                                Click="OpenUrlButton_OnClick">
+                            <TextBlock Text="Install/license_zh.txt"
+                                       TextDecorations="Underline" />
+                        </Button>
+                        <Button Classes="InfoLinkButton"
+                                Margin="0,0,8,6"
+                                Tag="https://github.com/atticus-lv/BlenderSuite.RenderQueue/blob/main/Install/license_en.txt"
+                                Click="OpenUrlButton_OnClick">
+                            <TextBlock Text="Install/license_en.txt"
+                                       TextDecorations="Underline" />
+                        </Button>
+                    </WrapPanel>
                 </Grid>
             </StackPanel>
 
@@ -105,7 +157,7 @@
                            FontSize="18"
                            FontWeight="SemiBold" />
 
-                <Grid ColumnDefinitions="*,140,140"
+                <Grid ColumnDefinitions="*,140"
                       RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                       RowSpacing="10"
                       ColumnSpacing="18">
@@ -113,75 +165,85 @@
                                FontWeight="SemiBold"
                                Opacity="0.72" />
                     <TextBlock Grid.Column="1"
-                               Text="版本"
-                               FontWeight="SemiBold"
-                               Opacity="0.72" />
-                    <TextBlock Grid.Column="2"
                                Text="许可"
                                FontWeight="SemiBold"
                                Opacity="0.72" />
 
-                    <SelectableTextBlock Grid.Row="1"
-                                         Text="Avalonia" />
+                    <Button Grid.Row="1"
+                            Classes="InfoLinkButton"
+                            Tag="https://github.com/AvaloniaUI/Avalonia"
+                            Click="OpenUrlButton_OnClick">
+                        <TextBlock Text="Avalonia"
+                                   TextDecorations="Underline" />
+                    </Button>
                     <SelectableTextBlock Grid.Row="1"
                                          Grid.Column="1"
-                                         Text="12.0.3" />
-                    <SelectableTextBlock Grid.Row="1"
-                                         Grid.Column="2"
                                          Text="MIT" />
 
-                    <SelectableTextBlock Grid.Row="2"
-                                         Text="SukiUI" />
+                    <Button Grid.Row="2"
+                            Classes="InfoLinkButton"
+                            Tag="https://github.com/kikipoulet/SukiUI"
+                            Click="OpenUrlButton_OnClick">
+                        <TextBlock Text="SukiUI"
+                                   TextDecorations="Underline" />
+                    </Button>
                     <SelectableTextBlock Grid.Row="2"
                                          Grid.Column="1"
-                                         Text="7.0.1" />
-                    <SelectableTextBlock Grid.Row="2"
-                                         Grid.Column="2"
                                          Text="MIT" />
 
-                    <SelectableTextBlock Grid.Row="3"
-                                         Text="CommunityToolkit.Mvvm" />
+                    <Button Grid.Row="3"
+                            Classes="InfoLinkButton"
+                            Tag="https://github.com/CommunityToolkit/dotnet"
+                            Click="OpenUrlButton_OnClick">
+                        <TextBlock Text="CommunityToolkit.Mvvm"
+                                   TextDecorations="Underline" />
+                    </Button>
                     <SelectableTextBlock Grid.Row="3"
                                          Grid.Column="1"
-                                         Text="8.2.1" />
-                    <SelectableTextBlock Grid.Row="3"
-                                         Grid.Column="2"
                                          Text="MIT" />
 
-                    <SelectableTextBlock Grid.Row="4"
-                                         Text="LibreHardwareMonitorLib" />
+                    <Button Grid.Row="4"
+                            Classes="InfoLinkButton"
+                            Tag="https://github.com/LibreHardwareMonitor/LibreHardwareMonitor"
+                            Click="OpenUrlButton_OnClick">
+                        <TextBlock Text="LibreHardwareMonitorLib"
+                                   TextDecorations="Underline" />
+                    </Button>
                     <SelectableTextBlock Grid.Row="4"
                                          Grid.Column="1"
-                                         Text="0.9.5-pre474" />
-                    <SelectableTextBlock Grid.Row="4"
-                                         Grid.Column="2"
                                          Text="MPL-2.0" />
 
-                    <SelectableTextBlock Grid.Row="5"
-                                         Text="Material.Icons.Avalonia" />
+                    <Button Grid.Row="5"
+                            Classes="InfoLinkButton"
+                            Tag="https://www.nuget.org/packages/Material.Icons.Avalonia"
+                            Click="OpenUrlButton_OnClick">
+                        <TextBlock Text="Material.Icons.Avalonia"
+                                   TextDecorations="Underline" />
+                    </Button>
                     <SelectableTextBlock Grid.Row="5"
                                          Grid.Column="1"
-                                         Text="3.0.2" />
-                    <SelectableTextBlock Grid.Row="5"
-                                         Grid.Column="2"
                                          Text="MIT" />
 
-                    <SelectableTextBlock Grid.Row="6"
-                                         Text="Microsoft.Extensions.DependencyInjection" />
+                    <Button Grid.Row="6"
+                            Classes="InfoLinkButton"
+                            Tag="https://github.com/dotnet/extensions"
+                            Click="OpenUrlButton_OnClick">
+                        <TextBlock Text="Microsoft.Extensions.DependencyInjection"
+                                   TextDecorations="Underline" />
+                    </Button>
                     <SelectableTextBlock Grid.Row="6"
                                          Grid.Column="1"
-                                         Text="10.0.0" />
-                    <SelectableTextBlock Grid.Row="6"
-                                         Grid.Column="2"
                                          Text="MIT" />
 
-                    <SelectableTextBlock Grid.Row="7"
-                                         Text="Xaml.Behaviors" />
+                    <Button Grid.Row="7"
+                            Classes="InfoLinkButton"
+                            Tag="https://www.nuget.org/packages/Xaml.Behaviors.Interactivity"
+                            Click="OpenUrlButton_OnClick">
+                        <TextBlock Text="Xaml.Behaviors"
+                                   TextDecorations="Underline" />
+                    </Button>
                     <SelectableTextBlock Grid.Row="7"
                                          Grid.Column="1"
-                                         Text="12.0.0" />
-                    <SelectableTextBlock Grid.Row="7"
-                                         Grid.Column="2"
                                          Text="MIT" />
                 </Grid>
             </StackPanel>
