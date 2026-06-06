@@ -7,6 +7,7 @@
              xmlns:conv="using:Avalonia.Data.Converters"
              xmlns:suki="https://github.com/kikipoulet/SukiUI"
              xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:animations="clr-namespace:SukiUI.Animations;assembly=SukiUI"
              xmlns:views="clr-namespace:BlenderSuite.RenderQueue.Views"
              xmlns:viewModels="clr-namespace:BlenderSuite.RenderQueue.ViewModels"
              xmlns:services="clr-namespace:BlenderSuite.RenderQueue.Services"
@@ -92,7 +93,10 @@
                 </Grid>
 
             </suki:GlassCard>
-            <suki:GlassCard Grid.Column="1" Margin="4" Padding="16 8" IsVisible="{Binding IsQueueRunning}">
+            <suki:GlassCard Grid.Column="1" Margin="4" Padding="16 8" IsAnimated="True"
+                            animations:VisibilityBehavior.IsVisible="{Binding IsQueueRunning}"
+                            animations:VisibilityBehavior.HiddenScale="0.6"
+                            animations:VisibilityBehavior.AnimateDimensions="True">
                 <views:RenderTaskProgressPreviewView DataContext="{Binding CurrentRenderingTask}"
                                                      IsVisible="{Binding Converter={x:Static conv:ObjectConverters.IsNotNull}}"
                                                      Margin="16  0 " />
@@ -103,7 +107,11 @@
                 </Viewbox>
             </suki:GlassCard>
             <!-- 队列按钮部分 -->
-            <suki:GlassCard Grid.Column="3" Margin="4 4 8 4">
+            <suki:GlassCard Grid.Column="3" Margin="4 4 8 4"
+                            animations:SquishyHoverBehavior.Enable="True"
+                            animations:SquishyHoverBehavior.Intensity="0.2"
+                            animations:SquishyHoverBehavior.SquishDepth="0.1"
+                            animations:SquishyHoverBehavior.EnableTilt="True">
                 <views:RenderQueueButtonsView DataContext="{Binding}" />
             </suki:GlassCard>
         </Grid>
