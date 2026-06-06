@@ -597,8 +597,8 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                         ? Path.GetFileName(request.Filepath)
                         : request.Filename,
                     Filepath = request.Filepath,
-                    StartFrame = request.OverrideFrameRange ? request.FrameStart : 1,
-                    EndFrame = request.OverrideFrameRange ? request.FrameEnd : 1,
+                    StartFrame = request.FrameStart,
+                    EndFrame = request.FrameEnd,
                     Enable = true,
                     Override = request.OverrideFrameRange || !string.IsNullOrWhiteSpace(request.SceneName)
                         ? new OverrideData

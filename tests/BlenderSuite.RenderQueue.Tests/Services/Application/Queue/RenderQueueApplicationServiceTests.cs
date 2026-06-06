@@ -58,6 +58,182 @@ public sealed class RenderQueueApplicationServiceTests
     }
 
     [AvaloniaFact]
+    public async Task SubmitTaskAsync_PreservesSubmittedSceneFrameRangeWhenNotOverride()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        var workerHost = new FakeBlenderWorkerHost();
+        var executionService = new FakeRenderTaskExecutionService();
+        var persistenceService = new FakeDataPersistenceService();
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
+
+        var response = await sut.SubmitTaskAsync(new LocalSubmissionRequest
+        {
+            Filepath = blendFile.Path,
+            Filename = Path.GetFileName(blendFile.Path),
+            SceneName = "Scene",
+            OverrideFrameRange = false,
+            FrameStart = 1,
+            FrameEnd = 120
+        });
+        await DrainUiAsync();
+
+        Assert.True(response.Ok);
+        var task = Assert.Single(sut.RenderTasks);
+        Assert.False(task.OverrideFrameRange);
+        Assert.Equal(1, task.StartFrame);
+        Assert.Equal(120, task.EndFrame);
+        Assert.True(task.Animation);
+    }
+
+    [AvaloniaFact]
+    public void BuildWorkerRequest_UsesLoadedSceneFrameRangeWhenAnimationIsEnabled()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        var scenePropertiesView = new BlendScenePropertiesViewModel(new FakeBlenderQueryService());
+        var task = new RenderTaskViewModel(
+            scenePropertiesView,
+            new RenderTaskInfo
+            {
+                Id = Guid.NewGuid(),
+                Filename = Path.GetFileName(blendFile.Path),
+                Filepath = blendFile.Path,
+                StartFrame = 1,
+                EndFrame = 1,
+                Enable = true,
+                Override = new OverrideData
+                {
+                    OverrideScene = new OverrideSceneData
+                    {
+                        SceneName = "Scene"
+                    }
+                }
+            });
+
+        var scene = new BlendSceneProperties
+        {
+            FilePath = blendFile.Path,
+            SceneName = "Scene",
+            IsDefaultScene = true,
+            FrameStart = 1,
+            FrameEnd = 120
+        };
+        scenePropertiesView.AllScenes = new()
+        {
+            ["Scene"] = scene
+        };
+        scenePropertiesView.SelectedScene = scene;
+        task.Animation = true;
+
+        var request = task.BuildWorkerRequest();
+
+        Assert.True(request.Animation);
+        Assert.Null(request.SingleFrame);
+        Assert.Equal(1, request.FrameStart);
+        Assert.Equal(120, request.FrameEnd);
+    }
+
+    [AvaloniaFact]
+    public void BuildWorkerRequest_UsesSingleFrameWhenAnimationIsDisabled()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        var scenePropertiesView = new BlendScenePropertiesViewModel(new FakeBlenderQueryService());
+        var task = new RenderTaskViewModel(
+            scenePropertiesView,
+            new RenderTaskInfo
+            {
+                Id = Guid.NewGuid(),
+                Filename = Path.GetFileName(blendFile.Path),
+                Filepath = blendFile.Path,
+                StartFrame = 1,
+                EndFrame = 120,
+                Enable = true
+            });
+
+        var scene = new BlendSceneProperties
+        {
+            FilePath = blendFile.Path,
+            SceneName = "Scene",
+            FrameStart = 1,
+            FrameEnd = 120
+        };
+        scenePropertiesView.AllScenes = new()
+        {
+            ["Scene"] = scene
+        };
+        scenePropertiesView.SelectedScene = scene;
+        task.Animation = false;
+
+        var request = task.BuildWorkerRequest();
+
+        Assert.False(request.Animation);
+        Assert.Equal(1, request.SingleFrame);
+        Assert.Null(request.FrameStart);
+        Assert.Null(request.FrameEnd);
+    }
+
+    [AvaloniaFact]
+    public async Task LoadFilePropertiesAsync_DerivesAnimationFromLoadedSceneRange()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        var scenePropertiesView = new BlendScenePropertiesViewModel(new FakeBlenderQueryService(frameEnd: 120));
+        var task = new RenderTaskViewModel(
+            scenePropertiesView,
+            new RenderTaskInfo
+            {
+                Id = Guid.NewGuid(),
+                Filename = Path.GetFileName(blendFile.Path),
+                Filepath = blendFile.Path,
+                StartFrame = 1,
+                EndFrame = 1,
+                Enable = true,
+                Override = new OverrideData
+                {
+                    OverrideScene = new OverrideSceneData
+                    {
+                        SceneName = "Scene"
+                    }
+                }
+            });
+
+        await task.LoadFilePropertiesAsync("blender");
+
+        Assert.True(task.Animation);
+        var request = task.BuildWorkerRequest();
+        Assert.True(request.Animation);
+        Assert.Equal(1, request.FrameStart);
+        Assert.Equal(120, request.FrameEnd);
+    }
+
+    [AvaloniaFact]
+    public async Task RefreshFilePropertiesAsync_PreservesDisabledAnimationChoice()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        var scenePropertiesView = new BlendScenePropertiesViewModel(new FakeBlenderQueryService(frameEnd: 120));
+        var task = new RenderTaskViewModel(
+            scenePropertiesView,
+            new RenderTaskInfo
+            {
+                Id = Guid.NewGuid(),
+                Filename = Path.GetFileName(blendFile.Path),
+                Filepath = blendFile.Path,
+                StartFrame = 1,
+                EndFrame = 120,
+                Enable = true
+            })
+        {
+            Animation = false
+        };
+
+        await task.RefreshFilePropertiesAsync("blender");
+
+        Assert.False(task.Animation);
+        var request = task.BuildWorkerRequest();
+        Assert.False(request.Animation);
+        Assert.Equal(1, request.SingleFrame);
+    }
+
+    [AvaloniaFact]
     public async Task StartQueueFromSubmissionAsync_StartsExecutionThroughApplicationService()
     {
         using var blendFile = TemporaryFile.Create(".blend");

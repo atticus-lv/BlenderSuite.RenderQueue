@@ -440,7 +440,8 @@ def render_task(runtime, payload):
             runtime.state.set_output_verified(bool(resolved_output_path) and os.path.exists(resolved_output_path))
         else:
             bpy.ops.render.render(animation=True, scene=scene.name)
-            runtime.state.set_output_verified(False)
+            resolved_output_path = resolve_animation_output_path(scene)
+            runtime.state.set_output_verified(bool(resolved_output_path) and os.path.exists(resolved_output_path))
 
         runtime.state.refresh_from_context()
         if resolved_output_path:
@@ -482,6 +483,31 @@ def resolve_single_frame_output_path(scene, frame_number):
             return candidate
 
     return candidates[0] if candidates else ""
+
+
+def resolve_animation_output_path(scene):
+    try:
+        frame_end = int(scene.frame_end)
+        resolved = bpy.path.abspath(scene.render.frame_path(frame=frame_end))
+        if os.path.exists(resolved):
+            return resolved
+    except Exception:
+        pass
+
+    try:
+        output_dir = os.path.dirname(bpy.path.abspath(scene.render.frame_path(frame=int(scene.frame_start))))
+        if output_dir and os.path.isdir(output_dir):
+            files = [
+                os.path.join(output_dir, name)
+                for name in os.listdir(output_dir)
+                if os.path.isfile(os.path.join(output_dir, name))
+            ]
+            if files:
+                return max(files, key=os.path.getmtime)
+    except Exception:
+        pass
+
+    return ""
 
 
 @persistent

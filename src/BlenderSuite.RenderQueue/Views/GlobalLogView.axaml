@@ -218,16 +218,29 @@
                                                         IsVisible="{Binding !IsWorkerScope}">
                                                     <TextBlock Text="{Binding ScopeText}" Classes="LogEntryTagText" />
                                                 </Border>
-                                                <Border Background="{DynamicResource SukiPrimaryColor}"
-                                                        BorderBrush="{DynamicResource SukiPrimaryColor}"
+                                                <Border Background="{DynamicResource SukiSuccessColor}"
+                                                        BorderBrush="{DynamicResource SukiSuccessColor}"
                                                         Classes="LogEntryTag"
                                                         IsVisible="{Binding IsInfoLevel}">
                                                     <TextBlock Text="{Binding LevelText}" Classes="LogEntryTagText PrimaryOnColor" />
                                                 </Border>
-                                                <Border Background="#3B3224"
+                                                <Border Background="{DynamicResource SukiAccentColor}"
+                                                        BorderBrush="{DynamicResource SukiAccentColor}"
                                                         Classes="LogEntryTag"
-                                                        IsVisible="{Binding !IsInfoLevel}">
-                                                    <TextBlock Text="{Binding LevelText}" Classes="LogEntryTagText" />
+                                                        IsVisible="{Binding IsDebugLevel}">
+                                                    <TextBlock Text="{Binding LevelText}" Classes="LogEntryTagText PrimaryOnColor" />
+                                                </Border>
+                                                <Border Background="{DynamicResource SukiWarningColor}"
+                                                        BorderBrush="{DynamicResource SukiWarningColor}"
+                                                        Classes="LogEntryTag"
+                                                        IsVisible="{Binding IsWarningLevel}">
+                                                    <TextBlock Text="{Binding LevelText}" Classes="LogEntryTagText PrimaryOnColor" />
+                                                </Border>
+                                                <Border Background="{DynamicResource SukiDangerColor}"
+                                                        BorderBrush="{DynamicResource SukiDangerColor}"
+                                                        Classes="LogEntryTag"
+                                                        IsVisible="{Binding IsErrorLevel}">
+                                                    <TextBlock Text="{Binding LevelText}" Classes="LogEntryTagText PrimaryOnColor" />
                                                 </Border>
                                                 <Border Background="#3A2934"
                                                         Classes="LogEntryTag"

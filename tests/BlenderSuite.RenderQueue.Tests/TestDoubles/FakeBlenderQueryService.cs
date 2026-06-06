@@ -8,6 +8,15 @@ namespace BlenderSuite.RenderQueue.Tests;
 
 internal sealed class FakeBlenderQueryService : IBlenderQueryService
 {
+    private readonly int _frameStart;
+    private readonly int _frameEnd;
+
+    public FakeBlenderQueryService(int frameStart = 1, int frameEnd = 1)
+    {
+        _frameStart = frameStart;
+        _frameEnd = frameEnd;
+    }
+
     public Task<(string ActiveScene, Dictionary<string, BlendSceneProperties> SceneData)> GetAllFilePropertiesWithTempProcessAsync(
         string blenderPath,
         string blendFilePath,
@@ -18,9 +27,9 @@ internal sealed class FakeBlenderQueryService : IBlenderQueryService
             FilePath = blendFilePath,
             SceneName = "Scene",
             IsDefaultScene = true,
-            FrameStart = 1,
-            FrameEnd = 1,
-            FrameCurrent = 1,
+            FrameStart = _frameStart,
+            FrameEnd = _frameEnd,
+            FrameCurrent = _frameStart,
             FramePath = "/tmp/frame_####.png"
         };
 

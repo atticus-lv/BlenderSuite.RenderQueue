@@ -59,7 +59,7 @@ public partial class RenderTaskViewModel
                 _owner.SelectedSceneName = currentSelectedSceneName;
                 _owner.Enable = currentEnable;
 
-                ApplyLoadedSceneState();
+                ApplyLoadedSceneState(syncAnimationFromSceneRange: false);
                 _owner.LoadFileInfo();
 
                 _owner.EnqueueLog("[REFRESH] 文件属性刷新完成");
@@ -93,7 +93,7 @@ public partial class RenderTaskViewModel
                     ? $"[QUERY] 文件属性加载完成: 使用覆写帧范围 {_owner.StartFrame}..{_owner.EndFrame}"
                     : $"[QUERY] 文件属性加载完成: 使用场景默认帧范围 {_owner.ScenePropertiesView.SceneProperties.FrameStart}..{_owner.ScenePropertiesView.SceneProperties.FrameEnd}");
 
-                ApplyLoadedSceneState();
+                ApplyLoadedSceneState(syncAnimationFromSceneRange: true);
             }
             catch (Exception ex)
             {
@@ -101,7 +101,7 @@ public partial class RenderTaskViewModel
             }
         }
 
-        private void ApplyLoadedSceneState()
+        private void ApplyLoadedSceneState(bool syncAnimationFromSceneRange)
         {
             _owner.AvailableSceneNames = _owner.ScenePropertiesView.SceneNames.ToList();
 
@@ -116,6 +116,10 @@ public partial class RenderTaskViewModel
             _owner.OnPropertyChanged(nameof(RealStartFrame));
             _owner.OnPropertyChanged(nameof(RealEndFrame));
             _owner.OnPropertyChanged(nameof(RealTotalFrames));
+            if (syncAnimationFromSceneRange)
+            {
+                _owner.Animation = _owner.RealStartFrame != _owner.RealEndFrame;
+            }
             _owner.OnPropertyChanged(nameof(AvailableSceneNames));
             _owner.OnPropertyChanged(nameof(HasValidSceneSelection));
             _owner.OnPropertyChanged(nameof(ShowSceneOverrideWarning));

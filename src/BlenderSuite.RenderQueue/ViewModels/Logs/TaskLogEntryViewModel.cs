@@ -18,6 +18,10 @@ public sealed class TaskLogEntryViewModel
     public string LevelText => AppLocalizer.Instance[$"RenderLog_Level_{Event.Level}"];
     public string ScopeText => AppLocalizer.Instance[$"RenderLog_Scope_{Event.Scope}"];
     public string Message => Event.Message;
+    public bool IsDebug => Event.Level == RenderLogLevel.Debug;
+    public bool IsInfo => Event.Level == RenderLogLevel.Info;
+    public bool IsWarning => Event.Level == RenderLogLevel.Warning;
+    public bool IsError => Event.Level == RenderLogLevel.Error;
     public bool HasMetadata => Event.Metadata.Count > 0;
     public string MetadataText => string.Join(
         Environment.NewLine,

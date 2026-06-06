@@ -291,11 +291,49 @@
                                                                                                  Text="{Binding TimeText}"
                                                                                                  FontWeight="SemiBold"
                                                                                                  FontSize="12" />
-                                                                            <Border Grid.Column="1" CornerRadius="8" Padding="5,1" Background="#223B82F6">
-                                                                                <TextBlock Text="{Binding ScopeText}" FontSize="10" />
+                                                                            <Border Grid.Column="1"
+                                                                                    CornerRadius="8"
+                                                                                    Padding="5,1"
+                                                                                    Background="{DynamicResource SukiPrimaryColor}">
+                                                                                <TextBlock Text="{Binding ScopeText}"
+                                                                                           Foreground="White"
+                                                                                           FontSize="10" />
                                                                             </Border>
-                                                                            <Border Grid.Column="2" CornerRadius="8" Padding="5,1" Background="#2210B981">
-                                                                                <TextBlock Text="{Binding LevelText}" FontSize="10" />
+                                                                            <Border Grid.Column="2"
+                                                                                    CornerRadius="8"
+                                                                                    Padding="5,1"
+                                                                                    Background="{DynamicResource SukiAccentColor}"
+                                                                                    IsVisible="{Binding IsDebug}">
+                                                                                <TextBlock Text="{Binding LevelText}"
+                                                                                           Foreground="White"
+                                                                                           FontSize="10" />
+                                                                            </Border>
+                                                                            <Border Grid.Column="2"
+                                                                                    CornerRadius="8"
+                                                                                    Padding="5,1"
+                                                                                    Background="{DynamicResource SukiSuccessColor}"
+                                                                                    IsVisible="{Binding IsInfo}">
+                                                                                <TextBlock Text="{Binding LevelText}"
+                                                                                           Foreground="White"
+                                                                                           FontSize="10" />
+                                                                            </Border>
+                                                                            <Border Grid.Column="2"
+                                                                                    CornerRadius="8"
+                                                                                    Padding="5,1"
+                                                                                    Background="{DynamicResource SukiWarningColor}"
+                                                                                    IsVisible="{Binding IsWarning}">
+                                                                                <TextBlock Text="{Binding LevelText}"
+                                                                                           Foreground="White"
+                                                                                           FontSize="10" />
+                                                                            </Border>
+                                                                            <Border Grid.Column="2"
+                                                                                    CornerRadius="8"
+                                                                                    Padding="5,1"
+                                                                                    Background="{DynamicResource SukiDangerColor}"
+                                                                                    IsVisible="{Binding IsError}">
+                                                                                <TextBlock Text="{Binding LevelText}"
+                                                                                           Foreground="White"
+                                                                                           FontSize="10" />
                                                                             </Border>
                                                                         </Grid>
                                                                         <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="12" />

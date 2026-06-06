@@ -62,6 +62,9 @@ public sealed class GlobalLogEntryViewModel
     public string ScopeText => AppLocalizer.Instance[$"RenderLog_Scope_{Event.Scope}"];
     public bool IsWorkerScope => Event.Scope == RenderLogScope.Worker;
     public bool IsInfoLevel => Event.Level == RenderLogLevel.Info;
+    public bool IsDebugLevel => Event.Level == RenderLogLevel.Debug;
+    public bool IsWarningLevel => Event.Level == RenderLogLevel.Warning;
+    public bool IsErrorLevel => Event.Level == RenderLogLevel.Error;
     public string AudienceText => RenderLogMetadata.IsDiagnostic(Event)
         ? AppLocalizer.Instance["GlobalLog_Audience_Diagnostic"]
         : AppLocalizer.Instance["GlobalLog_Audience_User"];

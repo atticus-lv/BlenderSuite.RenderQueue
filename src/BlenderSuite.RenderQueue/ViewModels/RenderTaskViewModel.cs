@@ -1102,10 +1102,10 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         Status = status;
 
-        // 当任务开始运行时，初始化CurrentFrame为StartFrame
+        // 当任务开始运行时，初始化CurrentFrame为实际渲染起始帧
         if (status == RenderTaskStatus.Running && CurrentFrame == 0)
         {
-            CurrentFrame = StartFrame;
+            CurrentFrame = RealStartFrame;
         }
 
         if (status is RenderTaskStatus.Pending or RenderTaskStatus.Completed or RenderTaskStatus.Cancelled)
