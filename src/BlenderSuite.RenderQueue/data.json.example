@@ -3,7 +3,7 @@
   "ApplicationName": "BlenderSuite.RenderQueue",
   "Schema": "render-queue",
   "SchemaVersion": 1,
-  "AppVersion": "0.6.2.0",
+  "AppVersion": "0.6.3.0",
   "BatchId": "3f95c6f6-b54f-4130-9d0d-4fb60f2f239f",
   "BatchName": "",
   "CreatedAt": "2026-06-05T00:00:00Z",

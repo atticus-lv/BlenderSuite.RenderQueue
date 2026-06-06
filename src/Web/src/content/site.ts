@@ -37,7 +37,7 @@ export const supportedLocales = ['zh', 'en'] as const
 
 export const siteConfig = {
   productName: 'Blender Suite: Render Queue',
-  version: '0.6.2.0',
+  version: '0.6.3.0',
   githubUrl: 'https://github.com/atticus-lv/BlenderSuite.RenderQueue',
   releaseUrl: 'https://github.com/atticus-lv/BlenderSuite.RenderQueue/releases',
 }
