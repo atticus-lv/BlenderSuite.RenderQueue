@@ -42,9 +42,22 @@ public sealed partial class RenderQueueApplicationService
                 }
 
                 RenderTaskViewModel? taskToStart;
-                if (_owner._pausedTask is { Enable: true, IsValid: true } && _owner.RenderTasks.Contains(_owner._pausedTask))
+                var pausedTask = _owner._pausedTask is { Enable: true, IsValid: true } && _owner.RenderTasks.Contains(_owner._pausedTask)
+                    ? _owner._pausedTask
+                    : _owner.RenderTasks.FirstOrDefault(t =>
+                        t.Status == RenderTaskStatus.Paused &&
+                        t.Enable &&
+                        t.IsValid &&
+                        !_owner._scheduledTaskIds.Contains(t.Id));
+
+                if (pausedTask != null)
                 {
-                    taskToStart = _owner._pausedTask;
+                    taskToStart = pausedTask;
+                    _owner._pausedTask = pausedTask;
+                    if (_owner._pausedFrame <= 0)
+                    {
+                        _owner._pausedFrame = pausedTask.CurrentFrame > 0 ? pausedTask.CurrentFrame : pausedTask.RealStartFrame;
+                    }
                 }
                 else
                 {

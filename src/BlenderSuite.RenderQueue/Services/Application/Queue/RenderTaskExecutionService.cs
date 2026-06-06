@@ -310,7 +310,17 @@ public sealed class RenderTaskExecutionService : IRenderTaskExecutionService
 
         while (true)
         {
-            EnsureRenderPipelineIsCurrent(context.Task, context, renderPipelineVersion);
+            try
+            {
+                EnsureRenderPipelineIsCurrent(context.Task, context, renderPipelineVersion);
+            }
+            catch
+            {
+                renderAttemptCts.Cancel();
+                await DrainCancelledRenderTaskAsync(renderTask);
+                throw;
+            }
+
             var completedTask = await Task.WhenAny(renderTask, Task.Delay(1000));
             if (completedTask == renderTask)
             {

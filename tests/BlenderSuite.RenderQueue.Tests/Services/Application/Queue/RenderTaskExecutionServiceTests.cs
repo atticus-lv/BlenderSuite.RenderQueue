@@ -189,6 +189,44 @@ public sealed class RenderTaskExecutionServiceTests
     }
 
     [AvaloniaFact]
+    public async Task PauseAsync_CancelsActiveRenderAttemptToken()
+    {
+        using var tempBlend = TemporaryFile.Create(".blend");
+        var logService = TestLogServiceFactory.Create();
+        var task = CreateTaskFactory(logService).Create(tempBlend.Path, 1, 1, animation: false);
+        var renderAttemptCancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var workerHost = new FakeBlenderWorkerHost();
+        workerHost.RenderTaskHandler = async (request, cancellationToken) =>
+        {
+            using var registration = cancellationToken.Register(() => renderAttemptCancelled.TrySetResult());
+            workerHost.EmitOutput("Rendering single frame (frame 1)");
+            workerHost.EmitOutput("Rendering frame 1");
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            return new BlenderWorkerResponse
+            {
+                Ok = true,
+                WorkerState = "completed",
+                OutputVerified = true
+            };
+        };
+
+        var sut = new RenderTaskExecutionService(logService);
+
+        var startTask = sut.StartAsync(task, workerHost);
+        await WaitUntilAsync(() => task.Status == RenderTaskStatus.Running);
+
+        await sut.PauseAsync(task);
+        await renderAttemptCancelled.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        await startTask;
+        await DrainUiAsync();
+
+        Assert.Equal(RenderTaskStatus.Paused, task.Status);
+
+        task.Dispose();
+    }
+
+    [AvaloniaFact]
     public async Task StartAsync_RemovesExecutionContext_AfterCompletion()
     {
         using var tempBlend = TemporaryFile.Create(".blend");

@@ -859,6 +859,17 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
         PublishSnapshot();
         if (sender is RenderTaskViewModel task)
         {
+            if (_queueState == QueueState.Running && e.Status == RenderTaskStatus.Paused)
+            {
+                _pausedTask = task;
+                _pausedFrame = task.CurrentFrame > 0 ? task.CurrentFrame : task.RealStartFrame;
+                StartNextAvailableTasksAsync().FireAndForget(
+                    _logService,
+                    nameof(RenderQueueApplicationService),
+                    RenderLogScope.Queue,
+                    "恢复运行中的暂停任务失败。");
+            }
+
             TaskCompleted?.Invoke(this, new TaskCompletedEventArgs(task, e.Status));
         }
     }

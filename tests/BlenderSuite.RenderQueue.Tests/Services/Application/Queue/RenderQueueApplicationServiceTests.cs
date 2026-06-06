@@ -409,6 +409,43 @@ public sealed class RenderQueueApplicationServiceTests
         await WaitUntilAsync(() => sut.Snapshot.State == QueueExecutionState.Completed);
     }
 
+    [AvaloniaFact]
+    public async Task StartQueueAsync_ReschedulesPausedTaskWhenQueueIsStillRunning()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        using var blenderExecutable = TemporaryFile.Create(".exe");
+
+        var workerHost = new FakeBlenderWorkerHost();
+        var executionService = new FakeRenderTaskExecutionService();
+        var persistenceService = new FakeDataPersistenceService();
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
+        sut.SetBlenderPath(blenderExecutable.Path);
+        sut.AddDroppedFiles([blendFile.Path]);
+
+        executionService.StartHandler = (task, host) =>
+        {
+            task.BeginRenderExecution(isResume: false, resetRetryBudget: true);
+            task.CurrentFrame = 12;
+            task.FinalizePaused();
+            return Task.CompletedTask;
+        };
+
+        executionService.ResumeHandler = (task, host, resumeFromFrame) =>
+        {
+            task.BeginRenderExecution(isResume: true, resetRetryBudget: false);
+            task.FinalizeCompleted();
+            return Task.CompletedTask;
+        };
+
+        await sut.StartQueueAsync();
+        await WaitUntilAsync(() => executionService.ResumeCalls == 1);
+        await WaitUntilAsync(() => sut.Snapshot.State == QueueExecutionState.Completed);
+
+        Assert.Equal(1, executionService.StartCalls);
+        Assert.Equal(1, executionService.ResumeCalls);
+    }
+
     private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 2000)
     {
         var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
