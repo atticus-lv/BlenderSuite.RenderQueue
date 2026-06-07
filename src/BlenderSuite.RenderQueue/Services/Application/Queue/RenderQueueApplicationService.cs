@@ -58,6 +58,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
     private bool _savePending;
     private bool _saveWorkerRunning;
     private bool _disposed;
+    private bool _workerShutdownRequestedForCompletedQueue;
 
     public RenderQueueApplicationService(
         IBlenderWorkerHost workerHost,
@@ -359,6 +360,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
 
         _queueState = QueueState.Running;
         _queueStatusText = "Queue_Running";
+        _workerShutdownRequestedForCompletedQueue = false;
         _logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "队列开始运行。", source: nameof(RenderQueueApplicationService));
         QueueStatusChanged?.Invoke(this, new QueueStatusChangedEventArgs("Queue_Started"));
 
@@ -1176,6 +1178,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                     _queueStatusText = "Queue_Completed";
                     _queueState = QueueState.Completed;
                     _logService.Write(RenderLogLevel.Info, RenderLogScope.Queue, "队列已完成。", source: nameof(RenderQueueApplicationService));
+                    RequestWorkerShutdownForCompletedQueue();
                     HandlePostRenderBehaviorAsync().FireAndForget(
                         _logService,
                         nameof(RenderQueueApplicationService),
@@ -1204,6 +1207,7 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
                 break;
             case QueueState.Completed:
                 _queueStatusText = "Queue_Completed";
+                RequestWorkerShutdownForCompletedQueue();
                 break;
             case QueueState.Paused:
                 _queueStatusText = "Queue_Paused";
@@ -1266,6 +1270,37 @@ public sealed partial class RenderQueueApplicationService : IRenderQueueApplicat
             StatusMessageChanged?.Invoke(this,
                 string.Format(Localizer.Localizer.Instance["SystemControl_ActionError"], ex.Message));
         }
+    }
+
+    private async Task ShutdownWorkerAfterQueueCompletedAsync()
+    {
+        try
+        {
+            await _workerHost.ShutdownAsync();
+        }
+        catch (Exception ex)
+        {
+            _logService.Write(
+                RenderLogLevel.Warning,
+                RenderLogScope.Worker,
+                $"队列完成后关闭 Blender worker 失败: {ex.Message}",
+                source: nameof(RenderQueueApplicationService));
+        }
+    }
+
+    private void RequestWorkerShutdownForCompletedQueue()
+    {
+        if (_workerShutdownRequestedForCompletedQueue)
+        {
+            return;
+        }
+
+        _workerShutdownRequestedForCompletedQueue = true;
+        ShutdownWorkerAfterQueueCompletedAsync().FireAndForget(
+            _logService,
+            nameof(RenderQueueApplicationService),
+            RenderLogScope.Worker,
+            "队列完成后关闭 Blender worker 后台任务失败。");
     }
 
     public void Dispose()

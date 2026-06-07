@@ -269,6 +269,30 @@ public sealed class RenderQueueApplicationServiceTests
     }
 
     [AvaloniaFact]
+    public async Task StartQueueAsync_ShutsDownWorker_WhenQueueCompletes()
+    {
+        using var blendFile = TemporaryFile.Create(".blend");
+        using var blenderExecutable = TemporaryFile.Create(".exe");
+
+        var workerHost = new FakeBlenderWorkerHost();
+        var executionService = new FakeRenderTaskExecutionService();
+        var persistenceService = new FakeDataPersistenceService();
+        var logService = TestLogServiceFactory.Create();
+        using var sut = new RenderQueueApplicationService(workerHost, executionService, persistenceService, logService, CreateTaskFactory(logService));
+        sut.SetBlenderPath(blenderExecutable.Path);
+        sut.AddDroppedFiles([blendFile.Path]);
+        await WaitUntilAsync(() => workerHost.ShutdownCalls >= 1);
+        var shutdownCallsBeforeQueue = workerHost.ShutdownCalls;
+
+        await sut.StartQueueAsync();
+        await WaitUntilAsync(() => sut.Snapshot.State == QueueExecutionState.Completed);
+        await WaitUntilAsync(() => workerHost.ShutdownCalls > shutdownCallsBeforeQueue);
+
+        Assert.False(workerHost.State.IsProcessRunning);
+        Assert.Equal("stopped", workerHost.State.Status);
+    }
+
+    [AvaloniaFact]
     public void AddDroppedFiles_QueuesOnlyExistingBlendFiles()
     {
         using var blendFile = TemporaryFile.Create(".blend");

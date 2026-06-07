@@ -302,6 +302,37 @@ public partial class RenderTaskViewModel
             }
         }
 
+        public void EnqueueDebug(string message, string kind)
+        {
+            if (_owner.IsLogPaused || string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            if (_owner._logService != null)
+            {
+                _owner._logService.Write(
+                    RenderLogLevel.Debug,
+                    RenderLogScope.Task,
+                    message.Trim(),
+                    _owner.Id,
+                    _owner.BlendFilePath,
+                    nameof(RenderTaskViewModel),
+                    new Dictionary<string, string>
+                    {
+                        ["audience"] = "debug",
+                        ["kind"] = kind
+                    });
+                return;
+            }
+
+            var fallbackLine = $"[{DateTime.Now:HH:mm:ss}] {message.Trim()}";
+            _owner.DebugLogText = string.IsNullOrWhiteSpace(_owner.DebugLogText)
+                ? fallbackLine
+                : $"{_owner.DebugLogText}{Environment.NewLine}{fallbackLine}";
+            _owner.OutputLog = _owner.DebugLogText;
+        }
+
         public void Attach(IRenderLogService logService)
         {
             if (ReferenceEquals(_owner._logService, logService))

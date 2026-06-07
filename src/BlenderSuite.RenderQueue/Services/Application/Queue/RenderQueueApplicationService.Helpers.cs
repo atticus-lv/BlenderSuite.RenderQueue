@@ -121,6 +121,12 @@ public sealed partial class RenderQueueApplicationService
                                 _owner._scheduledTaskIds.Remove(taskCopy.Id);
                             }
 
+                            if (ReferenceEquals(_owner.CurrentRenderingTask, taskCopy) &&
+                                taskCopy.Status != RenderTaskStatus.Running)
+                            {
+                                _owner.CurrentRenderingTask = null;
+                            }
+
                             if (_owner.AutoStartNext && _owner._queueState == QueueState.Running)
                             {
                                 await StartNextAvailableTasksAsync();

@@ -17,6 +17,7 @@ internal sealed class FakeBlenderWorkerHost : IBlenderWorkerHost
     public int RenderTaskCalls { get; private set; }
     public int RecoverCalls { get; private set; }
     public int CancelCalls { get; private set; }
+    public int ShutdownCalls { get; private set; }
     public Func<BlenderWorkerRequest, CancellationToken, Task<BlenderWorkerResponse>>? RenderTaskHandler { get; set; }
 
     public Task EnsureReadyAsync(string blenderExecutablePath, CancellationToken cancellationToken = default)
@@ -86,6 +87,7 @@ internal sealed class FakeBlenderWorkerHost : IBlenderWorkerHost
 
     public Task ShutdownAsync(CancellationToken cancellationToken = default)
     {
+        ShutdownCalls++;
         State.IsProcessRunning = false;
         State.Status = "stopped";
         return Task.CompletedTask;

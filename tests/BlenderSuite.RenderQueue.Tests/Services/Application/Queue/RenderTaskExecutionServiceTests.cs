@@ -60,6 +60,45 @@ public sealed class RenderTaskExecutionServiceTests
     }
 
     [AvaloniaFact]
+    public async Task StartAsync_KeepsPerFrameRenderDetailsOutOfDefaultTimelineLogs()
+    {
+        using var tempBlend = TemporaryFile.Create(".blend");
+        using var renderedImage = TemporaryFile.Create(".png");
+        var workerHost = new FakeBlenderWorkerHost();
+        var logService = TestLogServiceFactory.Create();
+        var task = CreateTaskFactory(logService).Create(tempBlend.Path, 1, 1, animation: false);
+        workerHost.RenderTaskHandler = (request, cancellationToken) =>
+        {
+            workerHost.EmitOutput("Rendering single frame (frame 1)");
+            workerHost.EmitOutput("Rendering frame 1");
+            workerHost.EmitOutput("Start rendering: Scene, ViewLayer");
+            workerHost.EmitOutput("Engine: Cycles");
+            workerHost.EmitOutput($"Saved: '{renderedImage.Path}'");
+            workerHost.EmitOutput("Time: 00:00.50");
+            return Task.FromResult(new BlenderWorkerResponse
+            {
+                Ok = true,
+                WorkerState = "completed",
+                OutputVerified = true
+            });
+        };
+
+        var sut = new RenderTaskExecutionService(logService);
+
+        await sut.StartAsync(task, workerHost);
+        await DrainUiAsync();
+        using var globalLogs = new GlobalLogViewModel(logService);
+
+        Assert.DoesNotContain(task.TimelineEntries, entry => IsPerFrameRenderDetail(entry.Message));
+        Assert.Contains(task.DebugEntries, entry => entry.Message.Contains("开始帧 1", StringComparison.Ordinal));
+        Assert.Contains(task.DebugEntries, entry => entry.Message.Contains("已保存:", StringComparison.Ordinal));
+        Assert.Contains(task.DebugEntries, entry => entry.Message.Contains("帧 1 完成", StringComparison.Ordinal));
+        Assert.DoesNotContain(globalLogs.Entries, entry => IsPerFrameRenderDetail(entry.Message));
+
+        task.Dispose();
+    }
+
+    [AvaloniaFact]
     public async Task StartAsync_RecoversUnexpectedExit_AndRetriesWithinSameTask()
     {
         using var tempBlend = TemporaryFile.Create(".blend");
@@ -298,5 +337,12 @@ public sealed class RenderTaskExecutionServiceTests
         Assert.NotNull(contexts);
         var countProperty = contexts.GetType().GetProperty("Count", BindingFlags.Instance | BindingFlags.Public);
         return Assert.IsType<int>(countProperty?.GetValue(contexts));
+    }
+
+    private static bool IsPerFrameRenderDetail(string message)
+    {
+        return message.Contains("开始帧 1", StringComparison.Ordinal) ||
+               message.Contains("已保存:", StringComparison.Ordinal) ||
+               message.Contains("帧 1 完成", StringComparison.Ordinal);
     }
 }

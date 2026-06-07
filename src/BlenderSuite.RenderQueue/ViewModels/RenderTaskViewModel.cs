@@ -1046,7 +1046,8 @@ public partial class RenderTaskViewModel : ViewModelBase
     {
         try
         {
-            if (Status is RenderTaskStatus.Completed or RenderTaskStatus.Failed or RenderTaskStatus.Cancelled)
+            if (Status is RenderTaskStatus.Completed or RenderTaskStatus.Failed or RenderTaskStatus.Cancelled &&
+                e is not (RenderStarted or RenderSaved or RenderCompletedFrame))
             {
                 return Task.CompletedTask;
             }
@@ -1058,10 +1059,10 @@ public partial class RenderTaskViewModel : ViewModelBase
                     SetStatus(RenderTaskStatus.Running);
                     break;
                 case RenderStarted rs:
-                    EnqueueLog($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
+                    EnqueueRenderDetail($"开始帧 {rs.Frame} ({rs.Engine}) {rs.Scene},{rs.ViewLayer}");
                     break;
                 case RenderSaved saved:
-                    EnqueueLog($"已保存: {saved.Path} (帧 {saved.Frame})");
+                    EnqueueRenderDetail($"已保存: {saved.Path} (帧 {saved.Frame})");
                     // 加载渲染完成的图片
                     Task.Run(() => LoadRenderedImageAsync(saved.Path)).FireAndForget(
                         _logService,
@@ -1070,7 +1071,7 @@ public partial class RenderTaskViewModel : ViewModelBase
                         "后台加载已渲染图片失败。");
                     break;
                 case RenderCompletedFrame done:
-                    EnqueueLog($"帧 {done.Frame} 完成，用时 {done.Time}");
+                    EnqueueRenderDetail($"帧 {done.Frame} 完成，用时 {done.Time}");
                     break;
                 case RenderCompletedAll:
                     EnqueueLog("全部帧完成");
@@ -1120,6 +1121,11 @@ public partial class RenderTaskViewModel : ViewModelBase
     private void EnqueueLog(string line)
     {
         _logProjection.Enqueue(line);
+    }
+
+    private void EnqueueRenderDetail(string message)
+    {
+        _logProjection.EnqueueDebug(message, "render_detail");
     }
 
     public void ResetProgress()
