@@ -673,6 +673,9 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             ? previousCurrentFrame
             : 0;
         CurrentFrame = targetFrame;
+        UpdateCurrentImageAsync().FireAndForget(
+            source: nameof(ImageSequencePreviewControl),
+            message: "图片序列初始帧后台加载失败。");
         UpdateFrameTexts();
 
         ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Successfully loaded {_imageFiles.Count} images, restored to frame {targetFrame}", "ImageSequencePreviewControl");

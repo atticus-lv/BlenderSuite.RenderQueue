@@ -13,8 +13,6 @@
 
     <Border Grid.Row="1" HorizontalAlignment="Stretch"
             Margin="4"
-            MaxWidth="{Binding $parent[Grid].Bounds.Width}"
-            MaxHeight="{Binding $parent[Grid].Bounds.Width}"
             IsVisible="{Binding !$parent[controls:ImageSequencePreviewControl].HasError}">
 
         <Panel>
