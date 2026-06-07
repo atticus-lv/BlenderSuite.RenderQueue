@@ -14,7 +14,7 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Version>0.6.3.0</Version>
+        <Version>0.6.4.0</Version>
         <Authors>Atticus</Authors>
         <IsWindowsRuntime Condition="'$(RuntimeIdentifier)' == 'win-x64' Or '$(RuntimeIdentifier)' == 'win-x86' Or '$(RuntimeIdentifier)' == 'win-arm64'">true</IsWindowsRuntime>
         <IsWindowsRuntime Condition="'$(IsWindowsRuntime)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">true</IsWindowsRuntime>

@@ -771,9 +771,6 @@ function DownloadSection({ content }: { content: HomeContent['download'] }) {
     <section id="download" className={styles.downloadSection} aria-labelledby="download-title">
       <div className={styles.downloadIntro}>
         <h2 id="download-title">{content.title}</h2>
-        <p>
-          {content.versionLabel} {siteConfig.version}
-        </p>
       </div>
 
       <div className={styles.downloadPanel}>

@@ -26,7 +26,6 @@ export type HomeContent = {
   coreCapabilities: FeatureItem[]
   download: {
     title: string
-    versionLabel: string
     releaseLink: string
     platformsLabel: string
   }
@@ -37,7 +36,6 @@ export const supportedLocales = ['zh', 'en'] as const
 
 export const siteConfig = {
   productName: 'Blender Suite: Render Queue',
-  version: '0.6.3.0',
   githubUrl: 'https://github.com/atticus-lv/BlenderSuite.RenderQueue',
   releaseUrl: 'https://github.com/atticus-lv/BlenderSuite.RenderQueue/releases',
 }
@@ -120,7 +118,6 @@ export const siteContent: Record<SiteLocale, HomeContent> = {
     ],
     download: {
       title: '下载 Blender Suite: Render Queue',
-      versionLabel: '当前版本',
       releaseLink: 'GitHub Releases',
       platformsLabel: '可用平台',
     },
@@ -203,7 +200,6 @@ export const siteContent: Record<SiteLocale, HomeContent> = {
     ],
     download: {
       title: 'Download Blender Suite: Render Queue',
-      versionLabel: 'Version',
       releaseLink: 'GitHub Releases',
       platformsLabel: 'Available platforms',
     },
