@@ -413,24 +413,93 @@ public sealed partial class PythonConsoleWorkerHost : IBlenderWorkerHost
 
     private bool VerifyRenderOutput(BlenderWorkerRequest request, BlenderWorkerResponse response)
     {
+        var renderStartedAt = ParseDateTime(response.RenderStartedAt);
         if (request.SingleFrame.HasValue)
         {
-            if (!string.IsNullOrWhiteSpace(request.OutputPath))
+            foreach (var path in GetSingleFrameOutputCandidates(request, response))
             {
-                return File.Exists(request.OutputPath);
+                if (IsFreshOutputFile(path, renderStartedAt))
+                {
+                    return true;
+                }
             }
 
-            return !string.IsNullOrWhiteSpace(response.OutputPath) && File.Exists(response.OutputPath);
+            return false;
         }
 
-        var outputPath = !string.IsNullOrWhiteSpace(request.OutputPath) ? request.OutputPath : response.OutputPath;
-        if (string.IsNullOrWhiteSpace(outputPath))
+        if (IsFreshOutputFile(response.OutputPath, renderStartedAt))
         {
             return true;
         }
 
-        var directory = ResolveAnimationOutputDirectory(outputPath);
-        return Directory.Exists(directory) && Directory.EnumerateFiles(directory).Any();
+        if (!string.IsNullOrWhiteSpace(request.OutputPath))
+        {
+            if (IsFreshOutputFile(request.OutputPath, renderStartedAt))
+            {
+                return true;
+            }
+
+            var directory = ResolveAnimationOutputDirectory(request.OutputPath);
+            return DirectoryContainsFreshOutput(directory, renderStartedAt);
+        }
+
+        return false;
+    }
+
+    private static IEnumerable<string> GetSingleFrameOutputCandidates(
+        BlenderWorkerRequest request,
+        BlenderWorkerResponse response)
+    {
+        if (!string.IsNullOrWhiteSpace(response.OutputPath))
+        {
+            yield return response.OutputPath;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.OutputPath) &&
+            !string.Equals(response.OutputPath, request.OutputPath, StringComparison.Ordinal))
+        {
+            yield return request.OutputPath;
+        }
+    }
+
+    private static bool DirectoryContainsFreshOutput(string directory, DateTimeOffset? renderStartedAt)
+    {
+        if (!Directory.Exists(directory))
+        {
+            return false;
+        }
+
+        try
+        {
+            return Directory.EnumerateFiles(directory)
+                .Any(file => IsFreshOutputFile(file, renderStartedAt));
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsFreshOutputFile(string? path, DateTimeOffset? renderStartedAt)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return false;
+        }
+
+        if (renderStartedAt == null)
+        {
+            return true;
+        }
+
+        try
+        {
+            return File.GetLastWriteTimeUtc(path) >= renderStartedAt.Value.UtcDateTime.AddSeconds(-2);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string ResolveAnimationOutputDirectory(string outputPath)

@@ -430,25 +430,31 @@ def render_task(runtime, payload):
         if output_path:
             scene.render.filepath = output_path
 
+        render_started_epoch = time.time()
         runtime.state.begin_render()
+        render_started_at = runtime.state.render_started_at
 
         if single_frame is not None:
             frame_number = int(single_frame)
             scene.frame_set(frame_number)
             bpy.ops.render.render(write_still=True, scene=scene.name)
-            resolved_output_path = resolve_single_frame_output_path(scene, frame_number)
-            runtime.state.set_output_verified(bool(resolved_output_path) and os.path.exists(resolved_output_path))
+            resolved_output_path = resolve_single_frame_output_path(scene, frame_number, render_started_epoch)
+            runtime.state.set_output_verified(is_fresh_output(resolved_output_path, render_started_epoch))
         else:
             bpy.ops.render.render(animation=True, scene=scene.name)
-            resolved_output_path = resolve_animation_output_path(scene)
-            runtime.state.set_output_verified(bool(resolved_output_path) and os.path.exists(resolved_output_path))
+            resolved_output_path = resolve_animation_output_path(scene, render_started_epoch)
+            runtime.state.set_output_verified(is_fresh_output(resolved_output_path, render_started_epoch))
 
         runtime.state.refresh_from_context()
         if resolved_output_path:
             runtime.state.output_path = resolved_output_path
         runtime.state.set_status("ready")
+        payload_out = runtime.state.snapshot_payload()
+        payload_out["render_started_at"] = render_started_at
+        if resolved_output_path:
+            payload_out["output_path"] = resolved_output_path
         runtime.logger.write("Render task finished")
-        return runtime.state.snapshot_payload()
+        return payload_out
     finally:
         scene.frame_start = original_start
         scene.frame_end = original_end
@@ -456,7 +462,14 @@ def render_task(runtime, payload):
         scene.frame_set(original_frame)
 
 
-def resolve_single_frame_output_path(scene, frame_number):
+def is_fresh_output(path, min_mtime):
+    try:
+        return os.path.exists(path) and os.path.getmtime(path) >= (min_mtime - 2.0)
+    except Exception:
+        return False
+
+
+def resolve_single_frame_output_path(scene, frame_number, min_mtime):
     candidates = []
 
     try:
@@ -479,17 +492,17 @@ def resolve_single_frame_output_path(scene, frame_number):
         if not candidate or candidate in seen:
             continue
         seen.add(candidate)
-        if os.path.exists(candidate):
+        if is_fresh_output(candidate, min_mtime):
             return candidate
 
     return candidates[0] if candidates else ""
 
 
-def resolve_animation_output_path(scene):
+def resolve_animation_output_path(scene, min_mtime):
     try:
         frame_end = int(scene.frame_end)
         resolved = bpy.path.abspath(scene.render.frame_path(frame=frame_end))
-        if os.path.exists(resolved):
+        if is_fresh_output(resolved, min_mtime):
             return resolved
     except Exception:
         pass
@@ -500,7 +513,7 @@ def resolve_animation_output_path(scene):
             files = [
                 os.path.join(output_dir, name)
                 for name in os.listdir(output_dir)
-                if os.path.isfile(os.path.join(output_dir, name))
+                if is_fresh_output(os.path.join(output_dir, name), min_mtime)
             ]
             if files:
                 return max(files, key=os.path.getmtime)
