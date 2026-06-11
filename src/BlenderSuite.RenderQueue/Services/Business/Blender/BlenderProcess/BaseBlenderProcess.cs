@@ -189,7 +189,15 @@ public abstract class BaseBlenderProcess : IBlenderProcess
             if (_process is { HasExited: false })
             {
                 _process.Kill(true);
-                await Task.Delay(_config.StopWaitTimeMs); // 使用配置的等待时间
+                using var exitWaitCts = new CancellationTokenSource(_config.StopWaitTimeMs);
+                try
+                {
+                    await _process.WaitForExitAsync(exitWaitCts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    _logService?.Write(RenderLogLevel.Warning, RenderLogScope.Worker, $"Process did not exit within {_config.StopWaitTimeMs}ms after kill - ID: {_processId}", source: GetType().Name);
+                }
             }
         }
         catch (Exception ex)
@@ -210,8 +218,18 @@ public abstract class BaseBlenderProcess : IBlenderProcess
 
         try
         {
-            StopAsync().GetAwaiter().GetResult();
-            
+            // Dispose 可能在 UI 线程上被调用，这里只做同步、有限时的清理，避免 sync-over-async 死锁
+            if (_process is { HasExited: false })
+            {
+                _process.Kill(true);
+                if (!_process.WaitForExit(_config.StopWaitTimeMs))
+                {
+                    _logService?.Write(RenderLogLevel.Warning, RenderLogScope.Worker, $"Process did not exit within {_config.StopWaitTimeMs}ms during dispose - ID: {_processId}", source: GetType().Name);
+                }
+            }
+
+            _isRunning = false;
+
             if (_process != null)
             {
                 _process.Dispose();

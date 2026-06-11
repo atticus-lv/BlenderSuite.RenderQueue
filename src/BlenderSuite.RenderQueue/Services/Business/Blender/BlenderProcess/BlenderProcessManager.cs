@@ -181,8 +181,18 @@ public class BlenderProcessManager : IDisposable
 
         _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, "Disposing process manager...", source: "BlenderProcessManager");
 
-        // 停止所有进程
-        StopAllProcessesAsync().GetAwaiter().GetResult();
+        // 停止所有进程（在线程池上执行并限时等待，避免在 UI 线程上 sync-over-async 死锁）
+        try
+        {
+            if (!Task.Run(StopAllProcessesAsync).Wait(TimeSpan.FromSeconds(10)))
+            {
+                _logService?.Write(RenderLogLevel.Warning, RenderLogScope.Worker, "Timed out waiting for processes to stop during dispose", source: "BlenderProcessManager");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Error stopping processes during dispose: {ex.Message}", source: "BlenderProcessManager");
+        }
 
         // 清理所有进程
         foreach (var process in _activeProcesses.Values)

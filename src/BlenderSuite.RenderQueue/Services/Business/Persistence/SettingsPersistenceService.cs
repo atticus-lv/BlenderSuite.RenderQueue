@@ -46,6 +46,7 @@ public class SettingsPersistenceService : ISettingsPersistenceService
 
     public async Task<bool> SaveSettingsAsync(SettingsData settings)
     {
+        string? tempFilePath = null;
         var operation = _logService.BeginOperation(
             RenderLogScope.Recovery,
             "SaveSettings",
@@ -79,7 +80,10 @@ public class SettingsPersistenceService : ISettingsPersistenceService
                 {
                     ["bytes"] = json.Length.ToString()
                 });
-            await File.WriteAllTextAsync(SettingsFilePath, json);
+            // 先写临时文件再原子替换，避免写入中途崩溃损坏设置文件
+            tempFilePath = $"{SettingsFilePath}.{Guid.NewGuid():N}.tmp";
+            await File.WriteAllTextAsync(tempFilePath, json);
+            File.Move(tempFilePath, SettingsFilePath, overwrite: true);
 
             operation.Complete(
                 $"设置保存完成，默认超时: {settings.DefaultRenderTimeoutSeconds}s",
@@ -93,6 +97,18 @@ public class SettingsPersistenceService : ISettingsPersistenceService
         }
         catch (Exception ex)
         {
+            if (!string.IsNullOrWhiteSpace(tempFilePath) && File.Exists(tempFilePath))
+            {
+                try
+                {
+                    File.Delete(tempFilePath);
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+
             operation.Fail($"设置保存失败: {ex.Message}");
             return false;
         }

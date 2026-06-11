@@ -283,7 +283,8 @@ public sealed partial class PythonConsoleWorkerHost : IBlenderWorkerHost
 
         try
         {
-            ShutdownAsync(CancellationToken.None).GetAwaiter().GetResult();
+            // 在线程池上执行并限时等待，避免在 UI 线程上 sync-over-async 死锁
+            Task.Run(() => ShutdownAsync(CancellationToken.None)).Wait(TimeSpan.FromSeconds(15));
         }
         catch
         {

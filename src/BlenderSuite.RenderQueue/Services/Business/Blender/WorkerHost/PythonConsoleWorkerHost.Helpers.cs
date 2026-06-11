@@ -138,11 +138,25 @@ public sealed partial class PythonConsoleWorkerHost
                 if (!process.HasExited)
                 {
                     process.Kill(true);
-                    await process.WaitForExitAsync(_owner._disposeCts.Token);
+                    // 不能用 _disposeCts：Dispose 路径上它已被取消，会跳过等待导致无法确认进程退出
+                    using var exitWaitCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                    try
+                    {
+                        await process.WaitForExitAsync(exitWaitCts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _owner.OnErrorReceived?.Invoke("Blender worker 进程在终止后 5 秒内未退出，可能残留后台进程。");
+                    }
                 }
             }
-            catch
+            catch (InvalidOperationException)
             {
+                // 进程已退出
+            }
+            catch (Exception ex)
+            {
+                _owner.OnErrorReceived?.Invoke($"终止 Blender worker 进程失败: {ex.Message}");
             }
             finally
             {

@@ -117,13 +117,15 @@ public class DataPersistenceService : IDataPersistenceService
 
             if (data == null)
             {
-                operation.Fail("队列数据反序列化失败，使用默认空队列。");
+                var backupPath = TryBackupUnreadableDataFile(targetFilePath);
+                operation.Fail($"队列数据反序列化失败，使用默认空队列。原文件已备份: {backupPath ?? "备份失败"}");
                 return new AppData();
             }
 
             if (!IsSupportedQueueData(data))
             {
-                operation.Fail("队列数据身份或格式版本不匹配，使用默认空队列。");
+                var backupPath = TryBackupUnreadableDataFile(targetFilePath);
+                operation.Fail($"队列数据身份或格式版本不匹配，使用默认空队列。原文件已备份: {backupPath ?? "备份失败"}");
                 return new AppData();
             }
 
@@ -134,8 +136,31 @@ public class DataPersistenceService : IDataPersistenceService
         }
         catch (Exception ex)
         {
-            operation.Fail($"队列数据读取失败: {ex.Message}");
+            var backupPath = TryBackupUnreadableDataFile(targetFilePath);
+            operation.Fail($"队列数据读取失败: {ex.Message}。原文件已备份: {backupPath ?? "备份失败"}");
             return new AppData();
+        }
+    }
+
+    /// <summary>
+    /// 数据文件无法读取时备份留底——返回空队列后下一次保存会覆盖原文件，不备份会造成数据永久丢失
+    /// </summary>
+    private static string? TryBackupUnreadableDataFile(string targetFilePath)
+    {
+        try
+        {
+            if (!File.Exists(targetFilePath))
+            {
+                return null;
+            }
+
+            var backupPath = $"{targetFilePath}.corrupt-{DateTime.Now:yyyyMMdd-HHmmss}";
+            File.Copy(targetFilePath, backupPath, overwrite: true);
+            return backupPath;
+        }
+        catch
+        {
+            return null;
         }
     }
 
