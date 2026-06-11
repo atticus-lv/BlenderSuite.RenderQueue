@@ -12,6 +12,7 @@ using System.Threading;
 using Avalonia.Input;
 using Avalonia.Threading;
 using BlenderSuite.RenderQueue.Extensions;
+using BlenderSuite.RenderQueue.Models;
 using BlenderSuite.RenderQueue.Views;
 using BlenderSuite.RenderQueue.ViewModels;
 using BlenderSuite.RenderQueue.Helpers;
@@ -55,10 +56,12 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     private List<string> _imageFiles = [];
     private Bitmap?[] _imageCache = [];
     private FileSystemWatcher? _fileWatcher;
+    private readonly DispatcherTimer _refreshTimer;
     private readonly SemaphoreSlim _sequenceLoadLock = new(1, 1);
     private CancellationTokenSource? _refreshDebounceCts;
     private int _loadRequestVersion;
     private int _imageLoadRequestVersion;
+    private bool _isPollingRefresh;
     private bool _disposed;
     private static readonly string[] ImageExtensions = [".jpg", ".jpeg", ".png"];
 
@@ -203,6 +206,12 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
 
         // 监听文件夹路径变化
         this.GetObservable(FolderPathProperty).Subscribe(new Observer<string?>(OnFolderPathChanged));
+
+        _refreshTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _refreshTimer.Tick += OnRefreshTimerTick;
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
@@ -214,6 +223,8 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         {
             OnFolderPathChanged(FolderPath);
         }
+
+        _refreshTimer.Start();
     }
 
     private void OnFolderPathChanged(string? newPath)
@@ -292,20 +303,10 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 IsLoading = true;
-                HasImages = false;
             });
             ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"LoadImageSequence: '{folderPath}'", "ImageSequencePreviewControl");
 
-            var files = await Task.Run(() =>
-            {
-                var allFiles = Directory.GetFiles(folderPath);
-                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Found {allFiles.Length} total files in directory", "ImageSequencePreviewControl");
-
-                return allFiles
-                    .Where(file => ImageExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
-                    .OrderBy(file => file)
-                    .ToList();
-            });
+            var files = await Task.Run(() => EnumerateImageFiles(folderPath, logTotalFiles: true));
 
             if (_disposed || requestVersion != _loadRequestVersion)
             {
@@ -442,6 +443,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        _refreshTimer.Stop();
         CancelPendingRefresh();
         Interlocked.Increment(ref _loadRequestVersion);
         Interlocked.Increment(ref _imageLoadRequestVersion);
@@ -537,7 +539,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, "Refreshing image sequence due to file changes", "ImageSequencePreviewControl");
 
             // 重新加载图片序列
-            var directoryPath = File.Exists(_folderPath) ? Path.GetDirectoryName(_folderPath) : _folderPath;
+            var directoryPath = ResolveDirectoryPath(_folderPath);
             if (!string.IsNullOrEmpty(directoryPath) && Directory.Exists(directoryPath))
             {
                 await LoadImageSequenceAsync(directoryPath);
@@ -552,6 +554,8 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     public void Dispose()
     {
         _disposed = true;
+        _refreshTimer.Stop();
+        _refreshTimer.Tick -= OnRefreshTimerTick;
         CancelPendingRefresh();
         StopFileWatcher();
         ClearImages();
@@ -649,14 +653,165 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         _imageCache = [];
     }
 
+    private void OnRefreshTimerTick(object? sender, EventArgs e)
+    {
+        if (_disposed || IsLoading || _isPollingRefresh || string.IsNullOrEmpty(_folderPath))
+        {
+            return;
+        }
+
+        RefreshIfSequenceChangedAsync().FireAndForget(
+            source: nameof(ImageSequencePreviewControl),
+            message: "图片序列轮询刷新后台任务失败。");
+    }
+
+    private async Task RefreshIfSequenceChangedAsync()
+    {
+        if (_disposed || IsLoading || _isPollingRefresh || string.IsNullOrEmpty(_folderPath))
+        {
+            return;
+        }
+
+        _isPollingRefresh = true;
+        try
+        {
+            var directoryPath = ResolveDirectoryPath(_folderPath);
+            if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath))
+            {
+                return;
+            }
+
+            List<string> files;
+            try
+            {
+                files = await Task.Run(() => EnumerateImageFiles(directoryPath));
+            }
+            catch (Exception ex)
+            {
+                ApplicationLogWriter.Write(RenderLogLevel.Error, RenderLogScope.System, $"轮询图片序列失败: {ex.Message}", "ImageSequencePreviewControl");
+                return;
+            }
+
+            var shouldRefresh = await Dispatcher.UIThread.InvokeAsync(() =>
+                !_disposed && !IsLoading && HasSequenceChanged(files));
+
+            if (!shouldRefresh)
+            {
+                return;
+            }
+
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, "Refreshing image sequence due to detected sequence change", "ImageSequencePreviewControl");
+            await LoadImageSequenceAsync(directoryPath);
+
+            if (_fileWatcher == null)
+            {
+                StartFileWatcher(directoryPath);
+            }
+        }
+        finally
+        {
+            _isPollingRefresh = false;
+        }
+    }
+
+    private static string? ResolveDirectoryPath(string path)
+    {
+        if (File.Exists(path))
+        {
+            return Path.GetDirectoryName(path);
+        }
+
+        return Directory.Exists(path) ? path : null;
+    }
+
+    private static List<string> EnumerateImageFiles(string folderPath, bool logTotalFiles = false)
+    {
+        var allFiles = Directory.GetFiles(folderPath);
+        if (logTotalFiles)
+        {
+            ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Found {allFiles.Length} total files in directory", "ImageSequencePreviewControl");
+        }
+
+        return allFiles
+            .Where(file => ImageExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
+            .OrderBy(file => file)
+            .ToList();
+    }
+
+    private bool HasSequenceChanged(IReadOnlyList<string> files)
+    {
+        if (files.Count != _imageFiles.Count)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < files.Count; i++)
+        {
+            if (!string.Equals(files[i], _imageFiles[i], StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Bitmap?[] RebuildImageCache(IReadOnlyList<string> files)
+    {
+        if (_imageFiles.Count == 0 || _imageCache.Length == 0)
+        {
+            return new Bitmap?[files.Count];
+        }
+
+        var oldCacheByPath = new Dictionary<string, Bitmap?>(StringComparer.Ordinal);
+        for (var i = 0; i < _imageFiles.Count && i < _imageCache.Length; i++)
+        {
+            if (_imageCache[i] != null && !oldCacheByPath.ContainsKey(_imageFiles[i]))
+            {
+                oldCacheByPath[_imageFiles[i]] = _imageCache[i];
+            }
+        }
+
+        var nextCache = new Bitmap?[files.Count];
+        var reusedBitmaps = new HashSet<Bitmap>();
+        for (var i = 0; i < files.Count; i++)
+        {
+            if (!oldCacheByPath.TryGetValue(files[i], out var bitmap))
+            {
+                continue;
+            }
+
+            nextCache[i] = bitmap;
+            if (bitmap != null)
+            {
+                reusedBitmaps.Add(bitmap);
+            }
+        }
+
+        foreach (var bitmap in _imageCache)
+        {
+            if (bitmap != null && !reusedBitmaps.Contains(bitmap))
+            {
+                bitmap.Dispose();
+            }
+        }
+
+        return nextCache;
+    }
+
     private void ApplyImageSequence(IReadOnlyList<string> files, int previousCurrentFrame)
     {
-        DisposeImageCache();
-        _imageFiles = files.ToList();
-
-        if (_imageFiles.Count == 0)
+        if (files.Count == 0)
         {
+            if (ShouldPreserveImagesWhenSequenceIsEmpty())
+            {
+                ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, "Image sequence is temporarily empty while rendering; preserving current preview", "ImageSequencePreviewControl");
+                return;
+            }
+
             ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, "No image files found", "ImageSequencePreviewControl");
+            DisposeImageCache();
+            _imageFiles = [];
             HasImages = false;
             MaxFrame = 0;
             CurrentFrame = 0;
@@ -665,9 +820,11 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             return;
         }
 
+        var nextImageCache = RebuildImageCache(files);
+        _imageFiles = files.ToList();
         HasImages = true;
         MaxFrame = _imageFiles.Count - 1;
-        _imageCache = new Bitmap?[_imageFiles.Count];
+        _imageCache = nextImageCache;
 
         var targetFrame = (previousCurrentFrame >= 0 && previousCurrentFrame < _imageFiles.Count)
             ? previousCurrentFrame
@@ -679,5 +836,12 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         UpdateFrameTexts();
 
         ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, $"Successfully loaded {_imageFiles.Count} images, restored to frame {targetFrame}", "ImageSequencePreviewControl");
+    }
+
+    private bool ShouldPreserveImagesWhenSequenceIsEmpty()
+    {
+        return HasImages &&
+               CurrentImage != null &&
+               DataContext is RenderTaskViewModel { Status: RenderTaskStatus.Running or RenderTaskStatus.Paused };
     }
 }
