@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using BlenderSuite.RenderQueue.Services.Application.Logging;
@@ -27,42 +26,7 @@ public class BlenderRenderProcess : BaseBlenderProcess
         if (_disposed) throw new ObjectDisposedException(nameof(BlenderRenderProcess));
         if (!IsRunning) throw new InvalidOperationException("进程未运行");
 
-        var wrappedScript = $@"
-exec('''
-{script}
-'''.strip())
-print('__RENDER_COMPLETE__')
-";
-
-        var outputBuilder = new StringBuilder();
-        var completionSource = new TaskCompletionSource<bool>();
-
-        void OutputHandler(string output)
-        {
-            if (output.Contains("__RENDER_COMPLETE__"))
-            {
-                completionSource.TrySetResult(true);
-            }
-            else
-            {
-                outputBuilder.AppendLine(output);
-            }
-        }
-
-        OnOutputReceived += OutputHandler;
-
-        try
-        {
-            await _process!.StandardInput.WriteLineAsync(wrappedScript);
-            await _process.StandardInput.FlushAsync();
-
-            await completionSource.Task.WaitAsync(cancellationToken);
-            return outputBuilder.ToString().TrimEnd();
-        }
-        finally
-        {
-            OnOutputReceived -= OutputHandler;
-        }
+        return await ExecuteScriptAsync(script, cancellationToken);
     }
 
     /// <summary>

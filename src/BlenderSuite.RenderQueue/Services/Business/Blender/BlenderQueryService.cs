@@ -42,16 +42,16 @@ public sealed class BlenderQueryService : IBlenderQueryService
     /// </summary>
     private string GetFilePropertiesScript(string blendFilePath)
     {
-        var normalizedPath = EscapePathForPython(blendFilePath);
-        var cmd = "get_all_file_properties";
-        
-        return GenerateFilePropertiesScript(normalizedPath, cmd);
+        var filepathLiteral = PythonScriptLiteral.FromString(blendFilePath);
+        var cmdLiteral = PythonScriptLiteral.FromString("get_all_file_properties");
+
+        return GenerateFilePropertiesScript(filepathLiteral, cmdLiteral);
     }
 
     /// <summary>
     /// 生成文件属性查询的 Python 脚本
     /// </summary>
-    private static string GenerateFilePropertiesScript(string normalizedPath, string cmd)
+    private static string GenerateFilePropertiesScript(string filepathLiteral, string cmdLiteral)
     {
         return @"
 import bpy, json
@@ -99,7 +99,8 @@ def get_timeline_cameras(scene):
     except Exception:
         return []
 
-filepath = '" + normalizedPath + @"'
+filepath = " + filepathLiteral + @"
+cmd = " + cmdLiteral + @"
 try:
     bpy.ops.wm.open_mainfile(filepath=filepath)
     
@@ -127,9 +128,9 @@ try:
         'scene_data': scene_data
     }
     
-    print('" + Prefix + @"'+json.dumps({'cmd':'" + cmd + @"','ok':True,'data': data}, separators=(',', ':')))
+    print('" + Prefix + @"'+json.dumps({'cmd':cmd,'ok':True,'data': data}, separators=(',', ':')))
 except Exception as e:
-    print('" + Prefix + @"'+json.dumps({'cmd':'" + cmd + @"','ok':False,'err':str(e)}, separators=(',', ':')))
+    print('" + Prefix + @"'+json.dumps({'cmd':cmd,'ok':False,'err':str(e)}, separators=(',', ':')))
 ";
     }
 
@@ -217,13 +218,4 @@ except Exception as e:
         return (activeScene, sceneData);
     }
 
-
-    /// <summary>
-    /// 对文件路径进行简单的标准化处理
-    /// </summary>
-    private static string EscapePathForPython(string path)
-    {
-        // 只做最基本的反斜杠转换，Blender支持中文路径
-        return path.Replace("\\", "/");
-    }
 }

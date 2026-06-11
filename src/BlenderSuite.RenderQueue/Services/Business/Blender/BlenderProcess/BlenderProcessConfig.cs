@@ -1,3 +1,5 @@
+using System;
+
 namespace BlenderSuite.RenderQueue.Services.Business.Blender.BlenderProcess;
 
 /// <summary>
@@ -26,6 +28,11 @@ public class BlenderProcessConfig
     public int StopWaitTimeMs { get; set; } = 200;
 
     /// <summary>
+    /// Python 控制台脚本执行超时时间。
+    /// </summary>
+    public TimeSpan ScriptExecutionTimeout { get; set; } = TimeSpan.FromMinutes(5);
+
+    /// <summary>
     /// 获取启动参数
     /// </summary>
     public string GetStartupArguments()
@@ -51,7 +58,8 @@ public class BlenderProcessConfig
         return new BlenderProcessConfig
         {
             UseFactoryStartup = true,
-            StopWaitTimeMs = 100
+            StopWaitTimeMs = 100,
+            ScriptExecutionTimeout = TimeSpan.FromMinutes(2)
         };
     }
 
@@ -63,7 +71,8 @@ public class BlenderProcessConfig
         return new BlenderProcessConfig
         {
             UseFactoryStartup = false,
-            StopWaitTimeMs = 200
+            StopWaitTimeMs = 200,
+            ScriptExecutionTimeout = TimeSpan.FromHours(6)
         };
     }
 
@@ -75,7 +84,8 @@ public class BlenderProcessConfig
         return new BlenderProcessConfig
         {
             UseFactoryStartup = false,
-            StopWaitTimeMs = 150
+            StopWaitTimeMs = 150,
+            ScriptExecutionTimeout = TimeSpan.FromHours(6)
         };
     }
 }

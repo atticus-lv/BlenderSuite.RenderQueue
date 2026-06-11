@@ -119,19 +119,15 @@ public abstract class BaseBlenderProcess : IBlenderProcess
 
         _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Executing script - ID: {_processId}", source: GetType().Name);
 
-        var wrappedScript = $@"
-exec('''
-{script}
-'''.strip())
-print('__SCRIPT_COMPLETE__')
-";
+        var sentinel = $"__BRQ_SCRIPT_COMPLETE__{Guid.NewGuid():N}";
+        var wrappedScript = BuildConsoleExecScript(script, sentinel);
 
         var outputBuilder = new StringBuilder();
         var completionSource = new TaskCompletionSource<bool>();
 
         void OutputHandler(string output)
         {
-            if (output.Contains("__SCRIPT_COMPLETE__"))
+            if (output.Contains(sentinel))
             {
                 completionSource.TrySetResult(true);
             }
@@ -145,20 +141,41 @@ print('__SCRIPT_COMPLETE__')
 
         try
         {
+            using var timeoutCts = new CancellationTokenSource(_config.ScriptExecutionTimeout);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
             await _process!.StandardInput.WriteLineAsync(wrappedScript);
-            await _process.StandardInput.FlushAsync(cancellationToken);
+            await _process.StandardInput.FlushAsync(linkedCts.Token);
 
             _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Script sent, waiting for completion - ID: {_processId}", source: GetType().Name);
-            await completionSource.Task.WaitAsync(cancellationToken);
-            
+            await completionSource.Task.WaitAsync(linkedCts.Token);
+
             var result = outputBuilder.ToString().TrimEnd();
             _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Script completed - ID: {_processId}, Result length: {result.Length}", source: GetType().Name);
             return result;
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Script timed out after {_config.ScriptExecutionTimeout} - ID: {_processId}", source: GetType().Name);
+            await StopAsync();
+            throw new TimeoutException($"执行 Blender {ProcessType} 脚本超过 {_config.ScriptExecutionTimeout.TotalSeconds:F0} 秒。", ex);
         }
         finally
         {
             OnOutputReceived -= OutputHandler;
         }
+    }
+
+    protected static string BuildConsoleExecScript(string script, string sentinel)
+    {
+        var encodedScript = Convert.ToBase64String(Encoding.UTF8.GetBytes(script));
+        return string.Join(
+            Environment.NewLine,
+            "import base64",
+            "try:",
+            $"    exec(compile(base64.b64decode('{encodedScript}').decode('utf-8'), '<brq_script>', 'exec'), globals(), globals())",
+            "finally:",
+            $"    print('{sentinel}')");
     }
 
     public virtual async Task StopAsync()

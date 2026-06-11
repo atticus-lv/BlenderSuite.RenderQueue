@@ -473,8 +473,8 @@ public class BlenderVideoService : IBlenderVideoService
             const int channel = 1;
             
             script.AppendLine($"bpy.context.scene.sequence_editor.strips.new_image(");
-            script.AppendLine($"    name='{Path.GetFileNameWithoutExtension(imagePath)}',");
-            script.AppendLine($"    filepath='{imagePath}',");
+            script.AppendLine($"    name={PythonScriptLiteral.FromString(Path.GetFileNameWithoutExtension(imagePath))},");
+            script.AppendLine($"    filepath={PythonScriptLiteral.FromString(imagePath)},");
             script.AppendLine($"    channel={channel},");
             script.AppendLine($"    frame_start={i}");
             script.AppendLine(")");
@@ -495,8 +495,8 @@ public class BlenderVideoService : IBlenderVideoService
 
         // 设置FFmpeg编码
         script.AppendLine($"bpy.context.scene.render.ffmpeg.format = 'MPEG4'");
-        script.AppendLine($"bpy.context.scene.render.ffmpeg.codec = '{videoCodec}'");
-        script.AppendLine($"bpy.context.scene.render.ffmpeg.constant_rate_factor = '{videoQuality}'");
+        script.AppendLine($"bpy.context.scene.render.ffmpeg.codec = {PythonScriptLiteral.FromString(videoCodec)}");
+        script.AppendLine($"bpy.context.scene.render.ffmpeg.constant_rate_factor = {PythonScriptLiteral.FromString(videoQuality)}");
         script.AppendLine("bpy.context.scene.render.image_settings.color_mode = 'RGB'");
         script.AppendLine();
 
@@ -523,14 +523,15 @@ public class BlenderVideoService : IBlenderVideoService
         script.AppendLine();
 
         // 设置输出路径
-        script.AppendLine($"bpy.context.scene.render.filepath = '{outputVideoPath.Replace("\\", "/")}'");
+        var outputPathLiteral = PythonScriptLiteral.FromString(outputVideoPath.Replace("\\", "/"));
+        script.AppendLine($"bpy.context.scene.render.filepath = {outputPathLiteral}");
         script.AppendLine();
 
         // VSE渲染不需要3D相机
         script.AppendLine("# VSE渲染不需要3D相机");
         script.AppendLine();
 
-        script.AppendLine($"print('开始渲染视频: {outputVideoPath.Replace("\\", "/")}')");
+        script.AppendLine($"print('开始渲染视频: ' + {outputPathLiteral})");
         script.AppendLine("print(f'Engine: {bpy.context.scene.render.engine}')");
         script.AppendLine($"print('Rendering animation (frames 0..{imageFiles.Length - 1})')");
         script.AppendLine("print('Start rendering: Scene, ViewLayer')");
@@ -558,7 +559,7 @@ public class BlenderVideoService : IBlenderVideoService
         script.AppendLine("try:");
         script.AppendLine("    bpy.ops.render.render('INVOKE_DEFAULT', animation=True, use_viewport=True)");
         script.AppendLine("    print('视频渲染完成')");
-        script.AppendLine($"    if os.path.exists('{outputVideoPath.Replace("\\", "/")}'):");
+        script.AppendLine($"    if os.path.exists({outputPathLiteral}):");
         script.AppendLine("        print('输出文件已生成')");
         script.AppendLine("    else:");
         script.AppendLine("        print('警告: 输出文件未找到')");
