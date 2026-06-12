@@ -55,6 +55,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
     private bool _hasImages;
     private List<string> _imageFiles = [];
     private Bitmap?[] _imageCache = [];
+    private Dictionary<string, ImageFileFingerprint> _imageFileFingerprints = new(StringComparer.Ordinal);
     private FileSystemWatcher? _fileWatcher;
     private readonly DispatcherTimer _refreshTimer;
     private readonly SemaphoreSlim _sequenceLoadLock = new(1, 1);
@@ -433,6 +434,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         Interlocked.Increment(ref _imageLoadRequestVersion);
         DisposeImageCache();
         _imageFiles = [];
+        _imageFileFingerprints = new Dictionary<string, ImageFileFingerprint>(StringComparer.Ordinal);
         HasImages = false;
         MaxFrame = 0;
         CurrentFrame = 0;
@@ -751,24 +753,35 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             {
                 return true;
             }
+
+            var currentFingerprint = GetImageFileFingerprint(files[i]);
+            if (!_imageFileFingerprints.TryGetValue(files[i], out var previousFingerprint) ||
+                previousFingerprint != currentFingerprint)
+            {
+                return true;
+            }
         }
 
         return false;
     }
 
-    private Bitmap?[] RebuildImageCache(IReadOnlyList<string> files)
+    private Bitmap?[] RebuildImageCache(
+        IReadOnlyList<string> files,
+        IReadOnlyDictionary<string, ImageFileFingerprint> nextFingerprints)
     {
         if (_imageFiles.Count == 0 || _imageCache.Length == 0)
         {
             return new Bitmap?[files.Count];
         }
 
-        var oldCacheByPath = new Dictionary<string, Bitmap?>(StringComparer.Ordinal);
+        var oldCacheByPath = new Dictionary<string, CachedImageEntry>(StringComparer.Ordinal);
         for (var i = 0; i < _imageFiles.Count && i < _imageCache.Length; i++)
         {
-            if (_imageCache[i] != null && !oldCacheByPath.ContainsKey(_imageFiles[i]))
+            if (_imageCache[i] != null &&
+                _imageFileFingerprints.TryGetValue(_imageFiles[i], out var fingerprint) &&
+                !oldCacheByPath.ContainsKey(_imageFiles[i]))
             {
-                oldCacheByPath[_imageFiles[i]] = _imageCache[i];
+                oldCacheByPath[_imageFiles[i]] = new CachedImageEntry(_imageCache[i]!, fingerprint);
             }
         }
 
@@ -776,16 +789,15 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         var reusedBitmaps = new HashSet<Bitmap>();
         for (var i = 0; i < files.Count; i++)
         {
-            if (!oldCacheByPath.TryGetValue(files[i], out var bitmap))
+            if (!oldCacheByPath.TryGetValue(files[i], out var cachedEntry) ||
+                !nextFingerprints.TryGetValue(files[i], out var nextFingerprint) ||
+                cachedEntry.Fingerprint != nextFingerprint)
             {
                 continue;
             }
 
-            nextCache[i] = bitmap;
-            if (bitmap != null)
-            {
-                reusedBitmaps.Add(bitmap);
-            }
+            nextCache[i] = cachedEntry.Bitmap;
+            reusedBitmaps.Add(cachedEntry.Bitmap);
         }
 
         foreach (var bitmap in _imageCache)
@@ -797,6 +809,32 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
         }
 
         return nextCache;
+    }
+
+    private static Dictionary<string, ImageFileFingerprint> BuildImageFileFingerprints(IReadOnlyList<string> files)
+    {
+        var fingerprints = new Dictionary<string, ImageFileFingerprint>(StringComparer.Ordinal);
+        foreach (var file in files)
+        {
+            fingerprints[file] = GetImageFileFingerprint(file);
+        }
+
+        return fingerprints;
+    }
+
+    private static ImageFileFingerprint GetImageFileFingerprint(string path)
+    {
+        try
+        {
+            var fileInfo = new FileInfo(path);
+            return fileInfo.Exists
+                ? new ImageFileFingerprint(fileInfo.Length, fileInfo.LastWriteTimeUtc.Ticks)
+                : ImageFileFingerprint.Missing;
+        }
+        catch
+        {
+            return ImageFileFingerprint.Missing;
+        }
     }
 
     private void ApplyImageSequence(IReadOnlyList<string> files, int previousCurrentFrame)
@@ -812,6 +850,7 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             ApplicationLogWriter.Write(RenderLogLevel.Info, RenderLogScope.System, "No image files found", "ImageSequencePreviewControl");
             DisposeImageCache();
             _imageFiles = [];
+            _imageFileFingerprints = new Dictionary<string, ImageFileFingerprint>(StringComparer.Ordinal);
             HasImages = false;
             MaxFrame = 0;
             CurrentFrame = 0;
@@ -820,8 +859,10 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
             return;
         }
 
-        var nextImageCache = RebuildImageCache(files);
+        var nextFingerprints = BuildImageFileFingerprints(files);
+        var nextImageCache = RebuildImageCache(files, nextFingerprints);
         _imageFiles = files.ToList();
+        _imageFileFingerprints = nextFingerprints;
         HasImages = true;
         MaxFrame = _imageFiles.Count - 1;
         _imageCache = nextImageCache;
@@ -844,4 +885,11 @@ public partial class ImageSequencePreviewControl : UserControl, IDisposable
                CurrentImage != null &&
                DataContext is RenderTaskViewModel { Status: RenderTaskStatus.Running or RenderTaskStatus.Paused };
     }
+
+    private readonly record struct ImageFileFingerprint(long Length, long LastWriteTimeUtcTicks)
+    {
+        public static ImageFileFingerprint Missing { get; } = new(-1, -1);
+    }
+
+    private sealed record CachedImageEntry(Bitmap Bitmap, ImageFileFingerprint Fingerprint);
 }

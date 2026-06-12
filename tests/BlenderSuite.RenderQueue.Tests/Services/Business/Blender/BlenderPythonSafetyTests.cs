@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using BlenderSuite.RenderQueue.Controls;
 using BlenderSuite.RenderQueue.Services.Business.Blender;
 using BlenderSuite.RenderQueue.Services.Business.Blender.BlenderProcess;
 using BlenderSuite.RenderQueue.Services.Business.Blender.WorkerHost;
@@ -123,6 +124,23 @@ public sealed class BlenderPythonSafetyTests
     }
 
     [Fact]
+    public void ImageSequencePreview_FileFingerprintChangesWhenSamePathIsOverwritten()
+    {
+        using var frame = TemporaryFile.Create(".png");
+        File.WriteAllText(frame.Path, "old");
+        File.SetLastWriteTimeUtc(frame.Path, DateTime.UtcNow.AddMinutes(-1));
+
+        var before = GetImageFileFingerprint(frame.Path);
+
+        File.WriteAllText(frame.Path, "new-content");
+        File.SetLastWriteTimeUtc(frame.Path, DateTime.UtcNow.AddMinutes(1));
+
+        var after = GetImageFileFingerprint(frame.Path);
+
+        Assert.NotEqual(before, after);
+    }
+
+    [Fact]
     public void VerifyRenderOutput_RejectsStaleAnimationDirectoryContents()
     {
         var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -212,6 +230,18 @@ public sealed class BlenderPythonSafetyTests
         Assert.NotNull(method);
 
         return Assert.IsType<bool>(method.Invoke(host, [request, response]));
+    }
+
+    private static object GetImageFileFingerprint(string path)
+    {
+        var method = typeof(ImageSequencePreviewControl).GetMethod(
+            "GetImageFileFingerprint",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+
+        var result = method.Invoke(null, [path]);
+        Assert.NotNull(result);
+        return result;
     }
 
     private static string DecodeConsoleRunner(string command)
