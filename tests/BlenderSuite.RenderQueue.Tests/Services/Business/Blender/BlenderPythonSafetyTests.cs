@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using BlenderSuite.RenderQueue.Services.Business.Blender;
@@ -78,9 +79,47 @@ public sealed class BlenderPythonSafetyTests
     {
         var command = TestBlenderProcess.BuildScript("print('''sentinel breaker''')", "DONE");
 
-        Assert.Contains("base64.b64decode", command, StringComparison.Ordinal);
-        Assert.Contains("print('DONE')", command, StringComparison.Ordinal);
+        Assert.Contains("__brq_script_parts = []", command, StringComparison.Ordinal);
+        Assert.Contains("__brq_runner_parts = []", command, StringComparison.Ordinal);
+        Assert.Contains("__brq_script = base64.b64decode(''.join(__brq_script_parts)).decode('utf-8')", command, StringComparison.Ordinal);
+        Assert.Contains("__brq_runner = base64.b64decode(''.join(__brq_runner_parts)).decode('utf-8')", command, StringComparison.Ordinal);
+        Assert.EndsWith(
+            "exec(compile(__brq_runner, '<brq_console_wrapper>', 'exec'), globals(), globals())",
+            command,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("try:", command, StringComparison.Ordinal);
+        Assert.DoesNotContain("finally:", command, StringComparison.Ordinal);
+        Assert.DoesNotContain("DONE", command, StringComparison.Ordinal);
         Assert.DoesNotContain("sentinel breaker", command, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BaseBlenderProcess_ConsoleWrapperSeparatesSuccessAndErrorSentinels()
+    {
+        var command = TestBlenderProcess.BuildScript("raise RuntimeError('boom')", "DONE", "ERROR");
+        var wrapper = DecodeConsoleRunner(command);
+
+        Assert.Contains("except BaseException:", wrapper, StringComparison.Ordinal);
+        Assert.Contains("traceback.print_exc(file=sys.stdout)", wrapper, StringComparison.Ordinal);
+        Assert.Contains("print('ERROR')", wrapper, StringComparison.Ordinal);
+        Assert.Contains("else:", wrapper, StringComparison.Ordinal);
+        Assert.Contains("print('DONE')", wrapper, StringComparison.Ordinal);
+        Assert.Contains("finally:", wrapper, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BaseBlenderProcess_ConsoleWrapperKeepsConsoleLinesShortForLargeScripts()
+    {
+        var command = TestBlenderProcess.BuildScript(new string('x', 12_000), "DONE", "ERROR");
+        var lines = command.Split(Environment.NewLine);
+
+        Assert.Contains(lines, line => line.StartsWith("__brq_script_parts.append", StringComparison.Ordinal));
+        Assert.Contains(lines, line => line.StartsWith("__brq_runner_parts.append", StringComparison.Ordinal));
+        Assert.All(lines, line => Assert.True(line.Length < 2_000, $"Console line was {line.Length} characters."));
+        Assert.EndsWith(
+            "exec(compile(__brq_runner, '<brq_console_wrapper>', 'exec'), globals(), globals())",
+            lines[^1],
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -175,6 +214,27 @@ public sealed class BlenderPythonSafetyTests
         return Assert.IsType<bool>(method.Invoke(host, [request, response]));
     }
 
+    private static string DecodeConsoleRunner(string command)
+    {
+        const string prefix = "__brq_runner_parts.append('";
+        const string suffix = "')";
+
+        var encodedBuilder = new StringBuilder();
+        foreach (var line in command.Split(Environment.NewLine))
+        {
+            if (!line.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            Assert.EndsWith(suffix, line, StringComparison.Ordinal);
+            encodedBuilder.Append(line[prefix.Length..^suffix.Length]);
+        }
+
+        Assert.NotEmpty(encodedBuilder.ToString());
+        return Encoding.UTF8.GetString(Convert.FromBase64String(encodedBuilder.ToString()));
+    }
+
     private sealed class CapturingBlenderProcess : IBlenderProcess
     {
         public string Script { get; private set; } = string.Empty;
@@ -224,9 +284,9 @@ public sealed class BlenderPythonSafetyTests
 
         public override BlenderProcessType ProcessType => BlenderProcessType.Query;
 
-        public static string BuildScript(string script, string sentinel)
+        public static string BuildScript(string script, string sentinel, string? errorSentinel = null)
         {
-            return BuildConsoleExecScript(script, sentinel);
+            return BuildConsoleExecScript(script, sentinel, errorSentinel);
         }
     }
 }

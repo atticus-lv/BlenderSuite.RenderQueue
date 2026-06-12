@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
@@ -68,7 +69,7 @@ public abstract class BaseBlenderProcess : IBlenderProcess
                     CreateNoWindow = true,
                     StandardOutputEncoding = Encoding.UTF8,
                     StandardErrorEncoding = Encoding.UTF8,
-                    StandardInputEncoding = Encoding.UTF8
+                    StandardInputEncoding = new UTF8Encoding(false)
                 }
             };
 
@@ -119,17 +120,22 @@ public abstract class BaseBlenderProcess : IBlenderProcess
 
         _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Executing script - ID: {_processId}", source: GetType().Name);
 
-        var sentinel = $"__BRQ_SCRIPT_COMPLETE__{Guid.NewGuid():N}";
-        var wrappedScript = BuildConsoleExecScript(script, sentinel);
+        var successSentinel = $"__BRQ_SCRIPT_COMPLETE__{Guid.NewGuid():N}";
+        var errorSentinel = $"__BRQ_SCRIPT_ERROR__{Guid.NewGuid():N}";
+        var wrappedScript = BuildConsoleExecScript(script, successSentinel, errorSentinel);
 
         var outputBuilder = new StringBuilder();
-        var completionSource = new TaskCompletionSource<bool>();
+        var completionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         void OutputHandler(string output)
         {
-            if (output.Contains(sentinel))
+            if (output.Contains(successSentinel))
             {
                 completionSource.TrySetResult(true);
+            }
+            else if (output.Contains(errorSentinel))
+            {
+                completionSource.TrySetResult(false);
             }
             else
             {
@@ -148,9 +154,17 @@ public abstract class BaseBlenderProcess : IBlenderProcess
             await _process.StandardInput.FlushAsync(linkedCts.Token);
 
             _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Script sent, waiting for completion - ID: {_processId}", source: GetType().Name);
-            await completionSource.Task.WaitAsync(linkedCts.Token);
+            var completedSuccessfully = await completionSource.Task.WaitAsync(linkedCts.Token);
 
             var result = outputBuilder.ToString().TrimEnd();
+            if (!completedSuccessfully)
+            {
+                _logService?.Write(RenderLogLevel.Error, RenderLogScope.Worker, $"Script failed - ID: {_processId}, Result length: {result.Length}", source: GetType().Name);
+                throw new InvalidOperationException(string.IsNullOrWhiteSpace(result)
+                    ? $"执行 Blender {ProcessType} 脚本失败。"
+                    : $"执行 Blender {ProcessType} 脚本失败: {result}");
+            }
+
             _logService?.Write(RenderLogLevel.Info, RenderLogScope.Worker, $"Script completed - ID: {_processId}, Result length: {result.Length}", source: GetType().Name);
             return result;
         }
@@ -166,16 +180,51 @@ public abstract class BaseBlenderProcess : IBlenderProcess
         }
     }
 
-    protected static string BuildConsoleExecScript(string script, string sentinel)
+    protected static string BuildConsoleExecScript(string script, string successSentinel, string? errorSentinel = null)
     {
         var encodedScript = Convert.ToBase64String(Encoding.UTF8.GetBytes(script));
+        errorSentinel ??= $"__BRQ_SCRIPT_ERROR__{Guid.NewGuid():N}";
+
+        var runnerScript = string.Join(
+            Environment.NewLine,
+            "import sys, traceback",
+            "try:",
+            "    exec(compile(__brq_script, '<brq_script>', 'exec'), globals(), globals())",
+            "except BaseException:",
+            "    traceback.print_exc(file=sys.stdout)",
+            $"    print('{errorSentinel}')",
+            "else:",
+            $"    print('{successSentinel}')",
+            "finally:",
+            "    globals().pop('__brq_script', None)",
+            "    globals().pop('__brq_runner', None)");
+
+        var encodedRunnerScript = Convert.ToBase64String(Encoding.UTF8.GetBytes(runnerScript));
         return string.Join(
             Environment.NewLine,
             "import base64",
-            "try:",
-            $"    exec(compile(base64.b64decode('{encodedScript}').decode('utf-8'), '<brq_script>', 'exec'), globals(), globals())",
-            "finally:",
-            $"    print('{sentinel}')");
+            BuildChunkedBase64Assignment("__brq_script", "__brq_script_parts", encodedScript),
+            BuildChunkedBase64Assignment("__brq_runner", "__brq_runner_parts", encodedRunnerScript),
+            "exec(compile(__brq_runner, '<brq_console_wrapper>', 'exec'), globals(), globals())");
+    }
+
+    private static string BuildChunkedBase64Assignment(string targetName, string partsName, string encodedValue)
+    {
+        const int chunkSize = 1800;
+        var lines = new List<string>
+        {
+            $"{partsName} = []"
+        };
+
+        for (var i = 0; i < encodedValue.Length; i += chunkSize)
+        {
+            var length = Math.Min(chunkSize, encodedValue.Length - i);
+            lines.Add($"{partsName}.append('{encodedValue.Substring(i, length)}')");
+        }
+
+        lines.Add($"{targetName} = base64.b64decode(''.join({partsName})).decode('utf-8')");
+        lines.Add($"globals().pop('{partsName}', None)");
+        return string.Join(Environment.NewLine, lines);
     }
 
     public virtual async Task StopAsync()
