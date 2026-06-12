@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="src/BlenderSuite.RenderQueue/Assets/logo.png" alt="Blender Suite: Render Queue" width="120" />
+  <a href="https://atticus-lv.github.io/BlenderSuite.RenderQueue/">
+    <img src="src/BlenderSuite.RenderQueue/Assets/logo.png" alt="Blender Suite: Render Queue" width="120" />
+  </a>
 </p>
 
 <h1 align="center">Blender Suite: Render Queue</h1>
