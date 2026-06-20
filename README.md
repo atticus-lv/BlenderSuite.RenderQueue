@@ -32,16 +32,18 @@
 
 Blender Suite: Render Queue collects multiple Blender render jobs into one native desktop workspace. It can queue `.blend` files, override scenes and frame ranges, show progress and logs, and help finish output work such as sequence preview and video composition.
 
+> It was develop in 2025 when blender 5 come out and no batch render tool to support my work. So I made one to support my own workflow. (So it only support blender 5.0+)
+> It is developed with dotnet and avalonia, so it is small size ( less than 30m), hight performance and cross platform(Not test for linux yet, welcome pr!)
+
 ## Highlights
 
-- Queue multiple `.blend` files, scenes, and frame ranges.
-- Submit render jobs from Blender through the companion extension.
-- Pause, resume, stop, enable, or disable render tasks.
-- Track task state, current frame, logs, and hardware usage.
-- Preview image sequences and compose video output.
-- Native desktop app built with .NET 10 and Avalonia 12.
-- Chinese / English UI with light and dark themes.
-
+* Queue multiple `.blend` files, scenes, and frame ranges (support the vse scene combines with multiple scene).
+* Submit render jobs from Blender through the companion extension.
+* Pause, resume, stop, enable, or disable render tasks.
+* Track task state, current frame, logs, and hardware usage.
+* Preview image sequences and compose video output(using blender).
+* Native desktop app built with .NET 10 and Avalonia 12.
+* Chinese / English UI with light and dark themes.
 ## Development
 
 ### Requirements
